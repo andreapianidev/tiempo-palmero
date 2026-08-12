@@ -6,6 +6,7 @@
 
 import { inIslandBbox } from './geo'
 import { num, parseLocation, parseTimeinstant, type CdaRow } from './cabildo'
+import { normalizePressure } from './psychro'
 
 /** Límites de plausibilidad para La Palma (0–2426 m, subtropical). */
 export const BOUNDS: Record<string, [number, number]> = {
@@ -38,7 +39,10 @@ export interface Station {
   winddirection: number | null
   precipitation: number | null
   dailyprecipitation: number | null
+  /** SIEMPRE reducida al nivel del mar — ver `normalizePressure`. */
   atmosphericpressure: number | null
+  /** true si la estación publicaba presión absoluta y se ha reducido aquí. */
+  pressureWasReduced: boolean
   uv: number | null
   solarradiation: number | null
   /** Fila cruda, para el panel «todos los valores» de la estación. */
@@ -195,7 +199,15 @@ export function buildStations(
       // Índice 31 del esquema. En el histórico llega con el nombre equivocado
       // (`precipitationintensity` repetido), por eso se admiten las dos claves.
       dailyprecipitation: num(row.dailyprecipitation ?? row.precipitationintensity__31),
-      atmosphericpressure: bounded('atmosphericpressure'),
+      ...(() => {
+        const raw = bounded('atmosphericpressure')
+        if (raw === null) return { atmosphericpressure: null, pressureWasReduced: false }
+        const reduced = normalizePressure(raw, elevation, temperature)
+        return {
+          atmosphericpressure: reduced,
+          pressureWasReduced: Math.abs(reduced - raw) > 0.05,
+        }
+      })(),
       uv: bounded('uv'),
       solarradiation: num(row.solarradiation),
       raw: row,

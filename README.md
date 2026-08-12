@@ -156,6 +156,22 @@ La fórmula no es un supuesto: contrastada contra las estaciones que publican la
 tres variables a la vez, la humedad que implican su temperatura y su rocío se
 desvía de la que ellas mismas declaran **0,99 % de media, 2,45 % como máximo**.
 
+**La presión no se interpola, y el motivo no es el que parece.** Al meterla en
+el motor salía un R² de 0,002 y un gradiente de +0,2 hPa/km, cuando la física
+exige unos −125. La causa: `atmosphericpressure` mezcla **dos convenciones
+distintas sin decirlo**. La familia `CABLPA-*` publica presión ya reducida al
+nivel del mar; las `LaPalma WSAQPM *` publican presión absoluta de su altitud.
+A 726 m la diferencia entre ambas es de **86 hPa**. La aplicación detecta cuál
+es cuál —el discriminante es holgado por encima de 200 m, y por debajo las dos
+convergen— y reduce las absolutas.
+
+Pero incluso ya normalizada, la red va de **989 a 1028 hPa**. La presión
+reducida al nivel del mar apenas varía una décima en 42 km de isla, así que
+esos casi 40 hPa no son meteorología: son barómetros baratos desviados.
+Interpolarlos dibujaría un mapa precioso de errores de calibración. Se da la
+**mediana de la red**, que es robusta a los sensores descalibrados y es lo único
+que de verdad se puede afirmar.
+
 ### Validación
 
 `npm test` corre leave-one-out sobre una lectura real congelada de la red.

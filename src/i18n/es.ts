@@ -40,6 +40,8 @@ export const es = {
       'El punto de rocío se calcula a partir de la temperatura y la humedad estimadas, no se interpola por separado: solo 10 de las 52 estaciones lo publican. Así las tres cifras nunca se contradicen entre sí.',
     wind: 'Viento',
     precipitation: 'Precipitación',
+    pressure: 'Presión al nivel del mar',
+    uv: 'Índice UV',
   },
 
   units: {
@@ -73,7 +75,12 @@ export const es = {
     distance: 'Distancia',
     elevationDelta: 'Δ altitud',
     weight: 'Peso',
-    nearestOnly: 'Estación más cercana',
+    nearestOnly: 'Medido, no interpolado',
+    islandMedian: 'mediana de la red',
+    pressureHint:
+      'La presión reducida al nivel del mar apenas varía en 42 km de isla, pero los barómetros de la red se desvían entre sí hasta 39 hPa. Interpolarla dibujaría errores de calibración, no tiempo: se da la mediana, que es robusta a los sensores descalibrados.',
+    uvHint:
+      'El índice UV depende sobre todo de la nubosidad, que en esta isla cambia de una vertiente a otra. Se da la estación más cercana, sin interpolar.',
     noInterpolation:
       'No se interpola: el viento y la lluvia son locales. Se muestra la estación más cercana, tal cual.',
     extrapolated: 'Sin estaciones dentro de 15 km: valor extrapolado.',
@@ -114,6 +121,8 @@ export const es = {
     fresh: 'En directo',
     recent: 'Hace horas',
     dead: 'Sin señal',
+    pressureReduced:
+      'Esta estación publica la presión absoluta de su altitud, no reducida al nivel del mar como el resto de la red. Aquí se muestra ya reducida, para que sea comparable.',
     excludedByQc: 'Excluida por el control de calidad',
     excludedReason: (sigmas: number) =>
       `Su lectura se desvía ${sigmas.toFixed(1)}σ del ajuste altitudinal. No entra en la interpolación.`,

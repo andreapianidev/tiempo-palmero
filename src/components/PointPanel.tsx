@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   estimateBundle,
+  medianPressure,
   nearestWith,
   type Bundle,
   type DisplayVariable,
@@ -112,6 +113,14 @@ export function PointPanel({
         : nearestWith(stations, point.lon, point.lat, elevation, 'windspeed'),
     [stations, point.lon, point.lat, elevation],
   )
+
+  const uv = useMemo(
+    () =>
+      elevation === null ? null : nearestWith(stations, point.lon, point.lat, elevation, 'uv'),
+    [stations, point.lon, point.lat, elevation],
+  )
+
+  const pressure = useMemo(() => medianPressure(stations), [stations])
 
   const rain = useMemo(
     () =>
@@ -279,6 +288,24 @@ export function PointPanel({
                 <em className="mono"> · {rain.station.name}</em>
               </span>
               <span className="mono">{n(rain.station.dailyprecipitation ?? 0, 1)} mm</span>
+            </li>
+          )}
+          {uv && uv.station.uv !== null && (
+            <li title={t.point.uvHint}>
+              <span className="dim">
+                {t.variables.uv}
+                <em className="mono"> · {uv.station.name}</em>
+              </span>
+              <span className="mono">{n0(uv.station.uv)}</span>
+            </li>
+          )}
+          {pressure !== null && (
+            <li title={t.point.pressureHint}>
+              <span className="dim">
+                {t.variables.pressure}
+                <em className="mono"> · {t.point.islandMedian}</em>
+              </span>
+              <span className="mono">{n0(pressure)} {t.units.hpa}</span>
             </li>
           )}
         </ul>

@@ -37,7 +37,7 @@ export type InterpolableVariable = 'temperature' | 'relativehumidity'
  * diez. Se calcula a partir de las otras dos (ver `psychro.ts`), lo que además
  * garantiza que las tres nunca se contradigan entre sí.
  */
-export type DisplayVariable = InterpolableVariable | 'dewpoint'
+export type DisplayVariable = 'temperature' | 'relativehumidity' | 'dewpoint'
 
 /**
  * Variables que NO se interpolan nunca, y por qué:
@@ -52,7 +52,32 @@ export const NON_INTERPOLABLE = [
   'precipitation',
   'airquality',
   'co2',
+  // La presión, por un motivo distinto y menos evidente: ver `medianPressure`.
+  'atmosphericpressure',
 ] as const
+
+/**
+ * Presión al nivel del mar de la isla: la MEDIANA de la red, no un campo
+ * interpolado.
+ *
+ * La presión reducida al nivel del mar es un campo tan liso que sobre 42 km de
+ * isla apenas varía una décima de hPa. Y sin embargo la red, ya normalizada a
+ * la misma convención, va de 989 a 1028 hPa. Ese rango de casi 40 hPa no es
+ * meteorología: es deriva de barómetros baratos.
+ *
+ * Interpolarlo produciría un mapa precioso de errores de calibración. La
+ * mediana, en cambio, es robusta a esos sensores descalibrados y es lo que de
+ * verdad se puede afirmar: cuánto marca el barómetro en la isla.
+ */
+export function medianPressure(stations: readonly Station[]): number | null {
+  const vals = stations
+    .map((s) => s.atmosphericpressure)
+    .filter((v): v is number => v !== null)
+    .sort((a, b) => a - b)
+  if (!vals.length) return null
+  const m = vals.length >> 1
+  return vals.length % 2 ? vals[m] : (vals[m - 1] + vals[m]) / 2
+}
 
 export const IDW_POWER = 2
 export const IDW_CUTOFF_KM = 15

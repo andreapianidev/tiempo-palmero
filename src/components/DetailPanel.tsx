@@ -41,7 +41,7 @@ const RAW_FIELDS: [keyof Station, string, string][] = [
   ['relativehumidity', t.variables.relativehumidity, t.units.percent],
   ['dewpoint', t.variables.dewpoint, t.units.celsius],
   ['windspeed', t.variables.wind, t.units.kmh],
-  ['atmosphericpressure', 'Presión', t.units.hpa],
+  ['atmosphericpressure', 'Presión (nivel del mar)', t.units.hpa],
   ['precipitation', t.variables.precipitation, 'mm'],
   ['dailyprecipitation', 'Precipitación diaria', 'mm'],
   ['uv', 'Índice UV', ''],
@@ -89,6 +89,9 @@ function StationDetail({ s, model, now }: { s: Station; model: Model | null; now
       )}
 
       <h3>{t.station.allValues}</h3>
+      {s.pressureWasReduced && (
+        <p className="note small">{t.station.pressureReduced}</p>
+      )}
       <table className="kv">
         <tbody>
           {RAW_FIELDS.map(([key, label, unit]) => {

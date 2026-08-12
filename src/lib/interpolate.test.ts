@@ -16,10 +16,17 @@ import snapshot from './__fixtures__/weather-snapshot.json'
 import { buildStations, dedupeByEntityId, usable, type Station } from './quality'
 import { parseLocation, parseTimeinstant, type CdaRow } from './cabildo'
 import { haversineKm } from './geo'
-import { dewpointFrom, relativeHumidityFrom } from './psychro'
+import {
+  dewpointFrom,
+  looksLikeStationPressure,
+  reduceToSeaLevel,
+  relativeHumidityFrom,
+  standardPressureAt,
+} from './psychro'
 import {
   buildModel,
   estimateBundle,
+  medianPressure,
   estimate,
   leaveOneOut,
   ols,
@@ -477,5 +484,54 @@ describe('frescura del dato interpolado', () => {
     if (!b.dewpoint || !b.temperature || !b.relativehumidity) return
     expect(b.dewpoint.observedAt).toBeLessThanOrEqual(b.temperature.observedAt)
     expect(b.dewpoint.observedAt).toBeLessThanOrEqual(b.relativehumidity.observedAt)
+  })
+})
+
+describe('presión: dos convenciones en la misma columna', () => {
+  it('reconoce cuál es presión de estación y cuál ya viene reducida', () => {
+    // A 726 m la diferencia entre ambas convenciones es de unos 86 hPa: el
+    // discriminante no está ajustado fino, está holgado de sobra.
+    expect(looksLikeStationPressure(936.2, 726)).toBe(true)
+    expect(looksLikeStationPressure(1015.4, 761)).toBe(false)
+    // Cerca del nivel del mar convergen, y ahí da igual: no se toca.
+    expect(looksLikeStationPressure(1018.3, 12)).toBe(false)
+  })
+
+  it('la reducción devuelve valores de nivel del mar plausibles', () => {
+    for (const [p, h] of [
+      [936.2, 726],
+      [971.9, 419],
+      [982.1, 324],
+    ] as const) {
+      const msl = reduceToSeaLevel(p, h, 20)
+      expect(msl).toBeGreaterThan(1000)
+      expect(msl).toBeLessThan(1035)
+    }
+  })
+
+  it('la atmósfera estándar da los valores de manual', () => {
+    expect(standardPressureAt(0)).toBeCloseTo(1013.25, 2)
+    // ~1 hPa cada 8 m cerca del suelo.
+    expect(standardPressureAt(0) - standardPressureAt(80)).toBeGreaterThan(8)
+    expect(standardPressureAt(0) - standardPressureAt(80)).toBeLessThan(11)
+  })
+
+  it('tras normalizar, toda la red queda en el mismo orden de magnitud', () => {
+    const withP = stations.filter((s) => s.atmosphericpressure !== null)
+    expect(withP.length).toBeGreaterThan(10)
+    for (const s of withP) {
+      // Antes de normalizar había estaciones en 936 hPa junto a otras en 1018.
+      expect(s.atmosphericpressure!).toBeGreaterThan(980)
+      expect(s.atmosphericpressure!).toBeLessThan(1045)
+    }
+  })
+
+  it('la presión de la isla es la mediana, no un campo interpolado', () => {
+    const median = medianPressure(stations)
+    expect(median).not.toBeNull()
+    // Robusta: sigue siendo un valor barométrico creíble pese a que la red
+    // llega a desviarse decenas de hPa entre sensores.
+    expect(median!).toBeGreaterThan(995)
+    expect(median!).toBeLessThan(1035)
   })
 })
