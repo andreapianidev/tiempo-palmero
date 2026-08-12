@@ -27,6 +27,9 @@ const KIND_ICON: Record<NearbyKind, string> = {
   tourism: '★',
   culture: '❖',
   history: '⌂',
+  // Mismo glifo que en el panel del escritorio: los miradores son una capa
+  // propia desde que se separaron de «interés turístico».
+  viewpoint: '◉',
   busStop: '⬤',
   charging: '⚡',
 }
