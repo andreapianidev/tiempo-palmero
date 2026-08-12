@@ -1,0 +1,37 @@
+{
+  "generated": "2026-08-12T09:20:23.206Z",
+  "source": "Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island)",
+  "license": "CC-BY 4.0 / ODC-BY (límites administrativos)",
+  "layers": {
+    "senderos": {
+      "file": "/layers/senderos.geojson",
+      "features": 49,
+      "label": "Red de senderos"
+    },
+    "senderos-poi": {
+      "file": "/layers/senderos-poi.geojson",
+      "features": 1190,
+      "label": "POI de senderos"
+    },
+    "zonas-recreativas": {
+      "file": "/layers/zonas-recreativas.geojson",
+      "features": 33,
+      "label": "Zonas recreativas"
+    },
+    "municipios": {
+      "file": "/layers/municipios.geojson",
+      "features": 14,
+      "label": "Municipios (reproyectado desde EPSG:32628)"
+    },
+    "limite-insular": {
+      "file": "/layers/limite-insular.geojson",
+      "features": 1,
+      "label": "Límite insular"
+    },
+    "sensores-co2": {
+      "file": "/layers/sensores-co2.geojson",
+      "features": 189,
+      "label": "Inventario de sensores CO₂"
+    }
+  }
+}

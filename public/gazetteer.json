@@ -1,0 +1,5531 @@
+{
+  "generated": "2026-08-12T08:59:56.157Z",
+  "attribution": "© OpenStreetMap contributors — ODbL 1.0",
+  "note": "Extraído en build time vía Overpass API. La app no consulta Overpass ni Nominatim en runtime.",
+  "count": 789,
+  "entries": [
+    {
+      "name": "Acera Ancha",
+      "lon": -17.762601,
+      "lat": 28.6856,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Aguasensio",
+      "lon": -17.828102,
+      "lat": 28.680154,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Aguatavar",
+      "lon": -17.966496,
+      "lat": 28.731714,
+      "kind": "neighbourhood",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Album",
+      "lon": -106.343694,
+      "lat": 31.77924,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Alfalfa",
+      "lon": -106.381651,
+      "lat": 31.755387,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Amagar",
+      "lon": -17.936338,
+      "lat": 28.666748,
+      "kind": "neighbourhood",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Angel's Triangle",
+      "lon": -106.435423,
+      "lat": 31.864779,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Angostura",
+      "lon": -73.831711,
+      "lat": 9.739462,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Arecida",
+      "lon": -17.948364,
+      "lat": 28.688775,
+      "kind": "neighbourhood",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Arenas Blancas",
+      "lon": -17.762712,
+      "lat": 28.569971,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Argual",
+      "lon": -17.923872,
+      "lat": 28.660132,
+      "kind": "suburb",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Argual Abajo",
+      "lon": -17.927223,
+      "lat": 28.655452,
+      "kind": "neighbourhood",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Bailadero",
+      "lon": -17.92013,
+      "lat": 28.793892,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Baja del Hoyo",
+      "lon": -17.978185,
+      "lat": 28.715093,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Bajamar",
+      "lon": -17.730952,
+      "lat": 28.740711,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Bajamar de la Galga",
+      "lon": -17.753842,
+      "lat": 28.773006,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Barlovento",
+      "lon": -17.803359,
+      "lat": 28.829417,
+      "kind": "village",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Barranco de la Madera",
+      "lon": -17.786094,
+      "lat": 28.699838,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Barranco del Río",
+      "lon": -17.785685,
+      "lat": 28.693527,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Barriada de El Pilar",
+      "lon": -17.767186,
+      "lat": 28.687441,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Barriada de Los Pescadores",
+      "lon": -17.764298,
+      "lat": 28.688523,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Barrial",
+      "lon": -17.860699,
+      "lat": 28.661223,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Barrial de Arriba",
+      "lon": -17.854554,
+      "lat": 28.662026,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Barrial de Medio",
+      "lon": -17.857893,
+      "lat": 28.663826,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Barrio de La Portada",
+      "lon": -17.769905,
+      "lat": 28.678379,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Barros",
+      "lon": -17.888271,
+      "lat": 28.655917,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Bejucal",
+      "lon": -73.760331,
+      "lat": 9.621835,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Bella Luz",
+      "lon": -73.636704,
+      "lat": 9.706961,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Bellido",
+      "lon": -17.966646,
+      "lat": 28.73599,
+      "kind": "neighbourhood",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Bellido",
+      "lon": -17.974062,
+      "lat": 28.7321,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Benahoare",
+      "lon": -17.767706,
+      "lat": 28.689378,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Bermudez",
+      "lon": -17.770609,
+      "lat": 28.791452,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Boca De Miel",
+      "lon": -73.623757,
+      "lat": 9.801093,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Bocas De Teran",
+      "lon": -73.686825,
+      "lat": 9.581946,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Bosque de Dragos",
+      "lon": -17.934378,
+      "lat": 28.829649,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Botazo",
+      "lon": -17.796988,
+      "lat": 28.66798,
+      "kind": "neighbourhood",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Breña",
+      "lon": -17.788743,
+      "lat": 28.657552,
+      "kind": "neighbourhood",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Breña",
+      "lon": -17.793902,
+      "lat": 28.655416,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Britton Davis",
+      "lon": -106.422486,
+      "lat": 31.860384,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Buena Vista",
+      "lon": -106.539648,
+      "lat": 31.807616,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Calcinas",
+      "lon": -17.768755,
+      "lat": 28.68439,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Caldera del Agua",
+      "lon": -17.900603,
+      "lat": 28.814225,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Calderas Bermejas",
+      "lon": -17.917713,
+      "lat": 28.754026,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Calderos Bermejos",
+      "lon": -17.916939,
+      "lat": 28.722686,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Callejones",
+      "lon": -17.772237,
+      "lat": 28.604829,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Camino Real",
+      "lon": -17.786478,
+      "lat": 28.812978,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Campanario del Garabato",
+      "lon": -17.82681,
+      "lat": 28.797618,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Candelaria",
+      "lon": -17.766252,
+      "lat": 28.707067,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Cantos de Turugmay",
+      "lon": -17.880254,
+      "lat": 28.749865,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Cardón",
+      "lon": -17.929769,
+      "lat": 28.643561,
+      "kind": "hamlet",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Carmona",
+      "lon": -17.886903,
+      "lat": 28.802679,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Casaquemada",
+      "lon": -17.961125,
+      "lat": 28.713866,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Casas de las Traviesas",
+      "lon": -17.955208,
+      "lat": 28.69154,
+      "kind": "hamlet",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Casas de Tabladito",
+      "lon": -17.968591,
+      "lat": 28.724167,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Casas de Tenerra",
+      "lon": -17.897273,
+      "lat": 28.718164,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Casas del Rito",
+      "lon": -17.936644,
+      "lat": 28.814238,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Casas el Pinillo",
+      "lon": -17.954533,
+      "lat": 28.718894,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Casco",
+      "lon": -17.744744,
+      "lat": 28.739759,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Casco Antiguo",
+      "lon": -17.764142,
+      "lat": 28.683528,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Celta",
+      "lon": -17.896476,
+      "lat": 28.642523,
+      "kind": "village",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Cercado Grande",
+      "lon": -17.759352,
+      "lat": 28.788578,
+      "kind": "isolated_dwelling",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Cercado Peñón",
+      "lon": -17.761809,
+      "lat": 28.764525,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Cerco Nuevo",
+      "lon": -17.801047,
+      "lat": 28.600321,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Charcos de Aracos",
+      "lon": -17.796015,
+      "lat": 28.576587,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Cielo Vista East",
+      "lon": -106.367168,
+      "lat": 31.782858,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Cielo Vista North",
+      "lon": -106.383744,
+      "lat": 31.788484,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Cielo Vista South",
+      "lon": -106.378456,
+      "lat": 31.783572,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Ciudad Vieja",
+      "lon": -17.739451,
+      "lat": 28.754963,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Concepcion",
+      "lon": -73.657982,
+      "lat": 9.561687,
+      "kind": "plot",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Cork",
+      "lon": -106.351959,
+      "lat": 31.792706,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Coronado Hills",
+      "lon": -106.527488,
+      "lat": 31.828162,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Costa Santa Lucía",
+      "lon": -17.734618,
+      "lat": 28.726273,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Covaderos",
+      "lon": -17.80091,
+      "lat": 28.596006,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Cresta del Gallo",
+      "lon": -17.870514,
+      "lat": 28.530003,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Cruz Chica",
+      "lon": -17.894183,
+      "lat": 28.634821,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Cruz Chiquita",
+      "lon": -17.770743,
+      "lat": 28.800703,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Cruz de la Traviesa",
+      "lon": -17.936336,
+      "lat": 28.759096,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Cruz del Gallo",
+      "lon": -17.897691,
+      "lat": 28.823433,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Cruz del Llano",
+      "lon": -17.935057,
+      "lat": 28.707435,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Cruz Herrera",
+      "lon": -17.75478,
+      "lat": 28.751945,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Cuatro Caminos",
+      "lon": -17.774194,
+      "lat": 28.654273,
+      "kind": "locality",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "Cuatro Caminos",
+      "lon": -17.888698,
+      "lat": 28.595681,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Cuatro Esquinas",
+      "lon": -17.762002,
+      "lat": 28.68628,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Cuatro Vientos",
+      "lon": -73.708915,
+      "lat": 9.740747,
+      "kind": "village",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Cubo de la Galga",
+      "lon": -17.773801,
+      "lat": 28.761005,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Cuesta Alta",
+      "lon": -17.790794,
+      "lat": 28.822287,
+      "kind": "neighbourhood",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Cuesta Baja",
+      "lon": -17.781727,
+      "lat": 28.821515,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Cuesta de los Herradores",
+      "lon": -17.812123,
+      "lat": 28.744178,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Cuesta de los Pasitos",
+      "lon": -17.921165,
+      "lat": 28.714581,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Cuesta de los Pozitos",
+      "lon": -17.920379,
+      "lat": 28.710589,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Cuesta del Horno",
+      "lon": -17.94348,
+      "lat": 28.775574,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Cuesta del Llano de la Cruz",
+      "lon": -17.776338,
+      "lat": 28.694897,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Cuesta del Llano de la Cruz",
+      "lon": -17.788466,
+      "lat": 28.692379,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Cuesta Medina",
+      "lon": -17.756392,
+      "lat": 28.756532,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Cueva de Agua",
+      "lon": -17.952421,
+      "lat": 28.81125,
+      "kind": "neighbourhood",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Cuevas Negras",
+      "lon": -17.89913,
+      "lat": 28.722175,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Del Norte Acres",
+      "lon": -106.435351,
+      "lat": 31.867301,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Del Norte Heights",
+      "lon": -106.365262,
+      "lat": 31.757609,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Don Pedro",
+      "lon": -17.896097,
+      "lat": 28.833818,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Dormitorios Bajos",
+      "lon": -17.843038,
+      "lat": 28.764194,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Dos Aguas",
+      "lon": -17.883891,
+      "lat": 28.706926,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Dos Aguas",
+      "lon": -17.884893,
+      "lat": 28.707356,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Dos Pinos",
+      "lon": -17.900386,
+      "lat": 28.647662,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Dos Pinos",
+      "lon": -17.900212,
+      "lat": 28.649187,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "East Cottonwood Springs",
+      "lon": -106.492087,
+      "lat": 31.914122,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "East Glen",
+      "lon": -106.308449,
+      "lat": 31.776595,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Eastview",
+      "lon": -106.246063,
+      "lat": 31.79215,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Eastwood Heights",
+      "lon": -106.351493,
+      "lat": 31.781518,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Agujerito",
+      "lon": -17.891222,
+      "lat": 28.728686,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Almacén",
+      "lon": -17.763126,
+      "lat": 28.804605,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "el Barrial",
+      "lon": -17.851456,
+      "lat": 28.678626,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Brasil",
+      "lon": -17.749518,
+      "lat": 28.748717,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "el Calvario",
+      "lon": -17.965211,
+      "lat": 28.822554,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "el Calvario",
+      "lon": -17.762422,
+      "lat": 28.793046,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "El Calvario",
+      "lon": -17.879849,
+      "lat": 28.647059,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Campanario",
+      "lon": -17.914505,
+      "lat": 28.687701,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Capadero",
+      "lon": -17.871843,
+      "lat": 28.725069,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Capricho",
+      "lon": -73.759983,
+      "lat": 9.576546,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Cardal",
+      "lon": -17.765771,
+      "lat": 28.805155,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "El Castillete",
+      "lon": -17.760222,
+      "lat": 28.687486,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "el Castillo",
+      "lon": -17.87543,
+      "lat": 28.550859,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "El Castillo",
+      "lon": -17.962932,
+      "lat": 28.793756,
+      "kind": "neighbourhood",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Castillo",
+      "lon": -17.953159,
+      "lat": 28.792432,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "el Cedro",
+      "lon": -17.890772,
+      "lat": 28.792312,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "el Cercado",
+      "lon": -17.748425,
+      "lat": 28.761864,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "El Cercado",
+      "lon": -17.794387,
+      "lat": 28.684844,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Charco",
+      "lon": -17.866412,
+      "lat": 28.535349,
+      "kind": "hamlet",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "El Corcho",
+      "lon": -17.759824,
+      "lat": 28.756721,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "el Cotillón",
+      "lon": -17.840122,
+      "lat": 28.747897,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "El Cruce De La Loma",
+      "lon": -73.612831,
+      "lat": 9.608035,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Cuervo",
+      "lon": -17.820716,
+      "lat": 28.810584,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "El Dorado East",
+      "lon": -106.249363,
+      "lat": 31.803006,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Dorado West",
+      "lon": -106.263914,
+      "lat": 31.800644,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Dorador",
+      "lon": -17.776058,
+      "lat": 28.702046,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Encanto",
+      "lon": -73.76364,
+      "lat": 9.585778,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Escuchadero",
+      "lon": -17.844357,
+      "lat": 28.721715,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Fayal",
+      "lon": -17.973239,
+      "lat": 28.777945,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "el Fondo",
+      "lon": -17.761317,
+      "lat": 28.782971,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "el Frontón",
+      "lon": -17.959189,
+      "lat": 28.797996,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Frontón",
+      "lon": -17.77249,
+      "lat": 28.693455,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Fuerte",
+      "lon": -17.764567,
+      "lat": 28.661444,
+      "kind": "neighbourhood",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "El Gallo",
+      "lon": -17.85099,
+      "lat": 28.607487,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Gamonal",
+      "lon": -17.932358,
+      "lat": 28.74667,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "El Gramillo",
+      "lon": -17.812681,
+      "lat": 28.603914,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "El Granel",
+      "lon": -17.75217,
+      "lat": 28.75297,
+      "kind": "neighbourhood",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "el Guindaste",
+      "lon": -17.748634,
+      "lat": 28.764844,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "El Hatillo",
+      "lon": -73.568798,
+      "lat": 9.648823,
+      "kind": "village",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Hornito",
+      "lon": -17.898176,
+      "lat": 28.833806,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Hoyo Chico",
+      "lon": -17.837612,
+      "lat": 28.607867,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Jaral",
+      "lon": -17.934618,
+      "lat": 28.831886,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Jesus",
+      "lon": -17.950952,
+      "lat": 28.700903,
+      "kind": "neighbourhood",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "el limonero",
+      "lon": -17.871845,
+      "lat": 28.523574,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "El Llanito",
+      "lon": -17.789505,
+      "lat": 28.653697,
+      "kind": "neighbourhood",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "el Lomito",
+      "lon": -17.821395,
+      "lat": 28.802716,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "el Malpaís de la Cruz Alta",
+      "lon": -17.883291,
+      "lat": 28.576237,
+      "kind": "locality",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "El Marquito",
+      "lon": -17.763791,
+      "lat": 28.686881,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Morro",
+      "lon": -17.768272,
+      "lat": 28.705119,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "el Morrón",
+      "lon": -17.864954,
+      "lat": 28.483303,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "El Mudo",
+      "lon": -17.920219,
+      "lat": 28.844821,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Muelle",
+      "lon": -17.766682,
+      "lat": 28.680854,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "el Noganillo",
+      "lon": -17.917866,
+      "lat": 28.74709,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "el Novanillo",
+      "lon": -17.90646,
+      "lat": 28.747056,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "el Pajonal",
+      "lon": -17.953936,
+      "lat": 28.697313,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "El Palmar",
+      "lon": -17.929321,
+      "lat": 28.841007,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Pampillo",
+      "lon": -17.91175,
+      "lat": 28.610895,
+      "kind": "locality",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "El Paraíso",
+      "lon": -17.883628,
+      "lat": 28.617375,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Paso",
+      "lon": -106.487048,
+      "lat": 31.7601,
+      "kind": "city",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Paso",
+      "lon": -89.016463,
+      "lat": 40.739202,
+      "kind": "village",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Paso",
+      "lon": -17.879915,
+      "lat": 28.651404,
+      "kind": "village",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Paso",
+      "lon": -73.750469,
+      "lat": 9.658948,
+      "kind": "town",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Paso",
+      "lon": -60.765188,
+      "lat": -31.636246,
+      "kind": "quarter",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Pedregal",
+      "lon": -17.839271,
+      "lat": 28.832873,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "El Pedregal",
+      "lon": -17.901833,
+      "lat": 28.62568,
+      "kind": "locality",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "El Perdido",
+      "lon": -17.926302,
+      "lat": 28.619991,
+      "kind": "isolated_dwelling",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "El Perú",
+      "lon": -17.814694,
+      "lat": 28.608661,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "El Pilar",
+      "lon": -17.869698,
+      "lat": 28.653085,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Pilar",
+      "lon": -17.83615,
+      "lat": 28.61364,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Pilar",
+      "lon": -17.765162,
+      "lat": 28.687264,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "el Pinar",
+      "lon": -17.825744,
+      "lat": 28.519013,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "El Pinar",
+      "lon": -17.977917,
+      "lat": 28.774305,
+      "kind": "neighbourhood",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "El Pinar",
+      "lon": -17.933635,
+      "lat": 28.703096,
+      "kind": "neighbourhood",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "el pinar de Sotomayor",
+      "lon": -17.875065,
+      "lat": 28.547042,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "El Pino",
+      "lon": -17.979536,
+      "lat": 28.765854,
+      "kind": "neighbourhood",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "El Pital",
+      "lon": -73.65251,
+      "lat": 9.604242,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Planto",
+      "lon": -17.7693,
+      "lat": 28.691786,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Pocito",
+      "lon": -17.766086,
+      "lat": 28.703312,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Poiso",
+      "lon": -17.777887,
+      "lat": 28.810032,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "El Pollo",
+      "lon": -17.926818,
+      "lat": 28.627616,
+      "kind": "locality",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "El Poris",
+      "lon": -17.792686,
+      "lat": 28.530224,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "El Portal",
+      "lon": -17.878833,
+      "lat": 28.834836,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Porvenir",
+      "lon": -17.78576,
+      "lat": 28.668726,
+      "kind": "hamlet",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "El Pozo",
+      "lon": -17.757998,
+      "lat": 28.58503,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "El Puente",
+      "lon": -17.767085,
+      "lat": 28.685464,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Puente",
+      "lon": -17.764367,
+      "lat": 28.683751,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Remo",
+      "lon": -17.888566,
+      "lat": 28.552942,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "el Reventon",
+      "lon": -17.800074,
+      "lat": 28.666961,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "El Riachuelo",
+      "lon": -17.849081,
+      "lat": 28.689574,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "el Romadero",
+      "lon": -17.817469,
+      "lat": 28.785847,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "el Romano",
+      "lon": -17.935426,
+      "lat": 28.723498,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "El Roque",
+      "lon": -17.976592,
+      "lat": 28.757943,
+      "kind": "neighbourhood",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "El Roque",
+      "lon": -17.765756,
+      "lat": 28.77646,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "el Saladar",
+      "lon": -17.792469,
+      "lat": 28.840081,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "el Salt",
+      "lon": -17.796944,
+      "lat": 28.533574,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "el Sauzal",
+      "lon": -17.80033,
+      "lat": 28.701578,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Socorro",
+      "lon": -17.767532,
+      "lat": 28.655627,
+      "kind": "neighbourhood",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "El Tablado",
+      "lon": -17.877057,
+      "lat": 28.833119,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Tablado",
+      "lon": -17.896057,
+      "lat": 28.795402,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "El Taboco",
+      "lon": -17.743594,
+      "lat": 28.742838,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "El Tanque",
+      "lon": -17.764255,
+      "lat": 28.773735,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "El Tanquito",
+      "lon": -17.767631,
+      "lat": 28.6821,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "El Topo",
+      "lon": -17.774863,
+      "lat": 28.802365,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "El Valle",
+      "lon": -17.767288,
+      "lat": 28.803919,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "El Vallito",
+      "lon": -73.64938,
+      "lat": 9.823066,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "El Velachero",
+      "lon": -17.766265,
+      "lat": 28.688654,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Ell Tamano",
+      "lon": -17.818593,
+      "lat": 28.614594,
+      "kind": "locality",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "Embarcadero De Ganado",
+      "lon": -73.712765,
+      "lat": 9.720717,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Esper",
+      "lon": -106.2985,
+      "lat": 31.800918,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Fagundo",
+      "lon": -17.978213,
+      "lat": 28.760377,
+      "kind": "neighbourhood",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Fajana del Avispero",
+      "lon": -17.889178,
+      "lat": 28.69547,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Fátima",
+      "lon": -17.875565,
+      "lat": 28.649674,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Fifer's Arena",
+      "lon": -106.318372,
+      "lat": 31.716574,
+      "kind": "farm",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Filadelfia",
+      "lon": -73.634141,
+      "lat": 9.730292,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Finca el Arrogante",
+      "lon": -17.887801,
+      "lat": 28.836235,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Finca El Morro",
+      "lon": -17.970469,
+      "lat": 28.794263,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Flores",
+      "lon": -17.827538,
+      "lat": 28.529366,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Flores",
+      "lon": -17.841702,
+      "lat": 28.703058,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Franceses",
+      "lon": -17.861585,
+      "lat": 28.825996,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Fuente de la Piedra",
+      "lon": -17.816795,
+      "lat": 28.712847,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Fuente Nueva",
+      "lon": -17.769546,
+      "lat": 28.776376,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Fuente Pino",
+      "lon": -17.76811,
+      "lat": 28.76259,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Fusselman Canyon",
+      "lon": -106.495438,
+      "lat": 31.870196,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Gallegos",
+      "lon": -17.839819,
+      "lat": 28.828553,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Gallegos",
+      "lon": -17.840762,
+      "lat": 28.798162,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Garachico",
+      "lon": -17.764084,
+      "lat": 28.781027,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Garome",
+      "lon": -17.973328,
+      "lat": 28.752588,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Gigil",
+      "lon": -17.814452,
+      "lat": 28.57217,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Glen Cove",
+      "lon": -106.318828,
+      "lat": 31.777629,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Green Acres Colonia",
+      "lon": -106.599435,
+      "lat": 31.87566,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hacienda del Cura",
+      "lon": -17.908526,
+      "lat": 28.696393,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hacienda Delicias",
+      "lon": -73.767298,
+      "lat": 9.681929,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hacienda El Centro",
+      "lon": -73.692266,
+      "lat": 9.783561,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hacienda El Reposo",
+      "lon": -73.708314,
+      "lat": 9.747149,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hacienda Heights",
+      "lon": -106.353595,
+      "lat": 31.742888,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hacienda La Panda",
+      "lon": -73.654505,
+      "lat": 9.746745,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hacienda Mata De Indio",
+      "lon": -73.670393,
+      "lat": 9.782737,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hacienda San Carlos",
+      "lon": -73.737983,
+      "lat": 9.760635,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Hermosilla",
+      "lon": -17.905362,
+      "lat": 28.654751,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Hoya de la Morada",
+      "lon": -17.807402,
+      "lat": 28.699204,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Hoya de la Rudo",
+      "lon": -17.807225,
+      "lat": 28.559223,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Hoya de Palmero",
+      "lon": -17.907703,
+      "lat": 28.720038,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Hoya Grande",
+      "lon": -17.922589,
+      "lat": 28.793055,
+      "kind": "neighbourhood",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Hoya Grande",
+      "lon": -17.772579,
+      "lat": 28.809348,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Indian Ridge East",
+      "lon": -106.29763,
+      "lat": 31.78988,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Indian Ridge North",
+      "lon": -106.308143,
+      "lat": 31.7959,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Indian Ridge South",
+      "lon": -106.308078,
+      "lat": 31.78819,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Jedey",
+      "lon": -17.880938,
+      "lat": 28.585764,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Jedey",
+      "lon": -17.879997,
+      "lat": 28.585728,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Joronas",
+      "lon": -17.865784,
+      "lat": 28.502273,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Jorós",
+      "lon": -17.764713,
+      "lat": 28.685456,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Juan Adalid",
+      "lon": -17.901673,
+      "lat": 28.842957,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Juan Mayor",
+      "lon": -17.790585,
+      "lat": 28.679489,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Juanianes",
+      "lon": -17.92774,
+      "lat": 28.754055,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "La Alameda",
+      "lon": -17.761267,
+      "lat": 28.687719,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "la Atalaya",
+      "lon": -17.986016,
+      "lat": 28.742802,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "la Barrera",
+      "lon": -17.801866,
+      "lat": 28.716208,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "la Barrera",
+      "lon": -17.920494,
+      "lat": 28.707589,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "La Belleza",
+      "lon": -73.662613,
+      "lat": 9.584385,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Bombilla",
+      "lon": -17.91801,
+      "lat": 28.592836,
+      "kind": "hamlet",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "la Caldereta",
+      "lon": -17.869342,
+      "lat": 28.512339,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "La Caldereta",
+      "lon": -17.775777,
+      "lat": 28.67786,
+      "kind": "hamlet",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Calle",
+      "lon": -17.777118,
+      "lat": 28.804118,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "La Calzada",
+      "lon": -17.771434,
+      "lat": 28.803472,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "La Calzada Vieja",
+      "lon": -17.769268,
+      "lat": 28.804758,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "la Calzadilla",
+      "lon": -17.942875,
+      "lat": 28.805295,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "La Camacha",
+      "lon": -17.752078,
+      "lat": 28.738531,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "La Cangrejera",
+      "lon": -17.761383,
+      "lat": 28.580118,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "La Capellanía",
+      "lon": -17.79344,
+      "lat": 28.640923,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Capilla",
+      "lon": -17.98714,
+      "lat": 28.781323,
+      "kind": "hamlet",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "la Castellana",
+      "lon": -17.947986,
+      "lat": 28.731966,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "la Cofradía",
+      "lon": -17.980399,
+      "lat": 28.718137,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "La Condesa",
+      "lon": -17.920544,
+      "lat": 28.635606,
+      "kind": "neighbourhood",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "la Corredera",
+      "lon": -17.868223,
+      "lat": 28.525903,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "La Costa",
+      "lon": -17.93147,
+      "lat": 28.626863,
+      "kind": "neighbourhood",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "La Costa",
+      "lon": -17.952323,
+      "lat": 28.666062,
+      "kind": "neighbourhood",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "la Cresta",
+      "lon": -17.886095,
+      "lat": 28.750884,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "la Cruz",
+      "lon": -17.793274,
+      "lat": 28.801534,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "La Cruz de Vázquez",
+      "lon": -17.81528,
+      "lat": 28.757304,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "la Cuesta",
+      "lon": -17.778814,
+      "lat": 28.683325,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Cuesta",
+      "lon": -17.783632,
+      "lat": 28.82301,
+      "kind": "neighbourhood",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "La Cuesta",
+      "lon": -17.777522,
+      "lat": 28.682845,
+      "kind": "neighbourhood",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Dehesa",
+      "lon": -17.774084,
+      "lat": 28.694741,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "La Encarnación",
+      "lon": -17.762501,
+      "lat": 28.690593,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "la Ensillada",
+      "lon": -17.9146,
+      "lat": 28.743979,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "la Era",
+      "lon": -17.799759,
+      "lat": 28.674598,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Estrechura",
+      "lon": -17.895592,
+      "lat": 28.698749,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Fajana",
+      "lon": -17.789635,
+      "lat": 28.842433,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "La Fajana",
+      "lon": -17.851347,
+      "lat": 28.496732,
+      "kind": "neighbourhood",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "La Fajana",
+      "lon": -17.864199,
+      "lat": 28.835227,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "La Fajana",
+      "lon": -17.868907,
+      "lat": 28.834538,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "la Farola",
+      "lon": -17.903391,
+      "lat": 28.7109,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Florida",
+      "lon": -17.791213,
+      "lat": 28.813339,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "la Fortaleza",
+      "lon": -17.894384,
+      "lat": 28.674942,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Galga",
+      "lon": -17.763929,
+      "lat": 28.765084,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "La Glorieta",
+      "lon": -17.774173,
+      "lat": 28.694029,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "la Grama",
+      "lon": -17.776064,
+      "lat": 28.67079,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Grama",
+      "lon": -17.775045,
+      "lat": 28.667784,
+      "kind": "hamlet",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Granja",
+      "lon": -73.715914,
+      "lat": 9.615912,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Hamaca",
+      "lon": -73.739603,
+      "lat": 9.600236,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Hoya",
+      "lon": -17.786952,
+      "lat": 28.83382,
+      "kind": "neighbourhood",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "La Inteligencia",
+      "lon": -73.627602,
+      "lat": 9.641169,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Laguna",
+      "lon": -17.908053,
+      "lat": 28.631837,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "La Lama",
+      "lon": -17.776362,
+      "lat": 28.806527,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "La Loma",
+      "lon": -73.597375,
+      "lat": 9.61913,
+      "kind": "town",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "la Lomada",
+      "lon": -17.791775,
+      "lat": 28.756385,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "La Lomada",
+      "lon": -17.75082,
+      "lat": 28.746765,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "La Lomada",
+      "lon": -17.754459,
+      "lat": 28.756328,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "La Lomadita",
+      "lon": -17.748376,
+      "lat": 28.718177,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "La Luna Baila",
+      "lon": -17.882221,
+      "lat": 28.639509,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Luz",
+      "lon": -17.76745,
+      "lat": 28.681272,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "La Mata",
+      "lon": -17.903748,
+      "lat": 28.806345,
+      "kind": "neighbourhood",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "La Montaña",
+      "lon": -17.786997,
+      "lat": 28.632359,
+      "kind": "neighbourhood",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "la Montañeta",
+      "lon": -17.962804,
+      "lat": 28.817797,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "La Palmita",
+      "lon": -17.828536,
+      "lat": 28.827996,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "la Pasada",
+      "lon": -17.934389,
+      "lat": 28.681044,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "La Pérgola",
+      "lon": -17.765479,
+      "lat": 28.682426,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "la Petisca",
+      "lon": -17.792148,
+      "lat": 28.785117,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "La Plaza",
+      "lon": -17.773853,
+      "lat": 28.80422,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "La Polvacera",
+      "lon": -17.772199,
+      "lat": 28.633848,
+      "kind": "hamlet",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "La Portada",
+      "lon": -17.763531,
+      "lat": 28.703484,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "La Punta",
+      "lon": -17.944959,
+      "lat": 28.675868,
+      "kind": "hamlet",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "la Puntilla",
+      "lon": -17.89918,
+      "lat": 28.578488,
+      "kind": "locality",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "la Raiz del Pino",
+      "lon": -17.934988,
+      "lat": 28.802974,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "la Realizada",
+      "lon": -17.802114,
+      "lat": 28.634503,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Rivera",
+      "lon": -17.745992,
+      "lat": 28.71525,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "La Rosa",
+      "lon": -17.86147,
+      "lat": 28.657854,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Rosa",
+      "lon": -17.780949,
+      "lat": 28.625415,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "La Sabina",
+      "lon": -73.71034,
+      "lat": 9.570102,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "La Sabina",
+      "lon": -17.782849,
+      "lat": 28.588999,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "la Sabina Vieja",
+      "lon": -17.880924,
+      "lat": 28.563707,
+      "kind": "locality",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "La Salemera",
+      "lon": -17.762541,
+      "lat": 28.569021,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "La Tahona",
+      "lon": -17.948827,
+      "lat": 28.699953,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "La Tosca",
+      "lon": -17.816631,
+      "lat": 28.82889,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "la Trapera",
+      "lon": -17.934321,
+      "lat": 28.776766,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "La Travesía",
+      "lon": -17.803343,
+      "lat": 28.641863,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "La Traviesa",
+      "lon": -17.947946,
+      "lat": 28.758684,
+      "kind": "hamlet",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "La Vega",
+      "lon": -75.963916,
+      "lat": 5.760199,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "La Verada",
+      "lon": -17.772277,
+      "lat": 28.813518,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "La Verada",
+      "lon": -17.774591,
+      "lat": 28.697906,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "la Vereda",
+      "lon": -17.980167,
+      "lat": 28.79248,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "La Vinagrera",
+      "lon": -17.815214,
+      "lat": 28.525999,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "La Vuelta de los Hermanos",
+      "lon": -17.839086,
+      "lat": 28.682392,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Ladera de Guerreros",
+      "lon": -17.809098,
+      "lat": 28.802655,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Laderas de Doña María",
+      "lon": -17.871004,
+      "lat": 28.566379,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Laderas del Gallo",
+      "lon": -17.845345,
+      "lat": 28.563065,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Laderas del Gallo",
+      "lon": -17.861198,
+      "lat": 28.606652,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lakeside",
+      "lon": -106.398318,
+      "lat": 31.747054,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "las Barreras",
+      "lon": -17.997374,
+      "lat": 28.763635,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "las Breñas",
+      "lon": -17.800449,
+      "lat": 28.654676,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "las Breveras",
+      "lon": -17.96984,
+      "lat": 28.727587,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "las Cabezadas",
+      "lon": -17.902289,
+      "lat": 28.837456,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Las Cabezadas",
+      "lon": -17.789554,
+      "lat": 28.813889,
+      "kind": "neighbourhood",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Las Caletas",
+      "lon": -17.827181,
+      "lat": 28.500332,
+      "kind": "neighbourhood",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Las Caletas",
+      "lon": -17.954972,
+      "lat": 28.700754,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "las Cancelitas",
+      "lon": -17.832164,
+      "lat": 28.799422,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "las Casas Viejas",
+      "lon": -17.883262,
+      "lat": 28.557717,
+      "kind": "locality",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "las Castellanas",
+      "lon": -17.859438,
+      "lat": 28.511634,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "las Chamusquinas",
+      "lon": -17.823544,
+      "lat": 28.568331,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "las Cruces",
+      "lon": -17.965385,
+      "lat": 28.720313,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Las Eras",
+      "lon": -17.962805,
+      "lat": 28.756105,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Las Goteras",
+      "lon": -17.898438,
+      "lat": 28.793624,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "las Hoyas",
+      "lon": -17.916206,
+      "lat": 28.685188,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "las Hoyas",
+      "lon": -17.906829,
+      "lat": 28.713287,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Las Indias",
+      "lon": -17.861413,
+      "lat": 28.502986,
+      "kind": "neighbourhood",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Las Indias",
+      "lon": -17.946828,
+      "lat": 28.750433,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Las Laderas",
+      "lon": -17.843505,
+      "lat": 28.694213,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Las Lajas",
+      "lon": -17.888195,
+      "lat": 28.599726,
+      "kind": "isolated_dwelling",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "las Lajitas",
+      "lon": -17.899043,
+      "lat": 28.757262,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Las Lajitas",
+      "lon": -17.76615,
+      "lat": 28.700597,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Las Ledas",
+      "lon": -17.791611,
+      "lat": 28.642861,
+      "kind": "hamlet",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Las Ledas",
+      "lon": -17.782844,
+      "lat": 28.640391,
+      "kind": "hamlet",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "Las Ledas",
+      "lon": -17.788041,
+      "lat": 28.638174,
+      "kind": "locality",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "las Lomadas",
+      "lon": -17.741417,
+      "lat": 28.756017,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Las Manchas",
+      "lon": -17.881665,
+      "lat": 28.601354,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Las Martelas",
+      "lon": -17.90767,
+      "lat": 28.638105,
+      "kind": "neighbourhood",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Las Mimbreras",
+      "lon": -17.822265,
+      "lat": 28.813223,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "las Montañetas",
+      "lon": -17.876658,
+      "lat": 28.580116,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Las Muertas",
+      "lon": -76.224943,
+      "lat": 6.817741,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Las Nieves",
+      "lon": -17.783093,
+      "lat": 28.694112,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Las Norias",
+      "lon": -17.908507,
+      "lat": 28.607129,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "las Ovejas",
+      "lon": -17.831474,
+      "lat": 28.685256,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Las Palmas",
+      "lon": -106.306337,
+      "lat": 31.73637,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Las Palmas-El Tributo",
+      "lon": -17.747699,
+      "lat": 28.727095,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "las Palomas",
+      "lon": -17.839756,
+      "lat": 28.670502,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "las Paredes",
+      "lon": -17.794044,
+      "lat": 28.833206,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Las Paredes",
+      "lon": -17.798486,
+      "lat": 28.829729,
+      "kind": "neighbourhood",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "las Plantas",
+      "lon": -17.866953,
+      "lat": 28.610212,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "las Ranas",
+      "lon": -17.887494,
+      "lat": 28.704323,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "las Rosas",
+      "lon": -17.973668,
+      "lat": 28.722324,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Las Rosas",
+      "lon": -17.923244,
+      "lat": 28.650093,
+      "kind": "neighbourhood",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Las Tetas",
+      "lon": -17.897288,
+      "lat": 28.690681,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Las Tierras",
+      "lon": -106.233388,
+      "lat": 31.80473,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Las Tierritas",
+      "lon": -17.779504,
+      "lat": 28.690612,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Las Toscas",
+      "lon": -17.753924,
+      "lat": 28.758828,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Las Toscas",
+      "lon": -17.762987,
+      "lat": 28.710153,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Las Tricias",
+      "lon": -17.965781,
+      "lat": 28.782121,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Las Tricias",
+      "lon": -17.751915,
+      "lat": 28.751126,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lavas la Malforadada",
+      "lon": -17.834129,
+      "lat": 28.577153,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "les Lomaditas",
+      "lon": -17.988581,
+      "lat": 28.789129,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Llanada de Barlovento",
+      "lon": -17.81147,
+      "lat": 28.81655,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Llanada de Bona",
+      "lon": -17.813974,
+      "lat": 28.818815,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Llanadas de Gallegos",
+      "lon": -17.848541,
+      "lat": 28.792284,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Llanadas de Verone",
+      "lon": -17.81545,
+      "lat": 28.807431,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Llano Barona",
+      "lon": -17.906376,
+      "lat": 28.757543,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Llano Centeno",
+      "lon": -17.838178,
+      "lat": 28.458826,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Llano de la Fuente",
+      "lon": -17.934976,
+      "lat": 28.712817,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Llano de la Leña",
+      "lon": -17.950975,
+      "lat": 28.73847,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Llano de las Ánimas",
+      "lon": -17.911901,
+      "lat": 28.749343,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Llano de las Horas",
+      "lon": -17.923796,
+      "lat": 28.733187,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Llano de las Latas",
+      "lon": -17.843153,
+      "lat": 28.551801,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Llano de las Vergas",
+      "lon": -17.821931,
+      "lat": 28.746167,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Llano de Tenagua",
+      "lon": -17.759475,
+      "lat": 28.722654,
+      "kind": "isolated_dwelling",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "llano del Jable",
+      "lon": -17.848536,
+      "lat": 28.638078,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Llano del Jable",
+      "lon": -17.846338,
+      "lat": 28.623929,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Llano del Tanque",
+      "lon": -17.835133,
+      "lat": 28.487982,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Llano El Pino",
+      "lon": -17.771731,
+      "lat": 28.787151,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Llano Grande",
+      "lon": -17.777662,
+      "lat": 28.697128,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Llano La Palma",
+      "lon": -17.764713,
+      "lat": 28.783851,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Llano Molino",
+      "lon": -17.765188,
+      "lat": 28.765846,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Llano Negro",
+      "lon": -17.925892,
+      "lat": 28.806677,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Llanos de Fagundo",
+      "lon": -17.987872,
+      "lat": 28.759921,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Llanos del Lance",
+      "lon": -17.958165,
+      "lat": 28.747369,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lodero",
+      "lon": -17.770714,
+      "lat": 28.615655,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Loma Linda",
+      "lon": -106.289485,
+      "lat": 31.794584,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Loma Terrace",
+      "lon": -106.331928,
+      "lat": 31.731499,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomada Grande",
+      "lon": -17.977577,
+      "lat": 28.811101,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomada Grande",
+      "lon": -17.977332,
+      "lat": 28.802118,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomita Mala",
+      "lon": -17.79229,
+      "lat": 28.748169,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomito de la Fuente del Toro",
+      "lon": -17.929925,
+      "lat": 28.702084,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lomitos de Abajo",
+      "lon": -17.772171,
+      "lat": 28.803378,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomitos de Arriba",
+      "lon": -17.77656,
+      "lat": 28.802378,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomo Alto",
+      "lon": -17.858811,
+      "lat": 28.782283,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo Alto",
+      "lon": -17.807101,
+      "lat": 28.515373,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Lomo Atravesado",
+      "lon": -17.897352,
+      "lat": 28.734915,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo Botazo",
+      "lon": -17.814069,
+      "lat": 28.676072,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Lomo Casas",
+      "lon": -17.895431,
+      "lat": 28.701522,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo Chico",
+      "lon": -17.792685,
+      "lat": 28.814142,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo Chupadero",
+      "lon": -17.798863,
+      "lat": 28.678113,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo Cumplido",
+      "lon": -17.850948,
+      "lat": 28.733639,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo de Franceses",
+      "lon": -17.873988,
+      "lat": 28.786922,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de la Cancela",
+      "lon": -17.838166,
+      "lat": 28.828725,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo de la Ciudad",
+      "lon": -17.922912,
+      "lat": 28.781107,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de la Ciudad",
+      "lon": -17.914099,
+      "lat": 28.774535,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de la Crucita",
+      "lon": -17.836472,
+      "lat": 28.828578,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo de la Crucita",
+      "lon": -17.817724,
+      "lat": 28.78218,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomo de la Cruz",
+      "lon": -17.93925,
+      "lat": 28.821105,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de la Cruz",
+      "lon": -17.941474,
+      "lat": 28.762687,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Lomo de la Cumbre Vieja",
+      "lon": -17.884131,
+      "lat": 28.79017,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de la Fuente",
+      "lon": -17.840853,
+      "lat": 28.828626,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo de la Hoya Amarga",
+      "lon": -17.813468,
+      "lat": 28.760472,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomo de la Hoya Amarga",
+      "lon": -17.814964,
+      "lat": 28.766365,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomo de la Jara",
+      "lon": -17.87828,
+      "lat": 28.829992,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de la Jurada",
+      "lon": -17.860805,
+      "lat": 28.735457,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo de la Moradillas",
+      "lon": -17.89898,
+      "lat": 28.786301,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de la Rocha",
+      "lon": -17.98404,
+      "lat": 28.748467,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Lomo de las Breveras",
+      "lon": -17.974937,
+      "lat": 28.724594,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lomo de las Breveras",
+      "lon": -17.962513,
+      "lat": 28.733694,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lomo de las Breveras",
+      "lon": -17.968899,
+      "lat": 28.729395,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lomo de las Chozas",
+      "lon": -17.868401,
+      "lat": 28.705465,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo de las Goteras",
+      "lon": -17.850642,
+      "lat": 28.726208,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo de las Nieves",
+      "lon": -17.795642,
+      "lat": 28.7047,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo de las Vacas",
+      "lon": -17.807079,
+      "lat": 28.72182,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo de Leusque",
+      "lon": -17.820931,
+      "lat": 28.821456,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo de los Barreros",
+      "lon": -17.965032,
+      "lat": 28.785346,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de los Barreros",
+      "lon": -17.936424,
+      "lat": 28.689276,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lomo de los Bejeques",
+      "lon": -17.83695,
+      "lat": 28.715215,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo de los Bueyes",
+      "lon": -17.87431,
+      "lat": 28.71657,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo de los Castros",
+      "lon": -17.84101,
+      "lat": 28.826384,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo de Los Gomeros",
+      "lon": -17.764506,
+      "lat": 28.716691,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo de los Hornos",
+      "lon": -17.929923,
+      "lat": 28.766065,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de los Juncos",
+      "lon": -17.854327,
+      "lat": 28.711904,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo de los Laderos",
+      "lon": -17.81804,
+      "lat": 28.833109,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo de los Mestres",
+      "lon": -17.816785,
+      "lat": 28.652389,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Lomo de los Pájaros",
+      "lon": -17.794071,
+      "lat": 28.69771,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo de los Poleos",
+      "lon": -17.853751,
+      "lat": 28.815667,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo de Pablo",
+      "lon": -17.832867,
+      "lat": 28.737949,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomo de Salvatierra",
+      "lon": -17.942005,
+      "lat": 28.835497,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo del aballito",
+      "lon": -17.815283,
+      "lat": 28.649494,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Lomo del Bailadero",
+      "lon": -17.852926,
+      "lat": 28.783443,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo del Caballo",
+      "lon": -17.839435,
+      "lat": 28.786311,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo del Caballo",
+      "lon": -17.843576,
+      "lat": 28.780529,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo del Castillo",
+      "lon": -17.792479,
+      "lat": 28.695401,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo del Centro",
+      "lon": -17.77179,
+      "lat": 28.696016,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo del Corchete",
+      "lon": -17.812388,
+      "lat": 28.687241,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo del Corcho",
+      "lon": -17.785977,
+      "lat": 28.735315,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomo del Cuchillo",
+      "lon": -17.773183,
+      "lat": 28.730037,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomo del Gomero",
+      "lon": -17.889144,
+      "lat": 28.701428,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo del Horno",
+      "lon": -17.92402,
+      "lat": 28.711593,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lomo del Lance",
+      "lon": -17.799191,
+      "lat": 28.689893,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo del Lance",
+      "lon": -17.982001,
+      "lat": 28.739353,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lomo del Madroñero",
+      "lon": -17.820855,
+      "lat": 28.752836,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomo del Monte Santo",
+      "lon": -17.8306,
+      "lat": 28.733536,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo del Pino-La Verada",
+      "lon": -17.751776,
+      "lat": 28.714928,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomo del Rosillo",
+      "lon": -17.876379,
+      "lat": 28.789643,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo el Barbo",
+      "lon": -17.945566,
+      "lat": 28.72336,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Lomo el Fayal",
+      "lon": -17.960163,
+      "lat": 28.774448,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo Espanta",
+      "lon": -17.772484,
+      "lat": 28.701645,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Lomo Estrello",
+      "lon": -17.763489,
+      "lat": 28.760964,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomo Gil",
+      "lon": -17.778111,
+      "lat": 28.80611,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomo Grande",
+      "lon": -17.802862,
+      "lat": 28.665466,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Lomo Guago",
+      "lon": -17.819015,
+      "lat": 28.637454,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Lomo Huevero",
+      "lon": -17.812464,
+      "lat": 28.838762,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo la Toleda",
+      "lon": -17.859972,
+      "lat": 28.804832,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo la Travesita",
+      "lon": -17.96363,
+      "lat": 28.76371,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Lomo las Vueltas",
+      "lon": -17.819142,
+      "lat": 28.66792,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Lomo López de Abajo",
+      "lon": -17.775879,
+      "lat": 28.810421,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomo los Caballos",
+      "lon": -17.917445,
+      "lat": 28.672362,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo los Corraletes",
+      "lon": -17.865963,
+      "lat": 28.772568,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo los Corraletes",
+      "lon": -17.863643,
+      "lat": 28.78133,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo los Machos",
+      "lon": -17.867981,
+      "lat": 28.828599,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo los Mosquitos",
+      "lon": -17.832994,
+      "lat": 28.795754,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo Machín",
+      "lon": -17.795346,
+      "lat": 28.826384,
+      "kind": "neighbourhood",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo Machín Alto",
+      "lon": -17.802231,
+      "lat": 28.823032,
+      "kind": "neighbourhood",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo Machín Bajo",
+      "lon": -17.780412,
+      "lat": 28.826296,
+      "kind": "neighbourhood",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo Marinero",
+      "lon": -17.781079,
+      "lat": 28.745766,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomo Melchora",
+      "lon": -17.800402,
+      "lat": 28.658989,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Lomo Morión",
+      "lon": -17.914805,
+      "lat": 28.834097,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo Morisco",
+      "lon": -17.831307,
+      "lat": 28.751417,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Lomo Muerto",
+      "lon": -17.916684,
+      "lat": 28.767814,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Lomo Oscuro",
+      "lon": -17.77212,
+      "lat": 28.587731,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Lomo Ovejas",
+      "lon": -17.819515,
+      "lat": 28.682623,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Lomo Pascual",
+      "lon": -17.901213,
+      "lat": 28.706051,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Lomo Piñero",
+      "lon": -17.777872,
+      "lat": 28.757743,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomo Piñero",
+      "lon": -17.763299,
+      "lat": 28.762609,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Lomo Quinto",
+      "lon": -17.786916,
+      "lat": 28.811389,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomo Rellanito",
+      "lon": -17.964032,
+      "lat": 28.76191,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Lomo Romero",
+      "lon": -17.793978,
+      "lat": 28.815852,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Lomos de las Hendiduras",
+      "lon": -17.823057,
+      "lat": 28.706871,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Loo Reventón",
+      "lon": -17.799175,
+      "lat": 28.747847,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Los Abres",
+      "lon": -17.917724,
+      "lat": 28.804733,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Los Álamos",
+      "lon": -17.767728,
+      "lat": 28.711447,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "los Andenes",
+      "lon": -17.888881,
+      "lat": 28.765787,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "los Auilares",
+      "lon": -17.795647,
+      "lat": 28.83701,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "los Barreros",
+      "lon": -17.967388,
+      "lat": 28.782109,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "los Barros",
+      "lon": -17.879504,
+      "lat": 28.661271,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Los Barros",
+      "lon": -17.915744,
+      "lat": 28.669048,
+      "kind": "neighbourhood",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Los Bujanos",
+      "lon": -17.899638,
+      "lat": 28.707916,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "los Cabaquitos",
+      "lon": -17.9329,
+      "lat": 28.815805,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "los Calabaceros",
+      "lon": -17.966321,
+      "lat": 28.705289,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "los Camachos",
+      "lon": -17.909421,
+      "lat": 28.692463,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "los Campanarios",
+      "lon": -17.866363,
+      "lat": 28.588685,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Los Campitos",
+      "lon": -17.8868,
+      "lat": 28.616179,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Los Canarios",
+      "lon": -17.844138,
+      "lat": 28.492479,
+      "kind": "hamlet",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Los Cancajos",
+      "lon": -17.75888,
+      "lat": 28.648872,
+      "kind": "hamlet",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "Los Castros",
+      "lon": -17.854385,
+      "lat": 28.827555,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "los Catalanes",
+      "lon": -17.815067,
+      "lat": 28.836038,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Los Cavaderos",
+      "lon": -17.79235,
+      "lat": 28.587522,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "los Cochinos",
+      "lon": -17.826786,
+      "lat": 28.677623,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "los Codesos",
+      "lon": -17.943173,
+      "lat": 28.784525,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "los Corderos",
+      "lon": -17.792492,
+      "lat": 28.597205,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Los Gomeros",
+      "lon": -17.951484,
+      "lat": 28.693578,
+      "kind": "hamlet",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Los Guacamayos",
+      "lon": -73.601125,
+      "lat": 9.606506,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "los Guanches",
+      "lon": -17.869518,
+      "lat": 28.573001,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Los Guirres",
+      "lon": -17.92278,
+      "lat": 28.607403,
+      "kind": "locality",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "los Hondos",
+      "lon": -17.95877,
+      "lat": 28.812986,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Los Lirios",
+      "lon": -17.748898,
+      "lat": 28.75278,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Los Llanos de Aridane",
+      "lon": -17.915194,
+      "lat": 28.659222,
+      "kind": "town",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "los Loros",
+      "lon": -17.830293,
+      "lat": 28.792915,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Los Machines",
+      "lon": -17.85933,
+      "lat": 28.827789,
+      "kind": "hamlet",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Los Marantes",
+      "lon": -17.790817,
+      "lat": 28.818386,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "los Minaderos",
+      "lon": -17.888089,
+      "lat": 28.781732,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Los Molinos",
+      "lon": -17.743629,
+      "lat": 28.734178,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Los Palomares",
+      "lon": -17.914457,
+      "lat": 28.645567,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "los Palomos",
+      "lon": -17.798597,
+      "lat": 28.680874,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Los Paseos",
+      "lon": -106.27887,
+      "lat": 31.770595,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Los Pedregales",
+      "lon": -17.902395,
+      "lat": 28.664097,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Los Pedregales",
+      "lon": -17.902976,
+      "lat": 28.666733,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "los Pelados",
+      "lon": -17.872153,
+      "lat": 28.606611,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Los Perdomos",
+      "lon": -17.74075,
+      "lat": 28.734084,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Los Quemados",
+      "lon": -17.856513,
+      "lat": 28.492279,
+      "kind": "neighbourhood",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "los Redondos",
+      "lon": -17.9404,
+      "lat": 28.744325,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Los Reventaderos",
+      "lon": -17.995778,
+      "lat": 28.792415,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "los Riberos",
+      "lon": -17.844074,
+      "lat": 28.498596,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "los Roques",
+      "lon": -17.825005,
+      "lat": 28.669093,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Los Salones",
+      "lon": -17.775316,
+      "lat": 28.801235,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Los Sauces",
+      "lon": -17.774071,
+      "lat": 28.803261,
+      "kind": "village",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Los Tilos",
+      "lon": -17.807979,
+      "lat": 28.790649,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "los Vendavales",
+      "lon": -17.978126,
+      "lat": 28.797672,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Machin",
+      "lon": -17.897039,
+      "lat": 28.793925,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Maldonado",
+      "lon": -17.760442,
+      "lat": 28.692103,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Malpaís",
+      "lon": -17.895269,
+      "lat": 28.65498,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Malpaís",
+      "lon": -17.825876,
+      "lat": 28.533647,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Malpaís de Triana",
+      "lon": -17.908098,
+      "lat": 28.647832,
+      "kind": "neighbourhood",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Malpaíses",
+      "lon": -17.852244,
+      "lat": 28.465469,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Malpaíses (Abajo)",
+      "lon": -17.778322,
+      "lat": 28.572781,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Malpaíses (Arriba)",
+      "lon": -17.787043,
+      "lat": 28.577338,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Manchas de Abajo",
+      "lon": -17.887131,
+      "lat": 28.590267,
+      "kind": "locality",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Manos de Oro",
+      "lon": -17.767164,
+      "lat": 28.808204,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Margaluviño",
+      "lon": -18.004516,
+      "lat": 28.755203,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Marina",
+      "lon": -17.928958,
+      "lat": 28.637434,
+      "kind": "neighbourhood",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Martin Luis",
+      "lon": -17.738904,
+      "lat": 28.719372,
+      "kind": "isolated_dwelling",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Marty Robbins North",
+      "lon": -106.289239,
+      "lat": 31.754661,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Marty Robbins South",
+      "lon": -106.29331,
+      "lat": 31.745112,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Mazo",
+      "lon": -17.779656,
+      "lat": 28.604955,
+      "kind": "village",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Mendo",
+      "lon": -17.865994,
+      "lat": 28.556589,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Miraflores",
+      "lon": -17.985323,
+      "lat": 28.768297,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Miranda",
+      "lon": -17.786384,
+      "lat": 28.648824,
+      "kind": "neighbourhood",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Miranda",
+      "lon": -17.76127,
+      "lat": 28.697371,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Mirca",
+      "lon": -17.764736,
+      "lat": 28.708452,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Mission Hills",
+      "lon": -106.496098,
+      "lat": 31.788997,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Montana East",
+      "lon": -106.276126,
+      "lat": 31.80202,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Montana West",
+      "lon": -106.289819,
+      "lat": 31.800757,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Montaña Alta",
+      "lon": -17.836422,
+      "lat": 28.781648,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Montaña de Fuego",
+      "lon": -17.840848,
+      "lat": 28.52094,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Montaña las Mosqueras",
+      "lon": -17.908794,
+      "lat": 28.737816,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Montaña Tenisca",
+      "lon": -17.918894,
+      "lat": 28.657251,
+      "kind": "suburb",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Montclair",
+      "lon": -106.358731,
+      "lat": 31.784774,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Monte",
+      "lon": -17.778298,
+      "lat": 28.619166,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Monte de Breña",
+      "lon": -17.771449,
+      "lat": 28.625326,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Monte de Pueblo",
+      "lon": -17.772748,
+      "lat": 28.611677,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Montes de Luna",
+      "lon": -17.816115,
+      "lat": 28.534494,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Montoya",
+      "lon": -106.580823,
+      "lat": 31.850661,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Montwood Heights",
+      "lon": -106.257594,
+      "lat": 31.758073,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Morro Colorado",
+      "lon": -17.882035,
+      "lat": 28.723117,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Morro de la Cebolla",
+      "lon": -17.856653,
+      "lat": 28.759115,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Morro de la Era",
+      "lon": -17.894293,
+      "lat": 28.698364,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Morro Negro",
+      "lon": -17.86831,
+      "lat": 28.729487,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Mountain View",
+      "lon": -106.414986,
+      "lat": 31.866495,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Mundy's Gap",
+      "lon": -106.497248,
+      "lat": 31.916203,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Newman",
+      "lon": -106.327762,
+      "lat": 31.997881,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "No Te Pases",
+      "lon": -73.681425,
+      "lat": 9.681058,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Normandy Park",
+      "lon": -106.404514,
+      "lat": 31.786737,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Nueva Parada",
+      "lon": -73.68795,
+      "lat": 9.700353,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "O'Shea Keleher",
+      "lon": -106.293046,
+      "lat": 31.763225,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Oropesa",
+      "lon": -17.775589,
+      "lat": 28.818731,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Orotava",
+      "lon": -17.7767,
+      "lat": 28.791618,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Pajares",
+      "lon": -17.78031,
+      "lat": 28.802107,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Pared de Roberto",
+      "lon": -17.876587,
+      "lat": 28.758102,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Paso de la Hiedra",
+      "lon": -17.86619,
+      "lat": 28.788077,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Pebble Brook",
+      "lon": -106.326991,
+      "lat": 31.794707,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Pebble Hills North",
+      "lon": -106.319185,
+      "lat": 31.796407,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Pebble Hills Park",
+      "lon": -106.328748,
+      "lat": 31.787622,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Pebble Hills South",
+      "lon": -106.318546,
+      "lat": 31.787559,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Perezquillo",
+      "lon": -17.796512,
+      "lat": 28.612668,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Pico Norte",
+      "lon": -106.331625,
+      "lat": 31.779739,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Picos del Risco de las Cuevas",
+      "lon": -17.873186,
+      "lat": 28.690788,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Piedra de la Burra",
+      "lon": -17.847969,
+      "lat": 28.785185,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Pino de la Virgen",
+      "lon": -17.829476,
+      "lat": 28.51339,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Pintado",
+      "lon": -17.965585,
+      "lat": 28.695859,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Pinto",
+      "lon": -17.986777,
+      "lat": 28.777808,
+      "kind": "hamlet",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Planeport",
+      "lon": -106.432547,
+      "lat": 31.827845,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Playa de la Viña",
+      "lon": -17.933436,
+      "lat": 28.627368,
+      "kind": "locality",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Playa del Perdido",
+      "lon": -17.925263,
+      "lat": 28.614064,
+      "kind": "locality",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Playon Estancia Vieja",
+      "lon": -73.674599,
+      "lat": 9.727325,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Plaza Principal",
+      "lon": -73.750818,
+      "lat": 9.65938,
+      "kind": "square",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Poleal",
+      "lon": -17.781404,
+      "lat": 28.613386,
+      "kind": "hamlet",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Poleal",
+      "lon": -17.782272,
+      "lat": 28.610984,
+      "kind": "locality",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Potrerillo",
+      "lon": -73.664661,
+      "lat": 9.535285,
+      "kind": "village",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Primavera",
+      "lon": -73.758241,
+      "lat": 9.532129,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Pueblo Regado",
+      "lon": -73.616259,
+      "lat": 9.612078,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Puente Canoas",
+      "lon": -73.658432,
+      "lat": 9.649879,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Puerto de Tazacorte",
+      "lon": -17.945968,
+      "lat": 28.65165,
+      "kind": "village",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Puerto Espíndola",
+      "lon": -17.763317,
+      "lat": 28.809633,
+      "kind": "village",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Puerto Lopez",
+      "lon": -73.629479,
+      "lat": 9.795629,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Puerto Naos",
+      "lon": -17.910201,
+      "lat": 28.585895,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Punta de Juan Graje",
+      "lon": -17.949908,
+      "lat": 28.652578,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Punta del Perdido",
+      "lon": -17.932109,
+      "lat": 28.624506,
+      "kind": "locality",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Punta Gaviota",
+      "lon": -17.808041,
+      "lat": 28.845089,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Puntagorda",
+      "lon": -17.832424,
+      "lat": 28.513123,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Puntagorda",
+      "lon": -17.97986,
+      "lat": 28.770893,
+      "kind": "village",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Puntallana",
+      "lon": -17.746558,
+      "lat": 28.737967,
+      "kind": "village",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Quinta Zoca",
+      "lon": -17.765704,
+      "lat": 28.807665,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Ramírez",
+      "lon": -17.773152,
+      "lat": 28.81243,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Retamar",
+      "lon": -17.903456,
+      "lat": 28.659173,
+      "kind": "suburb",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Río Muerto",
+      "lon": -17.803564,
+      "lat": 28.51901,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Risco de los Camacho",
+      "lon": -17.915586,
+      "lat": 28.700081,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Risco Liso",
+      "lon": -17.892648,
+      "lat": 28.73287,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Risco Malo",
+      "lon": -17.881613,
+      "lat": 28.703224,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Roque Corande",
+      "lon": -17.854358,
+      "lat": 28.683384,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Roque de Abajo",
+      "lon": -17.770705,
+      "lat": 28.689301,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Roque de Arriba",
+      "lon": -17.774791,
+      "lat": 28.692231,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Roque de las Hermanas",
+      "lon": -17.923705,
+      "lat": 28.610429,
+      "kind": "locality",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Roque de los Árboles",
+      "lon": -17.848768,
+      "lat": 28.795937,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Roque del Faro",
+      "lon": -17.87892,
+      "lat": 28.803301,
+      "kind": "neighbourhood",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Roque Relvitas",
+      "lon": -17.889165,
+      "lat": 28.708573,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Roques de la Perra",
+      "lon": -17.8418,
+      "lat": 28.689184,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Sabana La Victoria",
+      "lon": -73.471705,
+      "lat": 9.59083,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Sabanas De Baltista",
+      "lon": -73.572211,
+      "lat": 9.603023,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Sabanas El Paso",
+      "lon": -73.723055,
+      "lat": 9.674265,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Saltadero Guindaresa",
+      "lon": -17.943552,
+      "lat": 28.801822,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Salto de la Mazmorra",
+      "lon": -17.821462,
+      "lat": 28.716497,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Salto de Quintero",
+      "lon": -17.805534,
+      "lat": 28.696851,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "San Andrés",
+      "lon": -17.760874,
+      "lat": 28.799587,
+      "kind": "neighbourhood",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "San Antonio",
+      "lon": -17.767538,
+      "lat": 28.647676,
+      "kind": "village",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "San Bartolomé",
+      "lon": -17.761011,
+      "lat": 28.769033,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "San Borondón",
+      "lon": -17.931832,
+      "lat": 28.636041,
+      "kind": "neighbourhood",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "San Carlos",
+      "lon": -17.770995,
+      "lat": 28.661,
+      "kind": "locality",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "San Francisco",
+      "lon": -17.762712,
+      "lat": 28.687912,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "San Isidro",
+      "lon": -17.795208,
+      "lat": 28.644999,
+      "kind": "hamlet",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "San Isidro",
+      "lon": -17.932731,
+      "lat": 28.630402,
+      "kind": "locality",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "San Jose",
+      "lon": -106.363039,
+      "lat": 31.721221,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "San José",
+      "lon": -17.775311,
+      "lat": 28.645012,
+      "kind": "village",
+      "municipality": "Breña Baja"
+    },
+    {
+      "name": "San Juan",
+      "lon": -17.764269,
+      "lat": 28.785671,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "San Juan De Dios",
+      "lon": -73.742216,
+      "lat": 9.578114,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "San Martin",
+      "lon": -73.729674,
+      "lat": 9.584559,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "San Miguel",
+      "lon": -17.784383,
+      "lat": 28.657242,
+      "kind": "hamlet",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "San Nicolás",
+      "lon": -17.880877,
+      "lat": 28.602362,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "San Pedro",
+      "lon": -17.777077,
+      "lat": 28.78916,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "San Pedro de Breña Alta",
+      "lon": -17.786759,
+      "lat": 28.663781,
+      "kind": "village",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "San Sebastián",
+      "lon": -17.76635,
+      "lat": 28.683618,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "San Simón",
+      "lon": -17.770274,
+      "lat": 28.593463,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "San Telmo",
+      "lon": -17.768917,
+      "lat": 28.680945,
+      "kind": "suburb",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Sandy Creek",
+      "lon": -106.297929,
+      "lat": 31.775659,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Santa Cruz de La Palma",
+      "lon": -17.766335,
+      "lat": 28.68189,
+      "kind": "town",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Santa Lucía",
+      "lon": -17.747023,
+      "lat": 28.729508,
+      "kind": "neighbourhood",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Santo Domingo",
+      "lon": -17.944666,
+      "lat": 28.830177,
+      "kind": "village",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Santo Domingo",
+      "lon": -73.740125,
+      "lat": 9.583688,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Scotsdale",
+      "lon": -106.340694,
+      "lat": 31.792804,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Siete Fuentes",
+      "lon": -17.879364,
+      "lat": 28.768276,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Smuggler's Pass",
+      "lon": -106.497322,
+      "lat": 31.879442,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Stanton Heights",
+      "lon": -106.28974,
+      "lat": 31.788028,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Stone Ridge",
+      "lon": -106.298486,
+      "lat": 31.738508,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Stonehaven",
+      "lon": -106.361196,
+      "lat": 31.769274,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Sun Ridge North",
+      "lon": -106.262971,
+      "lat": 31.773787,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Sun Ridge South",
+      "lon": -106.258667,
+      "lat": 31.766776,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Sunrise Acres",
+      "lon": -106.445265,
+      "lat": 31.860661,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tabladitos",
+      "lon": -17.855906,
+      "lat": 28.769911,
+      "kind": "locality",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Tacande",
+      "lon": -17.87567,
+      "lat": 28.638178,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tacande",
+      "lon": -17.768599,
+      "lat": 28.738612,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Tacande de Abajo",
+      "lon": -17.87858,
+      "lat": 28.638284,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tacande de Abajo",
+      "lon": -17.880228,
+      "lat": 28.641224,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tacande de Arriba",
+      "lon": -17.874628,
+      "lat": 28.630841,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tajuya",
+      "lon": -17.888779,
+      "lat": 28.632223,
+      "kind": "neighbourhood",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Tajuya",
+      "lon": -17.887931,
+      "lat": 28.634275,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tamascoral",
+      "lon": -17.856176,
+      "lat": 28.520939,
+      "kind": "locality",
+      "municipality": "Fuencaliente de La Palma"
+    },
+    {
+      "name": "Tarajal",
+      "lon": -17.943501,
+      "lat": 28.646724,
+      "kind": "hamlet",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Tazacorte",
+      "lon": -17.932603,
+      "lat": 28.642858,
+      "kind": "village",
+      "municipality": "Tazacorte"
+    },
+    {
+      "name": "Tenagua",
+      "lon": -17.749432,
+      "lat": 28.715273,
+      "kind": "neighbourhood",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Tendiña",
+      "lon": -17.896636,
+      "lat": 28.639395,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Tendiña",
+      "lon": -17.895176,
+      "lat": 28.639615,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tenerra",
+      "lon": -17.876865,
+      "lat": 28.654582,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tierra Humeda",
+      "lon": -106.264256,
+      "lat": 31.7856,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tierras de Breñosa",
+      "lon": -17.996928,
+      "lat": 28.753414,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Tigalate",
+      "lon": -17.801305,
+      "lat": 28.553194,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Tigua",
+      "lon": -106.364151,
+      "lat": 31.741777,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Tiguerote",
+      "lon": -17.793148,
+      "lat": 28.557983,
+      "kind": "neighbourhood",
+      "municipality": "Villa de Mazo"
+    },
+    {
+      "name": "Tijarafe",
+      "lon": -17.95526,
+      "lat": 28.711103,
+      "kind": "village",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Timibúcar",
+      "lon": -17.769021,
+      "lat": 28.682013,
+      "kind": "neighbourhood",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Tinizara",
+      "lon": -17.968744,
+      "lat": 28.744028,
+      "kind": "neighbourhood",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Todoque",
+      "lon": -17.90475,
+      "lat": 28.619121,
+      "kind": "locality",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Topaciegas",
+      "lon": -17.823933,
+      "lat": 28.829837,
+      "kind": "hamlet",
+      "municipality": "Barlovento"
+    },
+    {
+      "name": "Topo Cancela",
+      "lon": -17.782685,
+      "lat": 28.753405,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Topo Catalino",
+      "lon": -17.813907,
+      "lat": 28.697092,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Topo Catalino",
+      "lon": -17.92257,
+      "lat": 28.730767,
+      "kind": "locality",
+      "municipality": "Tijarafe"
+    },
+    {
+      "name": "Topo de la Botija",
+      "lon": -17.914094,
+      "lat": 28.783906,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Topo de la Burra",
+      "lon": -17.801799,
+      "lat": 28.740874,
+      "kind": "locality",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Topo de la Jara",
+      "lon": -17.76882,
+      "lat": 28.719851,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Topo de la Piedra",
+      "lon": -17.829411,
+      "lat": 28.760733,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Topo de las Matas",
+      "lon": -17.980388,
+      "lat": 28.753977,
+      "kind": "locality",
+      "municipality": "Puntagorda"
+    },
+    {
+      "name": "Topo del Cuarto",
+      "lon": -17.788057,
+      "lat": 28.76025,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Topo del Mogo",
+      "lon": -17.946122,
+      "lat": 28.77026,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Travis White",
+      "lon": -106.346963,
+      "lat": 31.764511,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Triana",
+      "lon": -17.909484,
+      "lat": 28.649787,
+      "kind": "suburb",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Upper Vista Real",
+      "lon": -106.276538,
+      "lat": 31.794004,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Urbanización Bungalows Tajuya",
+      "lon": -17.898185,
+      "lat": 28.637895,
+      "kind": "hamlet",
+      "municipality": "Los Llanos de Aridane"
+    },
+    {
+      "name": "Urbanización Palmasol",
+      "lon": -17.779152,
+      "lat": 28.656581,
+      "kind": "hamlet",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Urbanización Palmasol II",
+      "lon": -17.778613,
+      "lat": 28.65428,
+      "kind": "hamlet",
+      "municipality": "Breña Alta"
+    },
+    {
+      "name": "Valle de las Cruces",
+      "lon": -17.899561,
+      "lat": 28.798023,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Vaqueros",
+      "lon": -17.914931,
+      "lat": 28.799141,
+      "kind": "locality",
+      "municipality": "Garafía"
+    },
+    {
+      "name": "Velhoco",
+      "lon": -17.784018,
+      "lat": 28.690196,
+      "kind": "hamlet",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Velhoco",
+      "lon": -17.789116,
+      "lat": 28.68343,
+      "kind": "locality",
+      "municipality": "Santa Cruz de La Palma"
+    },
+    {
+      "name": "Vera de la Fajana",
+      "lon": -17.793274,
+      "lat": 28.79889,
+      "kind": "locality",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Verada Bajamar",
+      "lon": -17.773624,
+      "lat": 28.814635,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Verada de Las Lomadas",
+      "lon": -17.773277,
+      "lat": 28.796222,
+      "kind": "hamlet",
+      "municipality": "San Andrés y Sauces"
+    },
+    {
+      "name": "Vereda El Carmen",
+      "lon": -73.690598,
+      "lat": 9.671658,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vereda Repelón",
+      "lon": -73.707468,
+      "lat": 9.644568,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vetas del Valle",
+      "lon": -17.895067,
+      "lat": 28.682813,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vinagreras",
+      "lon": -17.873333,
+      "lat": 28.703361,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Viña Grande",
+      "lon": -17.75535,
+      "lat": 28.760374,
+      "kind": "hamlet",
+      "municipality": "Puntallana"
+    },
+    {
+      "name": "Vista de Oro",
+      "lon": -106.334565,
+      "lat": 31.760077,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vista de Sol West",
+      "lon": -106.330487,
+      "lat": 31.768428,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vista del Sol East",
+      "lon": -106.310717,
+      "lat": 31.766778,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vista Hills",
+      "lon": -106.310541,
+      "lat": 31.75896,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vista Hills East",
+      "lon": -106.28919,
+      "lat": 31.77583,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vista Hills Park",
+      "lon": -106.324996,
+      "lat": 31.760222,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vista Real East",
+      "lon": -106.270948,
+      "lat": 31.786726,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vista Real West",
+      "lon": -106.28124,
+      "lat": 31.786797,
+      "kind": "neighbourhood",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Vuelta de los Hermanos",
+      "lon": -17.83486,
+      "lat": 28.682604,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "West Cottonwood Springs",
+      "lon": -106.498078,
+      "lat": 31.913111,
+      "kind": "locality",
+      "municipality": "El Paso"
+    },
+    {
+      "name": "Ysleta",
+      "lon": -106.324982,
+      "lat": 31.698445,
+      "kind": "hamlet",
+      "municipality": "El Paso"
+    }
+  ]
+}

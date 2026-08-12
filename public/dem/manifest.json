@@ -1,0 +1,13 @@
+{
+  "zoom": 12,
+  "minZoom": 9,
+  "tileSize": 256,
+  "x0": 1841,
+  "y0": 1703,
+  "cols": 7,
+  "rows": 9,
+  "metersPerPixel": 33.54,
+  "encoding": "terrarium",
+  "attribution": "Modelo de elevación: Mapzen Terrain Tiles (terrarium) vía AWS Open Data. Fuentes: NASA SRTM, NASADEM, USGS 3DEP, ArcticDEM, EU-DEM y otros. Dominio público / CC-BY.",
+  "generated": "2026-08-12T09:23:45.605Z"
+}

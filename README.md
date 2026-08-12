@@ -1,0 +1,272 @@
+# Tiempo Palmero
+
+**Meteorología interpolada a alta resolución para la isla de La Palma, a partir
+exclusivamente de los datos abiertos del Cabildo Insular.**
+
+Tocas cualquier punto del mapa y obtienes una estimación del tiempo **en ese
+punto**, no la lectura de la estación más cercana. Es una distinción que en La
+Palma no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa escala la
+altitud manda sobre la distancia en cualquier variable atmosférica.
+
+---
+
+## Por qué existe
+
+La red del Cabildo tiene 52 estaciones meteorológicas registradas. La respuesta
+ingenua a «¿qué tiempo hace en El Pinar de Tijarafe?» es buscar la estación más
+próxima y enseñar su número. En esta isla eso se equivoca por unos 2,5 °C, y
+puede equivocarse mucho más: la estación más cercana a El Pinar está 321 m más
+abajo, y una estación 321 m más abajo lee unos 2 °C de más.
+
+La respuesta correcta es separar lo que explica la altitud de lo que es
+variación local, interpolar solo la segunda parte y devolver la primera a la
+altitud real del punto de destino. Bien hecho, el error baja a ~1,2 °C.
+
+Y hay un detalle que resulta pesar más que todo el resto junto: **un solo sensor
+descalibrado envenena el mapa entero.** Hay uno a 1561 m que en agosto marcaba
+9,7 °C. Pasa el filtro de plausibilidad —a esa altitud no es un valor absurdo—
+pero arrastra la pendiente del ajuste y con ella la estimación de toda la isla.
+Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
+
+---
+
+## Qué hace
+
+- **Malla interpolada** de temperatura, humedad relativa y punto de rocío,
+  recalculada sobre el retículo del modelo de elevación con celda de ~200 m.
+- **Consulta punto a punto**: altitud del DEM, municipio calculado
+  geométricamente, valor estimado **con su margen**, y las tres estaciones que
+  más han contribuido, con su distancia y su desnivel.
+- **Estaciones meteorológicas** con color por frescura del dato y todos sus
+  valores en crudo.
+- **Sensores de CO₂** de Puerto Naos y La Bombilla, con reglas de seguridad
+  estrictas (ver abajo).
+- Calidad del aire, calidad del cielo, cámaras de incendios, senderos y sus
+  1190 puntos de interés.
+- **Relieve sombreado** generado del mismo modelo de elevación que alimenta el
+  cálculo. La isla es un volcán: la sombra es lo que la hace legible.
+
+Todo en castellano. La estructura de i18n está lista para más idiomas.
+
+---
+
+## Honestidad de los datos
+
+Las reglas que la aplicación no se salta:
+
+- **El denominador es el real.** Se lee «36 de 52 estaciones activas», nunca
+  «52 estaciones». La diferencia son estaciones muertas, rotas o con las
+  coordenadas en mitad del Atlántico.
+- **Un valor interpolado no es una medida** y la interfaz lo dice, con su
+  margen al lado.
+- **El viento y la precipitación no se interpolan.** Los barrancos encauzan el
+  viento y la vertiente noreste recibe múltiplos de la suroeste a igual
+  altitud. Se muestra la estación más cercana, declarada como tal, con su
+  distancia y su desnivel.
+- **La calidad del aire y el CO₂ no se interpolan nunca.** Son medidas
+  puntuales; dibujar una superficie entre ellas sería inventar lecturas donde
+  no hay sensor.
+- **Los valores implausibles se descartan, no se recortan.** Recortar un sensor
+  que marca 70 °C a un máximo de 45 lo convertiría en un dato creíble.
+
+### La capa de CO₂
+
+Los sensores de la red DEMASE miden hasta **69.301 ppm** — 6,9 %, letal en
+minutos. Son el motivo por el que Puerto Naos fue evacuada. Esta pantalla está
+escrita para fallar en cerrado:
+
+- Solo se muestran valores medidos, con su hora explícita.
+- **Si el dato tiene más de 15 minutos, se lee «sin datos».** Nunca un verde
+  rancio, nunca la última lectura buena heredada.
+- Si la red no responde, tampoco. No hay caché de respaldo en esta capa.
+- No se interpola ni se colorea el área entre sensores.
+- **No aparece la palabra «seguro»** en ningún sitio. Se da el valor y la hora;
+  quien declara un lugar seguro es el Cabildo.
+- No lleva publicidad ni muro de pago, y no los llevará.
+
+---
+
+## El motor de interpolación
+
+`src/lib/interpolate.ts`. Seis pasos, en este orden:
+
+| # | Paso | Qué hace |
+|---|------|----------|
+| 1 | **Filtro** | Descarta lecturas de más de 2 h, nulas, implausibles o con coordenadas fuera de la isla. Deduplica por `entityid`, nunca por nombre. |
+| 2 | **Ajuste** | Regresión OLS de la variable sobre la altitud. El gradiente se **mide**, no se asume: el 12 ago 2026 salió 4,6 °C/km, no los 6,5 del manual. |
+| 3 | **Rechazo** | Descarta residuos por encima de 2,5 escalas robustas y reajusta, hasta estabilizar. |
+| 4 | **Detendencia** | `residuo = valor − b · altitud` en cada estación. |
+| 5 | **IDW** | Interpola los residuos con peso 1/d², distancia haversine, corte a 15 km. |
+| 6 | **Retendencia** | `valor = residuo interpolado + b · altitud_destino`, con la altitud del DEM por muestreo bilineal. |
+
+Dos decisiones que merecen explicación, porque son las que hacen que esto
+funcione:
+
+**La escala del rechazo es robusta (MAD), no la desviación típica.** Con siete
+sensores anómalos entre treinta y seis, la σ muestral se infla *por culpa de los
+propios outliers* y acaba tapándolos: cazaba 2 de 7. La MAD no se deja arrastrar
+y caza las cuatro grandes en una sola pasada. Es el efecto de enmascaramiento de
+manual, y aquí es exactamente la diferencia entre cumplir los criterios y no
+cumplirlos.
+
+**La distancia del IDW cuenta el desnivel.** Después de quitar la tendencia
+altitudinal los residuos no son ruido: conservan la estructura de la capa de
+inversión (~800–1500 m), que separa el mar de nubes de la cumbre despejada. Dos
+estaciones a la misma cota se parecen más entre sí que dos vecinas separadas por
+la inversión. La distancia efectiva es `hypot(d, Δaltitud / 100)`, con 100 m de
+desnivel pesando como 1 km horizontal — el valor que documenta el propio portal.
+Bajar esa constante mejora las métricas de este conjunto de datos hasta α≈30, y
+eso es precisamente la señal de que ahí ya se estaría ajustando al conjunto de
+validación en vez de al problema.
+
+### Validación
+
+`npm test` corre leave-one-out sobre una lectura real congelada de la red.
+
+| Criterio | Umbral | Medido |
+|---|---|---|
+| MAE | < 1,3 °C | **1,202 °C** |
+| RMSE | < 1,8 °C | **1,578 °C** |
+| Mejora del RMSE por el rechazo de outliers | ≥ 30 % | **43,7 %** |
+
+En cada vuelta se reconstruye el modelo **entero** con las demás estaciones,
+ajuste y rechazo incluidos: reutilizar el ajuste hecho con todas dejaría que la
+estación excluida siguiera influyendo en el gradiente, y el error saldría
+optimista.
+
+Se puntúa contra el conjunto que el pipeline **conserva**, y las descartadas se
+cuentan aparte. Pedirle al interpolador que acierte los 25,9 °C que un sensor
+marca a 1194 m mide lo roto que está el sensor, no lo bueno que es el
+interpolador — y el pipeline que rechaza outliers tampoco afirma poder
+predecirlos: los marca como no fiables, que es su trabajo. La comparación con
+`rejectOutliers: false` enfrenta dos pipelines completos, cada uno respondiendo
+por lo que dice cubrir.
+
+---
+
+## Licencias en tiempo de ejecución
+
+La aplicación es comercial, así que la procedencia de cada byte importa.
+
+**En tiempo de ejecución, la única fuente de datos es la API del Cabildo.**
+
+Lo que viene de terceros está **precalculado en tiempo de compilación** y
+servido como fichero estático:
+
+- **Open-Meteo no se llama nunca.** Su API gratuita es explícitamente solo para
+  uso no comercial. Las altitudes salen del DEM propio.
+- **Nominatim y Overpass tampoco.** Su política de uso prohíbe el uso
+  sistemático desde una aplicación. Los topónimos se extraen una sola vez con
+  `scripts/prepare-data.ts` y se congelan en `public/gazetteer.json`, con su
+  atribución ODbL.
+- **Sin claves de API en el cliente.** El mapa base no usa Mapbox, Google ni
+  ningún proveedor de teselas: se dibuja con el relieve sombreado del DEM local
+  y los contornos que publica el propio Cabildo.
+
+---
+
+## Arquitectura
+
+```
+scripts/prepare-data.ts   Compilación. Se ejecuta una vez.
+  ├── public/dem/         118 teselas terrarium, z9–z12 (~34 m/px a z12)
+  ├── public/layers/      GeoJSON del Cabildo; municipios reproyectado a WGS84
+  └── public/gazetteer.json  789 topónimos extraídos de OSM
+
+api/                      Funciones edge de Vercel
+  ├── cda.ts              Proxy de la API del Cabildo, con caché y reintentos
+  └── co2.ts              Proxy de la red DEMASE, sin caché de respaldo
+
+src/lib/
+  ├── interpolate.ts      El motor. Y `interpolate.test.ts`, su validación.
+  ├── quality.ts          Filtro de calidad, censo de descartes
+  ├── geo.ts              Haversine, UTM 28N → WGS84, point-in-polygon
+  ├── dem.ts              Lectura del DEM y muestreo bilineal
+  ├── grid.ts             Malla raster de ~200 m
+  └── cabildo.ts          Cliente de la API, decodificación posicional
+```
+
+### Por qué hay un proxy
+
+Los servidores del Cabildo **no envían cabeceras CORS** (comprobado el 12 de
+agosto de 2026 con un `Origin` explícito), así que desde el navegador la llamada
+directa es imposible. No es una preferencia de arquitectura.
+
+De paso, el proxy concentra el tráfico en una petición cacheada por despliegue
+en vez de una por visitante. La API del Cabildo es un servicio público pequeño
+que ya se cae solo a ratos; no se le manda una estampida.
+
+### El DEM tiene dos usos, y son las mismas teselas
+
+Las teselas terrarium de `public/dem/` alimentan a la vez el lookup de altitud
+del motor y la fuente `raster-dem` del sombreado de MapLibre. Descargar dos
+modelos de elevación distintos para la misma isla sería tirar ancho de banda y
+arriesgarse a que el relieve que se ve y el que se calcula no coincidan.
+
+---
+
+## Trampas de esta API que ya están resueltas en el código
+
+Documentadas aquí porque cuestan un día entero de depuración cada una:
+
+- **`timeinstant` está en UTC**, sin sufijo de zona. Leerlo como hora canaria
+  envejece toda la red una hora de golpe, y en el corte de 15 minutos del CO₂
+  la vacía entera.
+- **`paramstart` sin `paramfinish`** devuelve 0 filas con esquema válido en los
+  endpoints históricos. Es indistinguible de un archivo vacío, y no lo es.
+- **`municipality` es la cadena `"NA"`** en todas las estaciones. El municipio
+  se calcula por point-in-polygon.
+- **`weatherobserved` repite `precipitationintensity`** en los índices 17 y 31;
+  el 31 es en realidad la precipitación diaria. Se decodifica por índice, nunca
+  con `Object.fromEntries`, que descarta la segunda en silencio.
+- **`hasfirealert` es la cadena `"True"`**, no un booleano. `if (r.hasfirealert)`
+  deja la aplicación en alerta de incendio permanente.
+- **`la_palma_municipios_240701` es el único GeoJSON en EPSG:32628.** Se
+  reproyecta en compilación, sin `proj4`, con una transformación inversa exacta
+  a 4 mm contra el KML del propio portal.
+- **Dos estaciones tienen las coordenadas en el Atlántico** y una lectura
+  congelada. Se validan las coordenadas contra la isla.
+- **Hay dos estaciones distintas llamadas `CABLPA-ELCHARCO`**, a 2,4 km y 142 m
+  la una de la otra. Se deduplica por `entityid`, nunca por nombre.
+
+---
+
+## Puesta en marcha
+
+```bash
+npm install
+npm run prepare-data     # descarga DEM, capas y topónimos (una vez, ~2 min)
+npm run dev
+```
+
+```bash
+npm test                 # validación leave-one-out del motor
+npm run build
+```
+
+Para refrescar solo una parte:
+
+```bash
+npm run prepare-data -- --only=dem        # dem | layers | gazetteer | snapshot
+npm run prepare-data:snapshot             # nueva lectura congelada para los tests
+```
+
+El despliegue es un proyecto de Vercel sin variables de entorno: no hay ninguna
+clave que configurar.
+
+---
+
+## Fuentes y licencias
+
+- **Datos meteorológicos, aire, cielo, incendios y sensores** — Cabildo Insular
+  de La Palma, Servicio de Transformación Digital (La Palma Smart Island).
+  CC-BY 4.0. <https://www.opendatalapalma.es>
+- **Límites municipales e insular** — Cabildo Insular de La Palma. ODC-BY.
+- **Red de sensores de CO₂** — DEMASE, publicada a través del portal del
+  Cabildo.
+- **Topónimos** — © colaboradores de OpenStreetMap, ODbL 1.0.
+- **Modelo de elevación y relieve** — Mapzen Terrain Tiles vía AWS Open Data,
+  derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM.
+
+El **código** es MIT. Los **datos** conservan las licencias de arriba: quien
+reutilice este repositorio mantiene las atribuciones. Ver [LICENSE](LICENSE).
