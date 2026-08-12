@@ -213,22 +213,19 @@ export function MapView(props: Props) {
 
     const grid = renderGrid(dem, model, stops)
     const [[w, s], [e, nth]] = grid.bounds
-    try {
-      src.updateImage({
-        url: grid.canvas.toDataURL(),
-        coordinates: [
-          [w, nth],
-          [e, nth],
-          [e, s],
-          [w, s],
-        ],
-      })
-    } catch (err) {
-      // `updateImage` aborta la carga anterior si aún estaba en vuelo. Es el
-      // comportamiento correcto —gana la malla más reciente— pero lo señala
-      // lanzando un AbortError que aquí no significa nada.
-      if (!(err instanceof DOMException && err.name === 'AbortError')) throw err
-    }
+    // Si al llegar aquí seguía cargando la malla anterior, MapLibre aborta esa
+    // carga y deja un `AbortError` en la consola. Es lo que queremos —gana la
+    // más reciente— y no hay nada que capturar: el aborto lo emite el cargador
+    // interno de forma asíncrona, no esta llamada.
+    src.updateImage({
+      url: grid.canvas.toDataURL(),
+      coordinates: [
+        [w, nth],
+        [e, nth],
+        [e, s],
+        [w, s],
+      ],
+    })
   }, [ready, dem, model, stops, visible.grid])
 
   // --- capas GeoJSON estáticas --------------------------------------------
