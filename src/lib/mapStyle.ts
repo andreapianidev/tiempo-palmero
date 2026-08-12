@@ -23,6 +23,10 @@ export const COLORS = {
   outline: '#4a443d',
   boundary: 'rgba(255,255,255,0.11)',
   trail: 'rgba(226,197,106,0.5)',
+  // Frío, para que la red de guaguas no se confunda con el ámbar de los
+  // senderos: en esta isla las dos redes se cruzan constantemente.
+  guagua: 'rgba(127,178,217,0.45)',
+  guaguaBright: '#a8d2ef',
 } as const
 
 export function buildStyle(dem: DemManifest): StyleSpecification {

@@ -17,6 +17,7 @@ const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
   { id: 'co2', label: t.layers.co2 },
   { id: 'sky', label: t.layers.sky },
   { id: 'trails', label: t.layers.trails },
+  { id: 'guagua', label: t.layers.guagua },
   { id: 'fire', label: t.layers.fire },
 ]
 

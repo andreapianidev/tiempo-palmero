@@ -46,6 +46,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'open-meteo.com',
   },
   {
+    title: t.sources.guaguaTitle,
+    body: t.sources.guaguaBody,
+    license: t.sources.guaguaLicense,
+    href: 'https://www.tilp.es/',
+    hrefLabel: 'tilp.es',
+  },
+  {
     title: t.sources.toponymsTitle,
     body: t.sources.toponymsBody,
     license: t.sources.toponymsLicense,

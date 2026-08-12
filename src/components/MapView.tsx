@@ -11,6 +11,14 @@ import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette
 import { freshness, stationReading, type Station } from '../lib/quality'
 import { addPoiIcons, decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
 import { WindLayer } from './wind/WindLayer'
+import {
+  addGuaguaLayers,
+  setGuaguaData,
+  setGuaguaRoute,
+  setGuaguaVisible,
+  GUAGUA_CLICK_LAYERS,
+} from './guagua/GuaguaLayer'
+import { readStop, type GuaguaStopPoint } from '../lib/guagua/network'
 import type { WindField } from '../lib/wind/field'
 import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
@@ -27,6 +35,7 @@ export interface LayerVisibility {
   co2: boolean
   sky: boolean
   trails: boolean
+  guagua: boolean
   fire: boolean
   wind: boolean
 }
@@ -44,6 +53,11 @@ interface Props {
   gazetteer: GazetteerEntry[]
   trails: unknown | null
   trailPois: unknown | null
+  /** Trazados y paradas de guagua; llegan solo si se enciende la capa. */
+  guaguaLines: GeoJSON.FeatureCollection | null
+  guaguaStops: GeoJSON.FeatureCollection | null
+  /** Línea resaltada mientras su ficha está abierta. */
+  guaguaRoute: string | null
   wind: WindField | null
   visible: LayerVisibility
   probe: { lon: number; lat: number } | null
@@ -54,6 +68,8 @@ interface Props {
   onFire: (camera: FireCamera) => void
   onSky: (station: SkyStation) => void
   onPoi: (poi: PoiRecord) => void
+  onBusStop: (stop: GuaguaStopPoint) => void
+  onBusRoute: (routeId: string) => void
 }
 
 /** Qué topónimos merecen etiqueta a cada zoom. Sin esto la isla es ilegible. */
@@ -165,6 +181,14 @@ export function MapView(props: Props) {
         },
       })
 
+      // La red de guaguas va debajo de los puntos de interés: cuando un
+      // sendero y una línea se cruzan, lo que hay que poder pinchar encima es
+      // el punto, que es un sitio; el trazado se pincha en cualquier otro tramo.
+      addGuaguaLayers(map, {
+        onStop: (props, lon, lat) => handlers.current.onBusStop(readStop(props, lon, lat)),
+        onRoute: (routeId) => handlers.current.onBusRoute(routeId),
+      })
+
       map.addSource('trail-pois', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -211,7 +235,9 @@ export function MapView(props: Props) {
       map.on('click', (e) => {
         // Un clic sobre un pin ya lo gestiona el propio marcador; los puntos de
         // interés y sus grupos tienen su propio manejador, más abajo.
-        const layers = ['trail-pois-cluster', 'trail-pois-point'].filter((l) => map.getLayer(l))
+        const layers = ['trail-pois-cluster', 'trail-pois-point', ...GUAGUA_CLICK_LAYERS].filter(
+          (l) => map.getLayer(l),
+        )
         if (layers.length && map.queryRenderedFeatures(e.point, { layers }).length) return
         handlers.current.onPick(e.lngLat.lng, e.lngLat.lat)
       })
@@ -336,6 +362,25 @@ export function MapView(props: Props) {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis)
     }
   }, [ready, visible.trails])
+
+  // --- red de guaguas ------------------------------------------------------
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setGuaguaData(map, props.guaguaLines, props.guaguaStops)
+  }, [ready, props.guaguaLines, props.guaguaStops])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setGuaguaVisible(map, visible.guagua)
+  }, [ready, visible.guagua])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setGuaguaRoute(map, props.guaguaRoute)
+  }, [ready, props.guaguaRoute])
 
   /**
    * Resuelve solapamientos entre pins de estación y topónimos.

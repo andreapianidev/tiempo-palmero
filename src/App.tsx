@@ -6,6 +6,7 @@ import { Sidebar } from './components/sidebar'
 import { SourcesScreen } from './components/SourcesScreen'
 import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { useWindField } from './hooks/useWindField'
+import { useGuagua } from './hooks/useGuagua'
 import { elevationAt } from './lib/dem'
 import { DEWPOINT_STOPS, HUMIDITY_STOPS, TEMP_STOPS, type RgbStop } from './lib/palette'
 import type { DisplayVariable } from './lib/interpolate'
@@ -26,6 +27,7 @@ const INITIAL_LAYERS: LayerVisibility = {
   co2: true,
   sky: false,
   trails: false,
+  guagua: false,
   fire: true,
   wind: false,
 }
@@ -36,8 +38,11 @@ export default function App() {
   // cuántas estaciones lo miden aunque el mapa no lo dibuje, y el coste es una
   // petición al modelo cada refresco.
   const wind = useWindField(data.dem, data.stations, data.lastUpdate)
-  const [variable, setVariable] = useState<DisplayVariable>('temperature')
   const [visible, setVisible] = useState<LayerVisibility>(INITIAL_LAYERS)
+  // Al revés que el viento: la red de guaguas son 1,5 MB y no alimenta ningún
+  // cálculo, así que no se pide hasta que alguien enciende la capa.
+  const guagua = useGuagua(visible.guagua)
+  const [variable, setVariable] = useState<DisplayVariable>('temperature')
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [showSources, setShowSources] = useState(false)
@@ -127,6 +132,12 @@ export default function App() {
         gazetteer={data.gazetteer}
         trails={data.trails}
         trailPois={data.trailPois}
+        guaguaLines={guagua.lines}
+        guaguaStops={guagua.stops}
+        // El resaltado no es un estado aparte: es la ficha de línea abierta.
+        // Así no puede quedarse una línea encendida en el mapa sin nada que
+        // explique por qué.
+        guaguaRoute={selection?.kind === 'busRoute' ? selection.value.routeId : null}
         wind={wind.field}
         visible={visible}
         probe={probe}
@@ -150,6 +161,21 @@ export default function App() {
         onSky={(s) => {
           setProbe(null)
           setSelection({ kind: 'sky', value: s })
+        }}
+        onBusStop={(stop) => {
+          setProbe(null)
+          setSelection({
+            kind: 'busStop',
+            value: {
+              ...stop,
+              elevation: data.dem ? elevationAt(data.dem, stop.lon, stop.lat) : null,
+              municipality: municipalityOf(data.municipalities, stop.lon, stop.lat),
+            },
+          })
+        }}
+        onBusRoute={(routeId) => {
+          setProbe(null)
+          setSelection({ kind: 'busRoute', value: { routeId } })
         }}
         onPoi={(poi) => {
           setProbe(null)
@@ -219,8 +245,10 @@ export default function App() {
           now={now}
           firePolledAt={data.firePolledAt}
           co2Down={data.co2Down}
+          guagua={guagua.network}
           onClose={() => setSelection(null)}
           onWeather={(lon, lat, label) => pick(lon, lat, label)}
+          onRoute={(routeId) => setSelection({ kind: 'busRoute', value: { routeId } })}
         />
       )}
 

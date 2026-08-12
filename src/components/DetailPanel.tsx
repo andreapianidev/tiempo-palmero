@@ -14,6 +14,9 @@ import { FAMILY_COLOR, isDataProp, poiIconDataUrl, type PoiRecord } from '../lib
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { Model } from '../lib/interpolate'
 import { StationHistory } from './StationHistory'
+import { StopDetail, type GuaguaStopSelection } from './guagua/StopDetail'
+import { RouteDetail } from './guagua/RouteDetail'
+import type { GuaguaNetwork } from '../lib/guagua/network'
 import { n, n0, t, humanAge } from '../i18n'
 
 /** El punto de interés llega del mapa y la app le añade lo que sabe del sitio. */
@@ -29,6 +32,8 @@ export type Selection =
   | { kind: 'fire'; value: FireCamera }
   | { kind: 'sky'; value: SkyStation }
   | { kind: 'poi'; value: PoiSelection }
+  | { kind: 'busStop'; value: GuaguaStopSelection }
+  | { kind: 'busRoute'; value: { routeId: string } }
 
 interface Props {
   selection: Selection
@@ -36,9 +41,13 @@ interface Props {
   now: number
   firePolledAt: number | null
   co2Down: boolean
+  /** La red de guaguas, si la capa llegó a encenderse. */
+  guagua: GuaguaNetwork | null
   onClose: () => void
   /** Del punto de interés al tiempo de ese mismo punto, sin buscarlo a mano. */
   onWeather: (lon: number, lat: number, label: string) => void
+  /** De una parada a la línea que pasa por ella, resaltada en el mapa. */
+  onRoute: (routeId: string) => void
 }
 
 const FRESHNESS_LABEL = {
@@ -86,8 +95,10 @@ export function DetailPanel({
   now,
   firePolledAt,
   co2Down,
+  guagua,
   onClose,
   onWeather,
+  onRoute,
 }: Props) {
   return (
     <section className="panel detail-panel" aria-label={t.point.title}>
@@ -100,6 +111,12 @@ export function DetailPanel({
       {selection.kind === 'co2' && <Co2Detail c={selection.value} down={co2Down} />}
       {selection.kind === 'fire' && <FireDetail f={selection.value} polledAt={firePolledAt} now={now} />}
       {selection.kind === 'sky' && <SkyDetail s={selection.value} now={now} />}
+      {selection.kind === 'busStop' && (
+        <StopDetail stop={selection.value} net={guagua} onRoute={onRoute} onWeather={onWeather} />
+      )}
+      {selection.kind === 'busRoute' && (
+        <RouteDetail routeId={selection.value.routeId} net={guagua} />
+      )}
     </section>
   )
 }

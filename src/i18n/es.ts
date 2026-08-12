@@ -28,6 +28,7 @@ export const es = {
     co2: 'Sensores de CO₂',
     sky: 'Calidad del cielo',
     trails: 'Senderos y puntos de interés',
+    guagua: 'Guaguas: líneas y paradas',
     fire: 'Cámaras de incendios',
     hillshade: 'Relieve sombreado',
   },
@@ -114,6 +115,65 @@ export const es = {
       `Se indican las líneas que paran, no los horarios: el archivo de horarios de TILP no se actualiza desde el ${until}. Consulta a TILP antes de contar con una guagua.`,
     guaguaSource: 'tilp.es',
     guaguaSourceUrl: 'https://www.tilp.es/',
+  },
+
+  /**
+   * Red de guaguas de TILP.
+   *
+   * Regla de estas cadenas, hermana de la del CO₂: aquí no aparece nunca una
+   * hora de paso presentada como vigente. El archivo de horarios de TILP venció
+   * el 25 dic 2025, así que todo lo que salga de él va etiquetado como «última
+   * tabla publicada» y con la fecha delante. Lo que sí se puede afirmar en
+   * presente es la red: qué líneas hay, por dónde van y dónde paran.
+   */
+  guagua: {
+    stopTitle: 'Parada de guagua',
+    routeTitle: 'Línea de guagua',
+    operator: 'TILP · Transportes Insulares La Palma',
+    stopCode: 'Código de parada',
+    linesHere: 'Líneas que paran aquí',
+    noLines: 'No se ha podido cargar qué líneas paran aquí.',
+    showRoute: 'Ver el recorrido en el mapa',
+    destinations: 'Destinos',
+    stopsCount: 'Paradas',
+    length: 'Trazado más largo',
+    lengthHint: 'De los dos sentidos y sus variantes, el más largo.',
+    routeStops: (n: number) => (n === 1 ? '1 parada' : `${n} paradas`),
+    serviceTitle: 'Servicio de la última tabla publicada',
+    departures: 'Salidas',
+    trips: 'Viajes',
+    weekday: 'Laborables',
+    saturday: 'Sábados',
+    sunday: 'Domingos',
+    window: 'Franja',
+    windowValue: (first: string, last: string) => `de ${first} a ${last}`,
+    noWindow: 'sin horas legibles',
+    levels: {
+      frequent: 'Servicio frecuente',
+      regular: 'Servicio regular',
+      sparse: 'Servicio escaso',
+      none: 'Sin servicio en la tabla',
+    } as Record<string, string>,
+    /** El aviso que justifica todo lo anterior. Nunca se omite. */
+    expired: (until: string) =>
+      `Estas cifras salen del último horario que publicó TILP, vencido el ${until}. ` +
+      'Describen el servicio que había diseñado, no a qué hora pasa la guagua hoy. ' +
+      'Antes de contar con una guagua, consulta a TILP.',
+    notExpired: (until: string) => `Horario de TILP vigente hasta el ${until}.`,
+    operatorLink: 'Horarios vigentes en tilp.es',
+    operatorUrl: 'https://www.tilp.es/',
+    wheelchair: 'Accesibilidad',
+    wheelchairStates: {
+      accessible: 'Con embarque en silla de ruedas',
+      notAccessible: 'Sin embarque en silla de ruedas',
+      unknown: 'Sin información de accesibilidad',
+    } as Record<string, string>,
+    /** Medido sobre las 913 paradas del GTFS el 12 ago 2026. */
+    wheelchairNote:
+      'Dato de TILP. En toda la isla no hay ninguna parada declarada accesible: 675 constan como no accesibles y 238 sin información.',
+    weatherHere: 'Ver el tiempo en esta parada',
+    source: 'Paradas, líneas y horarios: GTFS de TILP publicado por el Cabildo Insular de La Palma.',
+    loading: 'Cargando la red de guaguas…',
   },
 
   /**
@@ -375,6 +435,15 @@ export const es = {
       'en el ajuste, ni en el rechazo de anomalías, ni en el RMSE, y aparecen siempre ' +
       'etiquetadas como Open-Meteo allí donde contribuyen.',
     anchorsLicense: 'CC-BY 4.0 · sin clave de API',
+    guaguaTitle: 'Transporte público — TILP',
+    guaguaBody:
+      'Paradas, trazados y horarios salen del GTFS de Transportes Insulares La Palma que ' +
+      'publica el Cabildo: 23 líneas, 913 paradas y 742 viajes. La red —qué línea pasa por ' +
+      'dónde— se enseña tal cual; el horario NO, porque los cinco calendarios de servicio ' +
+      'del archivo vencieron el 25 de diciembre de 2025 y no hay ninguna excepción con ' +
+      'fecha posterior. Lo único que se da de ese horario caducado es el volumen de ' +
+      'servicio, siempre con la fecha de caducidad al lado y con enlace a TILP.',
+    guaguaLicense: 'CC-BY 4.0 · GTFS de TILP',
     toponymsTitle: 'Topónimos',
     toponymsBody:
       '© colaboradores de OpenStreetMap. Extraídos una sola vez en tiempo de compilación mediante Overpass; la aplicación no consulta OpenStreetMap en tiempo de ejecución.',

@@ -45,6 +45,8 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
   decisiones que los sostienen · [Validación](#validación)
 - [Qué más publica el Cabildo](#qué-más-publica-el-cabildo-y-qué-falta-por-aprovechar)
   — hoja de ruta sobre los 49 conjuntos del portal
+- [La red de guaguas](#la-red-de-guaguas-se-dibuja-la-red-no-el-horario) — por
+  qué se dibuja la red y no el horario
 - [El mapa de viento](#el-mapa-de-viento) — la única capa donde un modelo pinta
   sobre la isla, y cómo se declara ·
   [El histórico](#el-histórico-y-por-qué-no-hay-base-de-datos) — 2 MB por día en
@@ -91,6 +93,10 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   estrictas (ver abajo).
 - Calidad del aire, calidad del cielo, cámaras de incendios, senderos y sus
   1190 puntos de interés.
+- **Red de guaguas de TILP**: 23 líneas, 58 trazados y 913 paradas, con la ficha
+  de cada parada y el recorrido de cada línea resaltado en el mapa. Sin horas de
+  paso, y explicando por qué (ver
+  [la red de guaguas](#la-red-de-guaguas-se-dibuja-la-red-no-el-horario)).
 - **Relieve sombreado** generado del mismo modelo de elevación que alimenta el
   cálculo. La isla es un volcán: la sombra es lo que la hace legible.
 
@@ -432,7 +438,9 @@ por lo que dice cubrir.
 ## Qué más publica el Cabildo, y qué falta por aprovechar
 
 El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**. Esta
-aplicación usa hoy seis capas y un endpoint en directo. Lo que queda, ordenado
+aplicación usa hoy **once capas estáticas** —de las doce que descarga; la única
+que no se lee en runtime es el inventario de sensores de CO₂, que llega en
+directo de DEMASE— más el agregado del GTFS de guaguas. Lo que queda, ordenado
 por lo que aportaría de verdad:
 
 ### Ya integrado (agosto 2026)
@@ -453,19 +461,40 @@ filas de un día de histórico y en las 52 de `_lastdata`**. Se parsea igualment
 para que aparezca sola el día que exista, y queda escrito aquí para que nadie la
 persiga como si fuera un fallo de la aplicación.
 
-**Las guaguas se muestran sin horarios, a propósito.** El GTFS que publica el
-Cabildo tiene todos los calendarios de servicio caducados el **25 de diciembre
-de 2025**, sin una sola excepción con fecha de 2026 (comprobado el 12 ago 2026).
-El sitio de TILP está peor: su único documento de líneas es un PDF de septiembre
-de 2020. Google Maps sí tiene horarios porque TILP se los cede por acuerdo
-privado, pero esos datos no son redistribuibles y usarlos exigiría una clave de
-Google en tiempo de ejecución, que es justo lo que esta aplicación no tiene.
+### La red de guaguas: se dibuja la red, no el horario
 
-Así que se enseña lo que sobrevive a la caducidad —**qué líneas paran en cada
-parada**, extraído del propio GTFS en tiempo de compilación— y se dice
-explícitamente que los horarios no están disponibles, con la fecha y un enlace a
-TILP. Un horario caducado leído como vigente es una guagua perdida, y en esta
-isla eso no es un detalle.
+La red de TILP es ya una capa del mapa, con su interruptor propio: los **58
+trazados** de las **23 líneas** y las **913 paradas**, apagada por defecto
+porque son 1,5 MB que solo se descargan si alguien la enciende. Al pinchar una
+parada sale su ficha —qué líneas paran ahí, cuánto servicio tenía y si se puede
+subir en silla de ruedas—; al pinchar una línea, o una de las líneas de esa
+ficha, el mapa resalta el recorrido entero y todas sus paradas mientras la ficha
+está abierta.
+
+**Lo que no sale es la hora de paso, y es una decisión, no una carencia.** El
+GTFS que publica el Cabildo tiene los cinco calendarios de servicio caducados
+—el último, el **25 de diciembre de 2025**— sin una sola excepción con fecha
+posterior (comprobado el 12 ago 2026). El sitio de TILP está peor: su único
+documento de líneas es un PDF de septiembre de 2020. Google Maps sí tiene
+horarios porque TILP se los cede por acuerdo privado, pero esos datos no son
+redistribuibles y usarlos exigiría una clave de Google en tiempo de ejecución,
+que es justo lo que esta aplicación no tiene.
+
+Así que el archivo se parte en dos. **La red sobrevive a la caducidad** —la
+línea 100 sigue yendo de Santa Cruz a Barlovento por donde iba— y se enseña en
+presente. **El horario no**, y de él solo se da el volumen: cuántas salidas
+tenía esa parada de lunes a viernes, los sábados y los domingos, y entre qué
+horas empezaba y acababa el servicio, siempre bajo el rótulo «última tabla
+publicada», con la fecha de caducidad y un enlace a TILP en la misma ficha. Esa
+diferencia es la que distingue una parada de la línea 300 —348 salidas
+laborables en la estación de Santa Cruz— de un apeadero con una al día, y esa
+distinción sigue siendo cierta aunque la tabla haya vencido. Una hora concreta
+presentada como vigente, no: un horario caducado leído como bueno es una guagua
+perdida, y en esta isla eso no es un detalle.
+
+De paso, el GTFS contesta algo que nadie más publica: **ninguna de las 913
+paradas de la isla está declarada accesible**. 675 constan explícitamente como
+no accesibles y 238 sin información. La ficha lo dice tal cual, con esas cifras.
 
 ### Lo que cambiaría la aplicación de categoría
 
@@ -482,7 +511,6 @@ isla eso no es un detalle.
 | `lugares-de-interes-turistico-de-titularidad-insular` | 50 | Los «Imprescindibles», con accesibilidad y ficha. |
 | `lugares-de-interes-historico-de-la-palma` | 390 | Polígonos, con superficie. |
 | `lugares-de-interes-cultural-de-la-palma` | 92 | Museos, iglesias, centros. |
-| `transporte-publico-…-guagua` | 913 paradas + **GTFS** | Llegar al punto consultado en guagua. El GTFS es de especificación estándar. |
 | `puntos-de-recarga-de-vehiculos-electricos` | 54 | Ojo: incluye previstos, no solo operativos (`prioridad` los separa). |
 | `vias-interurbanas` + Feature Server de ArcGIS | 53 | Red de carreteras, con capa viva. |
 | `instalaciones-deportivas` | 117 | EIEL 2023. |
@@ -768,6 +796,8 @@ clave que configurar.
 - **Límites municipales e insular** — Cabildo Insular de La Palma. ODC-BY.
 - **Red de sensores de CO₂** — DEMASE, publicada a través del portal del
   Cabildo.
+- **Transporte público** — GTFS de Transportes Insulares La Palma (TILP),
+  publicado por el Cabildo. CC-BY 4.0. <https://www.tilp.es>
 - **Topónimos** — © colaboradores de OpenStreetMap, ODbL 1.0.
 - **Modelo de elevación y relieve** — Mapzen Terrain Tiles vía AWS Open Data,
   derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM.

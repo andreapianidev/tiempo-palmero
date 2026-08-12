@@ -11,6 +11,7 @@
  */
 
 import { haversineKm, type LonLat } from './geo'
+import { loadGuaguaNetwork, routeLabel, type GuaguaNetwork } from './guagua/network'
 
 export type NearbyKind =
   | 'trail'
@@ -99,22 +100,6 @@ function load(file: string): Promise<Collection | null> {
   return cache.get(file)!
 }
 
-export interface GuaguaRoutes {
-  validUntil: string | null
-  expired: boolean
-  routesByStop: Record<string, string[]>
-  routeNames: Record<string, string>
-}
-
-let guaguaPromise: Promise<GuaguaRoutes | null> | null = null
-
-export function loadGuaguaRoutes(): Promise<GuaguaRoutes | null> {
-  guaguaPromise ??= fetch('/guagua-lineas.json')
-    .then((r) => (r.ok ? (r.json() as Promise<GuaguaRoutes>) : null))
-    .catch(() => null)
-  return guaguaPromise
-}
-
 // ---------------------------------------------------------------------------
 
 interface LayerSpec {
@@ -129,7 +114,7 @@ interface LayerSpec {
 }
 
 interface Context {
-  guagua: GuaguaRoutes | null
+  guagua: GuaguaNetwork | null
 }
 
 const LAYERS: LayerSpec[] = [
@@ -202,9 +187,9 @@ const LAYERS: LayerSpec[] = [
       // anunciarlos sería decirle a alguien que pasa una guagua que no pasa.
       const id = str(p.stop_id)
       if (!id || !ctx.guagua) return undefined
-      const routes = ctx.guagua.routesByStop[id]
+      const routes = ctx.guagua.stops[id]?.routes
       if (!routes?.length) return undefined
-      const names = routes.map((r) => ctx.guagua!.routeNames[r] ?? r)
+      const names = routes.map((r) => routeLabel(ctx.guagua, r))
       return `Líneas ${names.slice(0, 6).join(', ')}${names.length > 6 ? '…' : ''}`
     },
   },
@@ -220,12 +205,12 @@ const LAYERS: LayerSpec[] = [
 
 /** Precarga en segundo plano, para que el primer clic no espere. */
 export function warmNearbyLayers(): void {
-  loadGuaguaRoutes()
+  void loadGuaguaNetwork()
   for (const l of LAYERS) void load(l.file)
 }
 
 export async function findNearby(lon: number, lat: number): Promise<NearbyItem[]> {
-  const guagua = await loadGuaguaRoutes()
+  const guagua = await loadGuaguaNetwork()
   const ctx: Context = { guagua }
   const target: LonLat = [lon, lat]
 

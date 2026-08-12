@@ -22,12 +22,15 @@ import { cssColor, type RgbStop } from '../lib/palette'
 import { freshness } from '../lib/quality'
 import {
   findNearby,
-  loadGuaguaRoutes,
-  type GuaguaRoutes,
   NEARBY_VISIBLE,
   type NearbyItem,
   type NearbyKind,
 } from '../lib/nearby'
+import {
+  formatIsoDate,
+  loadGuaguaNetwork,
+  type GuaguaNetwork,
+} from '../lib/guagua/network'
 import { n, n0, t, humanAge } from '../i18n'
 
 export interface ProbePoint {
@@ -340,7 +343,7 @@ export function PointPanel({
  */
 function NearbySection({ lon, lat }: { lon: number; lat: number }) {
   const [items, setItems] = useState<NearbyItem[] | null>(null)
-  const [guagua, setGuagua] = useState<GuaguaRoutes | null>(null)
+  const [guagua, setGuagua] = useState<GuaguaNetwork | null>(null)
   const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
@@ -348,7 +351,7 @@ function NearbySection({ lon, lat }: { lon: number; lat: number }) {
     setItems(null)
     setExpanded(false)
     findNearby(lon, lat).then((r) => !cancelled && setItems(r))
-    loadGuaguaRoutes().then((g) => !cancelled && setGuagua(g))
+    loadGuaguaNetwork().then((g) => !cancelled && setGuagua(g))
     return () => {
       cancelled = true
     }
@@ -407,7 +410,7 @@ function NearbySection({ lon, lat }: { lon: number; lat: number }) {
           caducado leído como vigente es una guagua perdida. */}
       {hasBusStop && guagua?.expired && guagua.validUntil && (
         <p className="warn small">
-          {t.nearby.guaguaNoTimetable(guagua.validUntil)}{' '}
+          {t.nearby.guaguaNoTimetable(formatIsoDate(guagua.validUntil))}{' '}
           <a href={t.nearby.guaguaSourceUrl} target="_blank" rel="noreferrer">
             {t.nearby.guaguaSource} →
           </a>

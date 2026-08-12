@@ -1,4 +1,8 @@
-/* Tiempo Palmero — denso, oscuro, pensado primero para el móvil. */
+/* Tiempo Palmero — denso, oscuro, pensado primero para el móvil.
+   Lo que pertenece a una capa concreta vive en su propio fichero y entra por
+   aquí; esta hoja es el armazón común, no el cajón de sastre. */
+
+@import './styles/guagua.css';
 
 :root {
   --ink: #0d0c0b;
