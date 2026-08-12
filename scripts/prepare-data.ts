@@ -218,6 +218,40 @@ const LAYERS: LayerSpec[] = [
     dataset: 'sensores-co2-exteriores-alerta-co2-la-palma',
     label: 'Inventario de sensores CO₂',
   },
+  {
+    out: 'interes-turistico.geojson',
+    dataset: 'lugares-de-interes-turistico-de-titularidad-insular',
+    label: 'Lugares de interés turístico',
+  },
+  {
+    out: 'interes-cultural.geojson',
+    dataset: 'lugares-de-interes-cultural-de-la-palma',
+    label: 'Lugares de interés cultural',
+  },
+  {
+    out: 'interes-historico.geojson',
+    dataset: 'lugares-de-interes-historico-de-la-palma',
+    label: 'Lugares de interés histórico',
+  },
+  {
+    out: 'paradas-guagua.geojson',
+    dataset: 'transporte-publico-de-la-palma-paradas-y-lineas-de-guagua',
+    // Dos GeoJSON con el mismo `format`: elegir por `format` a secas coge las
+    // paradas por casualidad. Se filtra por el nombre del recurso.
+    pick: (r) => /parada/i.test(r.name),
+    label: 'Paradas de guagua (TILP)',
+  },
+  {
+    out: 'lineas-guagua.geojson',
+    dataset: 'transporte-publico-de-la-palma-paradas-y-lineas-de-guagua',
+    pick: (r) => /l[ií]nea/i.test(r.name),
+    label: 'Líneas de guagua (TILP)',
+  },
+  {
+    out: 'recarga-electrica.geojson',
+    dataset: 'puntos-de-recarga-de-vehiculos-electricos-de-la-palma',
+    label: 'Puntos de recarga eléctrica',
+  },
 ]
 
 type GeoJson = {
@@ -231,6 +265,48 @@ function reprojectCoords(c: unknown): unknown {
     return utm28nToWgs84(c[0], c[1])
   }
   return Array.isArray(c) ? c.map(reprojectCoords) : c
+}
+
+/**
+ * Reparaciones de texto en el dato publicado.
+ *
+ * `lugares-de-interes-cultural-de-la-palma` trae la misma palabra escrita de
+ * dos maneras: «Señora» cinco veces y «Seaora» otras cinco. La ñ se perdió al
+ * generar el fichero en origen — no es un problema de codificación por nuestra
+ * parte: los bytes que sirve el portal son UTF-8 válido y dicen literalmente
+ * `Seaora`. Comprobado el 12 ago 2026.
+ *
+ * La tabla es EXPLÍCITA a propósito. Una regla general del tipo «a → ñ» sería
+ * un desastre en castellano, y una heurística sobre «aa» rompería topónimos
+ * legítimos. Sólo se corrige lo que se ha visto y verificado, y se registra
+ * cuántas veces se ha aplicado para que un cambio silencioso en origen no pase
+ * desapercibido.
+ */
+const TEXT_REPAIRS: [RegExp, string][] = [
+  // «Nuestra Señora» es una fórmula fija: cualquier cosa que no sea una ñ
+  // entre «Se» y «ora» dentro de esa frase es daño, no una variante. Se han
+  // visto Seaora, Seeora, Seoora, Selora y «Se ora» en el mismo fichero.
+  [/\bNuestra\s+Se.?ora\b/g, 'Nuestra Señora'],
+  [/\bSe(?:a|e|o|l|\s)ora\s+de\b/g, 'Señora de'],
+]
+
+function repairText(value: unknown, tally: { count: number }): unknown {
+  if (typeof value === 'string') {
+    let out = value
+    for (const [re, to] of TEXT_REPAIRS) {
+      const before = out
+      out = out.replace(re, to)
+      if (out !== before) tally.count++
+    }
+    return out
+  }
+  if (Array.isArray(value)) return value.map((v) => repairText(v, tally))
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, repairText(v, tally)]),
+    )
+  }
+  return value
 }
 
 /**
@@ -296,6 +372,18 @@ async function prepareLayers(): Promise<void> {
         if (f.geometry) f.geometry.coordinates = roundCoords(f.geometry.coordinates)
       }
 
+      const tally = { count: 0 }
+      for (const f of geo.features) {
+        f.properties = repairText(f.properties, tally)
+      }
+      if (tally.count) log(`${spec.out}: ${tally.count} texto(s) reparado(s) en origen`)
+      // El resto del daño de esta capa NO se toca. En el mismo fichero conviven
+      // «Corazsn», «Coraznn», «FCtima» y nombres cortados a media palabra
+      // («Iglesia de San Andr», «…de la Encarnaci»): el patrón cambia en cada
+      // aparición, así que parece daño de OCR en origen y no una conversión de
+      // codificación reversible. Adivinar produciría nombres inventados, que es
+      // peor que un nombre roto y visiblemente roto.
+
       await writeFile(
         path.join(PUBLIC, 'layers', spec.out),
         JSON.stringify(geo),
@@ -324,6 +412,145 @@ async function prepareLayers(): Promise<void> {
       null,
       2,
     ),
+  )
+}
+
+// ---------------------------------------------------------------------------
+// 2b. GTFS de TILP — qué líneas paran en cada parada
+// ---------------------------------------------------------------------------
+//
+// El feed publica horarios que NO se pueden usar: comprobado el 12 ago 2026,
+// todos los calendarios de servicio caducaron el 25 dic 2025 y no hay ni una
+// excepción con fecha de 2026. Anunciar esos horarios sería decirle a alguien
+// que pasa una guagua que no pasa.
+//
+// Lo que sí sobrevive a la caducidad es la topología: qué línea para dónde y
+// cómo se llama. Eso se extrae aquí y se marca con la fecha de caducidad, para
+// que la interfaz pueda enseñar el recorrido y callarse los horarios.
+
+interface GtfsStopRoutes {
+  generated: string
+  source: string
+  /** Última fecha de validez encontrada en calendar.txt (YYYY-MM-DD). */
+  validUntil: string | null
+  expired: boolean
+  routesByStop: Record<string, string[]>
+  routeNames: Record<string, string>
+}
+
+function parseCsv(text: string): Record<string, string>[] {
+  const lines = text.trim().split(/\r?\n/)
+  if (!lines.length) return []
+  const split = (line: string) => {
+    // Los campos GTFS pueden llevar comas dentro de comillas.
+    const out: string[] = []
+    let cur = ''
+    let quoted = false
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i]
+      if (c === '"') {
+        if (quoted && line[i + 1] === '"') {
+          cur += '"'
+          i++
+        } else quoted = !quoted
+      } else if (c === ',' && !quoted) {
+        out.push(cur)
+        cur = ''
+      } else cur += c
+    }
+    out.push(cur)
+    return out
+  }
+  const head = split(lines[0]).map((h) => h.replace(/^\uFEFF/, '').trim())
+  return lines.slice(1).map((l) => {
+    const cells = split(l)
+    const row: Record<string, string> = {}
+    head.forEach((h, i) => (row[h] = (cells[i] ?? '').trim()))
+    return row
+  })
+}
+
+async function prepareGtfs(): Promise<void> {
+  const pkg = await getJson<{ result: { resources: CkanResource[] } }>(
+    `${CKAN}/package_show?id=transporte-publico-de-la-palma-paradas-y-lineas-de-guagua`,
+  )
+  const res = pkg.result.resources.find((r) => (r.format ?? '').toUpperCase() === 'GTFS')
+  if (!res) {
+    warn('GTFS: no hay recurso en el catálogo')
+    return
+  }
+
+  const buf = Buffer.from(await (await fetch(res.url, { headers: UA })).arrayBuffer())
+  // `inflateRawSync`, no `unzipSync`: las entradas ZIP con método 8 son deflate
+  // CRUDO, sin la cabecera zlib/gzip que `unzipSync` espera.
+  const { inflateRawSync } = await import('node:zlib')
+  // El ZIP se lee a mano: añadir una dependencia por cuatro ficheros de texto
+  // no compensa. Sólo se soportan entradas STORE (0) y DEFLATE (8), que es lo
+  // que produce cualquier generador de GTFS.
+  const files = new Map<string, string>()
+  for (let i = 0; i < buf.length - 3; i++) {
+    if (buf.readUInt32LE(i) !== 0x04034b50) continue
+    const method = buf.readUInt16LE(i + 8)
+    const compSize = buf.readUInt32LE(i + 18)
+    const nameLen = buf.readUInt16LE(i + 26)
+    const extraLen = buf.readUInt16LE(i + 28)
+    const name = buf.toString('utf8', i + 30, i + 30 + nameLen)
+    const start = i + 30 + nameLen + extraLen
+    // compSize 0 significa que el tamaño va en un descriptor detrás de los
+    // datos; ese caso no aparece en este feed y no se adivina.
+    if (!compSize) continue
+    const raw = buf.subarray(start, start + compSize)
+    try {
+      files.set(
+        name,
+        method === 0 ? raw.toString('utf8') : inflateRawSync(raw).toString('utf8'),
+      )
+    } catch {
+      /* entrada que no interesa */
+    }
+  }
+
+  const routes = parseCsv(files.get('routes.txt') ?? '')
+  const trips = parseCsv(files.get('trips.txt') ?? '')
+  const stopTimes = parseCsv(files.get('stop_times.txt') ?? '')
+  const calendar = parseCsv(files.get('calendar.txt') ?? '')
+
+  const routeNames: Record<string, string> = {}
+  for (const r of routes) {
+    routeNames[r.route_id] = r.route_short_name || r.route_long_name || r.route_id
+  }
+  const routeOfTrip = new Map(trips.map((t) => [t.trip_id, t.route_id]))
+
+  const byStop = new Map<string, Set<string>>()
+  for (const st of stopTimes) {
+    const routeId = routeOfTrip.get(st.trip_id)
+    if (!routeId) continue
+    if (!byStop.has(st.stop_id)) byStop.set(st.stop_id, new Set())
+    byStop.get(st.stop_id)!.add(routeId)
+  }
+
+  const endDates = calendar.map((c) => c.end_date).filter(Boolean).sort()
+  const last = endDates[endDates.length - 1] ?? null
+  const validUntil = last ? `${last.slice(0, 4)}-${last.slice(4, 6)}-${last.slice(6, 8)}` : null
+  const expired = validUntil !== null && validUntil < new Date().toISOString().slice(0, 10)
+
+  const out: GtfsStopRoutes = {
+    generated: new Date().toISOString(),
+    source: res.url,
+    validUntil,
+    expired,
+    routeNames,
+    routesByStop: Object.fromEntries(
+      [...byStop].map(([stop, set]) => [
+        stop,
+        [...set].sort((a, b) => (routeNames[a] ?? a).localeCompare(routeNames[b] ?? b, 'es')),
+      ]),
+    ),
+  }
+  await writeFile(path.join(PUBLIC, 'guagua-lineas.json'), JSON.stringify(out))
+  log(
+    `GTFS: ${routes.length} líneas, ${byStop.size} paradas con servicio` +
+      ` · validez hasta ${validUntil} ${expired ? '(CADUCADO — sin horarios en la app)' : ''}`,
   )
 }
 
@@ -548,6 +775,7 @@ async function main() {
   await mkdir(PUBLIC, { recursive: true })
   if (run('dem')) await prepareDem()
   if (run('layers')) await prepareLayers()
+  if (run('gtfs')) await prepareGtfs()
   if (run('gazetteer')) await prepareGazetteer()
   if (run('snapshot')) await prepareSnapshot()
   log('listo')

@@ -9,6 +9,7 @@ import { elevationAt } from './lib/dem'
 import { DEWPOINT_STOPS, HUMIDITY_STOPS, TEMP_STOPS, type RgbStop } from './lib/palette'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
+import { warmNearbyLayers } from './lib/nearby'
 import { t } from './i18n'
 
 const STOPS: Record<DisplayVariable, RgbStop[]> = {
@@ -40,6 +41,14 @@ export default function App() {
     const id = setInterval(() => setNow(Date.now()), 30_000)
     return () => clearInterval(id)
   }, [])
+
+  // Las capas de «cerca de aquí» se piden en cuanto el mapa está en pie, no al
+  // arrancar: así el primer clic no espera, pero tampoco retrasan la pintura.
+  useEffect(() => {
+    if (!data.dem) return
+    const id = setTimeout(warmNearbyLayers, 1500)
+    return () => clearTimeout(id)
+  }, [data.dem])
 
   const stops = STOPS[variable]
 

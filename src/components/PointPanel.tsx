@@ -7,7 +7,7 @@
  * tiene que poder decidir por su cuenta si se lo cree.
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   estimateBundle,
   nearestWith,
@@ -19,6 +19,14 @@ import {
 import type { Station } from '../lib/quality'
 import { cssColor, type RgbStop } from '../lib/palette'
 import { freshness } from '../lib/quality'
+import {
+  findNearby,
+  loadGuaguaRoutes,
+  type GuaguaRoutes,
+  NEARBY_VISIBLE,
+  type NearbyItem,
+  type NearbyKind,
+} from '../lib/nearby'
 import { n, n0, t, humanAge } from '../i18n'
 
 export interface ProbePoint {
@@ -37,6 +45,18 @@ interface Props {
   stops: RgbStop[]
   now: number
   onClose: () => void
+}
+
+/** Un glifo por categoría. Sin fuentes de iconos: son caracteres. */
+const KIND_ICON: Record<NearbyKind, string> = {
+  trail: '⛰',
+  trailPoi: '◆',
+  recreation: '⛺',
+  tourism: '★',
+  culture: '❖',
+  history: '⌂',
+  busStop: '⬤',
+  charging: '⚡',
 }
 
 const VARIABLE_UNITS: Record<DisplayVariable, string> = {
@@ -145,10 +165,11 @@ export function PointPanel({
               sigue valiendo. */}
           <p className="freshness mono" title={t.point.measuredAtHint}>
             <span className={`dot dot-${freshness((now - main.observedAt) / 3_600_000)}`} />
-            {t.point.measuredAt} {humanAge(now - main.observedAt)}
+            <span className="nowrap">
+              {t.point.measuredAt} {humanAge(now - main.observedAt)}
+            </span>
             {main.oldestObservedAt < main.observedAt - 60_000 && (
-              <span className="dim">
-                {' '}
+              <span className="dim nowrap">
                 · {t.point.oldestContribution} {humanAge(now - main.oldestObservedAt)}
               </span>
             )}
@@ -190,20 +211,21 @@ export function PointPanel({
                   <th>{t.point.distance}</th>
                   <th>{t.point.elevationDelta}</th>
                   <th>{t.point.weight}</th>
-                  <th>{t.point.measuredAt}</th>
                 </tr>
               </thead>
               <tbody>
                 {main.contributors.map((c) => (
                   <tr key={c.entityId}>
-                    <td>{c.name}</td>
+                    <td>
+                      {c.name}
+                      <em className="contrib-age dim">{humanAge(now - c.observedAt)}</em>
+                    </td>
                     <td className="mono">{n(c.distanceKm, 1)} {t.units.km}</td>
                     <td className="mono">
                       {c.elevationDelta >= 0 ? '+' : '−'}
                       {n0(Math.abs(c.elevationDelta))} {t.units.metres}
                     </td>
                     <td className="mono">{Math.round(c.weightShare * 100)} %</td>
-                    <td className="mono">{humanAge(now - c.observedAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -261,6 +283,92 @@ export function PointPanel({
           )}
         </ul>
       </section>
+
+      <NearbySection lon={point.lon} lat={point.lat} />
+    </section>
+  )
+}
+
+/**
+ * «Cerca de aquí». Se carga bajo demanda y por su cuenta: son 10 MB de capas
+ * y la mayoría de las visitas no llegan a tocar el mapa, así que no tiene
+ * sentido pagarlas al arrancar. Mientras busca, el resto del panel ya está.
+ */
+function NearbySection({ lon, lat }: { lon: number; lat: number }) {
+  const [items, setItems] = useState<NearbyItem[] | null>(null)
+  const [guagua, setGuagua] = useState<GuaguaRoutes | null>(null)
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setItems(null)
+    setExpanded(false)
+    findNearby(lon, lat).then((r) => !cancelled && setItems(r))
+    loadGuaguaRoutes().then((g) => !cancelled && setGuagua(g))
+    return () => {
+      cancelled = true
+    }
+  }, [lon, lat])
+
+  const shown = items === null ? [] : expanded ? items : items.slice(0, NEARBY_VISIBLE)
+  const hidden = (items?.length ?? 0) - shown.length
+  const hasBusStop = shown.some((i) => i.kind === 'busStop')
+
+  return (
+    <section className="nearest-block">
+      <h3>{t.nearby.title}</h3>
+      {items === null && <p className="dim small">{t.nearby.loading}</p>}
+      {items !== null && items.length === 0 && (
+        <p className="dim small">{t.nearby.empty}</p>
+      )}
+      {items !== null && items.length > 0 && (
+        <ul className="nearby-list">
+          {shown.map((it, i) => (
+            <li key={`${it.kind}-${it.name}-${i}`}>
+              <span className={`nearby-icon nearby-${it.kind}`} aria-hidden>
+                {KIND_ICON[it.kind]}
+              </span>
+              <span className="nearby-body">
+                <span className="nearby-name">
+                  {it.url ? (
+                    <a href={it.url} target="_blank" rel="noreferrer">
+                      {it.name}
+                    </a>
+                  ) : (
+                    it.name
+                  )}
+                </span>
+                <span className="nearby-detail dim">
+                  {t.nearby.kinds[it.kind]}
+                  {it.detail && <> · {it.detail}</>}
+                </span>
+              </span>
+              <span className="nearby-dist mono dim">
+                {it.distanceKm < 1
+                  ? `${Math.round(it.distanceKm * 1000)} m`
+                  : `${n(it.distanceKm, 1)} km`}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {hidden > 0 && (
+        <button className="link-btn nearby-more" onClick={() => setExpanded(true)}>
+          {t.nearby.showMore(hidden)}
+        </button>
+      )}
+
+      {/* Si hay parada cerca, se dice por qué no hay horarios. Un horario
+          caducado leído como vigente es una guagua perdida. */}
+      {hasBusStop && guagua?.expired && guagua.validUntil && (
+        <p className="warn small">
+          {t.nearby.guaguaNoTimetable(guagua.validUntil)}{' '}
+          <a href={t.nearby.guaguaSourceUrl} target="_blank" rel="noreferrer">
+            {t.nearby.guaguaSource} →
+          </a>
+        </p>
+      )}
     </section>
   )
 }

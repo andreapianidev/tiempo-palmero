@@ -187,6 +187,29 @@ El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**. Esta
 aplicación usa hoy seis capas y un endpoint en directo. Lo que queda, ordenado
 por lo que aportaría de verdad:
 
+### Ya integrado (agosto 2026)
+
+El panel del punto responde a «¿qué hay aquí?», no solo «¿qué tiempo hace?»:
+senderos y sus puntos de interés, zonas recreativas y refugios, lugares de
+interés turístico, cultural e histórico, puntos de recarga eléctrica y paradas
+de guagua. Las capas se cargan **bajo demanda** —son 10 MB en total y la mayoría
+de las visitas no llegan a tocar el mapa— y la lista se recorta a las ocho más
+cercanas, con el resto plegado.
+
+**Las guaguas se muestran sin horarios, a propósito.** El GTFS que publica el
+Cabildo tiene todos los calendarios de servicio caducados el **25 de diciembre
+de 2025**, sin una sola excepción con fecha de 2026 (comprobado el 12 ago 2026).
+El sitio de TILP está peor: su único documento de líneas es un PDF de septiembre
+de 2020. Google Maps sí tiene horarios porque TILP se los cede por acuerdo
+privado, pero esos datos no son redistribuibles y usarlos exigiría una clave de
+Google en tiempo de ejecución, que es justo lo que esta aplicación no tiene.
+
+Así que se enseña lo que sobrevive a la caducidad —**qué líneas paran en cada
+parada**, extraído del propio GTFS en tiempo de compilación— y se dice
+explícitamente que los horarios no están disponibles, con la fecha y un enlace a
+TILP. Un horario caducado leído como vigente es una guagua perdida, y en esta
+isla eso no es un detalle.
+
 ### Lo que cambiaría la aplicación de categoría
 
 | Fuente | Qué habilita |
@@ -212,6 +235,15 @@ por lo que aportaría de verdad:
 
 ### Interesante pero con letra pequeña
 
+- **Calidad del texto en `lugares-de-interes-cultural`.** El fichero trae la
+  misma palabra escrita de cinco maneras: `Señora`, `Seaora`, `Seeora`,
+  `Seoora`, `Selora` y `Se ora`. Se reparan solo las que caen dentro de la
+  fórmula fija «Nuestra Señora», donde cualquier cosa que no sea una ñ es daño y
+  no una variante. El resto —`Corazsn`, `Coraznn`, `FCtima`, y nombres cortados
+  a media palabra como `Iglesia de San Andr` o `…de la Encarnaci`— **se deja
+  como está**: el patrón cambia en cada aparición, parece daño de OCR en origen
+  y no una conversión reversible, y adivinar produciría nombres inventados, que
+  es peor que un nombre roto y visiblemente roto.
 - **`agriparcel`** (140 parcelas) es la **única fuente con municipio real**, y su
   campo `refagroweatherobserved` es un emparejamiento parcela→estación hecho por
   el propio publicador: sirve de contraste independiente para nuestra lógica de

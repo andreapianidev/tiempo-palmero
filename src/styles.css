@@ -553,3 +553,34 @@ table.kv td:first-child { color: var(--fg-dim); }
 
 /* Marca de variable calculada, no interpolada. */
 .derived-mark { font-style: italic; opacity: 0.75; }
+
+/* «Cerca de aquí» */
+.nearby-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.nearby-list li { display: flex; align-items: baseline; gap: 9px; }
+.nearby-icon {
+  flex: none;
+  width: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--fg-faint);
+  line-height: 1.3;
+}
+.nearby-trail, .nearby-trailPoi { color: var(--amber); }
+.nearby-recreation { color: #7fbf8f; }
+.nearby-busStop { color: #7fb8d8; }
+.nearby-charging { color: #9fd07f; }
+.nearby-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.nearby-name { font-size: 12.5px; line-height: 1.3; }
+.nearby-detail { font-size: 10.5px; line-height: 1.35; }
+.nearby-dist { flex: none; font-size: 10.5px; }
+.warn.small { font-size: 11px; }
+.nearby-more { margin-top: 10px; font-size: 12px; }
+.nowrap { white-space: nowrap; }
+.freshness { flex-wrap: wrap; row-gap: 2px; }
+.contrib-age {
+  display: block;
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 1.4;
+}

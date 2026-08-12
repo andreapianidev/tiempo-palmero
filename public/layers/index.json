@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T09:20:23.206Z",
+  "generated": "2026-08-12T12:05:55.063Z",
   "source": "Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island)",
   "license": "CC-BY 4.0 / ODC-BY (límites administrativos)",
   "layers": {
@@ -32,6 +32,36 @@
       "file": "/layers/sensores-co2.geojson",
       "features": 189,
       "label": "Inventario de sensores CO₂"
+    },
+    "interes-turistico": {
+      "file": "/layers/interes-turistico.geojson",
+      "features": 50,
+      "label": "Lugares de interés turístico"
+    },
+    "interes-cultural": {
+      "file": "/layers/interes-cultural.geojson",
+      "features": 92,
+      "label": "Lugares de interés cultural"
+    },
+    "interes-historico": {
+      "file": "/layers/interes-historico.geojson",
+      "features": 390,
+      "label": "Lugares de interés histórico"
+    },
+    "paradas-guagua": {
+      "file": "/layers/paradas-guagua.geojson",
+      "features": 913,
+      "label": "Paradas de guagua (TILP)"
+    },
+    "lineas-guagua": {
+      "file": "/layers/lineas-guagua.geojson",
+      "features": 58,
+      "label": "Líneas de guagua (TILP)"
+    },
+    "recarga-electrica": {
+      "file": "/layers/recarga-electrica.geojson",
+      "features": 54,
+      "label": "Puntos de recarga eléctrica"
     }
   }
 }

@@ -85,6 +85,27 @@ export const es = {
     tapHint: 'Toca cualquier punto del mapa para calcular su tiempo',
   },
 
+  nearby: {
+    title: 'Cerca de aquí',
+    loading: 'Buscando…',
+    empty: 'No hay nada catalogado en el entorno de este punto.',
+    showMore: (n: number) => (n === 1 ? 'Ver 1 más' : `Ver ${n} más`),
+    kinds: {
+      trail: 'Sendero',
+      trailPoi: 'Punto del sendero',
+      recreation: 'Zona recreativa',
+      tourism: 'Interés turístico',
+      culture: 'Interés cultural',
+      history: 'Interés histórico',
+      busStop: 'Parada de guagua',
+      charging: 'Recarga eléctrica',
+    } as Record<string, string>,
+    guaguaNoTimetable: (until: string) =>
+      `Se indican las líneas que paran, no los horarios: el archivo de horarios de TILP no se actualiza desde el ${until}. Consulta a TILP antes de contar con una guagua.`,
+    guaguaSource: 'tilp.es',
+    guaguaSourceUrl: 'https://www.tilp.es/',
+  },
+
   station: {
     lastReading: 'Última lectura',
     age: 'Antigüedad',
