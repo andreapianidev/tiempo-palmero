@@ -24,6 +24,14 @@ import { haversineKm, type LonLat } from './geo'
 import type { Station } from './quality'
 import { clampHumidity, dewpointFrom } from './psychro'
 import { MODEL_SOURCE_LABEL, type Anchor } from './openmeteo'
+import {
+  bandShape,
+  calibrateModelBand,
+  calibrateScale,
+  nearestStationKm,
+  type Calibration,
+  type LooSample,
+} from './uncertainty'
 
 /**
  * Variables que el motor ajusta e interpola de verdad. Son las dos que la red
@@ -146,6 +154,12 @@ export interface Model {
   elevationRange: [number, number]
   /** Anclas de modelo añadidas al campo de residuos, si las hay. */
   anchors: number
+  /**
+   * Calibración empírica de la banda de incertidumbre. `null` mientras no haya
+   * bastantes estaciones para medirla; entonces se cae en la σ del ajuste, que
+   * es lo que había antes.
+   */
+  calibration: Calibration | null
 }
 
 export interface Contributor {
@@ -363,11 +377,15 @@ function anchorSamples(
  * @param anchors Anclas de modelo. NO participan en el ajuste ni en el rechazo
  *   —el gradiente, el R² y la σ siguen siendo los de la red del Cabildo— y solo
  *   se suman al campo de residuos por encima del techo medido.
+ * @param calibration Banda de incertidumbre medida (ver `uncertainty.ts`). Es
+ *   cara de calcular —un leave-one-out entero— así que se pasa hecha desde
+ *   fuera y se memoriza allí, en vez de rehacerla en cada `buildModel`.
  */
 export function buildModel(
   stations: readonly Station[],
   variable: InterpolableVariable,
   anchors: readonly Anchor[] = [],
+  calibration: Calibration | null = null,
 ): Model {
   const samples = toSamples(stations, variable)
   const { fit, kept, rejected, passes } = fitWithRejection(samples)
@@ -399,6 +417,7 @@ export function buildModel(
     passes,
     elevationRange,
     anchors: anchored.length,
+    calibration,
   }
 }
 
@@ -467,20 +486,36 @@ function gather(
 }
 
 /**
- * Banda de incertidumbre. Heurística, y se presenta como tal:
- *   base   σ de los residuos del ajuste — la parte que la altitud no explica
- *   +dist  penaliza estar lejos de la estación más cercana (hasta ×1,5 al corte)
- *   +alt   penaliza extrapolar por encima o por debajo del rango muestreado
+ * Banda de incertidumbre, calibrada (ver `uncertainty.ts`).
  *
- * No es un intervalo de confianza estadístico y la UI no lo llama así.
+ * Dos regímenes, y el punto puede estar en medio de los dos:
+ *   - donde manda la red, la banda es el error medido del interpolador por
+ *     leave-one-out, escalado por el término de forma;
+ *   - donde manda un ancla, es el error medido de Open-Meteo contra la red.
+ *
+ * Se mezclan por el peso que las anclas tienen de verdad en ESTE punto, así que
+ * el relevo entre una y otra lo hace el mismo reparto que decide el valor.
+ *
+ * Sigue sin ser un intervalo de confianza estadístico, y la UI no lo llama así:
+ * es un cuantil empírico sobre la red de hoy, que es bastante más de lo que
+ * era, pero no es una gaussiana.
  */
-function uncertaintyAt(model: Model, nearestKm: number, elevation: number): number {
-  const base = Math.max(model.sigma, 0.15)
-  const distFactor = 1 + Math.min(nearestKm / IDW_CUTOFF_KM, 1) * 0.5
-  const [lo, hi] = model.elevationRange
-  const outside = elevation > hi ? elevation - hi : elevation < lo ? lo - elevation : 0
-  const elevFactor = 1 + outside / 500
-  return base * distFactor * elevFactor
+function uncertaintyAt(
+  model: Model,
+  nearestKm: number,
+  elevation: number,
+  anchorShare: number,
+): number {
+  const shape = bandShape(nearestKm, elevation, model.elevationRange)
+  // Sin calibración se vuelve a la heurística anterior: peor, pero no inventada.
+  const scale = model.calibration?.scale ?? Math.max(model.sigma, 0.15)
+  const interpolated = scale * shape
+
+  const modelBand = model.calibration?.modelBand
+  if (modelBand === null || modelBand === undefined || anchorShare <= 0) {
+    return interpolated
+  }
+  return (1 - anchorShare) * interpolated + anchorShare * modelBand
 }
 
 export function estimate(
@@ -539,10 +574,16 @@ export function estimate(
   const nearestKm = cabildoDistances.length
     ? Math.min(...cabildoDistances)
     : IDW_CUTOFF_KM
+
+  // Cuánto de esta cifra la sostiene el modelo en lugar de la red. Es el mismo
+  // reparto de pesos que ha decidido el valor, así que la banda cambia de
+  // régimen exactamente al ritmo al que lo hace el número.
+  let anchorShare = 0
+  for (const it of list) if (it.s.source === 'openmeteo') anchorShare += it.w / sw
   const [lo, hi] = model.elevationRange
   return {
     value,
-    uncertainty: uncertaintyAt(model, nearestKm, elevation),
+    uncertainty: uncertaintyAt(model, nearestKm, elevation, anchorShare),
     contributors: top,
     extrapolated,
     elevationExtrapolated: elevation > hi || elevation < lo,
@@ -658,6 +699,7 @@ export function leaveOneOut(
       candidates: rest.length,
       passes: 0,
       anchors: 0,
+      calibration: null,
       elevationRange: [
         Math.min(...kept.map((s) => s.elevation)),
         Math.max(...kept.map((s) => s.elevation)),
@@ -697,6 +739,72 @@ export function leaveOneOut(
       observed,
       predicted,
     })),
+  }
+}
+
+/**
+ * Calibra la banda con el mismo leave-one-out que valida el modelo.
+ *
+ * Es caro —reconstruye el modelo entero una vez por estación— así que se llama
+ * donde ya se memoriza por conjunto de estaciones, no en cada `buildModel`.
+ *
+ * @param modelPairs Valor de Open-Meteo en el punto de cada estación, contra lo
+ *   que esa estación mide. Sin esto la banda de arriba se queda sin medir y las
+ *   anclas heredan la del interpolador, que se les queda corta.
+ */
+export function calibrate(
+  stations: readonly Station[],
+  variable: InterpolableVariable,
+  modelPairs: readonly { model: number | null; observed: number | null }[] = [],
+): Calibration | null {
+  const all = toSamples(stations, variable)
+  const targets = fitWithRejection(all).kept
+  const samples: LooSample[] = []
+
+  for (const target of targets) {
+    const rest = all.filter((s) => s.entityId !== target.entityId)
+    if (rest.length < 8) continue
+    const { fit, kept } = fitWithRejection(rest)
+    if (kept.length < 4) continue
+
+    const elevations = kept.map((s) => s.elevation)
+    const range: [number, number] = [Math.min(...elevations), Math.max(...elevations)]
+    const used = kept.map((s) => ({ ...s, detrended: s.value - fit.b * s.elevation }))
+    const probe: Model = {
+      variable,
+      a: fit.a,
+      b: fit.b,
+      r2: fit.r2,
+      sigma: fit.sigma,
+      used,
+      rejected: [],
+      candidates: rest.length,
+      passes: 0,
+      elevationRange: range,
+      anchors: 0,
+      calibration: null,
+    }
+    const est = estimate(probe, target.lon, target.lat, target.elevation)
+    if (!est) continue
+
+    // La MISMA forma que se usará al pedir la banda, evaluada aquí: si las dos
+    // se desincronizan, la cobertura calibrada deja de valer.
+    const nearestKm = nearestStationKm(kept, target.lon, target.lat)
+    samples.push({
+      absError: Math.abs(est.value - target.value),
+      shape: bandShape(nearestKm, target.elevation, range),
+    })
+  }
+
+  const scale = calibrateScale(samples)
+  if (scale === null) return null
+  const model = calibrateModelBand(modelPairs)
+  return {
+    scale,
+    modelBand: model.band,
+    n: samples.length,
+    modelN: model.n,
+    modelBias: model.bias,
   }
 }
 

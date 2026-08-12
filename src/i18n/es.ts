@@ -120,7 +120,6 @@ export const es = {
    * ficha los enseña los cinco, sin quedarse ninguno: es todo lo que hay.
    */
   poi: {
-    title: 'Punto de interés',
     source: 'Red de senderos del Cabildo Insular',
     weatherHere: 'Ver el tiempo en este punto',
     allFields: 'Ficha completa',
@@ -196,6 +195,18 @@ export const es = {
     r2: 'R² del ajuste',
     rmse: 'RMSE (validación)',
     coverage: 'Altitudes con sensor',
+    band: 'Margen (calibrado)',
+    bandHint:
+      'El margen no es una constante elegida a ojo: es el cuantil 68 de los errores que comete ' +
+      'este mismo motor al predecir cada estación dejándola fuera del ajuste. Por construcción, ' +
+      'la banda contiene el error real en 68 de cada 100 casos.',
+    modelDeviation: 'Desvío de Open-Meteo',
+    modelDeviationHint: (n: number) =>
+      `Cuánto se aparta Open-Meteo de las ${n} estaciones donde se puede comparar. Es la ` +
+      'incertidumbre que se aplica por encima del techo de la red, donde la cifra la sostiene ' +
+      'el modelo y no un sensor. Se mide donde hay estaciones, casi todo por debajo de la ' +
+      'inversión, que es justo donde peor lo hace un modelo global: arriba queda del lado ' +
+      'conservador.',
     anchorTag: 'Open-Meteo',
     anchorHint:
       'Punto de modelo, no una estación. El Cabildo no publica ninguna medida a esta altitud.',

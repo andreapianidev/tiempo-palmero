@@ -50,6 +50,10 @@ export function ModelStatus(props: Props) {
     ...(['temperature', 'relativehumidity'] as const).map((v) => models[v]?.anchors ?? 0),
   )
   const anchored = anchorCount > 0
+  // Ambas cifras describen el ajuste de temperatura, igual que el resto del
+  // bloque, así que la unidad es siempre la suya.
+  const calibration = model?.calibration ?? null
+  const unit = t.units.celsius
 
   return (
     <>
@@ -85,10 +89,27 @@ export function ModelStatus(props: Props) {
               </td>
             </tr>
           )}
+          {calibration && (
+            <tr title={t.model.bandHint}>
+              <td>{t.model.band}</td>
+              <td>
+                ±{n(calibration.scale, 2)} {unit}
+              </td>
+            </tr>
+          )}
           {anchorCount > 0 && (
             <tr>
               <td>{t.model.anchorTag}</td>
               <td>{t.model.anchorsActive(anchorCount)}</td>
+            </tr>
+          )}
+          {calibration?.modelBias !== null && calibration?.modelBias !== undefined && (
+            <tr title={t.model.modelDeviationHint(calibration.modelN)}>
+              <td>{t.model.modelDeviation}</td>
+              <td>
+                {calibration.modelBias >= 0 ? '+' : '−'}
+                {n(Math.abs(calibration.modelBias), 1)} {unit}
+              </td>
             </tr>
           )}
           {model && model.used.length > 0 && (

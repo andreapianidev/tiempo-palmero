@@ -27,10 +27,12 @@ import { buildStations, type NetworkCensus, type Station } from '../lib/quality'
 import { parseLocation, parseTimeinstant, num, type CdaRow } from '../lib/cabildo'
 import {
   buildModel,
+  calibrate,
   leaveOneOut,
   type InterpolableVariable,
   type Model,
 } from '../lib/interpolate'
+import type { Calibration } from '../lib/uncertainty'
 import {
   areaContaining,
   bboxOfMultiPolygon,
@@ -121,6 +123,8 @@ export function useIslandData(): IslandData {
 
   const [weatherRows, setWeatherRows] = useState<CdaRow[]>([])
   const [anchors, setAnchors] = useState<Anchor[]>([])
+  /** Open-Meteo en el punto de cada estación, para medir el error del modelo. */
+  const [modelAtStations, setModelAtStations] = useState<Anchor[]>([])
   const [air, setAir] = useState<AirStation[]>([])
   const [sky, setSky] = useState<SkyStation[]>([])
   const [fire, setFire] = useState<FireCamera[]>([])
@@ -351,6 +355,36 @@ export function useIslandData(): IslandData {
     return buildStations(weatherRows, elevationLookup, { now: fetchedAt })
   }, [dem, weatherRows, elevationLookup, fetchedAt])
 
+  /** Identidad del conjunto de estaciones: cambia solo si cambia la red. */
+  const stationKey = stations.map((s) => s.entityId).join(',')
+
+  /**
+   * Open-Meteo en el punto de cada estación.
+   *
+   * No se usa para pintar nada: sirve para MEDIR cuánto se desvía el modelo de
+   * la red, que es la incertidumbre honesta de las anclas allí donde no hay
+   * estaciones. Se pide con la misma cadencia que el resto y, si falla, la
+   * banda de arriba se queda sin calibrar y hereda la del interpolador.
+   */
+  useEffect(() => {
+    if (!stations.length) return
+    let cancelled = false
+    fetchAnchors(
+      stations.map((s) => ({ lon: s.lon, lat: s.lat, elevation: s.elevation })),
+    )
+      .then((m) => {
+        if (!cancelled) setModelAtStations(m)
+      })
+      .catch(() => {
+        if (!cancelled) setModelAtStations([])
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stationKey, tick])
+
+
   // Techo real de lo que publica la red: la estación más alta con dato.
   const stationCeiling = useMemo(
     () => (stations.length ? Math.max(...stations.map((s) => s.elevation)) : null),
@@ -386,24 +420,56 @@ export function useIslandData(): IslandData {
   }, [dem, stationCeiling, tick])
 
 
+  /**
+   * Calibración de la banda de incertidumbre. Cara —un leave-one-out completo
+   * por variable— así que cuelga del conjunto de estaciones y de la comparación
+   * contra el modelo, no del reloj de presentación.
+   */
+  const calibrations = useMemo(() => {
+    if (stations.length < 8) {
+      return { temperature: null, relativehumidity: null } as Record<
+        InterpolableVariable,
+        Calibration | null
+      >
+    }
+    // Emparejado por COORDENADA, nunca por índice: `fetchAnchors` descarta los
+    // puntos que llegan sin hora legible, así que el array puede venir más
+    // corto que el de estaciones y un `modelAtStations[i]` estaría comparando
+    // el modelo de una estación con la medida de otra, en silencio.
+    const key = (lon: number, lat: number) => `${lon.toFixed(5)},${lat.toFixed(5)}`
+    const byPoint = new Map(modelAtStations.map((m) => [key(m.lon, m.lat), m]))
+    const pairs = (v: InterpolableVariable) =>
+      stations.map((s) => {
+        const m = byPoint.get(key(s.lon, s.lat))
+        return {
+          model: m ? (v === 'temperature' ? m.temperature : m.relativehumidity) : null,
+          observed: s[v],
+        }
+      })
+    return {
+      temperature: calibrate(stations, 'temperature', pairs('temperature')),
+      relativehumidity: calibrate(stations, 'relativehumidity', pairs('relativehumidity')),
+    } as Record<InterpolableVariable, Calibration | null>
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stationKey, modelAtStations])
+
   const models = useMemo(() => {
     const make = (v: InterpolableVariable) =>
-      stations.length ? buildModel(stations, v, anchors) : null
+      stations.length ? buildModel(stations, v, anchors, calibrations[v]) : null
     return {
       temperature: make('temperature'),
       relativehumidity: make('relativehumidity'),
     } as Record<InterpolableVariable, Model | null>
-  }, [stations, anchors])
+  }, [stations, anchors, calibrations])
 
   // La validación es cara (n ajustes completos) y solo informa la cabecera, así
   // que se recalcula cuando cambia el conjunto de estaciones, no en cada tick.
-  const validationKey = stations.map((s) => s.entityId).join(',')
   const validation = useMemo(() => {
     if (stations.length < 8) return null
     const loo = leaveOneOut(stations, 'temperature')
     return Number.isFinite(loo.rmse) ? { rmse: loo.rmse, mae: loo.mae, n: loo.n } : null
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validationKey])
+  }, [stationKey])
 
   const co2 = useMemo<Co2Point[]>(() => {
     const byId = new Map(co2Readings.map((r) => [r.id, r]))

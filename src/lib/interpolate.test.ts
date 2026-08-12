@@ -23,6 +23,7 @@ import {
 } from './quality'
 import { parseLocation, parseTimeinstant, type CdaRow } from './cabildo'
 import { parseModelTime } from './openmeteo'
+import { quantile, TARGET_COVERAGE, type Calibration } from './uncertainty'
 import { haversineKm } from './geo'
 import {
   dewpointFrom,
@@ -35,6 +36,7 @@ import {
 } from './psychro'
 import {
   buildModel,
+  calibrate,
   estimateBundle,
   medianPressure,
   estimate,
@@ -572,6 +574,108 @@ describe('frescura del dato interpolado', () => {
     if (!b.dewpoint || !b.temperature || !b.relativehumidity) return
     expect(b.dewpoint.observedAt).toBeLessThanOrEqual(b.temperature.observedAt)
     expect(b.dewpoint.observedAt).toBeLessThanOrEqual(b.relativehumidity.observedAt)
+  })
+})
+
+describe('banda de incertidumbre calibrada', () => {
+  const anchor = (elevation: number, value = 12, lon = -17.885, lat = 28.754) => ({
+    lon,
+    lat,
+    elevation,
+    temperature: value,
+    relativehumidity: 30,
+    observedAt: NOW,
+  })
+
+  /** Cobertura real: ¿cuántos errores de LOO caen dentro de la banda? */
+  function coverage(variable: 'temperature' | 'relativehumidity', calib: Calibration | null) {
+    const all = toSamples(stations, variable)
+    const targets = fitWithRejection(all).kept
+    let inside = 0
+    let total = 0
+    for (const t of targets) {
+      const rest = all.filter((s) => s.entityId !== t.entityId)
+      if (rest.length < 8) continue
+      const { fit, kept } = fitWithRejection(rest)
+      const el = kept.map((s) => s.elevation)
+      const m = buildModel(
+        stations.filter((s) => s.entityId !== t.entityId),
+        variable,
+        [],
+        calib,
+      )
+      void fit
+      void el
+      const e = estimate(m, t.lon, t.lat, t.elevation)
+      if (!e) continue
+      total++
+      if (Math.abs(e.value - t.value) <= e.uncertainty) inside++
+    }
+    return total ? inside / total : NaN
+  }
+
+  it('la banda cubre lo que dice cubrir, y antes no', () => {
+    for (const v of ['temperature', 'relativehumidity'] as const) {
+      const calib = calibrate(stations, v)
+      expect(calib).not.toBeNull()
+
+      const antes = coverage(v, null) // heurística de la σ del ajuste
+      const despues = coverage(v, calib)
+
+      // El objetivo es 0,68. La calibración tiene que acercarse MÁS que la
+      // heurística anterior, que sobre este fixture se quedaba en 0,59 y 0,68
+      // según la variable —o sea, acertaba por casualidad en una y fallaba en
+      // la otra, que es justamente el problema.
+      expect(Math.abs(despues - TARGET_COVERAGE)).toBeLessThanOrEqual(
+        Math.abs(antes - TARGET_COVERAGE) + 1e-9,
+      )
+      // Y en términos absolutos, no se aleja más de 12 puntos del objetivo.
+      expect(Math.abs(despues - TARGET_COVERAGE)).toBeLessThan(0.12)
+    }
+  })
+
+  it('no se calibra con cuatro estaciones: devuelve null y se usa lo de antes', () => {
+    const pocas = stations.slice(0, 5)
+    expect(calibrate(pocas, 'temperature')).toBeNull()
+    // Y el motor sigue dando una banda, la heurística vieja, en vez de NaN.
+    const m = buildModel(pocas, 'temperature', [], null)
+    const e = estimate(m, -17.87, 28.7, 600)!
+    expect(Number.isFinite(e.uncertainty)).toBe(true)
+    expect(e.uncertainty).toBeGreaterThan(0)
+  })
+
+  it('la banda del modelo solo manda donde manda el ancla', () => {
+    // Un modelo muy malo: 25 puntos de error típico. Debe ensanchar la cumbre
+    // y no tocar nada donde hay estaciones.
+    const calib: Calibration = {
+      scale: 1,
+      modelBand: 25,
+      n: 30,
+      modelN: 30,
+      modelBias: -3,
+    }
+    const anc = [anchor(2400, 12)]
+    const m = buildModel(stations, 'temperature', anc, calib)
+
+    const abajo = estimate(m, -17.87, 28.7, 400)!
+    const cumbre = estimate(m, -17.885, 28.754, 2400)!
+    expect(abajo.uncertainty).toBeLessThan(3)
+    expect(cumbre.uncertainty).toBeGreaterThan(10)
+
+    // Sin banda de modelo medida, la cumbre hereda la del interpolador.
+    const sinBanda = buildModel(stations, 'temperature', anc, {
+      ...calib,
+      modelBand: null,
+    })
+    expect(estimate(sinBanda, -17.885, 28.754, 2400)!.uncertainty).toBeLessThan(
+      cumbre.uncertainty,
+    )
+  })
+
+  it('el cuantil empírico no supone normalidad', () => {
+    expect(quantile([1, 2, 3, 4, 5], 0.68)).toBe(4)
+    expect(quantile([5, 1, 3], 0.5)).toBe(3)
+    expect(Number.isNaN(quantile([], 0.5))).toBe(true)
   })
 })
 

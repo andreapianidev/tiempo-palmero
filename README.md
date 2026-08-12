@@ -243,6 +243,34 @@ separados al menos 3 km entre sí. Medido el 12 ago 2026, en el Roque de los
 Muchachos la humedad pasa de un imposible 100 % a 38 %, y a 900 y 300 m —donde
 sí hay estaciones— el valor no se mueve ni una décima.
 
+### La banda de incertidumbre está calibrada, no supuesta
+
+El `±` que acompaña cada cifra salía antes de la σ de los residuos del ajuste
+altitudinal. Pero esa σ mide la dispersión alrededor de la **recta**, y el
+número que se enseña no sale de la recta: sale de la recta más el IDW de los
+residuos, que explica una parte de esa dispersión. Medir el error del pipeline
+entero con la σ del ajuste es medir otra cosa, y fallaba en las dos
+direcciones: sobre el fixture del 12 ago 2026 cubría el 59 % de los casos en
+temperatura —demasiado estrecha— y el 82 % en humedad —demasiado ancha—; sobre
+los datos en vivo de esa misma tarde, la humedad se iba al 56 %.
+
+Ahora se calibra con el mismo leave-one-out que valida el modelo: para cada
+estación excluida se mide el error real y el término de forma, y la escala es
+el **cuantil 68 del cociente**. Por construcción la banda contiene el error en
+68 de cada 100 casos. Sobre el fixture: **69 % en temperatura y 68 % en
+humedad**.
+
+Por encima del techo de la red la cifra la sostiene un modelo, así que su
+incertidumbre es la del modelo. Se mide preguntando a Open-Meteo por el punto
+de **cada estación** y comparando con lo que esa estación mide. En vivo el
+12 ago 2026, sobre 35 estaciones, Open-Meteo va **+2,4 °C y −20,6 puntos de
+humedad** respecto a la red insular. De ahí que la banda en la cumbre salga
+ancha: es ancha porque de verdad no se sabe mejor.
+
+Las dos bandas se mezclan por el peso que las anclas tienen realmente en cada
+punto, de modo que el relevo entre una y otra lo hace el mismo reparto que
+decide el valor. El desvío medido se enseña en el bloque «Modelo».
+
 ### Validación
 
 `npm test` corre leave-one-out sobre una lectura real congelada de la red.
