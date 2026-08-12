@@ -277,8 +277,40 @@ export const es = {
     officialSourceUrl: 'https://www.cabildodelapalma.es/',
     sensorsReporting: (fresh: number, total: number) =>
       `${fresh} de ${total} sensores transmitiendo`,
-    height: 'Altura del sensor',
+    height: 'Altura sobre el suelo',
+    heightHint:
+      'El CO₂ es más denso que el aire y se acumula a ras de suelo, en hondonadas y en ' +
+      'sótanos. La misma concentración medida a 0,5 m y a 1,5 m no describe la misma ' +
+      'situación, por eso la altura del sensor va junto al número.',
     lastSeen: 'Última transmisión',
+
+    /** Qué es esta cifra. Sin adjetivos y sin decir qué hacer con ella. */
+    whatIsThis: 'Qué mide este sensor',
+    whatIsThisBody:
+      'Concentración de dióxido de carbono en el aire, en partes por millón (ppm). Esta red ' +
+      'no vigila la calidad del aire urbana: vigila el gas volcánico que emana del suelo en ' +
+      'Puerto Naos y La Bombilla desde la erupción de 2021. El aire libre está hoy en torno a ' +
+      'las 420 ppm en todo el planeta, así que esa es la referencia de fondo por debajo de la ' +
+      'cual no hay nada que atribuir al volcán.',
+    sensorTemp: 'Temperatura del sensor',
+    sensorTempHint:
+      'Es la temperatura de la electrónica dentro de su caja, no la del aire en ese punto. ' +
+      'Al sol pasa de largo los 40 °C mientras el aire está a 25. Para el tiempo que hace ' +
+      'ahí, usa la malla meteorológica.',
+    outdoor: 'Emplazamiento',
+    outdoorValue: 'Exterior',
+    indoorValue: 'Interior',
+    indoorHint:
+      'Sensor colocado dentro de un recinto. En interiores la respiración de quien está ' +
+      'dentro también sube el CO₂, así que la cifra no se debe leer como emanación del suelo ' +
+      'sin más contexto.',
+
+    /** El suelo del equipo, que se repite en la mayoría de la red. */
+    floorValue: 'Mínimo del equipo',
+    floorBody:
+      '400 ppm es el valor más bajo que declara este equipo: por debajo de esa concentración ' +
+      'no distingue. Significa «nada apreciable por encima del fondo atmosférico», no una ' +
+      'medida exacta de 400.',
   },
 
   fire: {

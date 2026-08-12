@@ -8,7 +8,7 @@
  */
 
 import { formatIslandTime } from '../lib/cabildo'
-import { co2Band } from '../lib/palette'
+import { co2Band, CO2_FLOOR_PPM } from '../lib/palette'
 import { freshness, stationReading, type Station } from '../lib/quality'
 import { FAMILY_COLOR, isDataProp, poiIconDataUrl, type PoiRecord } from '../lib/poi'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
@@ -317,27 +317,56 @@ function Co2Detail({ c, down }: { c: Co2Point; down: boolean }) {
             <span className="chip" style={{ background: band.color, color: '#11100e' }}>
               {band.label}
             </span>
+            {c.reading.ppm <= CO2_FLOOR_PPM && (
+              <span className="chip chip-ghost">{t.co2.floorValue}</span>
+            )}
           </p>
+
+          {/* El suelo del equipo lo marcan 169 de los 182 sensores que
+              transmitían el 12 ago 2026: sin decirlo, la cifra más repetida de
+              la red parece una medida precisa y no lo es. */}
+          {c.reading.ppm <= CO2_FLOOR_PPM && (
+            <p className="note small">{t.co2.floorBody}</p>
+          )}
+
           <table className="kv">
             <tbody>
               <tr>
                 <td>{t.co2.at}</td>
                 <td className="mono">{formatIslandTime(c.reading.at)}</td>
               </tr>
-              {c.heightM !== null && (
-                <tr>
+              <tr title={c.outdoor ? undefined : t.co2.indoorHint}>
+                <td>{t.co2.outdoor}</td>
+                <td className="mono">
+                  {c.outdoor ? t.co2.outdoorValue : t.co2.indoorValue}
+                </td>
+              </tr>
+              {/* La altura viene en la lectura, no en el inventario: ver
+                  `Co2Reading.heightM`. Antes se leía de `/MetaDato`, donde está
+                  a null en los 209 sensores, y esta fila no salía nunca. */}
+              {c.reading.heightM !== null && (
+                <tr title={t.co2.heightHint}>
                   <td>{t.co2.height}</td>
-                  <td className="mono">{n(c.heightM, 1)} {t.units.metres}</td>
+                  <td className="mono">
+                    {n(c.reading.heightM, 1)} {t.units.metres}
+                  </td>
                 </tr>
               )}
               {c.reading.tempC !== null && (
-                <tr>
-                  <td>{t.variables.temperature}</td>
+                <tr title={t.co2.sensorTempHint}>
+                  <td>{t.co2.sensorTemp}</td>
                   <td className="mono">{n(c.reading.tempC, 1)} {t.units.celsius}</td>
                 </tr>
               )}
             </tbody>
           </table>
+
+          {!c.outdoor && <p className="note small">{t.co2.indoorHint}</p>}
+
+          <details className="explain">
+            <summary>{t.co2.whatIsThis}</summary>
+            <p className="small">{t.co2.whatIsThisBody}</p>
+          </details>
         </>
       )}
 

@@ -94,6 +94,18 @@ export interface Co2Band {
  * aparece la palabra «seguro» en ningún sitio: quien decide si un sitio es
  * seguro es el Cabildo, no una pantalla.
  */
+/**
+ * Suelo de medida de los equipos DEMASE, en ppm.
+ *
+ * No es una banda: es el valor más bajo que el sensor sabe declarar. Medido
+ * sobre la red en vivo el 12 ago 2026, **169 de los 182 sensores que
+ * transmitían daban exactamente 400,00** — un fondo atmosférico real no se
+ * repite clavado en 169 equipos, y además el fondo global de 2026 está más
+ * cerca de 420 que de 400. Es un suelo, y la ficha lo dice en vez de dejar que
+ * la cifra más repetida de la red pase por una medida precisa.
+ */
+export const CO2_FLOOR_PPM = 400
+
 export const CO2_BANDS: Co2Band[] = [
   { from: 0, color: '#5b7f6a', label: 'Nivel ambiental' },
   { from: 1000, color: '#c8a850', label: 'Por encima del ambiental' },

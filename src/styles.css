@@ -177,6 +177,15 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   vertical-align: 1px;
 }
 
+/* Etiqueta secundaria junto a la banda: dice algo del dato, no de su nivel,
+   así que no compite en color con la pastilla de concentración. */
+.chip-ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  margin-left: 6px;
+}
+
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-btn {
   font: 500 12px/1 var(--sans);

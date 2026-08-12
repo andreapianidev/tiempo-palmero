@@ -47,7 +47,27 @@ export interface Co2Reading {
   id: number
   ppm: number
   percent: number
+  /**
+   * Temperatura del PROPIO SENSOR, no del aire.
+   *
+   * Llega junto al CO₂ y es la de la electrónica dentro de su caja al sol: de
+   * las 201 lecturas del 12 ago 2026, 83 pasaban de 35 °C y la mayor daba
+   * 47,1 °C, mientras las estaciones meteorológicas de la isla marcaban unos
+   * 25. Enseñarla como «Temperatura» a secas invita a leerla como el tiempo
+   * que hace en ese punto, que es otra cosa.
+   */
   tempC: number | null
+  /**
+   * Altura del sensor sobre el suelo, en metros.
+   *
+   * Viene en la LECTURA, no en el inventario: `/MetaDato` trae `Altura` a null
+   * en los 209 sensores, y `/datos_actuales` la trae en los 201 (0,5 m en 195
+   * y 1,5 m en 6). La app la buscaba donde no está, así que la fila no salía
+   * nunca. Y para CO₂ importa mucho: es más denso que el aire y se acumula a
+   * ras de suelo, así que la misma concentración a 0,5 m y a 1,5 m no dice lo
+   * mismo.
+   */
+  heightM: number | null
   battery: number | null
   /** Epoch ms. `Ts` viene en segundos y es la referencia fiable: `Fecha` es
    *  DD/MM/YYYY y ordena mal como cadena. */
@@ -79,6 +99,7 @@ export async function fetchCo2Readings(): Promise<{ fetchedAt: number; readings:
     fetchedAt: number
     data: {
       Ts: number
+      Altura?: number | null
       valores?: { Id: number; Co2?: number; 'co2%'?: number; temp?: number; bat?: number }
     }[]
   }
@@ -91,6 +112,7 @@ export async function fetchCo2Readings(): Promise<{ fetchedAt: number; readings:
       ppm: v.Co2,
       percent: v['co2%'] ?? v.Co2 / 10_000,
       tempC: v.temp ?? null,
+      heightM: typeof r.Altura === 'number' ? r.Altura : null,
       battery: v.bat ?? null,
       at: r.Ts * 1000,
     })
