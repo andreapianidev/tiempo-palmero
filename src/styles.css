@@ -94,7 +94,12 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 /* ---------- disposición ---------- */
 
 .app { position: fixed; inset: 0; }
-.map { position: absolute; inset: 0; }
+/* `z-index: 0` no cambia dónde se pinta el mapa, pero crea un contexto de
+   apilamiento: sin él los marcadores (que se apilan entre sí hasta z-index 40)
+   compiten directamente con los paneles y las pastillas de temperatura se
+   dibujan encima del panel del punto. Con él, todo lo del mapa queda contenido
+   por debajo de la barra lateral y de los paneles. */
+.map { position: absolute; inset: 0; z-index: 0; }
 
 .maplibregl-ctrl-attrib {
   background: rgba(20, 19, 17, 0.82) !important;
