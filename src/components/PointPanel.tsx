@@ -8,7 +8,14 @@
  */
 
 import { useMemo } from 'react'
-import { estimate, nearestWith, type InterpolableVariable, type Model } from '../lib/interpolate'
+import {
+  estimateBundle,
+  nearestWith,
+  type Bundle,
+  type DisplayVariable,
+  type InterpolableVariable,
+  type Model,
+} from '../lib/interpolate'
 import type { Station } from '../lib/quality'
 import { cssColor, type RgbStop } from '../lib/palette'
 import { n, n0, t, humanAge } from '../i18n'
@@ -25,19 +32,19 @@ interface Props {
   point: ProbePoint
   models: Record<InterpolableVariable, Model | null>
   stations: Station[]
-  variable: InterpolableVariable
+  variable: DisplayVariable
   stops: RgbStop[]
   now: number
   onClose: () => void
 }
 
-const VARIABLE_UNITS: Record<InterpolableVariable, string> = {
+const VARIABLE_UNITS: Record<DisplayVariable, string> = {
   temperature: t.units.celsius,
   relativehumidity: t.units.percent,
   dewpoint: t.units.celsius,
 }
 
-const VARIABLE_LABELS: Record<InterpolableVariable, string> = {
+const VARIABLE_LABELS: Record<DisplayVariable, string> = {
   temperature: t.variables.temperature,
   relativehumidity: t.variables.relativehumidity,
   dewpoint: t.variables.dewpoint,
@@ -52,25 +59,30 @@ export function PointPanel({
   now,
   onClose,
 }: Props) {
-  const model = models[variable]
   const elevation = point.elevation
 
-  const main = useMemo(
-    () => (model && elevation !== null ? estimate(model, point.lon, point.lat, elevation) : null),
-    [model, point.lon, point.lat, elevation],
+  // Un solo cálculo para las tres variables. Interpolarlas por separado dejaba
+  // que se contradijeran entre sí: se llegó a ver 99 % de humedad junto a un
+  // punto de rocío de −7,9 °C a la misma altitud, que no es impreciso sino
+  // imposible.
+  const bundle: Bundle = useMemo(
+    () =>
+      elevation === null
+        ? { temperature: null, relativehumidity: null, dewpoint: null }
+        : estimateBundle(models, point.lon, point.lat, elevation),
+    [models, point.lon, point.lat, elevation],
   )
 
-  const secondary = useMemo(() => {
-    if (elevation === null) return []
-    return (['temperature', 'relativehumidity', 'dewpoint'] as const)
-      .filter((v) => v !== variable)
-      .map((v) => {
-        const m = models[v]
-        const est = m ? estimate(m, point.lon, point.lat, elevation) : null
-        return est ? { variable: v, est } : null
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null)
-  }, [models, point.lon, point.lat, elevation, variable])
+  const main = bundle[variable]
+
+  const secondary = useMemo(
+    () =>
+      (['temperature', 'relativehumidity', 'dewpoint'] as const)
+        .filter((v) => v !== variable)
+        .map((v) => (bundle[v] ? { variable: v, est: bundle[v]! } : null))
+        .filter((x): x is NonNullable<typeof x> => x !== null),
+    [bundle, variable],
+  )
 
   const wind = useMemo(
     () =>
@@ -117,7 +129,7 @@ export function PointPanel({
             </b>
             <span className="reading-unit">
               {unit}
-              <em>{t.point.estimated}</em>
+              <em>{variable === 'dewpoint' ? t.point.derived : t.point.estimated}</em>
             </span>
           </div>
 
@@ -125,6 +137,10 @@ export function PointPanel({
             {t.point.uncertainty} ± {n(main.uncertainty, decimals)} {unit}
             <span className="dim"> · {t.point.notAMeasurement}</span>
           </p>
+
+          {variable === 'dewpoint' && (
+            <p className="note small">{t.variables.derivedHint}</p>
+          )}
 
           {main.extrapolated && <p className="warn">{t.point.extrapolated}</p>}
           {main.elevationExtrapolated && (

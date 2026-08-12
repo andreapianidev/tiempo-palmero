@@ -8,6 +8,21 @@ punto**, no la lectura de la estación más cercana. Es una distinción que en L
 Palma no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa escala la
 altitud manda sobre la distancia en cualquier variable atmosférica.
 
+**→ [tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
+
+![Tiempo Palmero: la isla con la malla interpolada sobre el relieve sombreado, y el panel de un punto consultado](docs/captura-tiempo-palmero.jpg)
+
+En la captura, un punto cualquiera de El Paso a 509 m. La cifra grande es una
+**estimación**, y la interfaz no lo disimula: lleva su margen al lado, el
+municipio calculado por geometría, y las tres estaciones que sostienen el
+cálculo con su distancia y su desnivel. La estación que más pesa está 251 m más
+arriba y a 3,5 km; la segunda, 143 m más abajo. Sin corregir por altitud, esas
+dos se promediarían como si estuvieran en el mismo sitio.
+
+Abajo a la izquierda, el estado del modelo: **35 de 52 estaciones activas** —el
+denominador real, no el del catálogo—, el gradiente medido en ese instante
+(4,06 °C/km, no los 6,5 del manual), el R² del ajuste y el RMSE de validación.
+
 ---
 
 ## Por qué existe
@@ -119,6 +134,21 @@ Bajar esa constante mejora las métricas de este conjunto de datos hasta α≈30
 eso es precisamente la señal de que ahí ya se estaría ajustando al conjunto de
 validación en vez de al problema.
 
+**El punto de rocío se calcula, no se interpola.** Solo 10 de las 52 estaciones
+lo publican, contra 30 que publican humedad y 36 temperatura. Un campo con diez
+muestras sobre una isla de 2426 m se va a valores imposibles en cuanto el punto
+se aleja de esas diez: se llegó a ver **99 % de humedad junto a un rocío de
+−7,9 °C en el mismo punto**, que no es un valor impreciso sino uno que no puede
+existir. Ahora se interpolan las dos variables bien muestreadas y el rocío sale
+de ellas por Magnus-Tetens, así que la contradicción no puede darse por
+construcción. Cuesta unos 0,2 °C de exactitud en las diez estaciones que sí lo
+miden —y esas diez son justamente donde esa red es densa, o sea que el contraste
+juega en contra del método derivado— a cambio de coherencia en toda la isla.
+
+La fórmula no es un supuesto: contrastada contra las estaciones que publican las
+tres variables a la vez, la humedad que implican su temperatura y su rocío se
+desvía de la que ellas mismas declaran **0,99 % de media, 2,45 % como máximo**.
+
 ### Validación
 
 `npm test` corre leave-one-out sobre una lectura real congelada de la red.
@@ -141,6 +171,61 @@ interpolador — y el pipeline que rechaza outliers tampoco afirma poder
 predecirlos: los marca como no fiables, que es su trabajo. La comparación con
 `rejectOutliers: false` enfrenta dos pipelines completos, cada uno respondiendo
 por lo que dice cubrir.
+
+---
+
+## Qué más publica el Cabildo, y qué falta por aprovechar
+
+El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**. Esta
+aplicación usa hoy seis capas y un endpoint en directo. Lo que queda, ordenado
+por lo que aportaría de verdad:
+
+### Lo que cambiaría la aplicación de categoría
+
+| Fuente | Qué habilita |
+|---|---|
+| `weatherobserved` — histórico crudo, **35.274 filas / semana** | Gráficas de 24 h y 7 días por estación, máximas y mínimas del día, y **evolución del punto interpolado en el tiempo**. También multiplicaría la validación: hoy los criterios se miden sobre un instante, y con histórico se medirían sobre un ciclo diurno completo, que es donde la capa de inversión hace de las suyas. |
+| **Campos ya presentes que no se muestran** en `weatherobserved_lastdata` | `uv` (índice UV — en Canarias no es un adorno), `solarradiation`, `atmosphericpressure` (interpolable con corrección barométrica, ~1 hPa cada 8 m), `illuminance`, `dailyevapotranspiration`, `visibility`, `feellikestemperature`. La presión es la tercera variable que de verdad admite interpolación y no está. |
+| `count_today` / `count_historic` — **77 aforos, la única red 100 % viva** | Aforos de senderos y tráfico. Cruzado con el tiempo responde a «¿va a estar lleno el sendero mañana?», que ninguna otra app de la isla contesta. Y es la red más sana del portal, sin una sola estación muerta. |
+
+### Capas estáticas listas para añadir (todas WGS84, ya descargables en build)
+
+| Conjunto | n | Interés |
+|---|---:|---|
+| `zonas-recreativas-de-la-palma` | 33 | El conjunto con más atributos del portal (22 claves): refugios, zonas de acampada, `permisos`, `capacidad_personas`. Encaja directamente con senderos y tiempo. |
+| `lugares-de-interes-turistico-de-titularidad-insular` | 50 | Los «Imprescindibles», con accesibilidad y ficha. |
+| `lugares-de-interes-historico-de-la-palma` | 390 | Polígonos, con superficie. |
+| `lugares-de-interes-cultural-de-la-palma` | 92 | Museos, iglesias, centros. |
+| `transporte-publico-…-guagua` | 913 paradas + **GTFS** | Llegar al punto consultado en guagua. El GTFS es de especificación estándar. |
+| `puntos-de-recarga-de-vehiculos-electricos` | 54 | Ojo: incluye previstos, no solo operativos (`prioridad` los separa). |
+| `vias-interurbanas` + Feature Server de ArcGIS | 53 | Red de carreteras, con capa viva. |
+| `instalaciones-deportivas` | 117 | EIEL 2023. |
+| `centros-sociosanitarios` / `servicios-atencion-social` | 26 / 36 | Con `tiene_uvi` y `numero_camas`. |
+| `alumbrado-publico-de-la-palma` | **21.070** | Con `potencia_instalada_w` y `regulacion_flujo_luminoso`. Cruzado con la red de fotómetros da un mapa de contaminación lumínica real, que para una Reserva Starlight es una aplicación en sí misma. |
+
+### Interesante pero con letra pequeña
+
+- **`agriparcel`** (140 parcelas) es la **única fuente con municipio real**, y su
+  campo `refagroweatherobserved` es un emparejamiento parcela→estación hecho por
+  el propio publicador: sirve de contraste independiente para nuestra lógica de
+  proximidad. Las recomendaciones de riego, en cambio, solo existen para
+  Fuencaliente y tres de sus cuatro campos numéricos son 0 en todas las filas.
+- **Fotómetros históricos** (48.026 filas / semana) permitirían «dónde está el
+  cielo más oscuro esta noche», con el campo `clouds` incluido. Pero **44 de 59
+  llevan más de un mes sin transmitir**: la capa sería honesta solo si declara
+  cuántos están vivos, como ya hace la aplicación.
+- **Electricidad y agua** (19 contadores trifásicos R/S/T, 11 de agua) y
+  **residuos** (310 contenedores monitorizados). Datos correctos, pero fuera de
+  lo que esta aplicación promete.
+- **Transparencia** —presupuestos, contratos, subvenciones, RPT— es tabular y no
+  tiene nada que ver con el tiempo. Otra aplicación, no esta.
+
+### Lo que no conviene añadir
+
+La **calidad del aire** ya está, y así debe quedarse: como puntos, nunca como
+superficie. Además su cobertura es pobre y desigual —EL PASO y SAN ANDRÉS Y
+SAUCES no tienen ni una estación, y 7 de las 20 que reportan llevan más de un mes
+sin actualizar—. Ampliarla daría sensación de cobertura donde no la hay.
 
 ---
 

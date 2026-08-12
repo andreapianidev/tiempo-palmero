@@ -12,7 +12,6 @@
 import { pixelXToLon, pixelYToLat } from './geo'
 import type { Dem } from './dem'
 import { SEA_LEVEL_M } from './dem'
-import { estimate, type Model } from './interpolate'
 import { sampleRamp, type RgbStop } from './palette'
 
 export interface GridResult {
@@ -29,9 +28,14 @@ export interface GridOptions {
   opacity?: number
 }
 
+/**
+ * `valueAt` en lugar de un modelo: el punto de rocío no se interpola, se deriva
+ * de la temperatura y la humedad, así que la malla tiene que poder pintar algo
+ * que no sale de un único ajuste.
+ */
 export function renderGrid(
   dem: Dem,
-  model: Model,
+  valueAt: (lon: number, lat: number, elevation: number) => number | null,
   stops: RgbStop[],
   opts: GridOptions = {},
 ): GridResult {
@@ -62,10 +66,10 @@ export function renderGrid(
 
       const px = dem.originX + i * step + step / 2
       const lon = pixelXToLon(px, zoom)
-      const est = estimate(model, lon, lat, elevation)
-      if (!est) continue
+      const value = valueAt(lon, lat, elevation)
+      if (value === null) continue
 
-      const [r, g, b] = sampleRamp(stops, est.value)
+      const [r, g, b] = sampleRamp(stops, value)
       const o = (j * cols + i) * 4
       out[o] = r
       out[o + 1] = g

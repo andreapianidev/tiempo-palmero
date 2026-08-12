@@ -16,8 +16,10 @@ import snapshot from './__fixtures__/weather-snapshot.json'
 import { buildStations, dedupeByEntityId, usable, type Station } from './quality'
 import { parseLocation, parseTimeinstant, type CdaRow } from './cabildo'
 import { haversineKm } from './geo'
+import { dewpointFrom, relativeHumidityFrom } from './psychro'
 import {
   buildModel,
+  estimateBundle,
   estimate,
   leaveOneOut,
   ols,
@@ -286,7 +288,7 @@ describe('variables que no se interpolan', () => {
   })
 
   it('humedad y punto de rocío sí se modelan, con su propio gradiente', () => {
-    for (const v of ['relativehumidity', 'dewpoint'] as const) {
+    for (const v of ['relativehumidity'] as const) {
       const m = buildModel(stations, v)
       if (m.used.length < 5) continue
       expect(Number.isFinite(m.b)).toBe(true)
@@ -358,5 +360,67 @@ describe('degradación con red reducida', () => {
   it('sin ninguna estación devuelve null en vez de un número inventado', () => {
     const m = buildModel([], 'temperature')
     expect(estimate(m, -17.9, 28.65, 800)).toBeNull()
+  })
+})
+
+describe('coherencia higrotérmica', () => {
+  const models = {
+    temperature: buildModel(stations, 'temperature'),
+    relativehumidity: buildModel(stations, 'relativehumidity'),
+  }
+
+  it('la fórmula de Magnus describe a las propias estaciones', () => {
+    // Las que publican las tres variables a la vez son el contraste: si la
+    // fórmula no las reprodujera, derivar el rocío de ellas sería inventar.
+    const triples = stations.filter(
+      (s) => s.temperature !== null && s.relativehumidity !== null && s.dewpoint !== null,
+    )
+    expect(triples.length).toBeGreaterThan(3)
+    for (const s of triples) {
+      const implied = relativeHumidityFrom(s.temperature!, s.dewpoint!)
+      expect(Math.abs(implied - s.relativehumidity!)).toBeLessThan(4)
+    }
+  })
+
+  it('las tres variables estimadas nunca se contradicen entre sí', () => {
+    // La regresión que motiva todo esto: se llegó a mostrar 99 % de humedad
+    // junto a un punto de rocío de −7,9 °C en el mismo punto y a la misma
+    // altitud. No es impreciso: es imposible. Al derivar el rocío de las otras
+    // dos, la contradicción no puede darse por construcción.
+    for (const z of [0, 250, 700, 1200, 1800, 2400]) {
+      for (const [lon, lat] of [
+        [-17.9145, 28.7225],
+        [-17.78, 28.62],
+        [-17.95, 28.8],
+      ] as const) {
+        const b = estimateBundle(models, lon, lat, z)
+        if (!b.temperature || !b.relativehumidity || !b.dewpoint) continue
+
+        // El rocío nunca supera a la temperatura: el aire no puede estar más
+        // que saturado.
+        expect(b.dewpoint.value).toBeLessThanOrEqual(b.temperature.value + 0.01)
+
+        // Y la humedad que implican T y Td es la que se está mostrando.
+        const implied = relativeHumidityFrom(b.temperature.value, b.dewpoint.value)
+        expect(Math.abs(implied - b.relativehumidity.value)).toBeLessThan(0.5)
+      }
+    }
+  })
+
+  it('la humedad estimada se mantiene dentro de [0, 100]', () => {
+    for (const z of [0, 800, 1600, 2400, 3000]) {
+      const b = estimateBundle(models, -17.88, 28.72, z)
+      if (!b.relativehumidity) continue
+      expect(b.relativehumidity.value).toBeGreaterThanOrEqual(0)
+      expect(b.relativehumidity.value).toBeLessThanOrEqual(100)
+    }
+  })
+
+  it('las conversiones psicrométricas son inversas la una de la otra', () => {
+    for (const t of [-5, 5, 15, 25, 35]) {
+      for (const rh of [10, 40, 70, 95]) {
+        expect(relativeHumidityFrom(t, dewpointFrom(t, rh))).toBeCloseTo(rh, 4)
+      }
+    }
   })
 })

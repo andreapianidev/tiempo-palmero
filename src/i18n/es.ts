@@ -36,6 +36,8 @@ export const es = {
     temperature: 'Temperatura',
     relativehumidity: 'Humedad relativa',
     dewpoint: 'Punto de rocío',
+    derivedHint:
+      'El punto de rocío se calcula a partir de la temperatura y la humedad estimadas, no se interpola por separado: solo 10 de las 52 estaciones lo publican. Así las tres cifras nunca se contradicen entre sí.',
     wind: 'Viento',
     precipitation: 'Precipitación',
   },
@@ -57,6 +59,7 @@ export const es = {
     municipality: 'Municipio',
     outsideIsland: 'Fuera de la isla',
     estimated: 'estimado',
+    derived: 'calculado',
     measured: 'medido',
     notAMeasurement: 'Valor estimado, no medido',
     uncertainty: 'Margen',

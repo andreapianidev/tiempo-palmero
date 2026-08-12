@@ -8,7 +8,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import type { InterpolableVariable, Model } from '../lib/interpolate'
+import type { DisplayVariable, InterpolableVariable, Model } from '../lib/interpolate'
 import type { NetworkCensus } from '../lib/quality'
 import type { GazetteerEntry } from '../lib/api'
 import type { LayerVisibility } from './MapView'
@@ -16,11 +16,11 @@ import { rampCss, type RgbStop } from '../lib/palette'
 import { n, n0, t, humanAge } from '../i18n'
 
 interface Props {
-  variable: InterpolableVariable
-  onVariable: (v: InterpolableVariable) => void
+  variable: DisplayVariable
+  onVariable: (v: DisplayVariable) => void
   visible: LayerVisibility
   onToggle: (key: keyof LayerVisibility) => void
-  model: Model | null
+  models: Record<InterpolableVariable, Model | null>
   census: NetworkCensus | null
   validation: { rmse: number; mae: number; n: number } | null
   stops: RgbStop[]
@@ -31,10 +31,10 @@ interface Props {
   onSources: () => void
 }
 
-const VARIABLES: { id: InterpolableVariable; label: string }[] = [
+const VARIABLES: { id: DisplayVariable; label: string; derived?: boolean }[] = [
   { id: 'temperature', label: t.variables.temperature },
   { id: 'relativehumidity', label: t.variables.relativehumidity },
-  { id: 'dewpoint', label: t.variables.dewpoint },
+  { id: 'dewpoint', label: t.variables.dewpoint, derived: true },
 ]
 
 const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
@@ -52,7 +52,11 @@ const fold = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 export function Sidebar(props: Props) {
-  const { model, census, validation, stops } = props
+  const { models, census, validation, stops } = props
+  // El bloque de estado describe SIEMPRE el ajuste de temperatura: es el que
+  // marca el gradiente de la isla y el que valida el RMSE. Enseñar el ajuste de
+  // la humedad bajo la etiqueta «gradiente medido» confundiría dos cosas.
+  const model = models.temperature
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
 
@@ -122,8 +126,10 @@ export function Sidebar(props: Props) {
                 className="chip-btn"
                 aria-pressed={props.variable === v.id}
                 onClick={() => props.onVariable(v.id)}
+                title={v.derived ? t.variables.derivedHint : undefined}
               >
                 {v.label}
+                {v.derived && <em className="derived-mark" aria-hidden> ƒ</em>}
               </button>
             ))}
           </div>

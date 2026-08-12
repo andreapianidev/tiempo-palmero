@@ -352,7 +352,6 @@ export function useIslandData(): IslandData {
     return {
       temperature: make('temperature'),
       relativehumidity: make('relativehumidity'),
-      dewpoint: make('dewpoint'),
     } as Record<InterpolableVariable, Model | null>
   }, [stations])
 

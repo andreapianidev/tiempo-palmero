@@ -9,7 +9,7 @@ import { buildStyle, COLORS } from '../lib/mapStyle'
 import { renderGrid } from '../lib/grid'
 import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette'
 import { freshness, type Station } from '../lib/quality'
-import type { Model, InterpolableVariable } from '../lib/interpolate'
+import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { GazetteerEntry } from '../lib/api'
@@ -29,8 +29,8 @@ export interface LayerVisibility {
 
 interface Props {
   dem: Dem | null
-  model: Model | null
-  variable: InterpolableVariable
+  models: Record<InterpolableVariable, Model | null>
+  variable: DisplayVariable
   stops: RgbStop[]
   stations: Station[]
   air: AirStation[]
@@ -67,7 +67,8 @@ const PLACE_MIN_ZOOM: Record<string, number> = {
 }
 
 export function MapView(props: Props) {
-  const { dem, model, variable, stops, stations, visible, probe } = props
+  const { dem, models, variable, stops, stations, visible, probe } = props
+  const model = models.temperature
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MlMap | null>(null)
   // Estado, no ref: cuando el mapa termina de cargar hay que volver a ejecutar
@@ -205,13 +206,20 @@ export function MapView(props: Props) {
     const src = map.getSource('grid') as maplibregl.ImageSource | undefined
     if (!src) return
 
-    if (!visible.grid || !model) {
+    if (!visible.grid || !models.temperature) {
       map.setLayoutProperty('grid-raster', 'visibility', 'none')
       return
     }
     map.setLayoutProperty('grid-raster', 'visibility', 'visible')
 
-    const grid = renderGrid(dem, model, stops)
+    const grid = renderGrid(
+      dem,
+      (lon, lat, elevation) => {
+        const bundle = estimateBundle(models, lon, lat, elevation)
+        return bundle[variable]?.value ?? null
+      },
+      stops,
+    )
     const [[w, s], [e, nth]] = grid.bounds
     // Si al llegar aquí seguía cargando la malla anterior, MapLibre aborta esa
     // carga y deja un `AbortError` en la consola. Es lo que queremos —gana la
@@ -226,7 +234,7 @@ export function MapView(props: Props) {
         [w, s],
       ],
     })
-  }, [ready, dem, model, stops, visible.grid])
+  }, [ready, dem, models, variable, stops, visible.grid])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {
@@ -393,6 +401,9 @@ export function MapView(props: Props) {
     if (visible.stations) {
       const rejected = new Set(model?.rejected.map((r) => r.entityId) ?? [])
       for (const s of stations) {
+        // El pin enseña lo que la estación MIDE. Para el rocío eso significa
+        // que muchas no tienen nada que enseñar: solo 10 lo publican, y aquí no
+        // se rellena con el valor derivado — un pin es una medida.
         const value =
           variable === 'temperature'
             ? s.temperature

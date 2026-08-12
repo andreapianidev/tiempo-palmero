@@ -7,11 +7,11 @@ import { SourcesScreen } from './components/SourcesScreen'
 import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { elevationAt } from './lib/dem'
 import { DEWPOINT_STOPS, HUMIDITY_STOPS, TEMP_STOPS, type RgbStop } from './lib/palette'
-import type { InterpolableVariable } from './lib/interpolate'
+import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
 import { t } from './i18n'
 
-const STOPS: Record<InterpolableVariable, RgbStop[]> = {
+const STOPS: Record<DisplayVariable, RgbStop[]> = {
   temperature: TEMP_STOPS,
   relativehumidity: HUMIDITY_STOPS,
   dewpoint: DEWPOINT_STOPS,
@@ -29,7 +29,7 @@ const INITIAL_LAYERS: LayerVisibility = {
 
 export default function App() {
   const data = useIslandData()
-  const [variable, setVariable] = useState<InterpolableVariable>('temperature')
+  const [variable, setVariable] = useState<DisplayVariable>('temperature')
   const [visible, setVisible] = useState<LayerVisibility>(INITIAL_LAYERS)
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
@@ -66,7 +66,6 @@ export default function App() {
     setVisible((v) => ({ ...v, [key]: !v[key] }))
   }, [])
 
-  const model = data.models[variable]
 
   // El DEM es bloqueante: sin altitudes no hay corrección altimétrica, y sin
   // ella la estimación no vale nada. Antes de enseñar una interpolación plana,
@@ -102,7 +101,7 @@ export default function App() {
     <main className="app">
       <MapView
         dem={data.dem}
-        model={model}
+        models={data.models}
         variable={variable}
         stops={stops}
         stations={data.stations}
@@ -143,7 +142,7 @@ export default function App() {
         onVariable={setVariable}
         visible={visible}
         onToggle={toggle}
-        model={model}
+        models={data.models}
         census={data.census}
         validation={data.validation}
         stops={stops}
@@ -185,7 +184,7 @@ export default function App() {
       {selection && (
         <DetailPanel
           selection={selection}
-          model={model}
+          model={data.models.temperature}
           now={now}
           firePolledAt={data.firePolledAt}
           co2Down={data.co2Down}

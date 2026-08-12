@@ -22,9 +22,22 @@
 
 import { haversineKm, type LonLat } from './geo'
 import type { Station } from './quality'
+import { clampHumidity, dewpointFrom } from './psychro'
 
-/** Variables que sí admiten interpolación espacial. */
-export type InterpolableVariable = 'temperature' | 'relativehumidity' | 'dewpoint'
+/**
+ * Variables que el motor ajusta e interpola de verdad. Son las dos que la red
+ * mide con cobertura suficiente: 36 estaciones dan temperatura y 30 humedad.
+ */
+export type InterpolableVariable = 'temperature' | 'relativehumidity'
+
+/**
+ * Lo que la interfaz puede pintar. El punto de rocío está aquí pero NO arriba:
+ * solo 10 de las 52 estaciones lo publican, y un campo con diez muestras sobre
+ * una isla de 2426 m se va a valores imposibles en cuanto uno se aleja de esas
+ * diez. Se calcula a partir de las otras dos (ver `psychro.ts`), lo que además
+ * garantiza que las tres nunca se contradigan entre sí.
+ */
+export type DisplayVariable = InterpolableVariable | 'dewpoint'
 
 /**
  * Variables que NO se interpolan nunca, y por qué:
@@ -533,4 +546,73 @@ export function leaveOneOut(
       predicted,
     })),
   }
+}
+
+// ---------------------------------------------------------------------------
+// Conjunto coherente de variables higrotérmicas
+// ---------------------------------------------------------------------------
+
+export interface Bundle {
+  temperature: Estimate | null
+  relativehumidity: Estimate | null
+  dewpoint: Estimate | null
+}
+
+/**
+ * Estima temperatura, humedad y rocío de forma MUTUAMENTE COHERENTE.
+ *
+ * Interpolar las tres por separado permite que se contradigan: se llegó a ver
+ * 99 % de humedad junto a un punto de rocío de −7,9 °C a la misma altitud, que
+ * no es un valor impreciso sino uno imposible. Aquí se interpolan las dos que
+ * la red mide bien y el rocío sale de ellas, así que la contradicción no puede
+ * darse por construcción.
+ *
+ * La humedad se recorta a [0, 100] al salir: el ajuste es lineal en la altitud
+ * y por encima del rango muestreado se sale del intervalo físico.
+ */
+export function estimateBundle(
+  models: Record<InterpolableVariable, Model | null>,
+  lon: number,
+  lat: number,
+  elevation: number,
+): Bundle {
+  const temperature = models.temperature
+    ? estimate(models.temperature, lon, lat, elevation)
+    : null
+  const rawHumidity = models.relativehumidity
+    ? estimate(models.relativehumidity, lon, lat, elevation)
+    : null
+
+  const relativehumidity: Estimate | null = rawHumidity
+    ? { ...rawHumidity, value: clampHumidity(rawHumidity.value) }
+    : null
+
+  let dewpoint: Estimate | null = null
+  if (temperature && relativehumidity) {
+    const value = dewpointFrom(temperature.value, relativehumidity.value)
+    // La incertidumbre se propaga numéricamente: se recalcula el rocío en los
+    // extremos de las bandas de T y RH y se toma la mayor desviación. Es
+    // grosero, pero es honesto y respeta la no linealidad de Magnus, cosa que
+    // sumar las bandas en cuadratura no haría.
+    let spread = 0
+    for (const dt of [-temperature.uncertainty, temperature.uncertainty]) {
+      for (const dh of [-relativehumidity.uncertainty, relativehumidity.uncertainty]) {
+        const alt = dewpointFrom(
+          temperature.value + dt,
+          clampHumidity(relativehumidity.value + dh),
+        )
+        spread = Math.max(spread, Math.abs(alt - value))
+      }
+    }
+    dewpoint = {
+      value,
+      uncertainty: spread,
+      contributors: temperature.contributors,
+      extrapolated: temperature.extrapolated || relativehumidity.extrapolated,
+      elevationExtrapolated:
+        temperature.elevationExtrapolated || relativehumidity.elevationExtrapolated,
+    }
+  }
+
+  return { temperature, relativehumidity, dewpoint }
 }
