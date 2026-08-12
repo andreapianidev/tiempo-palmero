@@ -111,7 +111,14 @@ Las reglas que la aplicación no se salta:
   puntuales; dibujar una superficie entre ellas sería inventar lecturas donde
   no hay sensor.
 - **Los valores implausibles se descartan, no se recortan.** Recortar un sensor
-  que marca 70 °C a un máximo de 45 lo convertiría en un dato creíble.
+  que marca 70 °C a un máximo de 45 lo convertiría en un dato creíble. Vale
+  igual para los valores *calculados*: CABLPA-BELLIDO publica 1 % de humedad a
+  852 m —un higrómetro muerto— y de ahí salía un punto de rocío de −38,4 °C que
+  se pintaba en el pin como cifra. Un valor derivado pasa el mismo filtro que
+  uno medido.
+- **Lo que viene de un modelo va etiquetado como modelo.** Por encima del techo
+  de la red del Cabildo se usan anclas de Open-Meteo, y aparecen siempre con su
+  nombre. Ver «El techo de la red» más abajo.
 
 ### La capa de CO₂
 
@@ -203,6 +210,38 @@ esos casi 40 hPa no son meteorología: son barómetros baratos desviados.
 Interpolarlos dibujaría un mapa precioso de errores de calibración. Se da la
 **mediana de la red**, que es robusta a los sensores descalibrados y es lo único
 que de verdad se puede afirmar.
+
+### El techo de la red, y las anclas de Open-Meteo
+
+La Palma sube a 2426 m. **La red del Cabildo, no.** Tiene una estación
+registrada en la cumbre —`Taburiente`, 2316 m— cuya última lectura es del
+**10 de mayo de 2023**; `Tenerra` (1104 m) calla desde abril de 2024 y
+`Cumbre Nueva` (1395 m) desde febrero de 2026. Lo que publica de verdad llega
+como mucho a 1561 m, y tras el rechazo de anomalías el ajuste se sostiene hasta
+1395 m en temperatura y 1085 m en humedad.
+
+Medido sobre el DEM, **el 31 % de la isla (220 km²) queda por encima del techo
+de humedad**. Ahí el motor dejaba de interpolar entre medidas y prolongaba una
+recta — justo lo que la inversión del alisio rompe. Dejando fuera del ajuste la
+estación de 1561 m y prediciéndola, decía **100 % de humedad contra el 11,3 %
+que marcaba el sensor**: 89 puntos, con un margen declarado de ±10.
+
+Por encima de ese techo se usan **anclas de [Open-Meteo](https://open-meteo.com/)**,
+un modelo meteorológico. Las reglas:
+
+1. **Las estaciones del Cabildo mandan siempre.** El gradiente, el rechazo de
+   anomalías, el R² y el RMSE se calculan **solo** con ellas: `buildModel`
+   ajusta la recta sin ver una sola ancla. Hay tests que lo fijan.
+2. **Por debajo del techo el ancla pesa cero**, no poco. Su peso sube en rampa
+   desde 0 en el techo hasta 1 a 300 m por encima, para que el campo no dé un
+   salto en esa cota.
+3. **Se etiquetan siempre como Open-Meteo**, en la lista de contribuyentes, en
+   el panel del modelo y en Fuentes.
+
+Los puntos no están cableados: se eligen sobre el propio DEM, los más altos
+separados al menos 3 km entre sí. Medido el 12 ago 2026, en el Roque de los
+Muchachos la humedad pasa de un imposible 100 % a 38 %, y a 900 y 300 m —donde
+sí hay estaciones— el valor no se mueve ni una décima.
 
 ### Validación
 
@@ -400,6 +439,22 @@ Documentadas aquí porque cuestan un día entero de depuración cada una:
   congelada. Se validan las coordenadas contra la isla.
 - **Hay dos estaciones distintas llamadas `CABLPA-ELCHARCO`**, a 2,4 km y 142 m
   la una de la otra. Se deduplica por `entityid`, nunca por nombre.
+- **`atmosphericpressure` mezcla dos convenciones** —absoluta de estación y
+  reducida al nivel del mar— sin decirlo, y a 726 m se llevan 86 hPa. Se
+  distingue comparando cada lectura contra lo que marca hoy la propia red a
+  nivel del mar, no contra la atmósfera estándar: con una ventana fija de
+  ±15 hPa alrededor de 1013,25, CABLPA-SANTODOMINGO quedaba a 3,6 hPa de
+  clasificarse al revés y una borrasca corriente la habría reducido dos veces.
+  Con la referencia de la isla el margen más estrecho de la red es de 13 hPa.
+- **`dailyevapotranspiration` mezcla dos convenciones también**, y esta sí sigue
+  sin resolver: de las 37 estaciones frescas, 20 dan 0 clavado, las
+  `LaPalma_WSAQPM_*` dan 1,4–2,06 (mm acumulados del día) y las `CABLPA-*` dan
+  0,066–0,089, dos órdenes de magnitud por debajo. Se enseña por estación y en
+  crudo; **no hay cifra de evapotranspiración insular que se pueda afirmar**
+  hasta que el publicador documente la unidad.
+- **`visibility`, `corrosion` y `corrosionindex` existen en el esquema pero no
+  traen un solo dato fresco.** Están en la lista de 42 columnas y tientan; no
+  sirven para nada.
 
 ---
 
