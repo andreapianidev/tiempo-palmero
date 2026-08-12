@@ -1,0 +1,16 @@
+# Qué NO sube al despliegue del sitio.
+#
+# Existir este fichero desactiva `.gitignore` a efectos de Vercel, así que aquí
+# hay que repetir lo evidente: si se quita `node_modules` de esta lista, se
+# suben 20.000 ficheros y el despliegue se rechaza por tamaño.
+#
+# `mobile/` es la aplicación de iOS y Android. Comparte el motor con la web
+# —importa `../src`— pero no forma parte del sitio: sus dependencias nativas y
+# los directorios que genera `expo prebuild` son decenas de miles de ficheros
+# que Vercel no necesita ver.
+
+node_modules
+dist
+mobile
+.expo
+.git
