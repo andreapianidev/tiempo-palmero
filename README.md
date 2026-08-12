@@ -509,11 +509,20 @@ persiga como si fuera un fallo de la aplicación.
 
 La red de TILP es ya una capa del mapa, con su interruptor propio: los **58
 trazados** de las **23 líneas** y las **913 paradas**, apagada por defecto
-porque son 1,5 MB que solo se descargan si alguien la enciende. Al pinchar una
-parada sale su ficha —qué líneas paran ahí, cuánto servicio tenía y si se puede
-subir en silla de ruedas—; al pinchar una línea, o una de las líneas de esa
-ficha, el mapa resalta el recorrido entero y todas sus paradas mientras la ficha
-está abierta.
+porque son 1,5 MB que solo se descargan si alguien la enciende —y mientras
+llegan, la barra lateral lo dice—. Al pinchar una parada sale su ficha —qué
+líneas paran ahí, cuánto servicio tenía y si se puede subir en silla de
+ruedas—; al pinchar una línea, o una de las líneas de esa ficha, el mapa
+**encuadra** el recorrido entero y lo resalta con todas sus paradas mientras la
+ficha está abierta.
+
+Es **un solo interruptor** para trazados y paradas. Estuvieron separados, y
+leídos seguidos en la lista parecían la misma entrada repetida. Lo que
+justificaba separarlos —que encender la red tapara el mapa con 913 puntos— ya lo
+resuelve el zoom mínimo de las paradas: a la distancia en la que molestarían no
+se dibujan, así que a la vista de isla se ven los trazados y los puntos aparecen
+al acercarse. Mientras no se han acercado, la barra lateral lo explica, porque
+una casilla marcada sobre un mapa que no cambia se lee como una capa rota.
 
 **Y las horas de paso salen, con una advertencia que no se quita.** El GTFS que
 publica el Cabildo tiene los cinco calendarios de servicio caducados —el último,

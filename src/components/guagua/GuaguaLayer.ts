@@ -8,8 +8,14 @@
  *
  * Las paradas aparecen a partir de z10,5. Son 913 sobre una isla de 42 km: por
  * debajo de ese zoom no son un mapa de paradas, son una mancha, y el trazado de
- * las líneas ya cuenta por dónde pasa el transporte público. Líneas y paradas
- * se encienden por separado, que son dos preguntas distintas.
+ * las líneas ya cuenta por dónde pasa el transporte público.
+ *
+ * Ese zoom mínimo es, además, lo que permite que la red tenga UNA sola casilla
+ * en vez de dos. Estuvieron separadas un tiempo —una para trazados y otra para
+ * paradas—, pero leídas seguidas en la lista parecían la misma entrada
+ * repetida, y el motivo de separarlas era evitar que encender la red tapara el
+ * mapa con 913 puntos: eso ya no puede pasar, porque a la distancia en la que
+ * molestarían no se dibujan.
  */
 
 import type { Map as MlMap, GeoJSONSource, LayerSpecification } from 'maplibre-gl'
@@ -182,11 +188,12 @@ export function setGuaguaData(
 }
 
 /**
- * Líneas y paradas se encienden por separado.
+ * Qué se ve de la red.
  *
- * Con un solo interruptor, ver el trazado obligaba a tragarse 913 puntos, y
- * quien busca su parada no quiere la red entera por encima. Son dos preguntas
- * distintas y ahora son dos casillas.
+ * Sigue recibiendo `lines` y `stops` por separado aunque hoy los mueva la misma
+ * casilla: son dos capas con zoom mínimo y estilo distintos, y esta función
+ * habla de capas, no de casillas. Quien decide que van juntas es la barra
+ * lateral.
  */
 export function setGuaguaVisible(
   map: MlMap,

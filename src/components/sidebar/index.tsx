@@ -113,8 +113,7 @@ export function Sidebar(props: Props) {
           <GuaguaHint
             loading={props.guagua.loading}
             stopsZoomReached={props.guagua.stopsZoomReached}
-            stopsOn={props.visible.guaguaStops}
-            linesOn={props.visible.guaguaLines}
+            on={props.visible.guagua}
           />
         </Section>
 

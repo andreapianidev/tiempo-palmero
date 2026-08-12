@@ -50,8 +50,8 @@ export interface LayerVisibility {
   co2: boolean
   sky: boolean
   trails: boolean
-  guaguaLines: boolean
-  guaguaStops: boolean
+  /** Trazados y paradas: una sola casilla para toda la red. */
+  guagua: boolean
   roads: boolean
   counters: boolean
   fire: boolean
@@ -433,12 +433,14 @@ export function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
+    // Las dos capas siguen siendo dos —tienen zoom mínimo y estilo distintos—,
+    // lo que ya no son es dos preguntas al usuario.
     setGuaguaVisible(map, {
-      lines: visible.guaguaLines,
-      stops: visible.guaguaStops,
+      lines: visible.guagua,
+      stops: visible.guagua,
       route: props.guaguaRoute,
     })
-  }, [ready, visible.guaguaLines, visible.guaguaStops, props.guaguaRoute])
+  }, [ready, visible.guagua, props.guaguaRoute])
 
   // Cruzar el umbral de zoom de las paradas se avisa una sola vez por cruce: la
   // barra lateral necesita saberlo para no dejar una casilla marcada sobre un

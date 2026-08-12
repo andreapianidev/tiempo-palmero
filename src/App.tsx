@@ -29,8 +29,7 @@ const INITIAL_LAYERS: LayerVisibility = {
   co2: true,
   sky: false,
   trails: false,
-  guaguaLines: false,
-  guaguaStops: false,
+  guagua: false,
   roads: false,
   counters: false,
   fire: true,
@@ -46,7 +45,7 @@ export default function App() {
   const [visible, setVisible] = useState<LayerVisibility>(INITIAL_LAYERS)
   // Al revés que el viento: la red de guaguas son 1,5 MB y no alimenta ningún
   // cálculo, así que no se pide hasta que alguien enciende la capa.
-  const guagua = useGuagua(visible.guaguaLines || visible.guaguaStops)
+  const guagua = useGuagua(visible.guagua)
   // Los sitios se encienden uno a uno; la capa del mapa está siempre viva y lo
   // que cambia es qué puntos entran en ella.
   const [placesOn, setPlacesOn] = useState<PlaceVisibility>(NO_PLACES)

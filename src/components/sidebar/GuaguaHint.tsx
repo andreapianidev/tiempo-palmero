@@ -20,18 +20,16 @@ interface Props {
   loading: boolean
   /** El zoom actual ya da para ver las paradas. */
   stopsZoomReached: boolean
-  stopsOn: boolean
-  linesOn: boolean
+  /** La red está encendida. */
+  on: boolean
 }
 
-export function GuaguaHint({ loading, stopsZoomReached, stopsOn, linesOn }: Props) {
-  if (!stopsOn && !linesOn) return null
+export function GuaguaHint({ loading, stopsZoomReached, on }: Props) {
+  if (!on) return null
   return (
     <>
       {loading && <p className="dim small">{t.guagua.loading}</p>}
-      {!loading && stopsOn && !stopsZoomReached && (
-        <p className="note small">{t.guagua.zoomForStops}</p>
-      )}
+      {!loading && !stopsZoomReached && <p className="note small">{t.guagua.zoomForStops}</p>}
     </>
   )
 }

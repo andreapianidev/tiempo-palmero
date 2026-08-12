@@ -28,8 +28,12 @@ export const es = {
     co2: 'Sensores de CO₂',
     sky: 'Calidad del cielo',
     trails: 'Senderos y puntos de interés',
-    guaguaLines: 'Líneas de guagua',
-    guaguaStops: 'Paradas de guagua',
+    // Una sola casilla, y no dos. Fueron dos durante un rato —una por capa— y
+    // leídas seguidas parecían la misma entrada repetida. Juntas se entienden
+    // como lo que son: la red, con sus trazados y sus paradas. Que las paradas
+    // aparezcan al acercarse ya lo resuelve el zoom mínimo de su capa, así que
+    // el interruptor único no inunda el mapa de puntos.
+    guagua: 'Red de guaguas',
     roads: 'Carreteras insulares',
     counters: 'Aforos de tráfico y senderos',
     fire: 'Cámaras de incendios',
