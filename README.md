@@ -8,7 +8,10 @@ punto**, no la lectura de la estación más cercana. Es una distinción que en L
 Palma no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa escala la
 altitud manda sobre la distancia en cualquier variable atmosférica.
 
-**→ [tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
+**Probar la aplicación → [tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
+— en marcha, sin registro, sin clave de API y sin nada que instalar.
+
+Hecho por **Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com)
 
 ![Tiempo Palmero: la isla con la malla interpolada sobre el relieve sombreado, y el panel de un punto consultado](docs/captura-tiempo-palmero.jpg)
 
@@ -29,6 +32,25 @@ sale de una estación, la frescura que se anuncia es la de esa estación.
 Abajo a la izquierda, el estado del modelo: **35 de 52 estaciones activas** —el
 denominador real, no el del catálogo—, el gradiente medido en ese instante
 (4,06 °C/km, no los 6,5 del manual), el R² del ajuste y el RMSE de validación.
+
+---
+
+## Índice
+
+- [Por qué existe](#por-qué-existe) — el problema que resuelve, en números
+- [Qué hace](#qué-hace)
+- [Honestidad de los datos](#honestidad-de-los-datos) — las reglas que no se
+  saltan, y [la capa de CO₂](#la-capa-de-co₂), que es la más estricta de todas
+- [El motor de interpolación](#el-motor-de-interpolación) — los seis pasos y las
+  decisiones que los sostienen · [Validación](#validación)
+- [Qué más publica el Cabildo](#qué-más-publica-el-cabildo-y-qué-falta-por-aprovechar)
+  — hoja de ruta sobre los 49 conjuntos del portal
+- [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — por qué
+  no se llama a Open-Meteo, Nominatim ni Overpass
+- [Arquitectura](#arquitectura)
+- [Trampas de esta API](#trampas-de-esta-api-que-ya-están-resueltas-en-el-código)
+  — un día de depuración cada una
+- [Puesta en marcha](#puesta-en-marcha) · [Fuentes y licencias](#fuentes-y-licencias)
 
 ---
 
@@ -155,6 +177,16 @@ juega en contra del método derivado— a cambio de coherencia en toda la isla.
 La fórmula no es un supuesto: contrastada contra las estaciones que publican las
 tres variables a la vez, la humedad que implican su temperatura y su rocío se
 desvía de la que ellas mismas declaran **0,99 % de media, 2,45 % como máximo**.
+
+Y lo mismo vale **dentro de cada estación**. Temperatura, humedad y rocío no son
+tres medidas independientes: dadas dos, la tercera está determinada. Una estación
+que publica temperatura y humedad sí dice cuál es su punto de rocío aunque no
+traiga esa columna —son 21 de las 37 vivas, contra 10 que la traen—, así que su
+pin enseña la cifra, marcada con un subrayado de puntos para distinguirla de lo
+publicado. Antes salían con un punto en vez de un número, encima de una malla
+que sí estaba pintada y que se calcula exactamente igual. Las **6 estaciones sin
+humedad ni rocío** siguen sin número: ahí no es una decisión de estilo, es que no
+se sabe.
 
 **La presión no se interpola, y el motivo no es el que parece.** Al meterla en
 el motor salía un R² de 0,002 y un gradiente de +0,2 hPa/km, cuando la física
@@ -410,3 +442,15 @@ clave que configurar.
 
 El **código** es MIT. Los **datos** conservan las licencias de arriba: quien
 reutilice este repositorio mantiene las atribuciones. Ver [LICENSE](LICENSE).
+
+---
+
+## Autor
+
+**Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com) ·
+[andreapiani.dev@gmail.com](mailto:andreapiani.dev@gmail.com)
+
+Aplicación en marcha: **[tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
+
+© 2026 Tiempo Palmero · Andrea Piani · NIE 02915190306-Z · El Paso, Santa Cruz de
+Tenerife · Islas Canarias
