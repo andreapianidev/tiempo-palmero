@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { MapView, type LayerVisibility } from './components/MapView'
 import { PointPanel, type ProbePoint } from './components/PointPanel'
 import { DetailPanel, type Selection } from './components/DetailPanel'
-import { Sidebar } from './components/Sidebar'
+import { Sidebar } from './components/sidebar'
 import { SourcesScreen } from './components/SourcesScreen'
 import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { elevationAt } from './lib/dem'
@@ -144,6 +144,19 @@ export default function App() {
           setProbe(null)
           setSelection({ kind: 'sky', value: s })
         }}
+        onPoi={(poi) => {
+          setProbe(null)
+          // La altitud y el municipio no vienen en la capa de puntos: los pone
+          // la app, con el mismo modelo de elevación que usa la interpolación.
+          setSelection({
+            kind: 'poi',
+            value: {
+              ...poi,
+              elevation: data.dem ? elevationAt(data.dem, poi.lon, poi.lat) : null,
+              municipality: municipalityOf(data.municipalities, poi.lon, poi.lat),
+            },
+          })
+        }}
       />
 
       <Sidebar
@@ -159,6 +172,7 @@ export default function App() {
         onSearch={onSearch}
         lastUpdate={data.lastUpdate}
         now={now}
+        dem={data.dem}
         onSources={() => setShowSources(true)}
       />
 
@@ -198,6 +212,7 @@ export default function App() {
           firePolledAt={data.firePolledAt}
           co2Down={data.co2Down}
           onClose={() => setSelection(null)}
+          onWeather={(lon, lat, label) => pick(lon, lat, label)}
         />
       )}
 

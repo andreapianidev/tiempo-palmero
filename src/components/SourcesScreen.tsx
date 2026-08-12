@@ -39,6 +39,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'Cabildo Insular de La Palma',
   },
   {
+    title: t.sources.anchorsTitle,
+    body: t.sources.anchorsBody,
+    license: t.sources.anchorsLicense,
+    href: 'https://open-meteo.com/',
+    hrefLabel: 'open-meteo.com',
+  },
+  {
     title: t.sources.toponymsTitle,
     body: t.sources.toponymsBody,
     license: t.sources.toponymsLicense,

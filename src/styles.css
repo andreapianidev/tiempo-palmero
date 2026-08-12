@@ -149,6 +149,34 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   margin-bottom: 8px;
 }
 
+/* Secciones plegables del panel lateral. El triángulo nativo se sustituye por
+   el mismo ＋/－ que ya usa «¿Cómo se calcula?», para que abrir y cerrar se lea
+   igual en todo el panel. */
+.section > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 8px; }
+.section > summary::-webkit-details-marker { display: none; }
+.section > summary::before { content: '－'; color: var(--amber); font-size: 11px; }
+.section:not([open]) > summary::before { content: '＋'; }
+.section > summary:hover { color: var(--fg-dim); }
+.section > summary:focus-visible { outline: 1px solid var(--amber); outline-offset: 3px; }
+.section-summary > span:first-of-type { flex: 1; }
+.section-badge { font-size: 10px; color: var(--fg-faint); letter-spacing: 0; }
+/* `.lbl` ya trae el margen inferior; sin esto el título se despega al plegar. */
+.section:not([open]) > summary { margin-bottom: 0; }
+
+/* Aporte que no viene de una estación del Cabildo sino de un modelo. Se
+   distingue con color y con texto, no solo con color. */
+.contrib-model {
+  font-style: normal;
+  font-size: 9.5px;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--amber);
+  border-radius: 3px;
+  padding: 1px 4px;
+  vertical-align: 1px;
+}
+
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-btn {
   font: 500 12px/1 var(--sans);
@@ -216,7 +244,7 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .search-results button:hover { background: rgba(255, 255, 255, 0.06); }
 .search-results em { font-style: normal; font-size: 11px; }
 
-.status .headline-stat {
+.headline-stat {
   font-size: 14.5px;
   font-weight: 600;
   margin: 0 0 8px;
@@ -281,6 +309,19 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 
 .point-head h2 { font-size: 16px; padding-right: 22px; }
 .point-head p { margin: 4px 0 0; font-size: 11px; line-height: 1.5; }
+
+/* Ficha de un punto de interés: el mismo icono que se ha tocado en el mapa,
+   para que quede claro que el panel habla de ese punto y no de otro. */
+.poi-head { display: flex; gap: 11px; align-items: flex-start; }
+.poi-head > div { min-width: 0; flex: 1; }
+.poi-icon { flex: none; margin-top: 2px; }
+.poi-weather { display: block; margin: 14px 0 18px; font-size: 12.5px; }
+
+/* Leyenda de las tres familias de puntos de interés. */
+.poi-legend { margin: 9px 0 0 22px; }
+.poi-legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.poi-legend li { display: flex; align-items: center; gap: 7px; font-size: 11.5px; }
+.poi-legend p { margin: 7px 0 0; line-height: 1.45; }
 
 .reading { display: flex; align-items: baseline; gap: 9px; margin: 14px 0 2px; }
 .reading b { font-size: 46px; font-weight: 600; letter-spacing: -0.035em; line-height: 1; }

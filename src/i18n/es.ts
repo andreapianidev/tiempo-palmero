@@ -66,6 +66,8 @@ export const es = {
     notAMeasurement: 'Valor estimado, no medido',
     uncertainty: 'Margen',
     measuredAt: 'Medido',
+    /** Cuando parte del valor la pone un modelo, no un sensor. */
+    validAt: 'Válido',
     measuredAtHint:
       'Antigüedad de las lecturas que sostienen esta cifra, ponderada igual que el valor. No es cuándo se descargaron los datos.',
     oldestContribution: 'la más antigua',
@@ -113,6 +115,60 @@ export const es = {
     guaguaSourceUrl: 'https://www.tilp.es/',
   },
 
+  /**
+   * Puntos de interés de la red de senderos. La capa publica cinco campos y la
+   * ficha los enseña los cinco, sin quedarse ninguno: es todo lo que hay.
+   */
+  poi: {
+    title: 'Punto de interés',
+    source: 'Red de senderos del Cabildo Insular',
+    weatherHere: 'Ver el tiempo en este punto',
+    allFields: 'Ficha completa',
+    rawNote: 'Todos los campos que publica la capa, tal cual llegan.',
+    coords: 'Coordenadas',
+    families: {
+      servicios: 'Servicios',
+      cultural: 'Patrimonio cultural',
+      natural: 'Patrimonio natural',
+    } as Record<string, string>,
+    /** Etiquetas de los campos crudos, en el orden en el que llegan. */
+    fields: {
+      id_punto: 'Identificador',
+      codigo: 'Código de ficha',
+      tipo: 'Tipo',
+      subtipo: 'Categoría',
+      descripcion: 'Descripción',
+    } as Record<string, string>,
+    /** Claves en minúsculas: la fuente mezcla `Viveres_Tienda` y `Viveres_tienda`. */
+    subtypes: {
+      viveres_bar_rest: 'Bar o restaurante',
+      viveres_tienda: 'Tienda de víveres',
+      otros_agua_pot: 'Agua potable',
+      otros_area_recr: 'Área recreativa',
+      otros_refugio: 'Refugio',
+      aloj_casa_rural: 'Casa rural',
+      aloj_albergue: 'Albergue',
+      aloj_otros: 'Alojamiento',
+      arq_civil: 'Arquitectura civil',
+      arq_religiosa: 'Arquitectura religiosa',
+      arqueologico: 'Yacimiento arqueológico',
+      etnog_otros: 'Elemento etnográfico',
+      etnog_ref_pastoril: 'Refugio pastoril',
+      toponimo: 'Topónimo',
+      biol_botanica: 'Botánica',
+      biol_otros: 'Fauna y flora',
+      geol_botanica: 'Botánica',
+      geol_barranco: 'Barranco',
+      'geol_montaña': 'Montaña',
+      geol_crater: 'Cráter',
+      geol_cueva: 'Cueva',
+      geol_otros: 'Formación geológica',
+      fuente_natural: 'Fuente natural',
+      otros: 'Otros',
+    } as Record<string, string>,
+    legend: 'Toca cualquier icono del mapa para abrir su ficha.',
+  },
+
   station: {
     lastReading: 'Última lectura',
     age: 'Antigüedad',
@@ -139,6 +195,40 @@ export const es = {
     lapseRateUnit: '°C/km',
     r2: 'R² del ajuste',
     rmse: 'RMSE (validación)',
+    coverage: 'Altitudes con sensor',
+    anchorTag: 'Open-Meteo',
+    anchorHint:
+      'Punto de modelo, no una estación. El Cabildo no publica ninguna medida a esta altitud.',
+    anchorNote:
+      'Parte de esta cifra viene de Open-Meteo, un modelo meteorológico, porque por encima ' +
+      'del techo de la red del Cabildo no hay ninguna estación publicando. Las estaciones ' +
+      'del Cabildo tienen siempre prioridad: el gradiente, el rechazo de anomalías y el RMSE ' +
+      'se calculan solo con ellas, y el modelo únicamente rellena por encima de su techo.',
+    anchorsActive: (n: number) =>
+      n === 1
+        ? '1 ancla de Open-Meteo sobre el techo de la red'
+        : `${n} anclas de Open-Meteo sobre el techo de la red`,
+    anchorsSourceTitle: 'Open-Meteo (anclas de altitud)',
+    /**
+     * La advertencia que faltaba. La red del Cabildo no llega a la cumbre: por
+     * encima de la estación más alta que sobreviva al control de calidad, el
+     * mapa deja de interpolar entre medidas y pasa a prolongar una recta. Y en
+     * Canarias esa recta es justamente la que la inversión del alisio rompe:
+     * por debajo el aire viene del mar de nubes, por encima está seco. El
+     * Roque de los Muchachos es observatorio astronómico precisamente por eso.
+     */
+    ceilingWarning: (ceilingM: number, share: number) =>
+      `Por encima de ${ceilingM} m no hay ninguna estación fiable: ese ${share} % de la isla ` +
+      'no se interpola entre medidas, se prolonga el gradiente. La inversión del alisio ' +
+      '(800–1500 m) deja arriba un aire mucho más seco y templado de lo que da esa recta, ' +
+      'así que la cumbre es la zona menos de fiar del mapa.',
+    /** Mismo hueco, pero ya cubierto por anclas de modelo. */
+    ceilingAnchored: (ceilingM: number, share: number) =>
+      `Por encima de ${ceilingM} m el Cabildo no publica ninguna estación —la que tiene en ` +
+      `la cumbre lleva años muda—, así que ese ${share} % de la isla se apoya en Open-Meteo, ` +
+      'un modelo, en vez de prolongar el gradiente a ciegas. Las estaciones del Cabildo ' +
+      'mandan siempre por debajo de esa cota, y el gradiente y el RMSE de aquí arriba se ' +
+      'siguen calculando solo con ellas.',
     rejected: (n: number) =>
       n === 1 ? '1 sensor descartado por anomalía' : `${n} sensores descartados por anomalía`,
     explainTitle: '¿Cómo se calcula?',
@@ -231,6 +321,16 @@ export const es = {
     co2Title: 'Red de sensores de CO₂',
     co2Body:
       'DEMASE, red de alerta de CO₂ exterior de Puerto Naos y La Bombilla, publicada a través del portal del Cabildo.',
+    anchorsTitle: 'Open-Meteo — anclas de altitud',
+    anchorsBody:
+      'La red del Cabildo tiene una estación registrada en la cumbre (Taburiente, 2316 m) ' +
+      'que no publica desde mayo de 2023; lo que sigue vivo llega como mucho a 1561 m, y la ' +
+      'isla sube a 2426. Por encima de esa cota se usan puntos de Open-Meteo —un modelo ' +
+      'meteorológico, no una medida— para no prolongar a ciegas el gradiente por encima de la ' +
+      'inversión del alisio. Las estaciones del Cabildo tienen siempre prioridad: no entran ' +
+      'en el ajuste, ni en el rechazo de anomalías, ni en el RMSE, y aparecen siempre ' +
+      'etiquetadas como Open-Meteo allí donde contribuyen.',
+    anchorsLicense: 'CC-BY 4.0 · sin clave de API',
     toponymsTitle: 'Topónimos',
     toponymsBody:
       '© colaboradores de OpenStreetMap. Extraídos una sola vez en tiempo de compilación mediante Overpass; la aplicación no consulta OpenStreetMap en tiempo de ejecución.',

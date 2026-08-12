@@ -10,9 +10,16 @@
 import { formatIslandTime } from '../lib/cabildo'
 import { co2Band } from '../lib/palette'
 import { freshness, stationReading, type Station } from '../lib/quality'
+import { FAMILY_COLOR, isDataProp, poiIconDataUrl, type PoiRecord } from '../lib/poi'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { Model } from '../lib/interpolate'
 import { n, n0, t, humanAge } from '../i18n'
+
+/** El punto de interés llega del mapa y la app le añade lo que sabe del sitio. */
+export interface PoiSelection extends PoiRecord {
+  elevation: number | null
+  municipality: string | null
+}
 
 export type Selection =
   | { kind: 'station'; value: Station }
@@ -20,6 +27,7 @@ export type Selection =
   | { kind: 'co2'; value: Co2Point }
   | { kind: 'fire'; value: FireCamera }
   | { kind: 'sky'; value: SkyStation }
+  | { kind: 'poi'; value: PoiSelection }
 
 interface Props {
   selection: Selection
@@ -28,6 +36,8 @@ interface Props {
   firePolledAt: number | null
   co2Down: boolean
   onClose: () => void
+  /** Del punto de interés al tiempo de ese mismo punto, sin buscarlo a mano. */
+  onWeather: (lon: number, lat: number, label: string) => void
 }
 
 const FRESHNESS_LABEL = {
@@ -46,20 +56,101 @@ const RAW_FIELDS: [keyof Station, string, string][] = [
   ['dailyprecipitation', 'Precipitación diaria', 'mm'],
   ['uv', 'Índice UV', ''],
   ['solarradiation', 'Radiación solar', 'W/m²'],
+  // Sin unidad en la etiqueta a propósito: ver `Station.dailyevapotranspiration`.
+  // La columna mezcla dos convenciones y aquí se enseña el crudo de la estación.
+  ['dailyevapotranspiration', 'Evapotranspiración (día)', 'mm'],
 ]
 
-export function DetailPanel({ selection, model, now, firePolledAt, co2Down, onClose }: Props) {
+export function DetailPanel({
+  selection,
+  model,
+  now,
+  firePolledAt,
+  co2Down,
+  onClose,
+  onWeather,
+}: Props) {
   return (
     <section className="panel detail-panel" aria-label={t.point.title}>
       <button className="panel-close" onClick={onClose} aria-label={t.point.close}>
         ×
       </button>
+      {selection.kind === 'poi' && <PoiDetail p={selection.value} onWeather={onWeather} />}
       {selection.kind === 'station' && <StationDetail s={selection.value} model={model} now={now} />}
       {selection.kind === 'air' && <AirDetail a={selection.value} now={now} />}
       {selection.kind === 'co2' && <Co2Detail c={selection.value} down={co2Down} />}
       {selection.kind === 'fire' && <FireDetail f={selection.value} polledAt={firePolledAt} now={now} />}
       {selection.kind === 'sky' && <SkyDetail s={selection.value} now={now} />}
     </section>
+  )
+}
+
+/**
+ * Ficha de un punto de interés de la red de senderos.
+ *
+ * La capa publica cinco campos por punto y aquí salen los cinco: se recorren
+ * las propiedades del GeoJSON tal cual llegan, en vez de listar a mano las que
+ * hoy conocemos. Si el Cabildo añade una columna, aparece sola.
+ *
+ * Lo que la app sabe del sitio —altitud del modelo de elevación y municipio—
+ * va aparte, separado de lo que dice la fuente: son cosas distintas.
+ */
+function PoiDetail({
+  p,
+  onWeather,
+}: {
+  p: PoiSelection
+  onWeather: (lon: number, lat: number, label: string) => void
+}) {
+  const subtype = p.subtipo ? (t.poi.subtypes[p.subtipo.toLowerCase()] ?? p.subtipo) : null
+  const label = (k: string) => t.poi.fields[k] ?? k
+  const fields = Object.entries(p.props).filter(
+    ([k, v]) => isDataProp(k) && v !== null && v !== undefined && String(v).trim() !== '',
+  )
+
+  return (
+    <>
+      <header className="point-head poi-head">
+        <img className="poi-icon" src={poiIconDataUrl(p.icon, 34)} alt="" width={34} height={34} />
+        <div>
+          <h2>{p.name}</h2>
+          <p className="mono dim">
+            <span className="chip" style={{ background: FAMILY_COLOR[p.family], color: '#141311' }}>
+              {t.poi.families[p.family]}
+            </span>
+            {subtype && <> · {subtype}</>}
+          </p>
+          <p className="mono dim small">
+            {p.municipality ?? t.point.outsideIsland}
+            {p.elevation !== null && <> · {n0(p.elevation)} {t.units.metres}</>}
+          </p>
+        </div>
+      </header>
+
+      <button className="link-btn poi-weather" onClick={() => onWeather(p.lon, p.lat, p.name)}>
+        {t.poi.weatherHere} →
+      </button>
+
+      <h3>{t.poi.allFields}</h3>
+      <table className="kv">
+        <tbody>
+          {fields.map(([k, v]) => (
+            <tr key={k}>
+              <td>{label(k)}</td>
+              <td className="mono">{String(v)}</td>
+            </tr>
+          ))}
+          <tr>
+            <td>{t.poi.coords}</td>
+            <td className="mono">
+              {n(p.lat, 5)}, {n(p.lon, 5)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="note small">{t.poi.rawNote}</p>
+      <p className="note small">{t.poi.source}</p>
+    </>
   )
 }
 

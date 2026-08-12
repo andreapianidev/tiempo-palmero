@@ -175,7 +175,13 @@ export function PointPanel({
           <p className="freshness mono" title={t.point.measuredAtHint}>
             <span className={`dot dot-${freshness((now - main.observedAt) / 3_600_000)}`} />
             <span className="nowrap">
-              {t.point.measuredAt} {humanAge(now - main.observedAt)}
+              {/* En la cumbre parte de la cifra la pone un modelo, y su
+                  `observedAt` es la hora de la pasada. Llamar «medido» a eso
+                  sería fechar un pronóstico como si fuera un termómetro. */}
+              {main.contributors.some((c) => c.source === 'openmeteo')
+                ? t.point.validAt
+                : t.point.measuredAt}{' '}
+              {humanAge(now - main.observedAt)}
             </span>
             {main.oldestObservedAt < main.observedAt - 60_000 && (
               <span className="dim nowrap">
@@ -227,6 +233,14 @@ export function PointPanel({
                   <tr key={c.entityId}>
                     <td>
                       {c.name}
+                      {/* Un aporte de modelo NUNCA sale con aspecto de medida:
+                          va marcado aquí y explicado bajo la tabla. */}
+                      {c.source === 'openmeteo' && (
+                        <em className="contrib-model" title={t.model.anchorHint}>
+                          {' '}
+                          {t.model.anchorTag}
+                        </em>
+                      )}
                       <em className="contrib-age dim">{humanAge(now - c.observedAt)}</em>
                     </td>
                     <td className="mono">{n(c.distanceKm, 1)} {t.units.km}</td>
@@ -239,6 +253,9 @@ export function PointPanel({
                 ))}
               </tbody>
             </table>
+            {main.contributors.some((c) => c.source === 'openmeteo') && (
+              <p className="warn small">{t.model.anchorNote}</p>
+            )}
           </details>
         </>
       )}

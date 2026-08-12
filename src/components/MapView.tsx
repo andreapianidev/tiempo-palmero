@@ -9,6 +9,7 @@ import { buildStyle, COLORS } from '../lib/mapStyle'
 import { renderGrid } from '../lib/grid'
 import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette'
 import { freshness, stationReading, type Station } from '../lib/quality'
+import { addPoiIcons, decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
 import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
@@ -48,6 +49,7 @@ interface Props {
   onCo2: (sensor: Co2Point) => void
   onFire: (camera: FireCamera) => void
   onSky: (station: SkyStation) => void
+  onPoi: (poi: PoiRecord) => void
 }
 
 /** Qué topónimos merecen etiqueta a cada zoom. Sin esto la isla es ilegible. */
@@ -112,9 +114,7 @@ export function MapView(props: Props) {
       'bottom-left',
     )
 
-    map.on('load', () => {
-      setReady(true)
-
+    map.on('load', async () => {
       // Fuente de la malla interpolada. Se crea con un píxel transparente y se
       // reemplaza la imagen en cada recálculo: recrear la fuente entera hace
       // parpadear el mapa.
@@ -170,26 +170,70 @@ export function MapView(props: Props) {
           'circle-radius': ['interpolate', ['linear'], ['get', 'point_count'], 2, 9, 200, 22],
         },
       })
+
+      // Los iconos, antes de la capa que los usa: una capa `symbol` cuyas
+      // imágenes todavía no existen se pinta vacía y avisa por consola de cada
+      // una que le falta.
+      await addPoiIcons(map)
+      if (!mapRef.current) return // desmontado mientras se decodificaban
+
       map.addLayer({
         id: 'trail-pois-point',
-        type: 'circle',
+        type: 'symbol',
         source: 'trail-pois',
         filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-color': 'rgba(226,197,106,0.85)',
-          'circle-radius': 3,
-          'circle-stroke-color': 'rgba(0,0,0,0.6)',
-          'circle-stroke-width': 0.8,
+        layout: {
+          'icon-image': ['get', 'icon'],
+          // Sin `text-field` no hace falta servidor de glifos, y el estilo
+          // sigue sin ninguna dependencia externa en tiempo de ejecución.
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.62, 14, 0.85, 16, 1],
+          // El propio motor resuelve los solapamientos: a zoom bajo enseña los
+          // que caben y esconde el resto, en vez de amontonar 1.190 discos.
+          'icon-allow-overlap': false,
+          'icon-padding': 1,
         },
       })
 
       map.on('click', (e) => {
-        // Un clic sobre un pin ya lo gestiona el propio marcador.
-        const hits = map.queryRenderedFeatures(e.point, { layers: ['trail-pois-cluster'] })
-        if (hits.length) return
+        // Un clic sobre un pin ya lo gestiona el propio marcador; los puntos de
+        // interés y sus grupos tienen su propio manejador, más abajo.
+        const layers = ['trail-pois-cluster', 'trail-pois-point'].filter((l) => map.getLayer(l))
+        if (layers.length && map.queryRenderedFeatures(e.point, { layers }).length) return
         handlers.current.onPick(e.lngLat.lng, e.lngLat.lat)
       })
+
+      // Un grupo se abre acercando el mapa hasta donde deja de ser grupo. Antes
+      // no hacía nada: se tragaba el clic y no daba nada a cambio.
+      map.on('click', 'trail-pois-cluster', (e) => {
+        const f = e.features?.[0]
+        const id = f?.properties?.cluster_id
+        if (id === undefined) return
+        const src = map.getSource('trail-pois') as maplibregl.GeoJSONSource | undefined
+        void src?.getClusterExpansionZoom(Number(id)).then((zoom) => {
+          map.easeTo({ center: e.lngLat, zoom: Math.max(zoom, map.getZoom() + 1), duration: 500 })
+        })
+      })
+
+      map.on('click', 'trail-pois-point', (e) => {
+        const f = e.features?.[0]
+        if (!f || f.geometry.type !== 'Point') return
+        const [lon, lat] = f.geometry.coordinates as [number, number]
+        handlers.current.onPoi(readPoi({ ...(f.properties ?? {}) }, lon, lat))
+      })
+
+      for (const layer of ['trail-pois-cluster', 'trail-pois-point']) {
+        map.on('mouseenter', layer, () => {
+          map.getCanvas().style.cursor = 'pointer'
+        })
+        map.on('mouseleave', layer, () => {
+          map.getCanvas().style.cursor = 'crosshair'
+        })
+      }
+
       map.getCanvas().style.cursor = 'crosshair'
+      // Al final, no al principio: los efectos que pintan malla, marcadores y
+      // capas GeoJSON se disparan con esto, y necesitan las fuentes ya creadas.
+      setReady(true)
     })
 
     return () => {
@@ -247,7 +291,7 @@ export function MapView(props: Props) {
     }
     if (props.trailPois) {
       ;(map.getSource('trail-pois') as maplibregl.GeoJSONSource | undefined)?.setData(
-        props.trailPois as GeoJSON.FeatureCollection,
+        decoratePoiCollection(props.trailPois as GeoJSON.FeatureCollection),
       )
     }
   }, [ready, props.trails, props.trailPois])
