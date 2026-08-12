@@ -38,7 +38,8 @@
         {
           "locationWhenInUsePermission": "Para centrar el mapa en donde estás y calcular el tiempo de ese punto. La ubicación no sale del teléfono."
         }
-      ]
+      ],
+      "./plugins/withSceneLifecycle"
     ]
   }
 }
