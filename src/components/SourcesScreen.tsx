@@ -56,8 +56,8 @@ const ENTRIES: Entry[] = [
     title: t.sources.codeTitle,
     body: t.sources.codeBody,
     license: 'MIT',
-    href: 'https://github.com/andreapiani/tiempo-palmero',
-    hrefLabel: 'github.com/andreapiani/tiempo-palmero',
+    href: 'https://github.com/andreapianidev/tiempo-palmero',
+    hrefLabel: 'github.com/andreapianidev/tiempo-palmero',
   },
   {
     title: t.sources.noTrackingTitle,
