@@ -85,15 +85,55 @@ export function reduceToSeaLevel(
  * salía con R² = 0,002 y un gradiente de +0,2 hPa/km, cuando la física exige
  * unos −125.
  *
- * El discriminante es holgado por encima de los 200 m y por debajo da igual,
- * porque ahí las dos convenciones convergen.
+ * **Referencia de la isla, no atmósfera estándar.** La versión anterior
+ * comparaba contra `standardPressureAt(z)` con una ventana fija de 15 hPa, y
+ * eso deja márgenes peligrosamente finos: el audit del 12 ago 2026 encontró a
+ * CABLPA-SANTODOMINGO (363 m) a 3,6 hPa de clasificarse al revés y a Ecofinca
+ * Nogales (183 m) a 7,1. La atmósfera estándar es 1013,25 hPa al nivel del mar
+ * y el día real casi nunca lo es: cuando la presión sinóptica baja a 1005, una
+ * estación de 200 m que publica MSLP entra en la ventana, se «reduce» por
+ * segunda vez y sube unos 25 hPa de golpe.
+ *
+ * La referencia correcta no es una tabla, es **lo que marca hoy la propia red
+ * a nivel del mar**, donde las dos convenciones coinciden y no hay nada que
+ * decidir. Con ese número, cada estación se clasifica por la hipótesis que la
+ * deja más cerca del consenso insular, sin ventana fija que calibrar.
  */
 export function looksLikeStationPressure(
   pressureHpa: number,
   elevationM: number,
+  /** MSLP de consenso de la red. Sin ella se cae a la atmósfera estándar. */
+  referenceMslp = 1013.25,
 ): boolean {
   if (elevationM < 50) return false // indistinguible, y sin consecuencias
-  return Math.abs(pressureHpa - standardPressureAt(elevationM)) < 15
+
+  // Hipótesis A: ya viene reducida. Distancia al consenso, tal cual.
+  const asMslp = Math.abs(pressureHpa - referenceMslp)
+  // Hipótesis B: es absoluta de estación. Lo que implicaría al nivel del mar.
+  const asStation = Math.abs(
+    pressureHpa * (standardPressureAt(0) / standardPressureAt(elevationM)) - referenceMslp,
+  )
+  return asStation < asMslp
+}
+
+/**
+ * MSLP de consenso de la red: mediana de las estaciones a menos de 50 m, que
+ * es donde las dos convenciones dan el mismo número.
+ *
+ * Si no hay ninguna estación baja publicando presión, devuelve null y el
+ * discriminante vuelve a la atmósfera estándar — peor, pero nunca peligroso,
+ * porque sin costa tampoco hay con qué contrastar.
+ */
+export function seaLevelReference(
+  readings: readonly { pressureHpa: number; elevationM: number }[],
+): number | null {
+  const low = readings
+    .filter((r) => r.elevationM < 50 && Number.isFinite(r.pressureHpa))
+    .map((r) => r.pressureHpa)
+    .sort((a, b) => a - b)
+  if (!low.length) return null
+  const m = low.length >> 1
+  return low.length % 2 ? low[m] : (low[m - 1] + low[m]) / 2
 }
 
 /** Devuelve siempre presión al nivel del mar, venga como venga. */
@@ -101,8 +141,9 @@ export function normalizePressure(
   pressureHpa: number,
   elevationM: number,
   tempC: number,
+  referenceMslp?: number,
 ): number {
-  return looksLikeStationPressure(pressureHpa, elevationM)
+  return looksLikeStationPressure(pressureHpa, elevationM, referenceMslp)
     ? reduceToSeaLevel(pressureHpa, elevationM, tempC)
     : pressureHpa
 }

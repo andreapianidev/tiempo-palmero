@@ -11,6 +11,7 @@ import {
   dewpointFrom,
   normalizePressure,
   relativeHumidityFrom,
+  seaLevelReference,
 } from './psychro'
 
 /** Límites de plausibilidad para La Palma (0–2426 m, subtropical). */
@@ -50,6 +51,23 @@ export interface Station {
   pressureWasReduced: boolean
   uv: number | null
   solarradiation: number | null
+  /**
+   * Evapotranspiración de referencia acumulada del día, en mm.
+   *
+   * CUIDADO: la columna mezcla dos convenciones, igual que la presión, y aquí
+   * NO se resuelve. Medido en vivo el 12 ago 2026 sobre las 37 estaciones
+   * frescas: las 20 restantes dan 0 clavado; la familia `LaPalma_WSAQPM_*` da
+   * 1,4–2,06 (mm acumulados del día, coherente con ~5 mm/día en agosto) y la
+   * familia `CABLPA-*` da 0,066–0,089, dos órdenes de magnitud por debajo —
+   * compatible con el acumulado de un solo intervalo, pero el portal no
+   * documenta cuál.
+   *
+   * Por eso se enseña por estación y tal cual, nunca agregado ni interpolado:
+   * una media de la isla mezclaría unidades distintas y saldría un número que
+   * no significa nada. Mientras el publicador no lo aclare, no hay cifra de
+   * evapotranspiración insular que se pueda afirmar.
+   */
+  dailyevapotranspiration: number | null
   /** Fila cruda, para el panel «todos los valores» de la estación. */
   raw: CdaRow
 }
@@ -69,8 +87,8 @@ export interface Reading {
  * Temperatura, humedad y rocío no son tres medidas independientes: dadas dos,
  * la tercera está determinada (Magnus-Tetens, ver `psychro.ts`). Así que una
  * estación que publica T y RH sí dice cuál es su punto de rocío, aunque no
- * traiga la columna — son 21 de las 37 vivas, contra 10 que lo publican. Con
- * la regla anterior («un pin es una medida») esas 21 salían con un punto en
+ * traiga la columna — son 19 de las 36 vivas, contra 10 que lo publican. Con
+ * la regla anterior («un pin es una medida») esas 19 salían con un punto en
  * vez de una cifra, encima de una malla que sí estaba pintada y que se calcula
  * exactamente así: la incoherencia que la regla quería evitar.
  *
@@ -82,14 +100,25 @@ export function stationReading(s: Station, variable: MeasuredVariable): Reading 
   const measured = s[variable]
   if (measured !== null) return { value: measured, derived: false }
   if (s.temperature === null) return null
+
+  // Un valor calculado pasa por el MISMO filtro de plausibilidad que uno
+  // medido. No hacerlo dejaba salir disparates con aspecto de dato: CABLPA
+  // BELLIDO publica 1 % de humedad a 852 m —un sensor muerto, no un desierto—,
+  // y de ahí salía un punto de rocío de −38,4 °C, pintado en el pin como si
+  // fuera una cifra. `bounded()` ya vigila la columna publicada; la derivada se
+  // colaba porque nacía después del filtro.
+  const derive = (value: number): Reading | null => {
+    const b = BOUNDS[variable]
+    if (!Number.isFinite(value)) return null
+    if (b && (value < b[0] || value > b[1])) return null
+    return { value, derived: true }
+  }
+
   if (variable === 'dewpoint' && s.relativehumidity !== null) {
-    return { value: dewpointFrom(s.temperature, s.relativehumidity), derived: true }
+    return derive(dewpointFrom(s.temperature, s.relativehumidity))
   }
   if (variable === 'relativehumidity' && s.dewpoint !== null) {
-    return {
-      value: clampHumidity(relativeHumidityFrom(s.temperature, s.dewpoint)),
-      derived: true,
-    }
+    return derive(clampHumidity(relativeHumidityFrom(s.temperature, s.dewpoint)))
   }
   return null
 }
@@ -244,20 +273,38 @@ export function buildStations(
       // Índice 31 del esquema. En el histórico llega con el nombre equivocado
       // (`precipitationintensity` repetido), por eso se admiten las dos claves.
       dailyprecipitation: num(row.dailyprecipitation ?? row.precipitationintensity__31),
-      ...(() => {
-        const raw = bounded('atmosphericpressure')
-        if (raw === null) return { atmosphericpressure: null, pressureWasReduced: false }
-        const reduced = normalizePressure(raw, elevation, temperature)
-        return {
-          atmosphericpressure: reduced,
-          pressureWasReduced: Math.abs(reduced - raw) > 0.05,
-        }
-      })(),
+      // Se guarda cruda; la convención se decide abajo, cuando ya se sabe qué
+      // marca la red a nivel del mar. Ver `seaLevelReference`.
+      atmosphericpressure: bounded('atmosphericpressure'),
+      pressureWasReduced: false,
       uv: bounded('uv'),
       solarradiation: num(row.solarradiation),
+      dailyevapotranspiration: num(row.dailyevapotranspiration),
       raw: row,
     })
     census.usable++
+  }
+
+  // SEGUNDA PASADA: la presión.
+  //
+  // No se puede decidir estación por estación, porque para saber si una cifra
+  // ya viene reducida al nivel del mar hace falta saber qué marca hoy la isla
+  // al nivel del mar — y eso solo lo dicen las estaciones de costa, donde las
+  // dos convenciones coinciden. Por eso se guarda cruda arriba y se normaliza
+  // aquí, cuando la referencia ya existe. Ver `looksLikeStationPressure`.
+  const reference =
+    seaLevelReference(
+      stations
+        .filter((s) => s.atmosphericpressure !== null)
+        .map((s) => ({ pressureHpa: s.atmosphericpressure as number, elevationM: s.elevation })),
+    ) ?? undefined
+
+  for (const s of stations) {
+    if (s.atmosphericpressure === null) continue
+    const raw = s.atmosphericpressure
+    const reduced = normalizePressure(raw, s.elevation, s.temperature ?? 15, reference)
+    s.atmosphericpressure = reduced
+    s.pressureWasReduced = Math.abs(reduced - raw) > 0.05
   }
 
   return { stations, census }

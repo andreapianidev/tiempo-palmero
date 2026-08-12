@@ -22,6 +22,7 @@ import {
   type GazetteerEntry,
 } from '../lib/api'
 import { loadDem, elevationAt, type Dem } from '../lib/dem'
+import { fetchAnchors, pickHighAnchors, type Anchor } from '../lib/openmeteo'
 import { buildStations, type NetworkCensus, type Station } from '../lib/quality'
 import { parseLocation, parseTimeinstant, num, type CdaRow } from '../lib/cabildo'
 import {
@@ -87,6 +88,8 @@ export interface IslandData {
   census: NetworkCensus | null
   models: Record<InterpolableVariable, Model | null>
   validation: { rmse: number; mae: number; n: number } | null
+  /** Anclas de modelo por encima del techo de la red. Nunca son del Cabildo. */
+  anchors: Anchor[]
 
   air: AirStation[]
   sky: SkyStation[]
@@ -117,6 +120,7 @@ export function useIslandData(): IslandData {
   const [demError, setDemError] = useState<string | null>(null)
 
   const [weatherRows, setWeatherRows] = useState<CdaRow[]>([])
+  const [anchors, setAnchors] = useState<Anchor[]>([])
   const [air, setAir] = useState<AirStation[]>([])
   const [sky, setSky] = useState<SkyStation[]>([])
   const [fire, setFire] = useState<FireCamera[]>([])
@@ -347,13 +351,49 @@ export function useIslandData(): IslandData {
     return buildStations(weatherRows, elevationLookup, { now: fetchedAt })
   }, [dem, weatherRows, elevationLookup, fetchedAt])
 
+  // Techo real de lo que publica la red: la estación más alta con dato.
+  const stationCeiling = useMemo(
+    () => (stations.length ? Math.max(...stations.map((s) => s.elevation)) : null),
+    [stations],
+  )
+
+  /**
+   * Anclas de modelo por encima de la estación más alta que publica.
+   *
+   * El techo se toma de las propias estaciones, no de los modelos: los modelos
+   * ya llevan las anclas dentro y preguntarles aquí sería un ciclo. La cota de
+   * corte definitiva la aplica `buildModel`, variable por variable, contra el
+   * rango que de verdad ha quedado tras el rechazo de anomalías.
+   *
+   * Si Open-Meteo falla no pasa nada: se queda sin anclas y el mapa vuelve a
+   * extrapolar, que es exactamente lo que hacía antes. Nunca tumba la app.
+   */
+  useEffect(() => {
+    if (!dem || !stationCeiling) return
+    let cancelled = false
+    const points = pickHighAnchors(dem, stationCeiling)
+    if (!points.length) return
+    fetchAnchors(points)
+      .then((a) => {
+        if (!cancelled) setAnchors(a)
+      })
+      .catch(() => {
+        if (!cancelled) setAnchors([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [dem, stationCeiling, tick])
+
+
   const models = useMemo(() => {
-    const make = (v: InterpolableVariable) => (stations.length ? buildModel(stations, v) : null)
+    const make = (v: InterpolableVariable) =>
+      stations.length ? buildModel(stations, v, anchors) : null
     return {
       temperature: make('temperature'),
       relativehumidity: make('relativehumidity'),
     } as Record<InterpolableVariable, Model | null>
-  }, [stations])
+  }, [stations, anchors])
 
   // La validación es cara (n ajustes completos) y solo informa la cabecera, así
   // que se recalcula cuando cambia el conjunto de estaciones, no en cada tick.
@@ -384,6 +424,7 @@ export function useIslandData(): IslandData {
     census,
     models,
     validation,
+    anchors,
     air,
     sky,
     fire,

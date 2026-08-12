@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest'
 import snapshot from './__fixtures__/weather-snapshot.json'
 import {
+  BOUNDS,
   buildStations,
   dedupeByEntityId,
   stationReading,
@@ -21,10 +22,13 @@ import {
   type Station,
 } from './quality'
 import { parseLocation, parseTimeinstant, type CdaRow } from './cabildo'
+import { parseModelTime } from './openmeteo'
 import { haversineKm } from './geo'
 import {
   dewpointFrom,
   looksLikeStationPressure,
+  normalizePressure,
+  seaLevelReference,
   reduceToSeaLevel,
   relativeHumidityFrom,
   standardPressureAt,
@@ -126,12 +130,14 @@ describe('lectura de la estación: lo que sabe, no lo que publica', () => {
   })
 
   it('con T y humedad hay rocío aunque no venga la columna', () => {
-    const derivable = stations.filter(
-      (s) => s.dewpoint === null && s.relativehumidity !== null,
-    )
-    // Sobre este snapshot son 21 de las 37 vivas: la mayoría del mapa. Con la
+    const derivable = stations
+      .filter((s) => s.dewpoint === null && s.relativehumidity !== null)
+      // Una candidata cae por implausible; ese caso tiene su propio test.
+      .filter((s) => stationReading(s, 'dewpoint') !== null)
+    // Sobre este snapshot son 19 de las 36 vivas: la mayoría del mapa. Con la
     // regla anterior sus pines salían con un punto sobre una malla pintada.
-    expect(derivable.length).toBeGreaterThan(10)
+    expect(stations.length).toBe(36)
+    expect(derivable.length).toBe(19)
     for (const s of derivable) {
       const r = stationReading(s, 'dewpoint')
       expect(r?.derived).toBe(true)
@@ -142,6 +148,27 @@ describe('lectura de la estación: lo que sabe, no lo que publica', () => {
       )
       // Y el rocío nunca supera la temperatura del aire.
       expect(r!.value).toBeLessThanOrEqual(s.temperature! + 1e-9)
+    }
+  })
+
+  it('un valor calculado pasa el mismo filtro de plausibilidad que uno medido', () => {
+    // CABLPA-BELLIDO publica 1 % de humedad a 852 m con 19,3 °C. No es aire
+    // seco, es un higrómetro muerto: en agosto, en una isla atlántica, no
+    // existe. De ahí salía un rocío de −38,4 °C —fuera de BOUNDS.dewpoint— que
+    // se pintaba en el pin como cifra calculada, porque el límite solo vigilaba
+    // la columna publicada y este valor nacía después.
+    const dead = stations.find((s) => s.name.includes('BELLIDO'))!
+    expect(dead.relativehumidity).toBe(1)
+    expect(dewpointFrom(dead.temperature!, dead.relativehumidity!)).toBeLessThan(-30)
+    expect(stationReading(dead, 'dewpoint')).toBeNull()
+
+    // Y el filtro no se pasa de celoso: lo que cae dentro de límites sigue
+    // saliendo, incluso el aire seco de verdad de por encima de la inversión.
+    for (const s of stations) {
+      const r = stationReading(s, 'dewpoint')
+      if (!r) continue
+      expect(r.value).toBeGreaterThanOrEqual(BOUNDS.dewpoint[0])
+      expect(r.value).toBeLessThanOrEqual(BOUNDS.dewpoint[1])
     }
   })
 
@@ -198,6 +225,7 @@ describe('ajuste OLS del gradiente altitudinal', () => {
       elevation: i * 100,
       value: 25 - 0.006 * (i * 100),
       observedAt: NOW,
+      source: 'cabildo',
     }))
     const fit = ols(synth)
     expect(fit.b).toBeCloseTo(-0.006, 8)
@@ -217,6 +245,7 @@ describe('rechazo de outliers', () => {
       elevation: 1560,
       value: 3.1, // pasa el filtro de plausibilidad, pero en agosto es imposible
       observedAt: NOW,
+      source: 'cabildo',
     }
     const { rejected } = fitWithRejection([...clean, broken])
     expect(rejected.map((r) => r.entityId)).toContain('SENSOR-ROTO')
@@ -546,6 +575,137 @@ describe('frescura del dato interpolado', () => {
   })
 })
 
+describe('anclas de modelo por encima del techo de la red', () => {
+  // El Cabildo tiene una estación registrada en la cumbre —`Taburiente`,
+  // 2316 m— pero su última lectura es del 10 may 2023. Lo que publica de
+  // verdad llega a 1561 m, y la isla sube a 2426.
+  it('la red registra cumbre, pero lleva años sin publicarla', () => {
+    const alta = ROWS.map((r) => ({
+      name: String(r.name),
+      z: (r as { _demElevation: number | null })._demElevation,
+      at: parseTimeinstant(r.timeinstant),
+    })).filter((r) => (r.z ?? 0) > 1600)
+
+    expect(alta.length).toBe(1)
+    expect(alta[0].name).toBe('Taburiente')
+    expect(Math.round(alta[0].z!)).toBe(2316)
+    // Más de dos años rancia: por eso el filtro de frescura la tira.
+    expect((NOW - alta[0].at!) / 3_600_000).toBeGreaterThan(17_000)
+    expect(stations.some((s) => s.name === 'Taburiente')).toBe(false)
+  })
+
+  const ceiling = buildModel(stations, 'temperature').elevationRange[1]
+  const anchor = (elevation: number, value = 12, lon = -17.885, lat = 28.754) => ({
+    lon,
+    lat,
+    elevation,
+    temperature: value,
+    relativehumidity: 30,
+    observedAt: NOW,
+  })
+
+  it('NO tocan el ajuste: gradiente, R², σ y rango son los del Cabildo', () => {
+    const solo = buildModel(stations, 'temperature')
+    const conAnclas = buildModel(stations, 'temperature', [
+      anchor(2426),
+      anchor(2100, 14, -17.83, 28.72),
+    ])
+    // Esto es la garantía que pidió el encargo: las estaciones mandan siempre.
+    expect(conAnclas.b).toBe(solo.b)
+    expect(conAnclas.a).toBe(solo.a)
+    expect(conAnclas.r2).toBe(solo.r2)
+    expect(conAnclas.sigma).toBe(solo.sigma)
+    expect(conAnclas.elevationRange).toEqual(solo.elevationRange)
+    expect(conAnclas.rejected.length).toBe(solo.rejected.length)
+    // Y el RMSE que se enseña sigue midiendo la red, no el modelo.
+    expect(conAnclas.candidates).toBe(solo.candidates)
+  })
+
+  it('solo existen por encima del techo medido; dentro se descartan', () => {
+    const dentro = buildModel(stations, 'temperature', [anchor(ceiling - 200)])
+    expect(dentro.anchors).toBe(0)
+
+    const fuera = buildModel(stations, 'temperature', [anchor(ceiling + 500)])
+    expect(fuera.anchors).toBe(1)
+    expect(fuera.used.filter((u) => u.source === 'openmeteo').length).toBe(1)
+  })
+
+  it('en la cumbre manda el ancla; a la altura de las estaciones, ellas', () => {
+    const m = buildModel(stations, 'temperature', [anchor(2426, 12)])
+
+    // En el punto del ancla: la estación real más cercana está 865 m más abajo,
+    // que en distancia efectiva son 8,65 km. El ancla está a 0.
+    const cumbre = estimate(m, -17.885, 28.754, 2426)!
+    const deModelo = cumbre.contributors.filter((c) => c.source === 'openmeteo')
+    expect(deModelo.length).toBe(1)
+    expect(deModelo[0].weightShare).toBeGreaterThan(0.5)
+    // Y el valor se pega a lo que dice el ancla, no a la recta extrapolada.
+    expect(Math.abs(cumbre.value - 12)).toBeLessThan(3)
+
+    // En una estación real de media ladera el ancla no pinta nada.
+    const baja = stations.find((s) => s.elevation < 400 && s.temperature !== null)!
+    const abajo = estimate(m, baja.lon, baja.lat, baja.elevation)!
+    const modeloAbajo = abajo.contributors.filter((c) => c.source === 'openmeteo')
+    expect(modeloAbajo.length).toBe(0)
+  })
+
+  it('por debajo del techo el ancla pesa CERO, no poco', () => {
+    // La garantía fuerte. Con solo la puerta de entrada (el ancla existe únicamente
+    // por encima del techo) todavía se colaba hacia abajo: el ancla de la cumbre
+    // movía la humedad a 900 m del 85 % al 77 %, porque a 1179 m de desnivel aún
+    // se llevaba un 15 % del peso. La rampa lo lleva a cero exacto.
+    const anc = [anchor(2426, 12), anchor(2100, 14, -17.83, 28.72)]
+    const solo = buildModel(stations, 'temperature')
+    const con = buildModel(stations, 'temperature', anc)
+
+    for (const z of [200, 600, 900, 1200, ceiling]) {
+      const a = estimate(solo, -17.87, 28.7, z)!
+      const b = estimate(con, -17.87, 28.7, z)!
+      expect(b.value).toBe(a.value)
+      expect(b.contributors.every((c) => c.source === 'cabildo')).toBe(true)
+    }
+
+    // Y justo por encima entra de forma gradual, sin escalón en la cota.
+    const justo = estimate(con, -17.87, 28.7, ceiling + 1)!
+    const enElTecho = estimate(con, -17.87, 28.7, ceiling)!
+    expect(Math.abs(justo.value - enElTecho.value)).toBeLessThan(0.1)
+  })
+
+  it('el ancla NO encoge la banda de incertidumbre', () => {
+    // Encontrado auditando esta misma función: el ancla de la cumbre está a
+    // 0 km del punto de la cumbre, así que entraba en el cálculo de «distancia
+    // a la estación más cercana» y estrechaba la banda de ±4,52 a ±3,88 °C —
+    // más confianza justo donde el valor deja de ser una medida.
+    const anc = [anchor(2400, 17)]
+    const sin = buildModel(stations, 'temperature')
+    const con = buildModel(stations, 'temperature', anc)
+    for (const z of [1800, 2400]) {
+      const a = estimate(sin, -17.885, 28.754, z)!
+      const b = estimate(con, -17.885, 28.754, z)!
+      expect(b.uncertainty).toBeGreaterThanOrEqual(a.uncertainty - 1e-9)
+    }
+  })
+
+  it('la hora del modelo se lee en UTC, y sin hora no hay ancla', () => {
+    // Sin la Z el navegador leería la hora como local: una hora de desfase en
+    // Canarias en verano.
+    expect(parseModelTime('2026-08-12T13:00')).toBe(Date.parse('2026-08-12T13:00:00Z'))
+    // Y si algún día llegan los segundos, tampoco se rompe: antes caía en
+    // NaN y de ahí a `Date.now()`, fechando la pasada como recién medida.
+    expect(parseModelTime('2026-08-12T13:00:00')).toBe(Date.parse('2026-08-12T13:00:00Z'))
+    expect(Number.isNaN(parseModelTime(undefined))).toBe(true)
+    expect(Number.isNaN(parseModelTime('ayer por la tarde'))).toBe(true)
+  })
+
+  it('sin anclas el motor se comporta exactamente como antes', () => {
+    const a = buildModel(stations, 'temperature')
+    const b = buildModel(stations, 'temperature', [])
+    expect(a.anchors).toBe(0)
+    expect(b.anchors).toBe(0)
+    expect(estimate(a, -17.9, 28.7, 800)!.value).toBe(estimate(b, -17.9, 28.7, 800)!.value)
+  })
+})
+
 describe('presión: dos convenciones en la misma columna', () => {
   it('reconoce cuál es presión de estación y cuál ya viene reducida', () => {
     // A 726 m la diferencia entre ambas convenciones es de unos 86 hPa: el
@@ -554,6 +714,56 @@ describe('presión: dos convenciones en la misma columna', () => {
     expect(looksLikeStationPressure(1015.4, 761)).toBe(false)
     // Cerca del nivel del mar convergen, y ahí da igual: no se toca.
     expect(looksLikeStationPressure(1018.3, 12)).toBe(false)
+  })
+
+  it('la referencia es lo que marca la isla al nivel del mar, no 1013,25', () => {
+    const withP = stations.filter((s) => s.atmosphericpressure !== null)
+    const ref = seaLevelReference(
+      withP.map((s) => ({ pressureHpa: s.atmosphericpressure!, elevationM: s.elevation })),
+    )
+    expect(ref).not.toBeNull()
+    // Sobre este snapshot la isla está unos 5 hPa por encima de la estándar.
+    // Ese desfase es justo el que hacía frágil el criterio anterior.
+    expect(ref!).toBeGreaterThan(1000)
+    expect(ref!).toBeLessThan(1035)
+  })
+
+  it('el criterio deja holgura de sobra en toda la red, no 3,6 hPa', () => {
+    // El audit del 12 ago 2026 encontró que con la ventana fija de ±15 hPa
+    // contra la atmósfera estándar, CABLPA-SANTODOMINGO (363 m) estaba a 3,6
+    // hPa de clasificarse al revés: una bajada sinóptica corriente la habría
+    // reducido dos veces, subiéndola ~25 hPa de golpe. Comparando contra la
+    // referencia de la propia isla el margen más estrecho pasa de 3,6 a 13.
+    const withP = stations.filter((s) => s.atmosphericpressure !== null)
+    const ref = seaLevelReference(
+      withP.map((s) => ({ pressureHpa: s.atmosphericpressure!, elevationM: s.elevation })),
+    )!
+    let tightest = Infinity
+    for (const row of ROWS) {
+      const rawP = (row as { atmosphericpressure?: unknown }).atmosphericpressure
+      const z = (row as { _demElevation: number | null })._demElevation
+      if (rawP === null || rawP === undefined || z === null || z < 50) continue
+      const p = Number(rawP)
+      if (!Number.isFinite(p)) continue
+      // Distancia al consenso bajo cada hipótesis; la holgura es la diferencia.
+      const asStation = Math.abs(p * (standardPressureAt(0) / standardPressureAt(z)) - ref)
+      const asMslp = Math.abs(p - ref)
+      tightest = Math.min(tightest, Math.abs(asStation - asMslp))
+    }
+    expect(tightest).toBeGreaterThan(10)
+  })
+
+  it('una MSLP baja en una estación de media ladera ya no se reduce dos veces', () => {
+    // El caso que rompía: 1004 hPa a 200 m es una MSLP perfectamente normal en
+    // un día de borrasca, pero cae dentro de la ventana de ±15 hPa alrededor de
+    // la estándar a esa cota (989,5), así que se tomaba por presión absoluta.
+    expect(Math.abs(1004 - standardPressureAt(200))).toBeLessThan(15) // caía dentro
+    // Con la referencia real de ese día (una isla a 1005) queda claro que ya
+    // viene reducida, y no se toca.
+    expect(looksLikeStationPressure(1004, 200, 1005)).toBe(false)
+    expect(normalizePressure(1004, 200, 18, 1005)).toBe(1004)
+    // Y una absoluta de verdad a esa cota sigue detectándose.
+    expect(looksLikeStationPressure(982, 200, 1005)).toBe(true)
   })
 
   it('la reducción devuelve valores de nivel del mar plausibles', () => {

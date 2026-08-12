@@ -23,6 +23,7 @@
 import { haversineKm, type LonLat } from './geo'
 import type { Station } from './quality'
 import { clampHumidity, dewpointFrom } from './psychro'
+import { MODEL_SOURCE_LABEL, type Anchor } from './openmeteo'
 
 /**
  * Variables que el motor ajusta e interpola de verdad. Son las dos que la red
@@ -103,6 +104,14 @@ export const MAX_REJECTION_PASSES = 5
  */
 export const ELEVATION_SCALE_M_PER_KM = 100
 
+/**
+ * De dónde sale una muestra. `cabildo` es una medida real de la red insular;
+ * `openmeteo` es un ancla de modelo por encima del techo de esa red (ver
+ * `openmeteo.ts`). La distinción viaja hasta la interfaz: no se enseña un
+ * número de modelo sin decir que lo es.
+ */
+export type SampleSource = 'cabildo' | 'openmeteo'
+
 export interface Sample {
   entityId: string
   name: string
@@ -112,6 +121,7 @@ export interface Sample {
   value: number
   /** Instante de la MEDIDA (epoch ms, UTC), no de la descarga. */
   observedAt: number
+  source: SampleSource
 }
 
 export interface RejectedSample extends Sample {
@@ -132,12 +142,17 @@ export interface Model {
   rejected: RejectedSample[]
   candidates: number
   passes: number
+  /** Rango de altitudes MEDIDO por el Cabildo. Las anclas no lo ensanchan. */
   elevationRange: [number, number]
+  /** Anclas de modelo añadidas al campo de residuos, si las hay. */
+  anchors: number
 }
 
 export interface Contributor {
   name: string
   entityId: string
+  /** `openmeteo` obliga a la interfaz a decir que ese aporte es de modelo. */
+  source: SampleSource
   distanceKm: number
   /** altitud_estación − altitud_destino. Positivo = la estación está más alta. */
   elevationDelta: number
@@ -309,14 +324,50 @@ export function toSamples(
       elevation: s.elevation,
       value: v,
       observedAt: s.timeinstant,
+      source: 'cabildo',
     })
   }
   return out
 }
 
+/**
+ * Anclas de modelo que quedan POR ENCIMA del techo de la red, convertidas en
+ * muestras. Las que caen dentro del rango medido se descartan sin más: ahí hay
+ * estaciones de verdad y las estaciones de verdad mandan siempre.
+ */
+function anchorSamples(
+  anchors: readonly Anchor[],
+  variable: InterpolableVariable,
+  ceiling: number,
+): Sample[] {
+  const out: Sample[] = []
+  anchors.forEach((a, i) => {
+    const v = variable === 'temperature' ? a.temperature : a.relativehumidity
+    if (v === null || !Number.isFinite(v)) return
+    if (a.elevation <= ceiling) return
+    out.push({
+      entityId: `openmeteo:${i}`,
+      name: MODEL_SOURCE_LABEL,
+      lon: a.lon,
+      lat: a.lat,
+      elevation: a.elevation,
+      value: v,
+      observedAt: a.observedAt,
+      source: 'openmeteo',
+    })
+  })
+  return out
+}
+
+/**
+ * @param anchors Anclas de modelo. NO participan en el ajuste ni en el rechazo
+ *   —el gradiente, el R² y la σ siguen siendo los de la red del Cabildo— y solo
+ *   se suman al campo de residuos por encima del techo medido.
+ */
 export function buildModel(
   stations: readonly Station[],
   variable: InterpolableVariable,
+  anchors: readonly Anchor[] = [],
 ): Model {
   const samples = toSamples(stations, variable)
   const { fit, kept, rejected, passes } = fitWithRejection(samples)
@@ -324,22 +375,30 @@ export function buildModel(
   // 4. DETENDENCIA. Se deja la ordenada dentro del residuo: la retendencia
   // vuelve a sumarla, así que el resultado es idéntico y hay un término menos
   // que puedan desincronizarse entre sí.
-  const used = kept.map((s) => ({ ...s, detrended: s.value - fit.b * s.elevation }))
+  const detrend = (s: Sample) => ({ ...s, detrended: s.value - fit.b * s.elevation })
 
   const elevations = kept.map((s) => s.elevation)
+  const elevationRange: [number, number] = elevations.length
+    ? [Math.min(...elevations), Math.max(...elevations)]
+    : [0, 0]
+
+  // El ancla se detendencia con la MISMA recta del Cabildo, así que su residuo
+  // mide exactamente cuánto se equivoca esa recta allá arriba. Eso es lo que el
+  // IDW propaga —y lo que se apaga solo al bajar hacia las estaciones reales.
+  const anchored = kept.length ? anchorSamples(anchors, variable, elevationRange[1]) : []
+
   return {
     variable,
     a: fit.a,
     b: fit.b,
     r2: fit.r2,
     sigma: fit.sigma,
-    used,
+    used: [...kept.map(detrend), ...anchored.map(detrend)],
     rejected,
     candidates: samples.length,
     passes,
-    elevationRange: elevations.length
-      ? [Math.min(...elevations), Math.max(...elevations)]
-      : [0, 0],
+    elevationRange,
+    anchors: anchored.length,
   }
 }
 
@@ -354,6 +413,28 @@ interface Weighted {
   w: number
 }
 
+/**
+ * Cuánto pesa un ancla de modelo según lo alto que esté el punto de destino.
+ *
+ * Vale 0 en el techo de la red y 1 a `ANCHOR_TAPER_M` por encima. Sin esta
+ * rampa el ancla de la cumbre todavía se dejaba notar donde SÍ hay estaciones:
+ * medido el 12 ago 2026, a 900 m movía la humedad del 85 % al 77 %, porque a
+ * 1179 m de desnivel aún se llevaba un 15 % del peso. La regla es que las
+ * estaciones del Cabildo mandan donde miden, así que allí el modelo tiene que
+ * pesar cero, no poco.
+ *
+ * Que sea una rampa y no un corte seco es para que el campo no dé un salto
+ * justo en la cota del techo, que además se mueve cada vez que una estación
+ * alta entra o sale del ajuste.
+ */
+export const ANCHOR_TAPER_M = 300
+
+function anchorWeightFactor(model: Model, elevation: number): number {
+  const ceiling = model.elevationRange[1]
+  if (elevation <= ceiling) return 0
+  return Math.min(1, (elevation - ceiling) / ANCHOR_TAPER_M)
+}
+
 function gather(
   model: Model,
   target: LonLat,
@@ -361,12 +442,17 @@ function gather(
 ): { list: Weighted[]; extrapolated: boolean } {
   const within: Weighted[] = []
   const all: Weighted[] = []
+  const anchorFactor = anchorWeightFactor(model, elevation)
   for (const s of model.used) {
     const d = haversineKm(target, [s.lon, s.lat])
     // Distancia efectiva: horizontal y desnivel en el mismo espacio métrico.
     const dz = (s.elevation - elevation) / ELEVATION_SCALE_M_PER_KM
     const effective = Math.max(Math.hypot(d, dz), MIN_DISTANCE_KM)
-    const w = 1 / effective ** IDW_POWER
+    let w = 1 / effective ** IDW_POWER
+    if (s.source === 'openmeteo') {
+      w *= anchorFactor
+      if (w <= 0) continue // por debajo del techo el modelo no existe
+    }
     const item = { s, d, w }
     all.push(item)
     // El corte sigue siendo por distancia horizontal: es un radio geográfico,
@@ -423,6 +509,7 @@ export function estimate(
     .map<Contributor>((it) => ({
       name: it.s.name,
       entityId: it.s.entityId,
+      source: it.s.source,
       distanceKm: it.d,
       elevationDelta: it.s.elevation - elevation,
       weightShare: it.w / sw,
@@ -440,7 +527,18 @@ export function estimate(
     if (it.s.observedAt < oldestObservedAt) oldestObservedAt = it.s.observedAt
   }
 
-  const nearestKm = Math.min(...list.map((it) => it.d))
+  // Distancia a la MEDIDA más cercana, no al ancla más cercana.
+  //
+  // El ancla de la cumbre está a 0 km del punto de la cumbre, así que meterla
+  // en esta cuenta encogía la banda justo donde el valor deja de ser una
+  // medida: a 2400 m pasaba de ±4,52 a ±3,88 °C por el mero hecho de haber
+  // añadido un punto de modelo. La incertidumbre tiene que seguir contando lo
+  // lejos que está la estación real; si no hay ninguna dentro del radio, se
+  // toma el radio entero, que es el peor caso que esta heurística sabe medir.
+  const cabildoDistances = list.filter((it) => it.s.source === 'cabildo').map((it) => it.d)
+  const nearestKm = cabildoDistances.length
+    ? Math.min(...cabildoDistances)
+    : IDW_CUTOFF_KM
   const [lo, hi] = model.elevationRange
   return {
     value,
@@ -559,6 +657,7 @@ export function leaveOneOut(
       rejected: [],
       candidates: rest.length,
       passes: 0,
+      anchors: 0,
       elevationRange: [
         Math.min(...kept.map((s) => s.elevation)),
         Math.max(...kept.map((s) => s.elevation)),
