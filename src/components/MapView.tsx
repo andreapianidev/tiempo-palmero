@@ -213,15 +213,22 @@ export function MapView(props: Props) {
 
     const grid = renderGrid(dem, model, stops)
     const [[w, s], [e, nth]] = grid.bounds
-    src.updateImage({
-      url: grid.canvas.toDataURL(),
-      coordinates: [
-        [w, nth],
-        [e, nth],
-        [e, s],
-        [w, s],
-      ],
-    })
+    try {
+      src.updateImage({
+        url: grid.canvas.toDataURL(),
+        coordinates: [
+          [w, nth],
+          [e, nth],
+          [e, s],
+          [w, s],
+        ],
+      })
+    } catch (err) {
+      // `updateImage` aborta la carga anterior si aún estaba en vuelo. Es el
+      // comportamiento correcto —gana la malla más reciente— pero lo señala
+      // lanzando un AbortError que aquí no significa nada.
+      if (!(err instanceof DOMException && err.name === 'AbortError')) throw err
+    }
   }, [ready, dem, model, stops, visible.grid])
 
   // --- capas GeoJSON estáticas --------------------------------------------

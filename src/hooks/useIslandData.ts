@@ -138,8 +138,14 @@ export function useIslandData(): IslandData {
   const [lastUpdate, setLastUpdate] = useState<number | null>(null)
   const [tick, setTick] = useState(0)
 
-  // Reloj propio: sin él, la antigüedad de los datos se congela en pantalla
-  // entre refrescos y un dato de 14 minutos sigue pareciendo de 4.
+  // Reloj de PRESENTACIÓN: sin él, la antigüedad mostrada se congela entre
+  // refrescos y un dato de 14 minutos sigue pareciendo de 4.
+  //
+  // Deliberadamente NO alimenta el modelo. La frescura de una lectura se juzga
+  // contra el momento en que se pidió, no contra el reloj de pared: colgar el
+  // modelo de este tic recalculaba el ajuste, la malla de 46.000 celdas y la
+  // validación leave-one-out entera cada 30 segundos, para que casi nunca
+  // cambiara nada.
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000)
@@ -331,12 +337,15 @@ export function useIslandData(): IslandData {
     [dem],
   )
 
+  // Instante de referencia del modelo: cuándo se trajeron estas filas.
+  const fetchedAt = lastUpdate ?? now
+
   const { stations, census } = useMemo(() => {
     if (!dem || !weatherRows.length) {
       return { stations: [] as Station[], census: null as NetworkCensus | null }
     }
-    return buildStations(weatherRows, elevationLookup, { now })
-  }, [dem, weatherRows, elevationLookup, now])
+    return buildStations(weatherRows, elevationLookup, { now: fetchedAt })
+  }, [dem, weatherRows, elevationLookup, fetchedAt])
 
   const models = useMemo(() => {
     const make = (v: InterpolableVariable) => (stations.length ? buildModel(stations, v) : null)
