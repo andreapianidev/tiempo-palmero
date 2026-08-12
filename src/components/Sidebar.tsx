@@ -70,6 +70,12 @@ export function Sidebar(props: Props) {
 
   const lapsePerKm = model ? -model.b * 1000 : null
 
+  // Dos relojes distintos, y la diferencia importa: se puede haber consultado
+  // hace 10 segundos una red cuya lectura más reciente es de hace hora y media.
+  const newestObservation = model?.used.length
+    ? Math.max(...model.used.map((u) => u.observedAt))
+    : null
+
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>
       <button
@@ -197,9 +203,15 @@ export function Sidebar(props: Props) {
                   </td>
                 </tr>
               )}
+              {newestObservation && (
+                <tr>
+                  <td>{t.model.dataAge}</td>
+                  <td>{humanAge(props.now - newestObservation)}</td>
+                </tr>
+              )}
               {props.lastUpdate && (
                 <tr>
-                  <td>Datos</td>
+                  <td>{t.model.fetchAge}</td>
                   <td>{humanAge(props.now - props.lastUpdate)}</td>
                 </tr>
               )}

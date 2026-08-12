@@ -63,6 +63,12 @@ export const es = {
     measured: 'medido',
     notAMeasurement: 'Valor estimado, no medido',
     uncertainty: 'Margen',
+    measuredAt: 'Medido',
+    measuredAtHint:
+      'Antigüedad de las lecturas que sostienen esta cifra, ponderada igual que el valor. No es cuándo se descargaron los datos.',
+    oldestContribution: 'la más antigua',
+    staleWarning:
+      'Las lecturas que sostienen esta cifra tienen más de una hora. El tiempo puede haber cambiado.',
     contributors: 'Estaciones que más contribuyen',
     distance: 'Distancia',
     elevationDelta: 'Δ altitud',
@@ -95,6 +101,8 @@ export const es = {
   model: {
     title: 'Modelo',
     stationsUsed: (used: number, total: number) => `${used} de ${total} estaciones activas`,
+    dataAge: 'Medida más reciente',
+    fetchAge: 'Última consulta',
     lapseRate: 'Gradiente medido',
     lapseRateUnit: '°C/km',
     r2: 'R² del ajuste',

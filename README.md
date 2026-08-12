@@ -19,6 +19,13 @@ cálculo con su distancia y su desnivel. La estación que más pesa está 251 m 
 arriba y a 3,5 km; la segunda, 143 m más abajo. Sin corregir por altitud, esas
 dos se promediarían como si estuvieran en el mismo sitio.
 
+Debajo del margen, **cuándo se midió** lo que sostiene la cifra: «medido hace
+19 min, la más antigua hace 38 min». Es un reloj distinto del de la descarga —
+los datos pueden haberse pedido hace diez segundos y las lecturas ser de hace
+hora y media, y es lo segundo lo que dice si el número sigue valiendo. La
+antigüedad se pondera con el mismo peso que el valor: si el 80 % de la cifra
+sale de una estación, la frescura que se anuncia es la de esa estación.
+
 Abajo a la izquierda, el estado del modelo: **35 de 52 estaciones activas** —el
 denominador real, no el del catálogo—, el gradiente medido en ese instante
 (4,06 °C/km, no los 6,5 del manual), el R² del ajuste y el RMSE de validación.

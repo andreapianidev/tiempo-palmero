@@ -85,6 +85,8 @@ export interface Sample {
   lat: number
   elevation: number
   value: number
+  /** Instante de la MEDIDA (epoch ms, UTC), no de la descarga. */
+  observedAt: number
 }
 
 export interface RejectedSample extends Sample {
@@ -116,6 +118,8 @@ export interface Contributor {
   elevationDelta: number
   weightShare: number
   rawValue: number
+  /** Instante de esa medida concreta (epoch ms, UTC). */
+  observedAt: number
 }
 
 export interface Estimate {
@@ -127,6 +131,16 @@ export interface Estimate {
   extrapolated: boolean
   /** El punto cae fuera del rango de altitudes muestreado por la red. */
   elevationExtrapolated: boolean
+
+  /**
+   * Cuándo se MIDIÓ lo que sostiene esta cifra, ponderado por el mismo peso
+   * que el propio valor. No es cuándo se descargó: una estimación puede venir
+   * de una descarga de hace 10 segundos y de lecturas de hace hora y media, y
+   * lo segundo es lo que importa para saber si el número sigue valiendo.
+   */
+  observedAt: number
+  /** La más vieja de las lecturas que contribuyen. El peor caso, a la vista. */
+  oldestObservedAt: number
 }
 
 // ---------------------------------------------------------------------------
@@ -269,6 +283,7 @@ export function toSamples(
       lat: s.lat,
       elevation: s.elevation,
       value: v,
+      observedAt: s.timeinstant,
     })
   }
   return out
@@ -387,7 +402,18 @@ export function estimate(
       elevationDelta: it.s.elevation - elevation,
       weightShare: it.w / sw,
       rawValue: it.s.value,
+      observedAt: it.s.observedAt,
     }))
+
+  // Antigüedad del dato, ponderada por el MISMO peso que el valor: si el 80 %
+  // de la cifra viene de una estación, la frescura que se anuncia tiene que ser
+  // la de esa estación, no el promedio simple de todas las que participan.
+  let observedAt = 0
+  let oldestObservedAt = Infinity
+  for (const it of list) {
+    observedAt += (it.w / sw) * it.s.observedAt
+    if (it.s.observedAt < oldestObservedAt) oldestObservedAt = it.s.observedAt
+  }
 
   const nearestKm = Math.min(...list.map((it) => it.d))
   const [lo, hi] = model.elevationRange
@@ -397,6 +423,8 @@ export function estimate(
     contributors: top,
     extrapolated,
     elevationExtrapolated: elevation > hi || elevation < lo,
+    observedAt,
+    oldestObservedAt,
   }
 }
 
@@ -611,6 +639,12 @@ export function estimateBundle(
       extrapolated: temperature.extrapolated || relativehumidity.extrapolated,
       elevationExtrapolated:
         temperature.elevationExtrapolated || relativehumidity.elevationExtrapolated,
+      // Un valor derivado no es más fresco que el más viejo de sus ingredientes.
+      observedAt: Math.min(temperature.observedAt, relativehumidity.observedAt),
+      oldestObservedAt: Math.min(
+        temperature.oldestObservedAt,
+        relativehumidity.oldestObservedAt,
+      ),
     }
   }
 

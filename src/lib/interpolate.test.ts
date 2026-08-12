@@ -131,6 +131,7 @@ describe('ajuste OLS del gradiente altitudinal', () => {
       lat: 28.6 + i * 0.001,
       elevation: i * 100,
       value: 25 - 0.006 * (i * 100),
+      observedAt: NOW,
     }))
     const fit = ols(synth)
     expect(fit.b).toBeCloseTo(-0.006, 8)
@@ -149,6 +150,7 @@ describe('rechazo de outliers', () => {
       lat: 28.76,
       elevation: 1560,
       value: 3.1, // pasa el filtro de plausibilidad, pero en agosto es imposible
+      observedAt: NOW,
     }
     const { rejected } = fitWithRejection([...clean, broken])
     expect(rejected.map((r) => r.entityId)).toContain('SENSOR-ROTO')
@@ -422,5 +424,58 @@ describe('coherencia higrotérmica', () => {
         expect(relativeHumidityFrom(t, dewpointFrom(t, rh))).toBeCloseTo(rh, 4)
       }
     }
+  })
+})
+
+describe('frescura del dato interpolado', () => {
+  const model = buildModel(stations, 'temperature')
+
+  it('la antigüedad anunciada es la de las MEDIDAS, no la de la descarga', () => {
+    const est = estimate(model, -17.9, 28.65, 800)!
+    // Cae dentro del rango real de instantes de las estaciones utilizables.
+    const times = model.used.map((s) => s.observedAt)
+    expect(est.observedAt).toBeGreaterThanOrEqual(Math.min(...times))
+    expect(est.observedAt).toBeLessThanOrEqual(Math.max(...times))
+
+    // `oldestObservedAt` es el mínimo de las estaciones que CONTRIBUYEN, no de
+    // toda la red: las que caen fuera del corte de 15 km no cuentan, ni para
+    // el valor ni para su frescura.
+    const contributing = model.used.filter(
+      (s) => haversineKm([-17.9, 28.65], [s.lon, s.lat]) <= 15,
+    )
+    expect(est.oldestObservedAt).toBe(
+      Math.min(...contributing.map((s) => s.observedAt)),
+    )
+  })
+
+  it('está ponderada por el mismo peso que el valor', () => {
+    // Justo encima de una estación, la frescura anunciada tiene que ser
+    // prácticamente la suya: si el 90 % de la cifra sale de ese sensor,
+    // anunciar la media simple de toda la red sería engañoso.
+    const s = model.used[0]
+    const est = estimate(model, s.lon, s.lat, s.elevation)!
+    expect(Math.abs(est.observedAt - s.observedAt)).toBeLessThan(15 * 60_000)
+  })
+
+  it('el peor caso nunca es más fresco que el típico', () => {
+    for (const [lon, lat, z] of [
+      [-17.9, 28.65, 800],
+      [-17.78, 28.62, 200],
+      [-17.86, 28.75, 2000],
+    ] as const) {
+      const est = estimate(model, lon, lat, z)!
+      expect(est.oldestObservedAt).toBeLessThanOrEqual(est.observedAt)
+    }
+  })
+
+  it('un valor derivado no es más fresco que sus ingredientes', () => {
+    const models = {
+      temperature: buildModel(stations, 'temperature'),
+      relativehumidity: buildModel(stations, 'relativehumidity'),
+    }
+    const b = estimateBundle(models, -17.9, 28.65, 800)
+    if (!b.dewpoint || !b.temperature || !b.relativehumidity) return
+    expect(b.dewpoint.observedAt).toBeLessThanOrEqual(b.temperature.observedAt)
+    expect(b.dewpoint.observedAt).toBeLessThanOrEqual(b.relativehumidity.observedAt)
   })
 })

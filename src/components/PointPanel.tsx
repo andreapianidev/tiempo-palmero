@@ -18,6 +18,7 @@ import {
 } from '../lib/interpolate'
 import type { Station } from '../lib/quality'
 import { cssColor, type RgbStop } from '../lib/palette'
+import { freshness } from '../lib/quality'
 import { n, n0, t, humanAge } from '../i18n'
 
 export interface ProbePoint {
@@ -138,6 +139,25 @@ export function PointPanel({
             <span className="dim"> · {t.point.notAMeasurement}</span>
           </p>
 
+          {/* Cuándo se MIDIÓ lo que sostiene la cifra. Es distinto de cuándo se
+              descargó: los datos pueden ser de hace 10 segundos y las lecturas
+              de hace hora y media, y es lo segundo lo que dice si el número
+              sigue valiendo. */}
+          <p className="freshness mono" title={t.point.measuredAtHint}>
+            <span className={`dot dot-${freshness((now - main.observedAt) / 3_600_000)}`} />
+            {t.point.measuredAt} {humanAge(now - main.observedAt)}
+            {main.oldestObservedAt < main.observedAt - 60_000 && (
+              <span className="dim">
+                {' '}
+                · {t.point.oldestContribution} {humanAge(now - main.oldestObservedAt)}
+              </span>
+            )}
+          </p>
+
+          {now - main.observedAt > 3_600_000 && (
+            <p className="warn">{t.point.staleWarning}</p>
+          )}
+
           {variable === 'dewpoint' && (
             <p className="note small">{t.variables.derivedHint}</p>
           )}
@@ -170,6 +190,7 @@ export function PointPanel({
                   <th>{t.point.distance}</th>
                   <th>{t.point.elevationDelta}</th>
                   <th>{t.point.weight}</th>
+                  <th>{t.point.measuredAt}</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,6 +203,7 @@ export function PointPanel({
                       {n0(Math.abs(c.elevationDelta))} {t.units.metres}
                     </td>
                     <td className="mono">{Math.round(c.weightShare * 100)} %</td>
+                    <td className="mono">{humanAge(now - c.observedAt)}</td>
                   </tr>
                 ))}
               </tbody>
