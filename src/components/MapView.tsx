@@ -10,6 +10,8 @@ import { renderGrid } from '../lib/grid'
 import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette'
 import { freshness, stationReading, type Station } from '../lib/quality'
 import { addPoiIcons, decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
+import { WindLayer } from './wind/WindLayer'
+import type { WindField } from '../lib/wind/field'
 import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
@@ -26,6 +28,7 @@ export interface LayerVisibility {
   sky: boolean
   trails: boolean
   fire: boolean
+  wind: boolean
 }
 
 interface Props {
@@ -41,6 +44,7 @@ interface Props {
   gazetteer: GazetteerEntry[]
   trails: unknown | null
   trailPois: unknown | null
+  wind: WindField | null
   visible: LayerVisibility
   probe: { lon: number; lat: number } | null
   onPick: (lon: number, lat: number) => void
@@ -79,6 +83,9 @@ export function MapView(props: Props) {
   // nunca — el mapa se quedaba con el contorno de la isla y nada más.
   const [ready, setReady] = useState(false)
   const markersRef = useRef<maplibregl.Marker[]>([])
+  /** La capa de viento es un objeto WebGL con estado propio: vive en una ref y
+   *  se le pasan los datos, en vez de recrearla en cada render. */
+  const windLayerRef = useRef<WindLayer | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
   const pillsRef = useRef<{ el: HTMLElement; lon: number; lat: number; priority: number }[]>([])
   const placeMarkersRef = useRef<maplibregl.Marker[]>([])
@@ -138,6 +145,13 @@ export function MapView(props: Props) {
         },
         'municipal-boundaries',
       )
+
+      // El viento va POR ENCIMA de la malla interpolada y por debajo de los
+      // contornos: se lee sobre el color de fondo sin tapar los límites ni las
+      // etiquetas, que son las que sitúan lo que se está mirando.
+      const windLayer = new WindLayer()
+      windLayerRef.current = windLayer
+      map.addLayer(windLayer, 'municipal-boundaries')
 
       map.addSource('trails', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       map.addLayer({
@@ -279,6 +293,24 @@ export function MapView(props: Props) {
       ],
     })
   }, [ready, dem, models, variable, stops, visible.grid])
+
+  // --- viento animado ------------------------------------------------------
+  //
+  // El campo y la visibilidad se le pasan a la capa por método, no por props:
+  // es un objeto WebGL con su propio ciclo de vida y volver a añadirlo al mapa
+  // en cada cambio recompilaría los shaders y reiniciaría las partículas.
+  useEffect(() => {
+    if (!ready) return
+    windLayerRef.current?.setField(props.wind)
+  }, [ready, props.wind])
+
+  // Apagarla es dejar de dibujar Y dejar de pedir fotogramas: la animación se
+  // sostiene con `triggerRepaint`, así que con la capa oculta el mapa vuelve a
+  // quedarse quieto y no consume batería.
+  useEffect(() => {
+    if (!ready) return
+    windLayerRef.current?.setVisible(visible.wind)
+  }, [ready, visible.wind])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {

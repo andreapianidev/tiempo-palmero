@@ -5,6 +5,7 @@ import { DetailPanel, type Selection } from './components/DetailPanel'
 import { Sidebar } from './components/sidebar'
 import { SourcesScreen } from './components/SourcesScreen'
 import { useIslandData, municipalityOf } from './hooks/useIslandData'
+import { useWindField } from './hooks/useWindField'
 import { elevationAt } from './lib/dem'
 import { DEWPOINT_STOPS, HUMIDITY_STOPS, TEMP_STOPS, type RgbStop } from './lib/palette'
 import type { DisplayVariable } from './lib/interpolate'
@@ -26,10 +27,15 @@ const INITIAL_LAYERS: LayerVisibility = {
   sky: false,
   trails: false,
   fire: true,
+  wind: false,
 }
 
 export default function App() {
   const data = useIslandData()
+  // El viento se calcula siempre, esté la capa encendida o no: el panel enseña
+  // cuántas estaciones lo miden aunque el mapa no lo dibuje, y el coste es una
+  // petición al modelo cada refresco.
+  const wind = useWindField(data.dem, data.stations, data.lastUpdate)
   const [variable, setVariable] = useState<DisplayVariable>('temperature')
   const [visible, setVisible] = useState<LayerVisibility>(INITIAL_LAYERS)
   const [probe, setProbe] = useState<ProbePoint | null>(null)
@@ -121,6 +127,7 @@ export default function App() {
         gazetteer={data.gazetteer}
         trails={data.trails}
         trailPois={data.trailPois}
+        wind={wind.field}
         visible={visible}
         probe={probe}
         onPick={(lon, lat) => pick(lon, lat)}
@@ -171,6 +178,7 @@ export default function App() {
         gazetteer={data.gazetteer}
         onSearch={onSearch}
         lastUpdate={data.lastUpdate}
+        wind={wind}
         now={now}
         dem={data.dem}
         onSources={() => setShowSources(true)}

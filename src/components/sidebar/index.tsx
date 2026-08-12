@@ -21,6 +21,8 @@ import { PlaceSearch } from './PlaceSearch'
 import { VariablePicker } from './VariablePicker'
 import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
 import { ModelStatus } from './ModelStatus'
+import { WindStatus } from './WindStatus'
+import type { WindState } from '../../hooks/useWindField'
 
 interface Props {
   variable: DisplayVariable
@@ -34,6 +36,7 @@ interface Props {
   gazetteer: GazetteerEntry[]
   onSearch: (entry: GazetteerEntry) => void
   dem: Dem | null
+  wind: WindState
   lastUpdate: number | null
   now: number
   onSources: () => void
@@ -98,6 +101,18 @@ export function Sidebar(props: Props) {
         >
           <LayerSwitches visible={props.visible} onToggle={props.onToggle} />
         </Section>
+
+        {/* Solo cuando la capa está encendida: si no, describiría con detalle
+            algo que no se está viendo. */}
+        {props.visible.wind && (
+          <Section title="Viento" defaultOpen badge={`${props.wind.measuring}`}>
+            <WindStatus
+              wind={props.wind}
+              usableStations={props.census?.usable ?? null}
+              now={props.now}
+            />
+          </Section>
+        )}
 
         <Section title={t.model.title} defaultOpen>
           <ModelStatus

@@ -11,6 +11,7 @@ import { t } from '../../i18n'
 
 const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
   { id: 'grid', label: t.layers.grid },
+  { id: 'wind', label: t.layers.wind },
   { id: 'stations', label: t.layers.stations },
   { id: 'air', label: t.layers.air },
   { id: 'co2', label: t.layers.co2 },

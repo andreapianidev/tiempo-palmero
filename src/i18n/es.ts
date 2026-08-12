@@ -21,6 +21,7 @@ export const es = {
 
   layers: {
     title: 'Capas',
+    wind: 'Viento animado',
     grid: 'Malla interpolada',
     stations: 'Estaciones meteorológicas',
     air: 'Calidad del aire',
