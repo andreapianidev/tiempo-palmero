@@ -34,11 +34,26 @@
  * Open-Meteo es un MODELO (mezcla ICON/GFS/ECMWF), no una medida, y por eso no
  * se le deja tocar el ajuste. Es keyless y sin registro; envía `Access-Control-
  * Allow-Origin: *`, así que se llama desde el navegador sin proxy.
+ *
+ * DE DÓNDE SALE EL VALOR DEL ANCLA. Ya no de `temperature_2m`, sino del perfil
+ * vertical (`profile.ts`). El valor de superficie con `elevation=` forzada era
+ * la temperatura de la celda trasladada con un gradiente CONSTANTE de
+ * −0,65 K/100 m, aplicado a través de la inversión del alisio, donde el
+ * gradiente real llega a ser positivo. Contrastado contra la estación real del
+ * Roque (TNG, 2387 m) sobre 24 h: **8,20 K de error medio con la superficie,
+ * 1,27 K con el perfil**. Y la humedad de superficie no era imprecisa sino
+ * constante —el modelo no la ajusta en altura en absoluto—, así que las anclas
+ * de humedad no llevaban ninguna información vertical.
+ *
+ * `fetchAnchors` sigue existiendo, pero ya solo para lo que sí es un valor de
+ * superficie: comparar el modelo con las estaciones EN SU PROPIO PUNTO, que es
+ * como se mide el sesgo que calibra la banda de incertidumbre.
  */
 
 import type { Dem } from './dem'
 import { SEA_LEVEL_M } from './dem'
 import { pixelXToLon, pixelYToLat } from './geo'
+import { fetchProfiles, humidityAt, sampleProfile, type VerticalProfile } from './profile'
 
 export const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast'
 /** Nombre con el que se presenta en cualquier sitio donde salga una fuente. */
@@ -52,6 +67,15 @@ export interface Anchor {
   relativehumidity: number | null
   /** Instante de la pasada del modelo (epoch ms, UTC). */
   observedAt: number
+}
+
+/**
+ * Ancla leída del PERFIL VERTICAL, no de la superficie. Lleva además el
+ * diagnóstico de la inversión, para que la interfaz pueda decir por qué el mapa
+ * de arriba no es la prolongación del de abajo.
+ */
+export interface ProfileAnchor extends Anchor {
+  profile: VerticalProfile
 }
 
 /**
@@ -98,6 +122,50 @@ export function pickHighAnchors(
     if (far) chosen.push(c)
   }
   return chosen
+}
+
+/**
+ * Anclas por encima del techo de la red, leídas del perfil vertical.
+ *
+ * Cada punto se muestrea a SU altitud dentro del perfil de su propia columna, y
+ * la humedad se recompone de la temperatura y el punto de rocío en vez de
+ * transportarse. Un punto sin los dos valores no produce ancla: es preferible
+ * que el motor vuelva a extrapolar —que es lo que hacía antes— a colocar arriba
+ * una cifra que no se sostiene.
+ *
+ * Si Open-Meteo falla, esto devuelve una lista vacía y no pasa nada más. Nunca
+ * tumba la aplicación.
+ */
+export async function fetchProfileAnchors(
+  points: readonly { lon: number; lat: number; elevation: number }[],
+  signal?: AbortSignal,
+): Promise<ProfileAnchor[]> {
+  const profiles = await fetchProfiles(points, signal)
+  // Emparejado por COORDENADA, nunca por índice: `fetchProfiles` descarta las
+  // columnas que llegan sin hora legible o con menos de dos niveles, así que la
+  // lista puede venir más corta y un `points[i]` estaría dando a un ancla la
+  // altitud de otro punto, en silencio.
+  const key = (lon: number, lat: number) => `${lon.toFixed(5)},${lat.toFixed(5)}`
+  const byPoint = new Map(points.map((p) => [key(p.lon, p.lat), p]))
+
+  const out: ProfileAnchor[] = []
+  profiles.forEach((profile) => {
+    const p = byPoint.get(key(profile.lon, profile.lat))
+    if (!p) return
+    const temperature = sampleProfile(profile, p.elevation, 'temperature')
+    const relativehumidity = humidityAt(profile, p.elevation)
+    if (temperature === null && relativehumidity === null) return
+    out.push({
+      lon: p.lon,
+      lat: p.lat,
+      elevation: p.elevation,
+      temperature,
+      relativehumidity,
+      observedAt: profile.observedAt,
+      profile,
+    })
+  })
+  return out
 }
 
 /**

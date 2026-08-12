@@ -22,7 +22,13 @@ import {
   type GazetteerEntry,
 } from '../lib/api'
 import { loadDem, elevationAt, type Dem } from '../lib/dem'
-import { fetchAnchors, pickHighAnchors, type Anchor } from '../lib/openmeteo'
+import {
+  fetchAnchors,
+  fetchProfileAnchors,
+  pickHighAnchors,
+  type Anchor,
+  type ProfileAnchor,
+} from '../lib/openmeteo'
 import { buildStations, type NetworkCensus, type Station } from '../lib/quality'
 import { parseLocation, parseTimeinstant, num, type CdaRow } from '../lib/cabildo'
 import {
@@ -91,7 +97,7 @@ export interface IslandData {
   models: Record<InterpolableVariable, Model | null>
   validation: { rmse: number; mae: number; n: number } | null
   /** Anclas de modelo por encima del techo de la red. Nunca son del Cabildo. */
-  anchors: Anchor[]
+  anchors: ProfileAnchor[]
 
   air: AirStation[]
   sky: SkyStation[]
@@ -122,7 +128,7 @@ export function useIslandData(): IslandData {
   const [demError, setDemError] = useState<string | null>(null)
 
   const [weatherRows, setWeatherRows] = useState<CdaRow[]>([])
-  const [anchors, setAnchors] = useState<Anchor[]>([])
+  const [anchors, setAnchors] = useState<ProfileAnchor[]>([])
   /** Open-Meteo en el punto de cada estación, para medir el error del modelo. */
   const [modelAtStations, setModelAtStations] = useState<Anchor[]>([])
   const [air, setAir] = useState<AirStation[]>([])
@@ -399,6 +405,10 @@ export function useIslandData(): IslandData {
    * corte definitiva la aplica `buildModel`, variable por variable, contra el
    * rango que de verdad ha quedado tras el rechazo de anomalías.
    *
+   * El valor sale del PERFIL VERTICAL, no de la superficie: ver la cabecera de
+   * `profile.ts`. Contra la estación real del Roque, 8,20 K de error con la
+   * superficie contra 1,27 K con el perfil.
+   *
    * Si Open-Meteo falla no pasa nada: se queda sin anclas y el mapa vuelve a
    * extrapolar, que es exactamente lo que hacía antes. Nunca tumba la app.
    */
@@ -407,7 +417,7 @@ export function useIslandData(): IslandData {
     let cancelled = false
     const points = pickHighAnchors(dem, stationCeiling)
     if (!points.length) return
-    fetchAnchors(points)
+    fetchProfileAnchors(points)
       .then((a) => {
         if (!cancelled) setAnchors(a)
       })

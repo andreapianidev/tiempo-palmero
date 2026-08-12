@@ -45,8 +45,8 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
   decisiones que los sostienen · [Validación](#validación)
 - [Qué más publica el Cabildo](#qué-más-publica-el-cabildo-y-qué-falta-por-aprovechar)
   — hoja de ruta sobre los 49 conjuntos del portal
-- [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — por qué
-  no se llama a Open-Meteo, Nominatim ni Overpass
+- [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — qué se
+  llama de verdad, y con qué permiso
 - [Arquitectura](#arquitectura)
 - [Trampas de esta API](#trampas-de-esta-api-que-ya-están-resueltas-en-el-código)
   — un día de depuración cada una
@@ -243,6 +243,83 @@ separados al menos 3 km entre sí. Medido el 12 ago 2026, en el Roque de los
 Muchachos la humedad pasa de un imposible 100 % a 38 %, y a 900 y 300 m —donde
 sí hay estaciones— el valor no se mueve ni una décima.
 
+#### El ancla no es un valor de superficie: es un perfil vertical
+
+Durante un tiempo el ancla fue `temperature_2m` pidiéndole a Open-Meteo el punto
+con `elevation=` forzada. **Eso no es una medida en altura**, y el motivo está
+en su propio código (`GenericReader.swift`):
+
+```
+data[i] += (modelElevation - targetElevation) * 0.0065
+```
+
+Es el valor de superficie de su celda trasladado con un gradiente **constante**
+de −0,65 K/100 m. Y su celda no es la cumbre: ningún modelo global tiene el
+Roque. El mejor, ICON, cree que está a 1055 m; GFS y ECMWF a 0,25° creen que
+está **al nivel del mar**. Así que se calienta la superficie de una isla baja y
+después se prolonga una recta hacia arriba **a través de la inversión del
+alisio**, donde el gradiente real llega a ser positivo. No es aproximar: es
+invertirle el signo al fenómeno.
+
+Con la humedad era peor que un sesgo. Ese `+= 0.0065` solo toca la temperatura;
+el punto de rocío se traslada en paralelo, de modo que la humedad relativa sale
+**idéntica a 10, 900, 1560 y 2426 m**. Las anclas de humedad no llevaban
+ninguna información vertical: eran constantes.
+
+Ahora el ancla se lee del **perfil vertical** (`profile.ts`): T y punto de rocío
+en los niveles de presión de ICON —~165, 385, 608, 838, 1075, 1568, 2089 y
+3223 m— interpolados linealmente en altura geopotencial, sin ningún gradiente
+impuesto. Es el esquema de TopoSCALE (Fiddes y Gruber 2014,
+[10.5194/gmd-7-387-2014](https://doi.org/10.5194/gmd-7-387-2014)). La humedad se
+recompone de T y rocío con Magnus-Tetens, nunca se transporta: la humedad
+relativa depende de la temperatura, así que moverla en altura no significa nada
+—es lo que hacen MicroMet (Liston y Elder 2006, §b.2), PRISM y meteoland.
+
+**Contrastado contra una estación real a esa altura**, la del TNG en el
+Observatorio del Roque de los Muchachos (2387 m), 25 horas seguidas el
+12 ago 2026:
+
+| a 2387 m | MAE antes (superficie) | MAE ahora (perfil) |
+|---|---|---|
+| temperatura | **8,20 K** | **1,34 K** |
+| humedad | **36,9 puntos** | **17,5 puntos** |
+
+Los 17,5 puntos que quedan no son ruido: el perfil describe el **aire libre**, y
+la capa que toca el suelo de la cumbre es más húmeda que él por transporte
+anabático. Eso no lo arregla ninguna interpolación — lo arregla una estación
+allí arriba.
+
+De paso, dos trampas de esa API que el perfil evita por construcción, las dos
+medidas: con `elevation=2400` contesta 15,9 °C y con `elevation=2426` contesta
+**13,0 °C**, porque cambia de celda —26 m, 2,9 K de salto, y la serie forzada ni
+siquiera es monótona—; y `best_match` **mezcla modelos entre variables** (la
+superficie de ECMWF, los niveles de ICON, el 875 hPa de GFS), lo que cose dos
+atmósferas distintas en un mismo perfil. Se pide un modelo explícito.
+
+#### La inversión del alisio se diagnostica, no se supone
+
+El mismo perfil permite decir **dónde** está la inversión, con el criterio de la
+literatura canaria: un tramo con gradiente ≥ −0,2 K/100 m **y** una caída de
+humedad de más de 20 puntos entre base y cima (Torres, Cuevas, Guerra y Carreño,
+2002). La caída de humedad no es un adorno: es lo que separa la inversión de
+subsidencia de una capa isoterma nocturna cualquiera. Si aparece más de una, se
+queda la de mayor caída — la más baja suele ser un fenómeno de temperatura
+superficial del mar, no el alisio (Ramseyer y Miller 2021,
+[10.1002/joc.7151](https://doi.org/10.1002/joc.7151)).
+
+Medido el 12 ago 2026 a las 16:45 UTC: **base 1074 m, cima 1567 m, ΔT +0,1 K
+—isoterma— y ΔRH −35,7 puntos**. Junto a base y cima se publica siempre un
+`±247 m`, que es la mitad del salto entre los dos niveles de presión que la
+encierran: **este criterio detecta la inversión, no mide su espesor.** El
+espesor real en Güímar es de 210–393 m de mediana (Carrillo 2017), más fino que
+la propia rejilla de niveles.
+
+Que el fenómeno existe no es una interpretación de un día suelto. En los
+sondeos de Güímar 2003–2021 la inversión aparece en el **92,4 %** de los casos,
+y en el **95,05 %** de los de verano (Rodríguez Pérez, 2022, TFG ULL). Y en la
+propia red del Cabildo se ve sin modelo ninguno: **de noche**, sin sol sobre los
+sensores, la estación de 1177 m está **2,6 °C más caliente que la costa a 5 m**.
+
 ### La banda de incertidumbre está calibrada, no supuesta
 
 El `±` que acompaña cada cifra salía antes de la σ de los residuos del ajuste
@@ -387,14 +464,31 @@ sin actualizar—. Ampliarla daría sensación de cobertura donde no la hay.
 
 La aplicación es comercial, así que la procedencia de cada byte importa.
 
-**En tiempo de ejecución, la única fuente de datos es la API del Cabildo.**
+En tiempo de ejecución se llama a **dos** servicios: la API del Cabildo y
+Open-Meteo. Todo lo demás está **precalculado en tiempo de compilación** y
+servido como fichero estático.
 
-Lo que viene de terceros está **precalculado en tiempo de compilación** y
-servido como fichero estático:
+- ⚠️ **Open-Meteo sí se llama, y su plan gratuito no cubre este uso.** Este
+  apartado afirmaba lo contrario —«no se llama nunca»— y era falso desde que
+  existen las anclas por encima del techo de la red. Se corrige aquí en vez de
+  dejar la afirmación en pie.
 
-- **Open-Meteo no se llama nunca.** Su API gratuita es explícitamente solo para
-  uso no comercial. Las altitudes salen del DEM propio.
-- **Nominatim y Overpass tampoco.** Su política de uso prohíbe el uso
+  Sus condiciones dicen textualmente: *«You may only use the free API services
+  for non-commercial purposes»*, y enumeran entre los usos **comerciales**
+  *«operating websites or apps that have subscriptions or display
+  advertisements»*. Los **datos** son CC BY 4.0 y su uso comercial es libre; la
+  restricción es sobre el **servicio** gratuito. Mientras la aplicación cobre o
+  muestre publicidad hace falta el plan Standard (29 €/mes, endpoint
+  `customer-api.open-meteo.com`), o quitar la llamada.
+
+  Cuota del plan gratuito, para dimensionar: 10.000 llamadas/día y 300.000/mes,
+  y una petición con más de 10 variables cuenta como varias — el perfil pide 24,
+  así que pesa más de una.
+
+  Atribución obligatoria junto a los datos:
+  `<a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a>`.
+
+- **Nominatim y Overpass no se llaman nunca.** Su política de uso prohíbe el uso
   sistemático desde una aplicación. Los topónimos se extraen una sola vez con
   `scripts/prepare-data.ts` y se congelan en `public/gazetteer.json`, con su
   atribución ODbL.
