@@ -13,6 +13,7 @@
  * lee, lo recorta a una estación y lo deja listo para dibujar.
  */
 
+import { dataUrl } from './endpoints'
 import { dewpointFrom } from './psychro'
 import { BOUNDS } from './quality'
 
@@ -72,7 +73,7 @@ export async function fetchDay(
 ): Promise<DayPayload> {
   const q = new URLSearchParams({ day })
   if (opts.hourly) q.set('step', '60')
-  const res = await fetch(`/api/history?${q}`, { signal: opts.signal })
+  const res = await fetch(dataUrl(`/api/history?${q}`), { signal: opts.signal })
   if (!res.ok) {
     let detail = `HTTP ${res.status}`
     try {

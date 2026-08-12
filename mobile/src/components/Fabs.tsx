@@ -1,0 +1,129 @@
+/**
+ * Los dos botones redondos: mi ubicación y volver a ver la isla entera.
+ *
+ * Los trazados son los del prototipo, carácter por carácter. El botón de
+ * ubicación parpadea en ámbar mientras el GPS busca, que es la única señal que
+ * hay de que está pasando algo.
+ */
+
+import { useEffect } from 'react'
+import { Pressable, StyleSheet, View } from 'react-native'
+import Svg, { Circle, Path } from 'react-native-svg'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  cancelAnimation,
+} from 'react-native-reanimated'
+import * as Haptics from 'expo-haptics'
+import { color, radius } from '../theme'
+import { Glass } from './Glass'
+
+interface Props {
+  locating: boolean
+  onLocate: () => void
+  onReset: () => void
+}
+
+export function Fabs({ locating, onLocate, onReset }: Props) {
+  const pulse = useSharedValue(1)
+
+  useEffect(() => {
+    if (locating) {
+      pulse.value = withRepeat(withTiming(0.45, { duration: 550 }), -1, true)
+    } else {
+      cancelAnimation(pulse)
+      pulse.value = withTiming(1, { duration: 150 })
+    }
+  }, [locating, pulse])
+
+  const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }))
+  const stroke = locating ? color.amber : color.fg
+
+  return (
+    <View style={styles.stack}>
+      <Fab
+        label="Mi ubicación"
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          onLocate()
+        }}
+      >
+        <Animated.View style={pulseStyle}>
+          <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+            <Circle
+              cx={12}
+              cy={12}
+              r={7}
+              stroke={stroke}
+              strokeWidth={1.7}
+              strokeLinecap="round"
+            />
+            <Path
+              d="M12 2v3M12 19v3M2 12h3M19 12h3"
+              stroke={stroke}
+              strokeWidth={1.7}
+              strokeLinecap="round"
+            />
+          </Svg>
+        </Animated.View>
+      </Fab>
+
+      <Fab
+        label="Ver toda la isla"
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          onReset()
+        }}
+      >
+        <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M4 9V5a1 1 0 011-1h4M20 9V5a1 1 0 00-1-1h-4M4 15v4a1 1 0 001 1h4M20 15v4a1 1 0 01-1 1h-4"
+            stroke={color.fg}
+            strokeWidth={1.7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </Fab>
+    </View>
+  )
+}
+
+function Fab({
+  label,
+  onPress,
+  children,
+}: {
+  label: string
+  onPress: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [pressed && styles.down]}
+    >
+      <Glass intensity={22} style={styles.fab} fallback={color.floatSolid}>
+        {children}
+      </Glass>
+    </Pressable>
+  )
+}
+
+const styles = StyleSheet.create({
+  stack: { gap: 9, alignItems: 'flex-end' },
+  down: { transform: [{ scale: 0.94 }] },
+  fab: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.fab,
+    borderWidth: 1,
+    borderColor: color.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})

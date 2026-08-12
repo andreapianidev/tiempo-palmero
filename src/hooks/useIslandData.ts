@@ -21,7 +21,10 @@ import {
   type Co2Sensor,
   type GazetteerEntry,
 } from '../lib/api'
-import { loadDem, elevationAt, type Dem } from '../lib/dem'
+import { elevationAt, type Dem } from '../lib/dem'
+// Sin extensión a propósito: Vite coge `dem-loader.ts` (canvas) y Metro
+// `dem-loader.native.ts` (Skia). El hook no sabe en qué plataforma corre.
+import { loadDem } from '../lib/dem-loader'
 import {
   fetchAnchors,
   fetchProfileAnchors,

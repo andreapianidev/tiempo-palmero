@@ -56,6 +56,8 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
 - [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — qué se
   llama de verdad, y con qué permiso
 - [Arquitectura](#arquitectura)
+- [La aplicación de iOS y Android](#la-aplicación-de-ios-y-android) — Expo sobre
+  el mismo motor, sin una línea de cálculo duplicada
 - [Trampas de esta API](#trampas-de-esta-api-que-ya-están-resueltas-en-el-código)
   — un día de depuración cada una
 - [Puesta en marcha](#puesta-en-marcha) · [Fuentes y licencias](#fuentes-y-licencias)
@@ -873,6 +875,74 @@ Las teselas terrarium de `public/dem/` alimentan a la vez el lookup de altitud
 del motor y la fuente `raster-dem` del sombreado de MapLibre. Descargar dos
 modelos de elevación distintos para la misma isla sería tirar ancho de banda y
 arriesgarse a que el relieve que se ve y el que se calcula no coincidan.
+
+---
+
+## La aplicación de iOS y Android
+
+`mobile/` es una app de Expo que **no tiene motor propio**. Importa `../src` con
+el alias `@core/*` —interpolación, control de calidad, paletas, textos, DEM,
+«cerca de aquí» y el hook `useIslandData` son los mismos ficheros que compila
+Vite para la web— y añade solo lo que un teléfono necesita y un navegador no.
+
+```
+mobile/
+  App.tsx                  Fuentes, origen de los datos, y poco más
+  metro.config.js          `@core` → ../src, y React fijado al del móvil
+  src/
+    theme.ts               Los tokens del diseño de iOS
+    layers.ts              Las siete capas de la fila de chips
+    config.ts              Origen de los datos, paso de la malla, vista inicial
+    map/                   Mapa, pins y reparto de pins
+    components/            Cabecera, chips, FABs, tarjeta peek, cristal
+    detail/                Los bloques de la ficha
+    screens/               MapScreen y DetailScreen
+```
+
+### Qué se comparte y qué no
+
+Compartido, sin una sola línea duplicada: el motor entero y todo lo que cuelga
+de él. Los tres puntos donde las plataformas divergen se resuelven **por
+fichero, no por `if`**:
+
+| Necesidad | Web | Móvil |
+|---|---|---|
+| Origen de los datos | `setDataOrigin(location.origin)` | `setDataOrigin(DATA_ORIGIN)` |
+| Descargar el DEM | `dem-loader.ts` — `<canvas>` | `dem-loader.native.ts` — Skia |
+| Pintar la malla | `grid-canvas.ts` — `<canvas>` | PNG de Skia a fichero |
+
+El par `dem-loader.ts` / `dem-loader.native.ts` se elige solo: Metro prefiere el
+sufijo `.native`, Vite ni lo ve. Quien importa `loadDem` no sabe en qué
+plataforma está, y `dem.ts` —la decodificación terrarium y el muestreo
+bilineal, que es lo que importa— es un único fichero para las dos.
+
+El móvil **no lleva copia de los datos**. Pide `/api/cda`, `/api/co2`, `/dem`,
+`/layers` y `/gazetteer.json` al mismo despliegue que sirve la web, así que
+publicar la web actualiza también la app y no hay dos verdades. La malla se
+calcula con paso 8 en vez de 6 —268 m por celda en lugar de 200— porque cada
+celda es una estimación completa y aquí corren en el hilo de JavaScript de un
+teléfono.
+
+### El reparto de pins se calcula, no se mide
+
+En el navegador se le pregunta al DOM dónde ha caído cada pin. En el móvil cada
+pin es una vista nativa y preguntar 36 veces por fotograma sería cruzar el
+puente 36 veces por fotograma, así que la posición sale de proyectar las
+coordenadas con `lonToPixelX`/`latToPixelY` de `@core/lib/geo`, que es la misma
+proyección que usa MapLibre. Esa cuenta solo vale con el norte arriba: por eso
+la rotación y la inclinación del mapa están apagadas.
+
+### Puesta en marcha
+
+```bash
+cd mobile
+npm install
+npx expo run:ios          # o run:android
+```
+
+No sirve Expo Go: MapLibre, Skia y Reanimated son módulos nativos y hace falta
+una compilación de desarrollo. `ios/` y `android/` no están en el repositorio —
+los regenera `expo prebuild` desde `app.json`.
 
 ---
 

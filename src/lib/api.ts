@@ -9,6 +9,7 @@
  */
 
 import { decode, isCdaPayload, type CdaRow, type Vertical } from './cabildo'
+import { dataUrl } from './endpoints'
 
 export class UpstreamDownError extends Error {
   constructor(public readonly detail: string) {
@@ -18,7 +19,7 @@ export class UpstreamDownError extends Error {
 }
 
 async function cda(vertical: Vertical, dataAccessId: string): Promise<CdaRow[]> {
-  const res = await fetch(`/api/cda?vertical=${vertical}&dataAccessId=${dataAccessId}`)
+  const res = await fetch(dataUrl(`/api/cda?vertical=${vertical}&dataAccessId=${dataAccessId}`))
   if (!res.ok) {
     let detail = `HTTP ${res.status}`
     try {
@@ -89,7 +90,7 @@ export interface Co2Sensor {
 export const CO2_MAX_AGE_MS = 15 * 60 * 1000
 
 export async function fetchCo2Readings(): Promise<{ fetchedAt: number; readings: Co2Reading[] }> {
-  const res = await fetch('/api/co2?resource=actuales')
+  const res = await fetch(dataUrl('/api/co2?resource=actuales'))
   if (!res.ok) {
     // Fallo en cerrado: aquí no hay «última lectura buena». Un verde rancio
     // sobre un sensor de gas volcánico es peor que una pantalla vacía.
@@ -121,7 +122,7 @@ export async function fetchCo2Readings(): Promise<{ fetchedAt: number; readings:
 }
 
 export async function fetchCo2Sensors(): Promise<Co2Sensor[]> {
-  const res = await fetch('/api/co2?resource=metadato')
+  const res = await fetch(dataUrl('/api/co2?resource=metadato'))
   if (!res.ok) throw new UpstreamDownError('inventario de sensores de CO₂ no disponible')
   const body = (await res.json()) as {
     data: {
@@ -162,13 +163,13 @@ export interface GazetteerEntry {
 }
 
 export async function fetchGazetteer(): Promise<GazetteerEntry[]> {
-  const res = await fetch('/gazetteer.json')
+  const res = await fetch(dataUrl('/gazetteer.json'))
   if (!res.ok) return []
   const body = (await res.json()) as { entries: GazetteerEntry[] }
   return body.entries ?? []
 }
 
 export async function fetchLayer<T = unknown>(file: string): Promise<T | null> {
-  const res = await fetch(`/layers/${file}`)
+  const res = await fetch(dataUrl(`/layers/${file}`))
   return res.ok ? ((await res.json()) as T) : null
 }
