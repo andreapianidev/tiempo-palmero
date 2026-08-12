@@ -58,6 +58,9 @@ export default function App() {
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [showSources, setShowSources] = useState(false)
+  // Si el zoom da ya para ver las paradas. Lo dice el mapa al cruzar el umbral,
+  // no en cada fotograma: es lo único que hace falta saber del zoom aquí.
+  const [stopsZoomReached, setStopsZoomReached] = useState(false)
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
@@ -207,6 +210,7 @@ export default function App() {
           setProbe(null)
           setSelection({ kind: 'road', value: { ...road, lon, lat } })
         }}
+        onStopsZoom={setStopsZoomReached}
         onCounter={(site) => {
           setProbe(null)
           setSelection({
@@ -252,6 +256,7 @@ export default function App() {
         lastUpdate={data.lastUpdate}
         wind={wind}
         counters={counters}
+        guagua={{ loading: guagua.loading, stopsZoomReached }}
         now={now}
         dem={data.dem}
         onSources={() => setShowSources(true)}

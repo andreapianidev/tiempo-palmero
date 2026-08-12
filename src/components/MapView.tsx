@@ -16,6 +16,8 @@ import {
   setGuaguaData,
   setGuaguaRoute,
   setGuaguaVisible,
+  routeBounds,
+  STOPS_MIN_ZOOM,
   GUAGUA_CLICK_LAYERS,
 } from './guagua/GuaguaLayer'
 import { readStop, type GuaguaStopPoint } from '../lib/guagua/network'
@@ -94,6 +96,11 @@ interface Props {
   onPlace: (place: PlaceRecord) => void
   onRoad: (road: RoadRecord, lon: number, lat: number) => void
   onCounter: (site: CounterSite) => void
+  /**
+   * Avisa de si el zoom da ya para ver las paradas. Se llama solo al cruzar el
+   * umbral, no en cada fotograma de un gesto: es un booleano, no el zoom.
+   */
+  onStopsZoom: (reached: boolean) => void
 }
 
 /** Qué topónimos merecen etiqueta a cada zoom. Sin esto la isla es ilegible. */
@@ -426,8 +433,33 @@ export function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
-    setGuaguaVisible(map, { lines: visible.guaguaLines, stops: visible.guaguaStops })
-  }, [ready, visible.guaguaLines, visible.guaguaStops])
+    setGuaguaVisible(map, {
+      lines: visible.guaguaLines,
+      stops: visible.guaguaStops,
+      route: props.guaguaRoute,
+    })
+  }, [ready, visible.guaguaLines, visible.guaguaStops, props.guaguaRoute])
+
+  // Cruzar el umbral de zoom de las paradas se avisa una sola vez por cruce: la
+  // barra lateral necesita saberlo para no dejar una casilla marcada sobre un
+  // mapa donde no puede aparecer nada.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    let last: boolean | null = null
+    const check = () => {
+      const reached = map.getZoom() >= STOPS_MIN_ZOOM
+      if (reached !== last) {
+        last = reached
+        handlers.current.onStopsZoom(reached)
+      }
+    }
+    check()
+    map.on('zoom', check)
+    return () => {
+      map.off('zoom', check)
+    }
+  }, [ready])
 
   // --- sitios y carreteras -------------------------------------------------
   useEffect(() => {
@@ -456,7 +488,23 @@ export function MapView(props: Props) {
     const map = mapRef.current
     if (!map || !ready) return
     setGuaguaRoute(map, props.guaguaRoute)
-  }, [ready, props.guaguaRoute])
+    if (!props.guaguaRoute) return
+    // Y se encuadra. Antes no: pinchar «ver el recorrido en el mapa» dejaba el
+    // mapa donde estuviera, así que si la línea caía fuera de la vista —o
+    // detrás de la propia ficha, que ocupa el lado derecho— el botón parecía no
+    // hacer nada. El relleno de la derecha deja sitio a la ficha en pantallas
+    // anchas; en el móvil la ficha va abajo y el que sobra es el de abajo.
+    const bounds = routeBounds(props.guaguaLines, props.guaguaRoute)
+    if (!bounds) return
+    const wide = map.getContainer().clientWidth >= 900
+    map.fitBounds(bounds, {
+      padding: wide
+        ? { top: 60, bottom: 60, left: 360, right: 420 }
+        : { top: 60, bottom: 320, left: 30, right: 30 },
+      maxZoom: 13.5,
+      duration: 700,
+    })
+  }, [ready, props.guaguaRoute, props.guaguaLines])
 
   /**
    * Resuelve solapamientos entre pins de estación y topónimos.

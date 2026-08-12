@@ -14,7 +14,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec'
-import { GUAGUA_LAYER_SPECS, decorateStops } from './GuaguaLayer'
+import { GUAGUA_LAYER_SPECS, decorateStops, routeBounds, setGuaguaVisible } from './GuaguaLayer'
 import type { GuaguaNetwork } from '../../lib/guagua/network'
 
 const EMPTY = { type: 'FeatureCollection', features: [] } as const
@@ -66,5 +66,71 @@ describe('capas de la red de guaguas', () => {
     // del estilo evaluaría `undefined` y MapLibre avisa por consola en cada
     // repintado.
     expect(decorated.features[1].properties?.routes).toBe('||')
+  })
+})
+
+/**
+ * Mapa de mentira: solo lo que estas dos funciones tocan. Basta para fijar la
+ * regla, y no hace falta WebGL para comprobarla.
+ */
+function fakeMap() {
+  const visibility: Record<string, string> = {}
+  return {
+    visibility,
+    getLayer: (id: string) => ({ id }),
+    setLayoutProperty: (id: string, _prop: string, value: string) => {
+      visibility[id] = value
+    },
+  }
+}
+
+describe('la línea elegida no cuelga del interruptor de líneas', () => {
+  it('con las líneas apagadas, el recorrido elegido se sigue viendo', () => {
+    const map = fakeMap()
+    setGuaguaVisible(map as never, { lines: false, stops: true, route: '35' })
+    // Esto era el fallo: se llega a un recorrido desde la ficha de una parada,
+    // y apagar «líneas» lo borraba del mapa con la ficha abierta explicándolo.
+    expect(map.visibility['guagua-lineas-elegida']).toBe('visible')
+    expect(map.visibility['guagua-lineas-trazado']).toBe('none')
+  })
+
+  it('sin recorrido elegido, cada capa obedece a su casilla', () => {
+    const map = fakeMap()
+    setGuaguaVisible(map as never, { lines: false, stops: false, route: null })
+    expect(map.visibility['guagua-lineas-elegida']).toBe('none')
+    expect(map.visibility['guagua-paradas-elegida']).toBe('none')
+  })
+})
+
+describe('encuadrar un recorrido', () => {
+  const lines = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: { route_id: '35' },
+        geometry: { type: 'LineString', coordinates: [[-17.9, 28.6], [-17.8, 28.7]] },
+      },
+      // Otra variante de la MISMA línea: el rectángulo tiene que abarcarla.
+      {
+        type: 'Feature',
+        properties: { route_id: '35' },
+        geometry: { type: 'LineString', coordinates: [[-17.95, 28.55], [-17.85, 28.65]] },
+      },
+      {
+        type: 'Feature',
+        properties: { route_id: '11' },
+        geometry: { type: 'LineString', coordinates: [[-17.7, 28.4], [-17.6, 28.9]] },
+      },
+    ],
+  } as unknown as GeoJSON.FeatureCollection
+
+  it('abarca todas las variantes de la línea y ninguna de las demás', () => {
+    expect(routeBounds(lines, '35')).toEqual([[-17.95, 28.55], [-17.8, 28.7]])
+  })
+
+  it('una línea sin trazado no mueve el mapa', () => {
+    expect(routeBounds(lines, '999')).toBeNull()
+    expect(routeBounds(null, '35')).toBeNull()
   })
 })

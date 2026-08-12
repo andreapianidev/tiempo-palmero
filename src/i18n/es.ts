@@ -256,6 +256,8 @@ export const es = {
    * presente es la red: qué líneas hay, por dónde van y dónde paran.
    */
   guagua: {
+    zoomForStops:
+      'Las 913 paradas se dibujan a partir de cierto acercamiento: a esta distancia serían una mancha. Acércate y aparecen.',
     stopTitle: 'Parada de guagua',
     routeTitle: 'Línea de guagua',
     operator: 'TILP · Transportes Insulares La Palma',
@@ -307,7 +309,10 @@ export const es = {
       'Son las horas de la última tabla publicada por TILP, la misma que sigue en la calle porque no se ha renovado. Se dan como referencia, no como garantía: compruébalas con TILP antes de contar con una guagua.',
     weatherHere: 'Ver el tiempo en esta parada',
     source: 'Paradas, líneas y horarios: GTFS de TILP publicado por el Cabildo Insular de La Palma.',
-    loading: 'Cargando la red de guaguas…',
+    // Esta cadena existía desde el principio y no la enseñaba nadie: el estado
+    // de carga se calculaba y se tiraba. Son 1,5 MB, y decir cuántos es la
+    // diferencia entre «no pasa nada» y «está llegando».
+    loading: 'Descargando la red de guaguas (1,5 MB)…',
   },
 
   /**

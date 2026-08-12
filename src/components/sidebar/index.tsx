@@ -25,6 +25,7 @@ import type { PlaceVisibility } from '../../hooks/usePlaces'
 import { ModelStatus } from './ModelStatus'
 import { WindStatus } from './WindStatus'
 import { CounterStatus } from './CounterStatus'
+import { GuaguaHint } from './GuaguaHint'
 import type { WindState } from '../../hooks/useWindField'
 import type { CountersData } from '../../hooks/useCounters'
 
@@ -44,6 +45,8 @@ interface Props {
   dem: Dem | null
   wind: WindState
   counters: CountersData
+  /** Estado de la red de guaguas: descarga en curso y zoom alcanzado. */
+  guagua: { loading: boolean; stopsZoomReached: boolean }
   lastUpdate: number | null
   now: number
   onSources: () => void
@@ -107,6 +110,12 @@ export function Sidebar(props: Props) {
           badge={`${activeLayerCount(props.visible)}/${LAYER_COUNT}`}
         >
           <LayerSwitches visible={props.visible} onToggle={props.onToggle} />
+          <GuaguaHint
+            loading={props.guagua.loading}
+            stopsZoomReached={props.guagua.stopsZoomReached}
+            stopsOn={props.visible.guaguaStops}
+            linesOn={props.visible.guaguaLines}
+          />
         </Section>
 
         <Section
