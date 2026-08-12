@@ -40,7 +40,7 @@ export const es = {
       'El punto de rocío se calcula a partir de la temperatura y la humedad estimadas, no se interpola por separado: solo 10 de las 52 estaciones lo publican. Así las tres cifras nunca se contradicen entre sí.',
     wind: 'Viento',
     precipitation: 'Precipitación',
-    pressure: 'Presión al nivel del mar',
+    pressure: 'Presión',
     uv: 'Índice UV',
   },
 
@@ -76,7 +76,7 @@ export const es = {
     elevationDelta: 'Δ altitud',
     weight: 'Peso',
     nearestOnly: 'Medido, no interpolado',
-    islandMedian: 'mediana de la red',
+    islandMedian: 'niv. del mar, mediana de la red',
     pressureHint:
       'La presión reducida al nivel del mar apenas varía en 42 km de isla, pero los barómetros de la red se desvían entre sí hasta 39 hPa. Interpolarla dibujaría errores de calibración, no tiempo: se da la mediana, que es robusta a los sensores descalibrados.',
     uvHint:
