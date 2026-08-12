@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Tiempo Palmero",
+    "slug": "tiempo-palmero",
+    "scheme": "tiempopalmero",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0d0c0b",
+    "primaryColor": "#e8b35c",
+    "ios": {
+      "bundleIdentifier": "com.andreapiani.tiempopalmero",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Para centrar el mapa en donde estás y calcular el tiempo de ese punto. La ubicación no sale del teléfono.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.andreapiani.tiempopalmero",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d0c0b",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "@maplibre/maplibre-react-native",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Para centrar el mapa en donde estás y calcular el tiempo de ese punto. La ubicación no sale del teléfono."
+        }
+      ]
+    ]
+  }
+}

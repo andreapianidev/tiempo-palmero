@@ -14,8 +14,11 @@ import type { Dem } from './dem'
 import { SEA_LEVEL_M } from './dem'
 import { sampleRamp, type RgbStop } from './palette'
 
-export interface GridResult {
-  canvas: HTMLCanvasElement
+export interface GridRaster {
+  /** RGBA, fila mayor, `cols × rows`. El mar queda a alfa 0. */
+  pixels: Uint8ClampedArray<ArrayBuffer>
+  cols: number
+  rows: number
   /** [[west, south], [east, north]] en grados. */
   bounds: [[number, number], [number, number]]
   landCells: number
@@ -29,26 +32,27 @@ export interface GridOptions {
 }
 
 /**
+ * La malla, en píxeles sueltos y sin depender de nada del navegador.
+ *
+ * Aquí está todo el trabajo: una estimación por celda sobre el retículo del
+ * DEM. Dónde acaban esos píxeles —un `<canvas>` en la web, un PNG de Skia en el
+ * móvil— es cosa de quien llama.
+ *
  * `valueAt` en lugar de un modelo: el punto de rocío no se interpola, se deriva
  * de la temperatura y la humedad, así que la malla tiene que poder pintar algo
  * que no sale de un único ajuste.
  */
-export function renderGrid(
+export function rasterizeGrid(
   dem: Dem,
   valueAt: (lon: number, lat: number, elevation: number) => number | null,
   stops: RgbStop[],
   opts: GridOptions = {},
-): GridResult {
+): GridRaster {
   const { step = 6, opacity = 0.72 } = opts
   const cols = Math.floor(dem.width / step)
   const rows = Math.floor(dem.height / step)
 
-  const canvas = document.createElement('canvas')
-  canvas.width = cols
-  canvas.height = rows
-  const ctx = canvas.getContext('2d')!
-  const img = ctx.createImageData(cols, rows)
-  const out = img.data
+  const out = new Uint8ClampedArray(cols * rows * 4)
   const alpha = Math.round(opacity * 255)
   const { zoom } = dem.manifest
 
@@ -78,15 +82,15 @@ export function renderGrid(
       landCells++
     }
   }
-  ctx.putImageData(img, 0, 0)
-
   const west = pixelXToLon(dem.originX, zoom)
   const east = pixelXToLon(dem.originX + dem.width, zoom)
   const north = pixelYToLat(dem.originY, zoom)
   const south = pixelYToLat(dem.originY + dem.height, zoom)
 
   return {
-    canvas,
+    pixels: out,
+    cols,
+    rows,
     bounds: [
       [west, south],
       [east, north],

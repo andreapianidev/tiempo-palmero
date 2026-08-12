@@ -1,5 +1,5 @@
 /**
- * DEM en el navegador.
+ * DEM: modelo, decodificación y consulta de altitudes.
  *
  * Las mismas teselas terrarium que sirven de fuente `raster-dem` para el
  * hillshade de MapLibre se leen aquí a mano para consultar altitudes. Es
@@ -8,6 +8,11 @@
  * se calcula no coincidan.
  *
  * Decodificación terrarium:  altura_m = (R · 256 + G + B / 256) − 32768
+ *
+ * Este fichero no descarga nada: quién trae los píxeles depende de la
+ * plataforma —`<canvas>` en el navegador, Skia en el móvil— y vive en
+ * `dem-loader.ts` / `dem-loader.native.ts`. Aquí queda lo que es igual en las
+ * dos, que es todo lo demás.
  */
 
 import { lonToPixelX, latToPixelY } from './geo'
@@ -39,61 +44,58 @@ export interface Dem {
   originY: number
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`tesela DEM: ${src}`))
-    img.src = src
-  })
+/** Ruta de una tesela dentro del sitio. La base la pone `endpoints.ts`. */
+export function demTilePath(manifest: DemManifest, tx: number, ty: number): string {
+  return `/dem/${manifest.zoom}/${tx}/${ty}.png`
 }
 
-export async function loadDem(
-  onProgress?: (done: number, total: number) => void,
-): Promise<Dem> {
-  const manifest: DemManifest = await fetch('/dem/manifest.json').then((r) => {
-    if (!r.ok) throw new Error('falta /dem/manifest.json — ejecuta npm run prepare-data')
-    return r.json()
-  })
+/** Recorre las teselas del manifiesto en el orden en que se guardaron. */
+export function demTiles(manifest: DemManifest): { tx: number; ty: number }[] {
+  const { x0, y0, cols, rows } = manifest
+  return Array.from({ length: cols * rows }, (_, k) => ({
+    tx: x0 + (k % cols),
+    ty: y0 + Math.floor(k / cols),
+  }))
+}
 
-  const { zoom, tileSize, x0, y0, cols, rows } = manifest
-  const width = cols * tileSize
-  const height = rows * tileSize
-
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })
-  if (!ctx) throw new Error('sin contexto 2D para el DEM')
-
-  const total = cols * rows
-  let done = 0
-  // Las teselas son locales y están cacheadas por el CDN con immutable, así
-  // que en paralelo no hay a quién molestar.
-  await Promise.all(
-    Array.from({ length: total }, async (_, k) => {
-      const tx = x0 + (k % cols)
-      const ty = y0 + Math.floor(k / cols)
-      const img = await loadImage(`/dem/${zoom}/${tx}/${ty}.png`)
-      ctx.drawImage(img, (tx - x0) * tileSize, (ty - y0) * tileSize)
-      onProgress?.(++done, total)
-    }),
-  )
-
-  const rgba = ctx.getImageData(0, 0, width, height).data
-  const heights = new Float32Array(width * height)
-  for (let i = 0, p = 0; i < heights.length; i++, p += 4) {
-    heights[i] = rgba[p] * 256 + rgba[p + 1] + rgba[p + 2] / 256 - 32768
-  }
-
+/**
+ * Malla de alturas vacía con la geometría del manifiesto, lista para que el
+ * cargador de cada plataforma vaya volcando teselas encima.
+ */
+export function emptyDem(manifest: DemManifest): Dem {
+  const width = manifest.cols * manifest.tileSize
+  const height = manifest.rows * manifest.tileSize
   return {
     manifest,
-    heights,
+    heights: new Float32Array(width * height),
     width,
     height,
-    originX: x0 * tileSize,
-    originY: y0 * tileSize,
+    originX: manifest.x0 * manifest.tileSize,
+    originY: manifest.y0 * manifest.tileSize,
+  }
+}
+
+/**
+ * Vuelca una tesela ya decodificada a RGBA sobre la malla de alturas.
+ *
+ * `stride` es el ancho en píxeles del buffer de origen: con una tesela suelta
+ * coincide con `tileSize`, pero el navegador pinta las 63 sobre un único lienzo
+ * y entonces es el ancho entero del DEM.
+ */
+export function blitTerrarium(
+  dem: Dem,
+  rgba: Uint8Array | Uint8ClampedArray,
+  opts: { x: number; y: number; width: number; height: number; stride?: number },
+): void {
+  const { x, y, width, height } = opts
+  const stride = opts.stride ?? width
+  for (let j = 0; j < height; j++) {
+    const dst = (y + j) * dem.width + x
+    const src = j * stride * 4
+    for (let i = 0; i < width; i++) {
+      const p = src + i * 4
+      dem.heights[dst + i] = rgba[p] * 256 + rgba[p + 1] + rgba[p + 2] / 256 - 32768
+    }
   }
 }
 

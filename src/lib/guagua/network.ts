@@ -13,6 +13,8 @@
  * y la ficha se lo dice.
  */
 
+import { dataUrl } from '../endpoints'
+
 export interface DayCounts {
   weekday: number
   saturday: number
@@ -58,7 +60,7 @@ let promise: Promise<GuaguaNetwork | null> | null = null
 
 /** Una sola descarga por sesión, compartida entre el mapa y «cerca de aquí». */
 export function loadGuaguaNetwork(): Promise<GuaguaNetwork | null> {
-  promise ??= fetch('/guagua-red.json')
+  promise ??= fetch(dataUrl('/guagua-red.json'))
     .then((r) => (r.ok ? (r.json() as Promise<GuaguaNetwork>) : null))
     .catch(() => null)
   return promise

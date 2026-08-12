@@ -14,6 +14,7 @@
  */
 
 import type { StyleSpecification } from 'maplibre-gl'
+import { dataUrl } from './endpoints'
 import { pixelXToLon, pixelYToLat } from './geo'
 import type { DemManifest } from './dem'
 
@@ -45,7 +46,7 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
     sources: {
       terrain: {
         type: 'raster-dem',
-        tiles: [`${window.location.origin}/dem/{z}/{x}/{y}.png`],
+        tiles: [dataUrl('/dem/{z}/{x}/{y}.png')],
         encoding: 'terrarium',
         tileSize: 256,
         // Hay teselas de z9 a z12. Declarar solo z12 dejaba el relieve invisible
@@ -58,8 +59,8 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
           'Datos: <a href="https://www.opendatalapalma.es" target="_blank" rel="noreferrer">Cabildo Insular de La Palma</a> (CC-BY) · ' +
           'Topónimos: © OpenStreetMap contributors (ODbL)',
       },
-      island: { type: 'geojson', data: '/layers/limite-insular.geojson' },
-      municipios: { type: 'geojson', data: '/layers/municipios.geojson' },
+      island: { type: 'geojson', data: dataUrl('/layers/limite-insular.geojson') },
+      municipios: { type: 'geojson', data: dataUrl('/layers/municipios.geojson') },
     },
     layers: [
       { id: 'sea', type: 'background', paint: { 'background-color': COLORS.sea } },

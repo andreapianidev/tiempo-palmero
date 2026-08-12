@@ -12,6 +12,7 @@
 
 import { haversineKm, type LonLat } from './geo'
 import { loadGuaguaNetwork, routeLabel, type GuaguaNetwork } from './guagua/network'
+import { dataUrl } from './endpoints'
 
 export type NearbyKind =
   | 'trail'
@@ -92,7 +93,7 @@ function load(file: string): Promise<Collection | null> {
   if (!cache.has(file)) {
     cache.set(
       file,
-      fetch(`/layers/${file}`)
+      fetch(dataUrl(`/layers/${file}`))
         .then((r) => (r.ok ? (r.json() as Promise<Collection>) : null))
         .catch(() => null),
     )

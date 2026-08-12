@@ -16,5 +16,8 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "scripts", "api", "vite.config.ts"]
+  "include": ["src", "scripts", "api", "vite.config.ts"],
+  // Los `*.native.ts` son la mitad móvil de un par (ver `dem-loader.ts`): los
+  // compila Metro con las dependencias de `mobile/`, no Vite.
+  "exclude": ["src/**/*.native.ts"]
 }
