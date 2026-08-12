@@ -617,18 +617,24 @@ servido como fichero estático.
   afirmar lo contrario —«no se llama nunca»— y era falso desde que existen las
   anclas; queda corregido aquí en vez de dejar la afirmación en pie.
 
-  **Hoy la aplicación es gratuita**: no cobra, no tiene suscripción y no muestra
-  publicidad, así que encaja en el plan gratuito. Sus condiciones dicen
-  textualmente *«You may only use the free API services for non-commercial
-  purposes»* y enumeran entre los usos **comerciales** *«operating websites or
-  apps that have subscriptions or display advertisements»*.
+  **La aplicación es gratuita, y esa es una decisión tomada, no un estado
+  provisional**: no cobra, no tendrá suscripción y no mostrará publicidad. Con
+  eso encaja en el plan gratuito, cuyas condiciones dicen textualmente *«You may
+  only use the free API services for non-commercial purposes»* y enumeran entre
+  los usos **comerciales** *«operating websites or apps that have subscriptions
+  or display advertisements»*.
 
-  ⚠️ **El día que cobre o muestre publicidad, esta llamada deja de estar
-  cubierta** y hace falta el plan Standard (29 €/mes, endpoint
-  `customer-api.open-meteo.com`) o quitarla. No es una nota para el futuro
-  lejano: es la única condición que sostiene el mapa de viento y las anclas de
-  cumbre. Los **datos** son CC BY 4.0 y su uso comercial sí es libre; la
+  Queda escrito porque es **la condición que sostiene el mapa de viento y las
+  anclas de cumbre**, y porque quien lea esto dentro de un año necesita saber
+  que no es una pregunta abierta. Si alguna vez se cambiara de idea, ese mismo
+  día habría que contratar el plan Standard (29 €/mes, endpoint
+  `customer-api.open-meteo.com`) o quitar las dos llamadas — no vale enterarse
+  después. Los **datos** son CC BY 4.0 y su uso comercial sí es libre; la
   restricción va sobre el **servicio** gratuito.
+
+  La capa de CO₂ ya lo dice por su lado, y por un motivo más serio: **no lleva
+  publicidad ni muro de pago, y no los llevará.** Es información de seguridad
+  sobre gas volcánico.
 
   Cuota del plan gratuito, para dimensionar: 10.000 llamadas/día y 300.000/mes.
   El viento gasta **una** petición por refresco —los 54 puntos de la rejilla
