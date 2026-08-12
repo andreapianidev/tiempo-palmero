@@ -14,13 +14,16 @@ import { freshness } from '@core/lib/quality'
 import { color, font, pillShadow } from '../theme'
 import type { PinState } from './declutter'
 
+/** Aquí no llega el estado `hidden`: ese pin no se monta siquiera. */
+type VisibleState = Exclude<PinState, 'hidden'>
+
 interface Props {
   label: string
   /** Fondo de la píldora. Gris cuando el valor está descartado o no existe. */
   background: string
   text: string
   ageHours: number
-  state: PinState
+  state: VisibleState
   onPress: () => void
   accessibilityLabel: string
 }
@@ -34,8 +37,6 @@ export const StationPin = memo(function StationPin({
   onPress,
   accessibilityLabel,
 }: Props) {
-  if (state === 'hidden') return null
-
   return (
     <Pressable
       onPress={onPress}

@@ -206,20 +206,26 @@ export function IslandMap({
           </ImageSource>
         )}
 
+        {/* El pin tapado NO se monta con contenido vacío: un `Marker` sin
+            hijos hace que MapLibre dibuje encima su chincheta roja de serie, y
+            el mapa acaba con marcas que la aplicación nunca ha pedido. */}
         {isVariable(layer) &&
-          pins.map((p) => (
-            <Marker key={p.station.entityId} lngLat={[p.station.lon, p.station.lat]}>
-              <StationPin
-                label={p.label}
-                background={p.background}
-                text={p.text}
-                ageHours={p.station.ageHours}
-                state={placement.get(p.station.entityId) ?? 'pill'}
-                onPress={() => onStation(p.station)}
-                accessibilityLabel={`${p.station.name}, ${p.label}`}
-              />
-            </Marker>
-          ))}
+          pins
+            .map((p) => ({ ...p, state: placement.get(p.station.entityId) ?? 'pill' }))
+            .filter((p): p is typeof p & { state: 'pill' | 'dot' } => p.state !== 'hidden')
+            .map((p) => (
+              <Marker key={p.station.entityId} lngLat={[p.station.lon, p.station.lat]}>
+                <StationPin
+                  label={p.label}
+                  background={p.background}
+                  text={p.text}
+                  ageHours={p.station.ageHours}
+                  state={p.state}
+                  onPress={() => onStation(p.station)}
+                  accessibilityLabel={`${p.station.name}, ${p.label}`}
+                />
+              </Marker>
+            ))}
 
         {layer === 'wind' &&
           stations
