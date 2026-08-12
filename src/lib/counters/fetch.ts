@@ -10,13 +10,14 @@
 
 import { decode, isCdaPayload, islandDayKey, shiftDayKey, type CdaRow } from '../cabildo'
 import { UpstreamDownError } from '../api'
+import { dataUrl } from '../endpoints'
 
 /** Días de histórico que se piden. Ocho: hoy y la semana anterior completa. */
 export const HISTORY_DAYS = 7
 
 async function query(dataAccessId: string, params: Record<string, string> = {}): Promise<CdaRow[]> {
   const q = new URLSearchParams({ vertical: 'count', dataAccessId, ...params })
-  const res = await fetch(`/api/cda?${q}`)
+  const res = await fetch(dataUrl(`/api/cda?${q}`))
   if (!res.ok) throw new UpstreamDownError(`${dataAccessId}: HTTP ${res.status}`)
   const json: unknown = await res.json()
   if (!isCdaPayload(json)) throw new UpstreamDownError(`${dataAccessId}: formato inesperado`)
