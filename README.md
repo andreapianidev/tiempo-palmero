@@ -103,10 +103,17 @@ Las reglas que la aplicación no se salta:
   coordenadas en mitad del Atlántico.
 - **Un valor interpolado no es una medida** y la interfaz lo dice, con su
   margen al lado.
-- **El viento y la precipitación no se interpolan.** Los barrancos encauzan el
-  viento y la vertiente noreste recibe múltiplos de la suroeste a igual
-  altitud. Se muestra la estación más cercana, declarada como tal, con su
-  distancia y su desnivel.
+- **La precipitación no se interpola.** La vertiente noreste recibe múltiplos de
+  la suroeste a igual altitud. Se muestra la estación más cercana, declarada
+  como tal, con su distancia y su desnivel.
+- **El viento no se interpola entre estaciones: se rellena con un modelo.** La
+  regla anterior decía «el viento tampoco se interpola» y se ha cambiado a
+  conciencia, no relajado. Sigue prohibido estirar la estación más cercana:
+  cada una manda solo en unos 3 km a su alrededor, que es lo que dura su
+  representatividad antes de que un barranco o la divisoria cambien el régimen.
+  Lo que ocupa el hueco no es una media de las lejanas, sino Open-Meteo, que sí
+  resuelve la orografía; y cada celda lleva escrito cuál de los dos la sostiene.
+  Ver «El mapa de viento» más abajo.
 - **La calidad del aire y el CO₂ no se interpolan nunca.** Son medidas
   puntuales; dibujar una superficie entre ellas sería inventar lecturas donde
   no hay sensor.
@@ -296,6 +303,51 @@ siquiera es monótona—; y `best_match` **mezcla modelos entre variables** (la
 superficie de ECMWF, los niveles de ICON, el 875 hPa de GFS), lo que cose dos
 atmósferas distintas en un mismo perfil. Se pide un modelo explícito.
 
+#### El rechazo de anomalías tiene un testigo, y puede indultar
+
+El rechazo mide el residuo contra una **recta** altitudinal, y sobre la
+inversión esa recta no describe la atmósfera. Ahí la estación que está en lo
+cierto es justo la que más se separa, y la MAD la caza **precisamente por eso**.
+
+No es teórico. Medido el 12 ago 2026, dejando fuera del ajuste la estación de
+1560 m y prediciéndola: el motor decía **75,1 % de humedad donde ella marcaba
+36,4**, y el sondeo de Güímar de ese día daba 19 % a 1558 m. La estación tenía
+razón, el modelo no. El filtro se llevaba las **cuatro estaciones de humedad por
+encima de 1000 m**, que son las únicas que describen la capa seca: el motor se
+quitaba la vista él solo.
+
+Ahora una muestra marcada como anómala puede ser **indultada** si el perfil
+vertical —un testigo independiente, que no es esta recta— respalda su valor. La
+regla es estrecha a propósito:
+
+1. Solo por **encima de la base de la inversión** diagnosticada. Debajo, la
+   recta describe bien la atmósfera y el rechazo sigue igual que siempre: es el
+   que mejora el RMSE un 43,7 %, y ese número no se toca.
+2. Solo si el perfil **corrobora** el valor, con una tolerancia **asimétrica**.
+   La capa que toca el suelo de una ladera es más cálida y más húmeda que el
+   aire libre —transporte anabático, sol sobre la roca—, **nunca lo contrario**.
+   Así que se admite separarse hacia arriba (+6 K, +35 puntos, que es donde
+   están el sesgo medido del perfil y el caso real de la estación de 1560 m,
+   +5,6 K por sol de tarde en ladera oeste) y muy poco hacia abajo (−2,7 K,
+   −10 puntos), porque más frío o más seco que la atmósfera libre no lo explica
+   la física del sitio, y sí un sensor roto. Con tolerancia **simétrica** el
+   higrómetro muerto de CABLPA-BELLIDO, que marca 1 %, quedaba indultado; hay un
+   test que lo fija.
+3. Sin perfil o sin inversión diagnosticada **no se indulta a nadie**, y todo se
+   comporta exactamente como antes.
+
+El perfil no aporta ni una muestra al ajuste: solo vota sobre si se tira una
+medida del Cabildo. Medido sobre la red viva del 12 ago 2026, mismos objetivos,
+leave-one-out completo:
+
+| | MAE | RMSE |
+|---|---|---|
+| temperatura | 1,882 → **1,706** (−9,3 %) | 2,703 → **2,274** (−15,9 %) |
+| humedad | 11,698 → **11,192** (−4,3 %) | 16,931 → **15,927** (−5,9 %) |
+
+Y el R² del ajuste de humedad **empeora**, de 0,437 a 0,256. Es la señal de que
+va bien: la recta ajustaba bonito porque había tirado el dato incómodo.
+
 #### La inversión del alisio se diagnostica, no se supone
 
 El mismo perfil permite decir **dónde** está la inversión, con el criterio de la
@@ -460,30 +512,115 @@ sin actualizar—. Ampliarla daría sensación de cobertura donde no la hay.
 
 ---
 
+### El mapa de viento
+
+La capa **Viento animado** dibuja partículas que siguen el campo en tiempo real.
+Es la única de la aplicación donde un modelo pinta sobre la isla, así que es la
+que lleva más advertencias encima.
+
+**De dónde sale cada punto del mapa.** De las 52 estaciones registradas, las que
+publican velocidad **y** dirección a la vez son **23 de las 34 vivas** (medido el
+12 ago 2026); las demás traen una de las dos o ninguna, y una velocidad sin
+dirección no dice hacia dónde sopla. Cada estación pesa con una gaussiana de
+3 km de escala, y por debajo del 1 % de peso deja de contar. El fondo lo pone
+una rejilla de **54 puntos de Open-Meteo** —uno cada ~5 km, pedidos en una sola
+petición, con la altitud del DEM propio en cada uno— resuelta por IDW.
+
+Cada celda guarda `station`, de 0 a 1: qué parte de su valor sostienen las
+estaciones. Con eso el panel dice **qué porcentaje de la isla lo sostiene el
+modelo** —un 73 % en la medición del 12 ago— y el trazo de las partículas se
+dibuja a la mitad de opacidad donde manda el modelo.
+
+Ese porcentaje **se cuenta solo sobre tierra**. Contando el rectángulo entero
+salía un 89 %, pero el rectángulo es bastante más grande que La Palma y el mar
+no tiene ni estaciones ni a nadie preguntando qué viento hace: una cobertura que
+promedia océano no describe la cobertura de nada.
+
+**Todo se calcula en componentes u/v, nunca en grados.** La media aritmética de
+350° y 10° da 180°, que es exactamente el viento contrario al real. Lo mismo
+vale para las medias horarias del histórico, que promedian la dirección como
+vector y descartan el tramo cuando el vector resultante es casi nulo — ahí no
+hay una dirección media que signifique algo.
+
+**La velocidad a la que corren las partículas está exagerada y no es un dato.**
+Un viento real de 5 m/s tarda dos horas y media en cruzar los 45 km de la isla:
+a escala, el mapa parecería congelado. La velocidad de verdad la dicen el color
+y la cifra de cada estación. La exageración se ata al alto de la vista, así que
+el movimiento se lee igual con la isla entera o con un solo barranco a la vista.
+
+Se dibuja como capa personalizada de MapLibre con `gl.LINES` de 1 px y estela
+explícita —las últimas 8 posiciones de cada partícula—, sin framebuffers
+propios: la técnica clásica de acumular en una textura que se desvanece obliga
+a cambiar el framebuffer activo en mitad del ciclo de dibujo del mapa y a
+devolverlo exactamente como estaba.
+
+---
+
+### El histórico, y por qué no hay base de datos
+
+El panel de cada estación despliega su **evolución de 24 h o 7 días**, con la
+máxima y la mínima y la hora a la que ocurrieron — que es lo que un instante
+suelto no puede contar.
+
+**No se guarda nada.** El archivo ya vive en la API del Cabildo y un día pasado
+no cambia nunca, así que una copia propia solo añadiría algo que se
+desincroniza. Lo que hay es `/api/history?day=YYYY-MM-DD`, una función edge que
+pide el día a la API y lo recorta.
+
+El recorte no es opcional: `weatherobserved` devuelve **2,0 MB y ~5000 filas por
+día** (1965 KB / 4914 filas el 5 de agosto, 2029 KB / 5065 el 9, ~3 s cada uno).
+Una semana serían 14 MB al navegador por cada gráfica que alguien abra. Tras
+quedarse con las cinco columnas que se dibujan y reescribir el instante como
+minuto del día, **un día son 124 KB, y 28 KB si se piden medias horarias** —
+16 veces menos.
+
+Se pide **por días UTC completos, nunca por ventanas móviles**, y esa es la
+decisión que sostiene lo demás: un día terminado se cachea 30 días en el CDN, así
+que la gráfica de la semana son siete peticiones que casi siempre responde la
+caché. Con «las últimas 24 h» cada visita generaría una URL distinta, la caché
+no serviría de nada y el coste upstream se multiplicaría por visitante contra un
+servicio público que ya se cae solo.
+
+**El filtro por estación no existe en origen**: `paramname=CABLPA-ELCHARCO`
+devuelve exactamente las mismas 4939 filas que sin él. Por eso se sirve el día
+entero con todas las estaciones y el recorte a una lo hace el cliente — pedir
+upstream una vez por estación multiplicaría la carga por 38.
+
+Cuando una estación transmitió menos del 80 % del intervalo, la gráfica lo dice
+con el porcentaje: una serie con agujeros dibuja una curva con la misma pinta
+que una completa, y la forma no puede ser el único aviso.
+
+---
+
 ## Licencias en tiempo de ejecución
 
-La aplicación es comercial, así que la procedencia de cada byte importa.
+La procedencia de cada byte importa, así que aquí está escrita.
 
 En tiempo de ejecución se llama a **dos** servicios: la API del Cabildo y
 Open-Meteo. Todo lo demás está **precalculado en tiempo de compilación** y
 servido como fichero estático.
 
-- ⚠️ **Open-Meteo sí se llama, y su plan gratuito no cubre este uso.** Este
-  apartado afirmaba lo contrario —«no se llama nunca»— y era falso desde que
-  existen las anclas por encima del techo de la red. Se corrige aquí en vez de
-  dejar la afirmación en pie.
+- **Open-Meteo sí se llama en runtime**, en dos sitios: las anclas por encima
+  del techo de la red y el fondo del mapa de viento. Este apartado llegó a
+  afirmar lo contrario —«no se llama nunca»— y era falso desde que existen las
+  anclas; queda corregido aquí en vez de dejar la afirmación en pie.
 
-  Sus condiciones dicen textualmente: *«You may only use the free API services
-  for non-commercial purposes»*, y enumeran entre los usos **comerciales**
-  *«operating websites or apps that have subscriptions or display
-  advertisements»*. Los **datos** son CC BY 4.0 y su uso comercial es libre; la
-  restricción es sobre el **servicio** gratuito. Mientras la aplicación cobre o
-  muestre publicidad hace falta el plan Standard (29 €/mes, endpoint
-  `customer-api.open-meteo.com`), o quitar la llamada.
+  **Hoy la aplicación es gratuita**: no cobra, no tiene suscripción y no muestra
+  publicidad, así que encaja en el plan gratuito. Sus condiciones dicen
+  textualmente *«You may only use the free API services for non-commercial
+  purposes»* y enumeran entre los usos **comerciales** *«operating websites or
+  apps that have subscriptions or display advertisements»*.
 
-  Cuota del plan gratuito, para dimensionar: 10.000 llamadas/día y 300.000/mes,
-  y una petición con más de 10 variables cuenta como varias — el perfil pide 24,
-  así que pesa más de una.
+  ⚠️ **El día que cobre o muestre publicidad, esta llamada deja de estar
+  cubierta** y hace falta el plan Standard (29 €/mes, endpoint
+  `customer-api.open-meteo.com`) o quitarla. No es una nota para el futuro
+  lejano: es la única condición que sostiene el mapa de viento y las anclas de
+  cumbre. Los **datos** son CC BY 4.0 y su uso comercial sí es libre; la
+  restricción va sobre el **servicio** gratuito.
+
+  Cuota del plan gratuito, para dimensionar: 10.000 llamadas/día y 300.000/mes.
+  El viento gasta **una** petición por refresco —los 54 puntos de la rejilla
+  viajan en una sola URL— y las anclas otra.
 
   Atribución obligatoria junto a los datos:
   `<a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a>`.

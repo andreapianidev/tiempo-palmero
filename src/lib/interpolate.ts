@@ -24,6 +24,7 @@ import { haversineKm, type LonLat } from './geo'
 import type { Station } from './quality'
 import { clampHumidity, dewpointFrom } from './psychro'
 import { MODEL_SOURCE_LABEL, type Anchor } from './openmeteo'
+import { humidityAt, sampleProfile, type VerticalProfile } from './profile'
 import {
   bandShape,
   calibrateModelBand,
@@ -281,10 +282,19 @@ export function robustSigma(residuals: readonly number[]): number {
  * Nunca deja menos de 4 estaciones: por debajo de eso la escala deja de
  * significar nada y el rechazo se convierte en «tirar lo que no me gusta».
  */
+/**
+ * Testigo independiente que puede INDULTAR a una muestra marcada como anómala.
+ *
+ * Devuelve true cuando otra fuente, que no es esta recta, dice que ese valor a
+ * esa altitud es creíble. Ver `corroboratedBy` en este mismo archivo.
+ */
+export type Corroborator = (sample: Sample) => boolean
+
 export function fitWithRejection(
   samples: readonly Sample[],
   sigmas = OUTLIER_SIGMA,
   maxPasses = MAX_REJECTION_PASSES,
+  corroborate?: Corroborator,
 ): { fit: OlsFit; kept: Sample[]; rejected: RejectedSample[]; passes: number } {
   let kept = samples.slice()
   const rejected: RejectedSample[] = []
@@ -301,8 +311,14 @@ export function fitWithRejection(
     const dropped: RejectedSample[] = []
     kept.forEach((s, i) => {
       const z = Math.abs(residuals[i]) / scale
-      if (z > sigmas) dropped.push({ ...s, residual: residuals[i], sigmas: z })
-      else next.push(s)
+      // Un residuo grande dice que la muestra no encaja en la RECTA, no que la
+      // muestra esté mal. Sobre la inversión del alisio la recta es lo que está
+      // mal, y ahí un testigo independiente puede indultarla.
+      if (z > sigmas && !corroborate?.(s)) {
+        dropped.push({ ...s, residual: residuals[i], sigmas: z })
+      } else {
+        next.push(s)
+      }
     })
     if (!dropped.length) break
     // Si una pasada se llevara casi todo, el modelo lineal no describe estos
@@ -316,6 +332,98 @@ export function fitWithRejection(
   }
 
   return { fit, kept, rejected, passes }
+}
+
+/**
+ * Tolerancia del indulto, por variable. **Asimétrica, y el motivo es físico.**
+ *
+ * El perfil describe el aire LIBRE. La capa que toca el suelo de una ladera no
+ * se le parece de cualquier manera: el transporte anabático y el sol sobre la
+ * roca la dejan más CÁLIDA y más HÚMEDA que el aire libre a la misma cota,
+ * nunca lo contrario. Así que una estación que se separa del perfil hacia
+ * arriba está donde se espera que esté, y una que se separa hacia abajo —más
+ * fría o más seca que la atmósfera libre— no tiene ninguna explicación física y
+ * sí una explicación de sensor.
+ *
+ * Una tolerancia simétrica lo pasaba por alto, y hay un test que lo fija: con
+ * ±35 puntos, un higrómetro muerto que marca **1 % de humedad** quedaba
+ * indultado si estaba por encima de la inversión, porque el perfil daba 25 % y
+ * la diferencia cabía. El indulto no es una amnistía.
+ *
+ * Los números salen de medidas, no del ojo:
+ *
+ * - `warmer` / `moister` — cuánto puede estar por encima. El perfil se equivoca
+ *   contra una estación real a esa altura (TNG, Roque de los Muchachos, 2387 m,
+ *   25 h seguidas el 12 ago 2026) con un sesgo de **−1,15 K y −17,5 puntos**:
+ *   es decir, ya sabemos que lee más frío y más seco que la superficie. Se deja
+ *   sitio a ese sesgo y un margen. En temperatura se comprobó además el caso
+ *   concreto: la estación de 1560 m marcaba 26,0 °C contra los 20,4 del sondeo,
+ *   **+5,6 K**, ladera oeste y sol de tarde.
+ * - `colder` / `drier` — cuánto puede estar por debajo. Poco, porque eso ya no
+ *   lo explica la física del sitio.
+ */
+export interface CorroborationTolerance {
+  /** Cuánto puede superar al perfil (más cálido / más húmedo). */
+  above: number
+  /** Cuánto puede quedarse por debajo (más frío / más seco). */
+  below: number
+}
+
+export const CORROBORATION_TOLERANCE: Record<
+  InterpolableVariable,
+  CorroborationTolerance
+> = {
+  temperature: { above: 6, below: 2.7 },
+  relativehumidity: { above: 35, below: 10 },
+}
+
+/**
+ * Construye el testigo que puede indultar a una muestra marcada como anómala.
+ *
+ * EL PROBLEMA QUE RESUELVE. El rechazo mide el residuo contra una RECTA
+ * altitudinal, y sobre la inversión del alisio esa recta no describe la
+ * atmósfera: entre ~800 y ~1500 m la temperatura deja de bajar y a menudo sube.
+ * Ahí, la estación que está en lo cierto es la que más se separa de la recta, y
+ * la MAD la caza precisamente por eso. Medido el 12 ago 2026: dejando fuera del
+ * ajuste la estación de 1560 m, el motor predecía en su propio punto **75,1 %
+ * de humedad cuando ella marcaba 36,4** — y el sondeo de Güímar de ese día daba
+ * 19 % a 1558 m, o sea que la estación tenía razón y el modelo no. El filtro se
+ * llevaba las CUATRO estaciones de humedad por encima de 1000 m, que son las
+ * únicas que describen la capa seca. El motor se quitaba la vista él solo.
+ *
+ * LA REGLA, estrecha a propósito:
+ *
+ *  1. Solo indulta **por encima de la base de la inversión** diagnosticada en
+ *     el perfil. Debajo, la recta sí describe bien la atmósfera y el rechazo
+ *     tiene que seguir funcionando como hasta ahora: es el que mejora el RMSE
+ *     un 43,7 %, y ese número no se toca.
+ *  2. Solo indulta si el perfil **corrobora** el valor a esa altitud, dentro de
+ *     la tolerancia de arriba. Una estación con el higrómetro muerto que marca
+ *     el 1 % a 840 m sigue cayendo, porque el perfil no la respalda.
+ *  3. Si no hay perfil, o no hay inversión diagnosticada, no indulta a nadie y
+ *     todo se comporta exactamente como antes.
+ *
+ * El perfil NO entra en el ajuste ni aporta ninguna muestra: solo vota sobre si
+ * se tira una medida del Cabildo. Las estaciones siguen mandando.
+ */
+export function corroboratedBy(
+  profile: VerticalProfile | null,
+  variable: InterpolableVariable,
+): Corroborator | undefined {
+  if (!profile?.inversion) return undefined
+  const base = profile.inversion.base
+  const tolerance = CORROBORATION_TOLERANCE[variable]
+
+  return (sample: Sample) => {
+    if (sample.elevation < base) return false
+    const modelled =
+      variable === 'temperature'
+        ? sampleProfile(profile, sample.elevation, 'temperature')
+        : humidityAt(profile, sample.elevation)
+    if (modelled === null) return false
+    const deviation = sample.value - modelled
+    return deviation >= -tolerance.below && deviation <= tolerance.above
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -380,15 +488,24 @@ function anchorSamples(
  * @param calibration Banda de incertidumbre medida (ver `uncertainty.ts`). Es
  *   cara de calcular —un leave-one-out entero— así que se pasa hecha desde
  *   fuera y se memoriza allí, en vez de rehacerla en cada `buildModel`.
+ * @param profile Perfil vertical, si lo hay. NO aporta ninguna muestra al
+ *   ajuste: solo puede indultar a una estación del Cabildo marcada como anómala
+ *   por encima de la inversión. Ver `corroboratedBy`.
  */
 export function buildModel(
   stations: readonly Station[],
   variable: InterpolableVariable,
   anchors: readonly Anchor[] = [],
   calibration: Calibration | null = null,
+  profile: VerticalProfile | null = null,
 ): Model {
   const samples = toSamples(stations, variable)
-  const { fit, kept, rejected, passes } = fitWithRejection(samples)
+  const { fit, kept, rejected, passes } = fitWithRejection(
+    samples,
+    OUTLIER_SIGMA,
+    MAX_REJECTION_PASSES,
+    corroboratedBy(profile, variable),
+  )
 
   // 4. DETENDENCIA. Se deja la ordenada dentro del residuo: la retendencia
   // vuelve a sumarla, así que el resultado es idéntico y hay un término menos

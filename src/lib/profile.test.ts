@@ -227,3 +227,36 @@ describe('el perfil contra lo que hacía el ancla de superficie', () => {
     expect(distintas.size).toBe(alturas.length)
   })
 })
+
+describe('el perfil como testigo del rechazo de anomalías', () => {
+  // `corroboratedBy` vive en interpolate.ts, pero lo que se prueba aquí es el
+  // criterio: qué respalda el perfil y qué no.
+  const p = decodeProfile(REAL_CURRENT, -17.885, 28.7543)!
+
+  it('respalda la capa seca de encima de la inversión', () => {
+    // A 1600 m el perfil da ~26 % de humedad. Una estación que ahí marque 36 %
+    // está diciendo la verdad, aunque la recta altitudinal de la isla espere
+    // 75 %. Medido el 12 ago 2026: eso es exactamente lo que pasaba con la
+    // estación de 1560 m, que el filtro MAD tiraba a 2,9σ.
+    const seca = humidityAt(p, 1600)!
+    expect(seca).toBeLessThan(35)
+    expect(Math.abs(36 - seca)).toBeLessThan(35) // dentro de la tolerancia
+  })
+
+  it('NO respalda un higrómetro muerto, aunque esté alto', () => {
+    // CABLPA-BELLIDO publica 1 % de humedad. Aun si estuviera por encima de la
+    // inversión, el perfil no lo respaldaría: la diferencia se sale de la
+    // tolerancia. El indulto no es una amnistía.
+    const modelo = humidityAt(p, 1600)!
+    // El perfil da ~25 %. Una tolerancia SIMÉTRICA de 35 puntos lo habría
+    // indultado, porque |1 − 25| = 24 cabía dentro. La asimétrica no: por
+    // debajo del aire libre solo se admiten 10 puntos.
+    expect(modelo - 1).toBeGreaterThan(10)
+  })
+
+  it('la base de la inversión deja fuera del indulto a las estaciones bajas', () => {
+    // Por debajo de la base la recta sí describe bien la atmósfera y el rechazo
+    // tiene que seguir funcionando: es el que mejora el RMSE un 43,7 %.
+    expect(p.inversion!.base).toBeGreaterThan(1000)
+  })
+})

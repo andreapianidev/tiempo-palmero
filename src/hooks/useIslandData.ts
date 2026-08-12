@@ -463,14 +463,28 @@ export function useIslandData(): IslandData {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stationKey, modelAtStations])
 
+  /**
+   * Perfil vertical que hace de testigo en el rechazo de anomalías.
+   *
+   * Se toma el de la primera ancla. Los cuatro puntos están en la cumbre y la
+   * estación que puede indultar suele estar 500 m más abajo, pero a la altura
+   * de los niveles de presión el aire es el mismo sobre 25 km de isla: lo que
+   * se le pregunta al perfil es dónde está la inversión y qué humedad hay en la
+   * capa seca, no el detalle local, que es justo lo que un modelo no sabe.
+   *
+   * Si no hay anclas —Open-Meteo caído, o red que llega hasta arriba— no hay
+   * testigo y el rechazo se comporta exactamente como antes.
+   */
+  const witness = anchors[0]?.profile ?? null
+
   const models = useMemo(() => {
     const make = (v: InterpolableVariable) =>
-      stations.length ? buildModel(stations, v, anchors, calibrations[v]) : null
+      stations.length ? buildModel(stations, v, anchors, calibrations[v], witness) : null
     return {
       temperature: make('temperature'),
       relativehumidity: make('relativehumidity'),
     } as Record<InterpolableVariable, Model | null>
-  }, [stations, anchors, calibrations])
+  }, [stations, anchors, calibrations, witness])
 
   // La validación es cara (n ajustes completos) y solo informa la cabecera, así
   // que se recalcula cuando cambia el conjunto de estaciones, no en cada tick.
