@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { edgeApi } from './dev/edgeApi'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), edgeApi()],
   server: {
     proxy: {
       // In dev le funzioni serverless di Vercel non girano: inoltriamo

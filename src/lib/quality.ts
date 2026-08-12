@@ -22,6 +22,13 @@ export const BOUNDS: Record<string, [number, number]> = {
   windspeed: [0, 200],
   uv: [0, 16],
   dewpoint: [-20, 30],
+  // La sensación térmica se mueve en el mismo rango físico que la temperatura:
+  // puede separarse bastante de ella con viento o bochorno, pero no salirse de
+  // lo que la isla admite.
+  feellikestemperature: [-8, 45],
+  // Lux a cielo abierto. El sol de mediodía en Canarias ronda los 100 000 y el
+  // máximo medido en un día de histórico fue 89 258; por debajo de 0 no existe.
+  illuminance: [0, 150_000],
   co2: [300, 100_000], // las fumarolas llegan de verdad al 7 %
   pm25: [0, 1000], // la calima es extrema
 }
@@ -68,6 +75,31 @@ export interface Station {
    * evapotranspiración insular que se pueda afirmar.
    */
   dailyevapotranspiration: number | null
+  /**
+   * Sensación térmica, en °C.
+   *
+   * Se ENSEÑA REDONDEADA a propósito. Los valores que llegan son conversiones
+   * exactas de grados Fahrenheit enteros: 17,222221 °C es 63 °F clavados y
+   * 22,777778 °C es 73 °F clavados (comprobado el 12 ago 2026 sobre las 1635
+   * filas no nulas de un día de histórico). Esa familia de sensores mide en
+   * Fahrenheit y la plataforma convierte, así que la resolución real es de
+   * 1 °F ≈ 0,56 °C. Un decimal aquí promete una precisión que el sensor no
+   * tiene.
+   */
+  feellikestemperature: number | null
+  /** Iluminancia en lux. 699 de 4939 filas del histórico, 101–89 258 lx. */
+  illuminance: number | null
+  /**
+   * Visibilidad. Columna de tipo String, no numérica.
+   *
+   * VACÍA EN TODO EL ARCHIVO: 0 filas no nulas de las 4939 de un día de
+   * histórico y 0 de las 52 de `_lastdata` (12 ago 2026). Se parsea y se pasa
+   * al panel igualmente —son cuatro líneas y aparecerá sola el día que el
+   * Cabildo la rellene—, pero hoy no se pinta nunca. No es un campo raro: es
+   * un campo muerto, y conviene que quede escrito para que nadie lo persiga
+   * como si fuera un fallo de la aplicación.
+   */
+  visibility: string | null
   /** Fila cruda, para el panel «todos los valores» de la estación. */
   raw: CdaRow
 }
@@ -280,6 +312,9 @@ export function buildStations(
       uv: bounded('uv'),
       solarradiation: num(row.solarradiation),
       dailyevapotranspiration: num(row.dailyevapotranspiration),
+      feellikestemperature: bounded('feellikestemperature'),
+      illuminance: bounded('illuminance'),
+      visibility: typeof row.visibility === 'string' && row.visibility ? row.visibility : null,
       raw: row,
     })
     census.usable++

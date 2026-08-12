@@ -13,6 +13,7 @@ import { freshness, stationReading, type Station } from '../lib/quality'
 import { FAMILY_COLOR, isDataProp, poiIconDataUrl, type PoiRecord } from '../lib/poi'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { Model } from '../lib/interpolate'
+import { StationHistory } from './StationHistory'
 import { n, n0, t, humanAge } from '../i18n'
 
 /** El punto de interés llega del mapa y la app le añade lo que sabe del sitio. */
@@ -54,12 +55,30 @@ const RAW_FIELDS: [keyof Station, string, string][] = [
   ['atmosphericpressure', 'Presión (nivel del mar)', t.units.hpa],
   ['precipitation', t.variables.precipitation, 'mm'],
   ['dailyprecipitation', 'Precipitación diaria', 'mm'],
+  ['feellikestemperature', 'Sensación térmica', t.units.celsius],
   ['uv', 'Índice UV', ''],
   ['solarradiation', 'Radiación solar', 'W/m²'],
+  ['illuminance', 'Iluminancia', 'lx'],
   // Sin unidad en la etiqueta a propósito: ver `Station.dailyevapotranspiration`.
   // La columna mezcla dos convenciones y aquí se enseña el crudo de la estación.
   ['dailyevapotranspiration', 'Evapotranspiración (día)', 'mm'],
 ]
+
+/**
+ * Campos que se enseñan sin decimales, cada uno por su motivo:
+ *
+ *  - `relativehumidity` y `uv`: la décima no aporta nada a la lectura.
+ *  - `feellikestemperature`: el sensor mide en Fahrenheit entero y la
+ *    plataforma convierte, así que la resolución real es 0,56 °C. Ver el
+ *    comentario del campo en `quality.ts`.
+ *  - `illuminance`: son decenas de miles de lux; la décima es ruido.
+ */
+const ZERO_DECIMALS = new Set<keyof Station>([
+  'relativehumidity',
+  'uv',
+  'feellikestemperature',
+  'illuminance',
+])
 
 export function DetailPanel({
   selection,
@@ -203,7 +222,7 @@ function StationDetail({ s, model, now }: { s: Station; model: Model | null; now
                   {derived && <em className="dim"> · {t.point.derived}</em>}
                 </td>
                 <td className="mono">
-                  {n(v, key === 'relativehumidity' || key === 'uv' ? 0 : 1)} {unit}
+                  {n(v, ZERO_DECIMALS.has(key) ? 0 : 1)} {unit}
                 </td>
               </tr>
             )
@@ -214,12 +233,23 @@ function StationDetail({ s, model, now }: { s: Station; model: Model | null; now
               <td className="mono">{n0(s.winddirection)}°</td>
             </tr>
           )}
+          {/* La visibilidad es texto, no un número, y hoy no la publica nadie:
+              ver el comentario del campo en `quality.ts`. Se deja pintada para
+              que aparezca sola si el Cabildo empieza a rellenarla. */}
+          {s.visibility !== null && (
+            <tr>
+              <td>Visibilidad</td>
+              <td className="mono">{s.visibility}</td>
+            </tr>
+          )}
           <tr>
             <td>{t.station.elevation}</td>
             <td className="mono">{n0(s.elevation)} {t.units.metres}</td>
           </tr>
         </tbody>
       </table>
+
+      <StationHistory entityId={s.entityId} now={now} />
     </>
   )
 }
