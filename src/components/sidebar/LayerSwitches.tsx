@@ -20,6 +20,7 @@ const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
   { id: 'guaguaLines', label: t.layers.guaguaLines },
   { id: 'guaguaStops', label: t.layers.guaguaStops },
   { id: 'roads', label: t.layers.roads },
+  { id: 'counters', label: t.layers.counters },
   { id: 'fire', label: t.layers.fire },
 ]
 

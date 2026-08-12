@@ -3,6 +3,7 @@
    aquí; esta hoja es el armazón común, no el cajón de sastre. */
 
 @import './styles/guagua.css';
+@import './styles/counters.css';
 
 :root {
   --ink: #0d0c0b;

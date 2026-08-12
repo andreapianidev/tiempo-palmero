@@ -8,6 +8,7 @@ import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { useWindField } from './hooks/useWindField'
 import { useGuagua } from './hooks/useGuagua'
 import { usePlaces, NO_PLACES, type PlaceVisibility } from './hooks/usePlaces'
+import { useCounters } from './hooks/useCounters'
 import { elevationAt } from './lib/dem'
 import { DEWPOINT_STOPS, HUMIDITY_STOPS, TEMP_STOPS, type RgbStop } from './lib/palette'
 import type { DisplayVariable } from './lib/interpolate'
@@ -31,6 +32,7 @@ const INITIAL_LAYERS: LayerVisibility = {
   guaguaLines: false,
   guaguaStops: false,
   roads: false,
+  counters: false,
   fire: true,
   wind: false,
 }
@@ -49,6 +51,9 @@ export default function App() {
   // que cambia es qué puntos entran en ella.
   const [placesOn, setPlacesOn] = useState<PlaceVisibility>(NO_PLACES)
   const places = usePlaces(placesOn, visible.roads)
+  // Igual que las guaguas: tres peticiones al servicio del Cabildo que no se
+  // hacen mientras el interruptor esté apagado.
+  const counters = useCounters(visible.counters)
   const [variable, setVariable] = useState<DisplayVariable>('temperature')
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
@@ -147,6 +152,7 @@ export default function App() {
         guaguaRoute={selection?.kind === 'busRoute' ? selection.value.routeId : null}
         places={places.places}
         roads={places.roads}
+        counters={counters.sites}
         wind={wind.field}
         visible={visible}
         probe={probe}
@@ -201,6 +207,20 @@ export default function App() {
           setProbe(null)
           setSelection({ kind: 'road', value: { ...road, lon, lat } })
         }}
+        onCounter={(site) => {
+          setProbe(null)
+          setSelection({
+            kind: 'counter',
+            value: {
+              ...site,
+              elevation: data.dem ? elevationAt(data.dem, site.lon, site.lat) : null,
+              municipality: municipalityOf(data.municipalities, site.lon, site.lat),
+              // El día se acompaña desde donde se pidió: la ficha no vuelve a
+              // preguntar qué día es, para no discrepar con la suma del pin.
+              today: counters.today ?? '',
+            },
+          })
+        }}
         onPoi={(poi) => {
           setProbe(null)
           // La altitud y el municipio no vienen en la capa de puntos: los pone
@@ -231,6 +251,7 @@ export default function App() {
         onSearch={onSearch}
         lastUpdate={data.lastUpdate}
         wind={wind}
+        counters={counters}
         now={now}
         dem={data.dem}
         onSources={() => setShowSources(true)}

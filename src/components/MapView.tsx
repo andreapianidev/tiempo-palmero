@@ -30,6 +30,8 @@ import {
 } from './places/PlacesLayer'
 import { addPlaceIcons, readPlace, type PlaceRecord } from '../lib/places'
 import { readRoad, type RoadRecord } from '../lib/roads'
+import { counterMarkerElement } from './counters/CounterMarker'
+import type { CounterSite } from '../lib/counters/model'
 import type { WindField } from '../lib/wind/field'
 import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
@@ -49,6 +51,7 @@ export interface LayerVisibility {
   guaguaLines: boolean
   guaguaStops: boolean
   roads: boolean
+  counters: boolean
   fire: boolean
   wind: boolean
 }
@@ -74,6 +77,8 @@ interface Props {
   /** Sitios encendidos, ya fusionados en una colección de puntos. */
   places: GeoJSON.FeatureCollection | null
   roads: GeoJSON.FeatureCollection | null
+  /** Aforos con datos en la ventana; llegan solo si se enciende la capa. */
+  counters: CounterSite[]
   wind: WindField | null
   visible: LayerVisibility
   probe: { lon: number; lat: number } | null
@@ -88,6 +93,7 @@ interface Props {
   onBusRoute: (routeId: string) => void
   onPlace: (place: PlaceRecord) => void
   onRoad: (road: RoadRecord, lon: number, lat: number) => void
+  onCounter: (site: CounterSite) => void
 }
 
 /** Qué topónimos merecen etiqueta a cada zoom. Sin esto la isla es ilegible. */
@@ -686,6 +692,24 @@ export function MapView(props: Props) {
       }
     }
 
+    if (visible.counters) {
+      for (const site of props.counters) {
+        const el = counterMarkerElement(site, {
+          onClick: (s) => handlers.current.onCounter(s),
+          label: (s) =>
+            s.todayTotal === null
+              ? t.counters.markerSilent(s.name)
+              : t.counters.markerLabel(s.name, n0(s.todayTotal)),
+        })
+        add(site.lon, site.lat, el, 45)
+        // Compiten por el sitio con las pastillas de estación, así que entran
+        // en el mismo reparto. Prioridad por tráfico: donde pasa más gente es
+        // donde la cifra dice algo, y los aforos de sendero son los que más se
+        // solapan entre sí en la cumbre.
+        pills.push({ el, lon: site.lon, lat: site.lat, priority: site.todayTotal ?? 0 })
+      }
+    }
+
     if (visible.fire) {
       for (const f of props.fire) {
         const el = document.createElement('button')
@@ -720,10 +744,12 @@ export function MapView(props: Props) {
     visible.co2,
     visible.sky,
     visible.fire,
+    visible.counters,
     props.air,
     props.co2,
     props.sky,
     props.fire,
+    props.counters,
   ])
 
   // --- topónimos, filtrados por zoom --------------------------------------

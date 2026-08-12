@@ -172,3 +172,26 @@ export function formatIslandTime(epochMs: number): string {
     minute: '2-digit',
   }).format(new Date(epochMs))
 }
+
+/**
+ * `YYYY-MM-DD` del día de la ISLA, que no siempre es el día UTC: en verano
+ * Canarias va una hora por delante, así que entre las 23:00 y las 00:00 hora
+ * insular el día UTC todavía es el de ayer. Los agregados diarios de aforos
+ * vienen fechados en día local, y compararlos contra un día UTC deja «hoy»
+ * vacío durante esa hora.
+ */
+export function islandDayKey(epochMs: number): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ISLAND_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(epochMs))
+  return parts // en-CA formatea como YYYY-MM-DD
+}
+
+/** Suma o resta días a una clave `YYYY-MM-DD`, sin pasar por husos horarios. */
+export function shiftDayKey(day: string, delta: number): string {
+  const ms = Date.parse(`${day}T00:00:00Z`) + delta * 86_400_000
+  return new Date(ms).toISOString().slice(0, 10)
+}

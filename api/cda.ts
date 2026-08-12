@@ -37,6 +37,9 @@ const ALLOWED = new Set([
   'airqualityobserved_lastdata',
   'skyobservation_lastdata',
   'fireforest_lastdata',
+  'count_today',
+  'count_historic',
+  'count_locations',
 ])
 
 const PASSTHROUGH = ['paramstart', 'paramfinish', 'paramname', 'paramcountertype']
@@ -52,6 +55,13 @@ const TTL_SECONDS: Record<string, number> = {
   airqualityobserved_lastdata: 300,
   skyobservation_lastdata: 600,
   fireforest_lastdata: 60,
+  // Los aforos publican un intervalo de unos cinco minutos; cachear ese pulso
+  // más que eso sería enseñar como «ahora» un intervalo ya cerrado.
+  count_today: 300,
+  // El acumulado del día en curso sube despacio y los días pasados no cambian
+  // nunca. El inventario de aforos es una lista de sitios, no una medida.
+  count_historic: 900,
+  count_locations: 86_400,
 }
 
 function json(body: unknown, status: number, cacheSeconds = 0): Response {

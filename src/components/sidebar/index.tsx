@@ -24,7 +24,9 @@ import { PlaceSwitches, PLACE_COUNT, activePlaceCount } from './PlaceSwitches'
 import type { PlaceVisibility } from '../../hooks/usePlaces'
 import { ModelStatus } from './ModelStatus'
 import { WindStatus } from './WindStatus'
+import { CounterStatus } from './CounterStatus'
 import type { WindState } from '../../hooks/useWindField'
+import type { CountersData } from '../../hooks/useCounters'
 
 interface Props {
   variable: DisplayVariable
@@ -41,6 +43,7 @@ interface Props {
   onSearch: (entry: GazetteerEntry) => void
   dem: Dem | null
   wind: WindState
+  counters: CountersData
   lastUpdate: number | null
   now: number
   onSources: () => void
@@ -121,6 +124,20 @@ export function Sidebar(props: Props) {
               wind={props.wind}
               usableStations={props.census?.usable ?? null}
               now={props.now}
+            />
+          </Section>
+        )}
+
+        {props.visible.counters && (
+          <Section
+            title={t.layers.counters}
+            defaultOpen
+            badge={props.counters.census ? `${props.counters.census.liveSites}` : '…'}
+          >
+            <CounterStatus
+              census={props.counters.census}
+              loading={props.counters.loading}
+              error={props.counters.error}
             />
           </Section>
         )}

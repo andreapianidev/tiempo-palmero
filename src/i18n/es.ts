@@ -31,6 +31,7 @@ export const es = {
     guaguaLines: 'Líneas de guagua',
     guaguaStops: 'Paradas de guagua',
     roads: 'Carreteras insulares',
+    counters: 'Aforos de tráfico y senderos',
     fire: 'Cámaras de incendios',
     hillshade: 'Relieve sombreado',
   },
@@ -187,6 +188,62 @@ export const es = {
     weatherHere: 'El tiempo en este punto de la vía',
     note: 'La capa no publica estado del firme, cortes ni obras.',
     source: 'Red de carreteras de la isla de La Palma — Cabildo Insular (CC-BY 4.0).',
+  },
+
+  /**
+   * Aforos de tráfico y de senderos.
+   *
+   * Regla de estas cadenas: la cifra grande es siempre la del DÍA, y va dicho
+   * que el día está a medias. El «pulso» de cinco minutos se enseña como lo que
+   * es —la prueba de que el aparato está vivo ahora mismo— y nunca como un
+   * total. Confundirlos es contar trece coches en la entrada de Santa Cruz.
+   */
+  counters: {
+    title: 'Aforo',
+    kinds: {
+      road: 'Aforo de carretera',
+      trail: 'Acceso a sendero',
+    } as Record<string, string>,
+    types: {
+      coches: 'Coches',
+      motos: 'Motos',
+      pesados: 'Vehículos pesados',
+      bicicletas: 'Bicicletas',
+      peatones: 'Peatones',
+      vehiculos: 'Vehículos',
+    } as Record<string, string>,
+    todayTotal: 'Pasos contados hoy',
+    todayHint: 'Acumulado del día en curso: sigue subiendo hasta medianoche.',
+    inProgress: 'día en curso',
+    noToday: 'Hoy este aforo todavía no ha publicado ningún dato.',
+    silent: 'Sin datos hoy',
+    lastPulse: 'Último intervalo publicado',
+    pulseAt: 'Hora',
+    pulseHint:
+      'La fuente publica cada pocos minutos lo que ha pasado en ese intervalo. Sirve para saber que el aparato está vivo, no para contar el día.',
+    noPulse: 'Este aforo no ha dado señal en lo que va de día.',
+    channels: 'Qué se cuenta aquí',
+    direction: (from: string, to: string) => `${from} → ${to}`,
+    incoming: 'Entrando',
+    outgoing: 'Saliendo',
+    notPublished: 'no se publica',
+    oneWayNote:
+      'En los aforos de carretera el contador de peatones publica un solo sentido; el otro llega vacío. Aquí un sentido vacío no se suma como cero: no se suma.',
+    week: 'Los últimos días',
+    weekHint: 'Total de pasos por día, sumando todos los contadores del sitio.',
+    average: 'Media de los días completos',
+    weatherHere: 'El tiempo en este aforo',
+    pulseNote:
+      'Las cifras del día vienen del archivo diario del Cabildo, que incluye el día en curso. El intervalo de arriba viene del endpoint «del día en curso», que pese al nombre publica solo los últimos minutos.',
+    census: (live: number, week: number, registered: number) =>
+      `${live} aforos publicando hoy · ${week} con datos esta semana · ${registered} registrados`,
+    censusHint: (channels: number, sites: number) =>
+      `El registro del Cabildo tiene ${channels} contadores en ${sites} emplazamientos. La diferencia no es un fallo de esta aplicación: son aparatos dados de alta que llevan sin transmitir más de una semana.`,
+    markerLabel: (name: string, count: string) => `${name}: ${count} pasos hoy`,
+    markerSilent: (name: string) => `${name}: sin datos hoy`,
+    loading: 'Pidiendo los aforos…',
+    error: 'Los aforos del Cabildo no responden ahora mismo.',
+    source: 'Conteo de tráfico y de senderos — Cabildo Insular de La Palma (CC-BY 4.0).',
   },
 
   /**
@@ -533,6 +590,16 @@ export const es = {
       'municipales. Cada capa se enciende por separado y cada elemento se pincha para ver su ' +
       'ficha completa, con los campos tal como los publica la fuente.',
     placesLicense: 'CC-BY 4.0',
+    countersTitle: 'Aforos de tráfico y de senderos',
+    countersBody:
+      'Contadores del Cabildo en cruces, carreteras y accesos a senderos: cuántos coches, ' +
+      'motos, vehículos pesados, bicicletas y peatones pasan, y en qué sentido. Las cifras ' +
+      'del día vienen del archivo diario, que incluye el día en curso; el endpoint llamado ' +
+      '«del día en curso» publica en realidad los últimos minutos, y aquí se enseña como lo ' +
+      'que es —la prueba de que el aparato está vivo—, nunca como un total. Del registro de ' +
+      '133 contadores en 30 emplazamientos, 84 han publicado algo esta semana y 72 hoy; el ' +
+      'mapa dibuja los que tienen datos en la ventana, incluidos los que han enmudecido hoy.',
+    countersLicense: 'CC-BY 4.0',
     toponymsTitle: 'Topónimos',
     toponymsBody:
       '© colaboradores de OpenStreetMap. Extraídos una sola vez en tiempo de compilación mediante Overpass; la aplicación no consulta OpenStreetMap en tiempo de ejecución.',

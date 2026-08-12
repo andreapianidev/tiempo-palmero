@@ -46,7 +46,9 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
 - [Qué más publica el Cabildo](#qué-más-publica-el-cabildo-y-qué-falta-por-aprovechar)
   — hoja de ruta sobre los 49 conjuntos del portal
 - [La red de guaguas](#la-red-de-guaguas-y-los-sitios-que-ahora-se-pueden-encender)
-  — la red en presente, el horario con su fecha delante
+  — la red en presente, el horario con su fecha delante ·
+  [Los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece) — el
+  endpoint que se llama «hoy» y publica cinco minutos
 - [El mapa de viento](#el-mapa-de-viento) — la única capa donde un modelo pinta
   sobre la isla, y cómo se declara ·
   [El histórico](#el-histórico-y-por-qué-no-hay-base-de-datos) — 2 MB por día en
@@ -101,6 +103,10 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   cultural e histórico, zonas recreativas y puntos de recarga eléctrica, cada
   capa con su interruptor y su icono, y la **red de carreteras** debajo de todo,
   que también se pincha para ver de dónde a dónde va cada tramo.
+- **Aforos de tráfico y de senderos**: cuánta gente pasa hoy por cada cruce y
+  por cada acceso a sendero, separando coches, motos, pesados, bicicletas y
+  peatones, con los últimos ocho días en barras y el denominador de la red a la
+  vista (ver [los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece)).
 - **Relieve sombreado** generado del mismo modelo de elevación que alimenta el
   cálculo. La isla es un volcán: la sombra es lo que la hace legible.
 
@@ -596,12 +602,60 @@ código `LP-n` es una vía insular, y los ocho restantes llevan ahí a su titula
 («Municipal», «Parque Nacional», y «Aerpuerto», sin la o, tal como lo publica la
 fuente).
 
+### Los aforos, y el endpoint que no dice lo que parece
+
+La red de aforos cuenta quién pasa por diecisiete cruces, carreteras y accesos a
+senderos, separando **coches, motos, vehículos pesados, bicicletas y peatones**,
+y en qué sentido va cada uno. Es, con diferencia, la red más viva del portal: la
+que publica, publica todos los días.
+
+**El nombre de su endpoint miente, y cuesta caro creerle.** `count_today` no es
+el acumulado del día: es el último intervalo publicado, de unos cinco minutos.
+Comprobado el 12 ago 2026 de dos maneras independientes:
+
+- pidiéndolo dos veces seguidas, `CS04_peatones` pasó de **2/0 a las 22:12 a 0/0
+  a las 22:17** — un acumulado no baja;
+- a esa misma hora `CC09_coches` (entrada de Santa Cruz) daba **3/10**, mientras
+  `count_historic` fechado ese mismo día daba **8.697/11.048**.
+
+Tomarlo por el día habría puesto «13 coches» en la entrada de la capital a las
+diez de la noche. Así que las cifras del día salen de `count_historic` —que sí
+incluye el día en curso, acumulándose— y `count_today` se usa para lo único que
+sabe: si el aparato está vivo **ahora** y a qué hora habló por última vez. En la
+ficha van separados y rotulados, y la cifra grande lleva siempre «día en curso»
+al lado, porque a las once de la mañana su barra es corta por la hora que es y
+no porque haya pasado menos gente.
+
+Dos detalles más del formato, los dos con test:
+
+- **`paramfinish` es exclusivo.** Del 05 al 12 devuelve hasta el 11. Para
+  incluir hoy hay que pedir hasta mañana.
+- **Los peatones de carretera publican un solo sentido**: el otro llega a `null`
+  en 97 de las 145 filas de la semana. Un `null` sumado como cero convierte un
+  conteo de un sentido en un total de dos sin que se note, así que aquí lo que
+  no se publica no se suma — y la ficha escribe «no se publica» en su sitio.
+
+**El denominador honesto son tres cifras, no una.** El registro del Cabildo
+tiene **133 contadores en 30 emplazamientos**; **84 contadores (20
+emplazamientos)** publicaron algo en los últimos siete días, y **72 (17
+emplazamientos)** estaban publicando el 12 ago 2026. Los tres números salen en
+el panel lateral. El mapa dibuja los veinte que tienen datos en la ventana,
+incluidos los tres que enmudecieron esa misma mañana —Las Ledas, Los Llanos y el
+sendero del mirador de las Barandas—, que salen en hueco y con «sin datos hoy»:
+esconderlos haría parecer que la isla se quedó sin tráfico justo ahí.
+
+En `CS06` hay **dos senderos contados en el mismo punto** —Pico de las Nieves y
+Virgen del Pino, con canales `_peatones1` y `_peatones2`—, y el inventario los
+nombra igual a los dos. El nombre bueno es el del archivo diario; si ganara el
+del inventario, dos senderos distintos pasarían a ser el mismo con la cifra
+repetida. Hay un test que lo fija.
+
 ### Lo que cambiaría la aplicación de categoría
 
 | Fuente | Qué habilita |
 |---|---|
 | **Evolución del punto interpolado**, no solo de la estación | El histórico ya está dentro, pero dibuja la serie de cada estación. Aplicar el motor a cada instante del archivo daría la curva de un punto cualquiera, y sobre todo **mediría la validación a lo largo de un ciclo diurno completo** en vez de sobre un instante — que es donde la capa de inversión hace de las suyas. |
-| `count_today` / `count_historic` — **72 aforos, la única red 100 % viva** | Aforos de senderos y tráfico: 18 de bicicletas, 18 de peatones, 12 de coches, 12 de motos y 12 de pesados, **todos con lectura de hoy** (comprobado el 12 ago 2026 a las 14:20; el más reciente, de las 13:20). Cruzado con el tiempo responde a «¿va a estar lleno el sendero mañana?», que ninguna otra app de la isla contesta. Y es la red más sana del portal, sin una sola estación muerta. |
+| **Cruzar los aforos con el tiempo** | Los aforos ya están dentro (ver [la red de aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece)), pero cada uno cuenta su sitio por separado. Cruzar los pasos diarios con la temperatura y la nubosidad de ese mismo día contestaría «¿va a estar lleno el sendero mañana?», que ninguna otra aplicación de la isla contesta. Hacen falta semanas de archivo propio o el histórico completo del Cabildo, no la ventana de ocho días que se pide ahora. |
 
 ### Capas estáticas listas para añadir (todas WGS84, ya descargables en build)
 
@@ -799,6 +853,7 @@ src/lib/
   ├── geo.ts              Haversine, UTM 28N → WGS84, point-in-polygon
   ├── dem.ts              Lectura del DEM y muestreo bilineal
   ├── grid.ts             Malla raster de ~200 m
+  ├── counters/           Aforos: modelo del día, del pulso y del censo
   └── cabildo.ts          Cliente de la API, decodificación posicional
 ```
 
@@ -860,6 +915,11 @@ Documentadas aquí porque cuestan un día entero de depuración cada una:
 - **`visibility`, `corrosion` y `corrosionindex` existen en el esquema pero no
   traen un solo dato fresco.** Están en la lista de 42 columnas y tientan; no
   sirven para nada.
+- **`count_today` no es el día**, son los últimos cinco minutos, y
+  `count_historic` sí incluye el día en curso; además su `timeinstant` es
+  `DD-MM-YYYY` —el único endpoint al revés— y su `paramfinish` es exclusivo.
+  Los tres detalles juntos están explicados en
+  [los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece).
 
 ---
 
@@ -898,6 +958,9 @@ clave que configurar.
   CC-BY 4.0. Los sitios y la recarga eléctrica salen del catálogo CKAN; los
   miradores y las carreteras, de los servicios ArcGIS del visor del Cabildo:
   <https://www.opendatalapalma.es/search?groupIds=c27000c1d7a84444bf4321b87e8d2223>
+- **Aforos de tráfico y de senderos** — Cabildo Insular de La Palma, vertical
+  `count` de la API (`count_locations`, `count_today`, `count_historic`).
+  CC-BY 4.0.
 - **Red de sensores de CO₂** — DEMASE, publicada a través del portal del
   Cabildo.
 - **Transporte público** — GTFS de Transportes Insulares La Palma (TILP),

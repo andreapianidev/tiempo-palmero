@@ -60,6 +60,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'Catálogo del Cabildo en opendatalapalma.es',
   },
   {
+    title: t.sources.countersTitle,
+    body: t.sources.countersBody,
+    license: t.sources.countersLicense,
+    href: 'https://lapalmasmart-open.lapalma.es/datosabiertos/catalogo/',
+    hrefLabel: 'Catálogo de datos abiertos',
+  },
+  {
     title: t.sources.toponymsTitle,
     body: t.sources.toponymsBody,
     license: t.sources.toponymsLicense,
