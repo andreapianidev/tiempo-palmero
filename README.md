@@ -264,11 +264,9 @@ sí hay estaciones— el valor no se mueve ni una décima.
 
 Durante un tiempo el ancla fue `temperature_2m` pidiéndole a Open-Meteo el punto
 con `elevation=` forzada. **Eso no es una medida en altura**, y el motivo está
-en su propio código (`GenericReader.swift`):
-
-```
-data[i] += (modelElevation - targetElevation) * 0.0065
-```
+en su propio código
+(`Sources/App/Helper/Reader/GenericReader.swift`, líneas 194-197, leído el
+12 ago 2026):
 
 Es el valor de superficie de su celda trasladado con un gradiente **constante**
 de −0,65 K/100 m. Y su celda no es la cumbre: ningún modelo global tiene el
@@ -278,19 +276,40 @@ después se prolonga una recta hacia arriba **a través de la inversión del
 alisio**, donde el gradiente real llega a ser positivo. No es aproximar: es
 invertirle el signo al fenómeno.
 
-Con la humedad era peor que un sesgo. Ese `+= 0.0065` solo toca la temperatura;
-el punto de rocío se traslada en paralelo, de modo que la humedad relativa sale
-**idéntica a 10, 900, 1560 y 2426 m**. Las anclas de humedad no llevaban
-ninguna información vertical: eran constantes.
+Con la humedad era peor que un sesgo, y la guarda de la línea de arriba lo dice
+todo:
+
+```swift
+if isElevationCorrectable && unit == .celsius && ... {
+    // correct temperature by 0.65° per 100 m elevation
+    data[i] += (modelElevation.numeric - targetElevation) * 0.0065
+}
+```
+
+`unit == .celsius` deja fuera a la humedad relativa, cuya unidad es `%`: **no se
+corrige en absoluto**. El punto de rocío sí es Celsius y se traslada en paralelo
+a la temperatura, así que la humedad relativa sale **idéntica a 10, 900, 1560 y
+2426 m** — comprobado también contra la API, no solo leído en el código. Las
+anclas de humedad no llevaban ninguna información vertical: eran constantes.
 
 Ahora el ancla se lee del **perfil vertical** (`profile.ts`): T y punto de rocío
 en los niveles de presión de ICON —~165, 385, 608, 838, 1075, 1568, 2089 y
 3223 m— interpolados linealmente en altura geopotencial, sin ningún gradiente
-impuesto. Es el esquema de TopoSCALE (Fiddes y Gruber 2014,
-[10.5194/gmd-7-387-2014](https://doi.org/10.5194/gmd-7-387-2014)). La humedad se
-recompone de T y rocío con Magnus-Tetens, nunca se transporta: la humedad
-relativa depende de la temperatura, así que moverla en altura no significa nada
-—es lo que hacen MicroMet (Liston y Elder 2006, §b.2), PRISM y meteoland.
+impuesto. Es el esquema de **TopoSCALE** (Fiddes y Gruber, «TopoSCALE v.1.0:
+downscaling gridded climate data in complex terrain», *Geosci. Model Dev.* 7,
+2014, [10.5194/gmd-7-387-2014](https://doi.org/10.5194/gmd-7-387-2014),
+textual: «The method makes use of an interpolation of pressure-level data
+according to topographic height of the subgrid»).
+
+La humedad se recompone de T y rocío con Magnus-Tetens, **nunca se transporta**,
+y la razón se sostiene sola: la humedad relativa es una razón entre la presión
+de vapor y la de saturación, y la de saturación depende exponencialmente de la
+temperatura, así que mover una humedad relativa en altura no conserva nada. El
+rocío es casi lineal en la vertical y sí se deja mover. Es la misma elección que
+hacen MicroMet (Liston y Elder, *J. Hydrometeor.* 7(2), 2006,
+[10.1175/JHM486.1](https://doi.org/10.1175/JHM486.1)), PRISM y meteoland — de
+esos tres se afirma aquí solo la elección, que es pública, y no una cita literal
+del texto, porque los tres artículos están de pago y no he podido comprobarla.
 
 **Contrastado contra una estación real a esa altura**, la del TNG en el
 Observatorio del Roque de los Muchachos (2387 m), 25 horas seguidas el
@@ -364,23 +383,36 @@ El mismo perfil permite decir **dónde** está la inversión, con el criterio de
 literatura canaria: un tramo con gradiente ≥ −0,2 K/100 m **y** una caída de
 humedad de más de 20 puntos entre base y cima (Torres, Cuevas, Guerra y Carreño,
 2002). La caída de humedad no es un adorno: es lo que separa la inversión de
-subsidencia de una capa isoterma nocturna cualquiera. Si aparece más de una, se
-queda la de mayor caída — la más baja suele ser un fenómeno de temperatura
-superficial del mar, no el alisio (Ramseyer y Miller 2021,
-[10.1002/joc.7151](https://doi.org/10.1002/joc.7151)).
+subsidencia de una capa isoterma nocturna cualquiera. Si aparece más de una se
+queda la de mayor caída, y ése es un desempate **nuestro**, no una regla citada:
+si lo que distingue al alisio es que seca el aire, la candidata que más lo seca
+es la que mejor encaja. Hay literatura sobre las inversiones múltiples en el
+Atlántico norte tropical —Ramseyer y Miller, «Historical trends in the trade
+wind inversion in the tropical North Atlantic Ocean and Caribbean»,
+*Int. J. Climatol.* 41, 2021,
+[10.1002/joc.7151](https://doi.org/10.1002/joc.7151)— pero está de pago y no he
+podido comprobar contra el texto que su desempate sea éste, así que no se le
+atribuye.
 
 Medido el 12 ago 2026 a las 16:45 UTC: **base 1074 m, cima 1567 m, ΔT +0,1 K
 —isoterma— y ΔRH −35,7 puntos**. Junto a base y cima se publica siempre un
 `±247 m`, que es la mitad del salto entre los dos niveles de presión que la
-encierran: **este criterio detecta la inversión, no mide su espesor.** El
-espesor real en Güímar es de 210–393 m de mediana (Carrillo 2017), más fino que
-la propia rejilla de niveles.
+encierran: **este criterio detecta la inversión, no mide su espesor.** Para
+medirla haría falta un radiosondeo, que es lo que se lanza dos veces al día en
+Güímar.
 
-Que el fenómeno existe no es una interpretación de un día suelto. En los
-sondeos de Güímar 2003–2021 la inversión aparece en el **92,4 %** de los casos,
-y en el **95,05 %** de los de verano (Rodríguez Pérez, 2022, TFG ULL). Y en la
-propia red del Cabildo se ve sin modelo ninguno: **de noche**, sin sol sobre los
-sensores, la estación de 1177 m está **2,6 °C más caliente que la costa a 5 m**.
+Que el fenómeno es persistente **está medido aquí, no citado**. Sobre 329 horas
+de histórico del Cabildo hay inversión térmica entre la costa y la banda de
+1000–1600 m el **75 % de las horas**, y colapso de humedad el **83 %**; sobre
+360 horas de sondeo de Open-Meteo, el gradiente 925→850 hPa está por encima de
+−3 °C/km el **69 %** de las horas. Y no es un artefacto de sol sobre los
+sensores: **de noche**, entre las 00 y las 08 UTC de media en 14 días, la
+estación de 1177 m está **2,6 °C más caliente que la costa a 5 m**, y la de
+1560 m mantiene un 14-15 % de humedad.
+
+El reparto por día no es un ciclo diurno sino un régimen sinóptico: del 30 de
+julio al 8 de agosto de 2026, 24 horas de cada 24 todos los días; del 9 al 12,
+entre 0 y 4.
 
 ### La banda de incertidumbre está calibrada, no supuesta
 

@@ -5,42 +5,60 @@
  * POR QUÉ EXISTE ESTE ARCHIVO. Hasta ahora, por encima del techo de la red se
  * pedía a Open-Meteo `temperature_2m` forzando `elevation=`. Eso NO es una
  * medida en altura: es el valor de superficie de la celda del modelo trasladado
- * con un gradiente CONSTANTE. Está en su código (`GenericReader.swift`):
+ * con un gradiente CONSTANTE. Está en su código, y la guarda de la línea de
+ * arriba importa tanto como la corrección
+ * (`Sources/App/Helper/Reader/GenericReader.swift`, líneas 194-197, leído el
+ * 12 ago 2026):
  *
- *     data[i] += (modelElevation - targetElevation) * 0.0065
+ *     if isElevationCorrectable && unit == .celsius && ... {
+ *         // correct temperature by 0.65° per 100 m elevation
+ *         data[i] += (modelElevation.numeric - targetElevation) * 0.0065
+ *     }
  *
- * Medido el 12 ago 2026 contra la estación real del Roque (TNG, 2387 m), sobre
- * 24 h horarias: ese ancla se equivocaba **8,20 K** de media. El mismo punto
- * sacado de los niveles de presión se equivoca **1,27 K**. Seis veces mejor.
+ * Medido contra la estación real del Roque (TNG, 2387 m), 25 horas seguidas el
+ * 12 ago 2026: ese ancla se equivocaba **8,20 K** de media. El mismo punto
+ * sacado de los niveles de presión se equivoca **1,34 K**. Seis veces mejor.
  *
- * Y con la humedad no es un sesgo, es peor: ese `+= 0.0065` solo toca la
- * temperatura, y el punto de rocío se traslada en paralelo, así que la humedad
- * relativa sale IDÉNTICA a 10, 900, 1560 y 2426 m. Las anclas de humedad que
- * teníamos no llevaban ninguna información vertical. No eran imprecisas: eran
- * constantes.
+ * Y con la humedad no es un sesgo, es peor. Ese `unit == .celsius` deja fuera a
+ * la humedad relativa, cuya unidad es `%`: **no se corrige en absoluto**. El
+ * punto de rocío sí es Celsius y se traslada en paralelo a la temperatura, de
+ * modo que la humedad relativa sale IDÉNTICA a 10, 900, 1560 y 2426 m —
+ * comprobado también contra la API, no solo leído en el código. Las anclas de
+ * humedad que teníamos no llevaban ninguna información vertical. No eran
+ * imprecisas: eran constantes.
  *
  * La razón física de que un gradiente fijo no sirva aquí es la **inversión del
  * alisio**: entre ~800 y ~1500 m la temperatura deja de bajar, y a menudo sube.
- * Aplicarle −0,65 K/100 m no es aproximar, es invertirle el signo. Medido en la
- * red del Cabildo el 12 ago 2026: de noche, sin sol sobre los sensores, la
- * estación de 1177 m está 2,6 °C MÁS CALIENTE que la costa. Y en la literatura
- * canaria la inversión aparece en el 92,4 % de los sondeos de Güímar
- * (2003–2021) y en el 95,05 % de los de verano.
+ * Aplicarle −0,65 K/100 m no es aproximar, es invertirle el signo.
+ *
+ * Que el fenómeno es persistente está MEDIDO por nosotros, no citado: sobre 329
+ * horas de histórico del Cabildo hay inversión térmica entre la costa y la
+ * banda de 1000–1600 m el 75 % de las horas, y colapso de humedad el 83 %; y
+ * sobre 360 horas de sondeo de Open-Meteo el gradiente 925→850 hPa está por
+ * encima de −3 °C/km el 69 % de las horas. Y no es un artefacto de sol sobre
+ * los sensores: DE NOCHE, entre las 00 y las 08 UTC de media en 14 días, la
+ * estación de 1177 m está **2,6 °C más caliente que la costa a 5 m**.
  *
  * QUÉ HACE ESTE MÓDULO, Y QUÉ NO. Da el perfil de la atmósfera LIBRE: T y punto
  * de rocío contra altitud, sin imponer ninguna recta, tal y como el modelo los
  * resuelve. No sustituye a las estaciones —dentro de la red el motor actual es
  * mejor (MAE 1,32 K contra 1,57 K del modelo desnudo)— sino que sirve de fondo
- * allí donde no hay ninguna. Es el esquema de TopoSCALE (Fiddes y Gruber 2014,
- * doi:10.5194/gmd-7-387-2014): interpolar en altura geopotencial entre los dos
- * niveles que encierran el punto, sin gradiente impuesto.
+ * allí donde no hay ninguna. Es el esquema de TopoSCALE (Fiddes y Gruber,
+ * «TopoSCALE v.1.0: downscaling gridded climate data in complex terrain»,
+ * Geosci. Model Dev. 7, 2014, doi:10.5194/gmd-7-387-2014, textual: «The method
+ * makes use of an interpolation of pressure-level data according to topographic
+ * height of the subgrid»).
  *
- * Se transporta el PUNTO DE ROCÍO, nunca la humedad relativa. La humedad
- * relativa depende de la temperatura, así que moverla en altura no significa
- * nada; el rocío es casi lineal y se comporta. Es lo que hacen MicroMet (Liston
- * y Elder 2006, §b.2, textual: «the relatively linear dewpoint temperature is
- * used for the elevation adjustments»), PRISM y meteoland. La humedad se
- * recompone abajo con Magnus-Tetens, igual que ya se hace en los pines.
+ * Se transporta el PUNTO DE ROCÍO, nunca la humedad relativa, y la razón se
+ * sostiene sola: la humedad relativa es una razón entre la presión de vapor y
+ * la de saturación, y la de saturación depende exponencialmente de la
+ * temperatura, así que mover una humedad relativa en altura no conserva nada.
+ * El rocío es casi lineal en la vertical y sí se deja mover. Es la misma
+ * elección que hacen MicroMet (Liston y Elder, J. Hydrometeor. 7(2), 2006,
+ * doi:10.1175/JHM486.1), PRISM y meteoland; de esos tres solo se afirma aquí
+ * la elección, que es pública, no una cita literal que no he podido comprobar
+ * contra el texto —los tres artículos están de pago—. La humedad se recompone
+ * abajo con Magnus-Tetens, igual que ya se hace en los pines.
  */
 
 import { relativeHumidityFrom, clampHumidity } from './psychro'
@@ -88,9 +106,12 @@ export interface Inversion {
   deltaRh: number
   /**
    * Incertidumbre de `base` y `top`: la mitad del salto entre los dos niveles
-   * que la encierran. NO es una medida del espesor —la rejilla de niveles es
-   * más gruesa que la propia inversión, que en Güímar mide 210–393 m de mediana
-   * (Carrillo 2017)— y por eso se publica junto a ellas.
+   * que la encierran, que en el tramo crítico (900→850 hPa) son ~493 m.
+   *
+   * NO es una medida del espesor, y por eso se publica siempre al lado: la
+   * rejilla de niveles es más gruesa que la propia inversión. Este criterio la
+   * DETECTA; medirla haría falta un radiosondeo, que es lo que se lanza dos
+   * veces al día en Güímar.
    */
   resolutionM: number
 }
@@ -167,12 +188,18 @@ const SEARCH_WINDOW_M: [number, number] = [200, 2500]
  * es opcional: sin ella, cualquier capa isoterma nocturna daría un falso
  * positivo.
  *
- * Si aparece más de una, se queda la de mayor caída de humedad — la más baja de
- * las dos suele ser un fenómeno de temperatura superficial del mar, no el alisio
- * (Ramseyer y Miller 2021, doi:10.1002/joc.7151).
+ * Si aparece más de una se queda la de MAYOR caída de humedad. Ése es un
+ * desempate nuestro, no una regla citada: la caída de humedad es justo lo que
+ * distingue la subsidencia del alisio de cualquier otra capa estable, así que
+ * la candidata que más seca el aire es la que mejor encaja con lo que se busca.
+ * Hay literatura sobre el mismo problema de las inversiones múltiples en el
+ * Atlántico norte tropical —Ramseyer y Miller, «Historical trends in the trade
+ * wind inversion in the tropical North Atlantic Ocean and Caribbean»,
+ * Int. J. Climatol. 41, 2021, doi:10.1002/joc.7151— pero está de pago y no he
+ * podido comprobar contra el texto que su desempate sea éste, así que no se le
+ * atribuye.
  *
- * Devuelve null cuando no la hay, que también es una respuesta: en Güímar falta
- * en el 5 % de los sondeos de verano y en el 10 % de los de invierno.
+ * Devuelve null cuando no la hay, que también es una respuesta.
  */
 export function detectInversion(levels: readonly ProfileLevel[]): Inversion | null {
   let best: Inversion | null = null

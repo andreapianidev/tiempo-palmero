@@ -179,7 +179,8 @@ describe('detectInversion', () => {
 
   it('con dos candidatas se queda con la de mayor caída de humedad', () => {
     // La más baja de las dos suele ser un fenómeno de temperatura superficial
-    // del mar, no el alisio (Ramseyer y Miller 2021).
+    // del mar. El desempate por mayor caída de humedad es nuestro, no una
+    // regla citada: ver el comentario de `detectInversion`.
     const levels = [
       level(950, 600, 20, 18),
       level(925, 900, 20.2, 12), // isoterma, caída moderada
