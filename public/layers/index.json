@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-12T12:05:55.063Z",
+  "generated": "2026-08-12T21:26:11.642Z",
   "source": "Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island)",
   "license": "CC-BY 4.0 / ODC-BY (límites administrativos)",
   "layers": {
@@ -57,6 +57,11 @@
       "file": "/layers/lineas-guagua.geojson",
       "features": 58,
       "label": "Líneas de guagua (TILP)"
+    },
+    "carreteras": {
+      "file": "/layers/carreteras.geojson",
+      "features": 53,
+      "label": "Vías interurbanas (carreteras insulares)"
     },
     "recarga-electrica": {
       "file": "/layers/recarga-electrica.geojson",

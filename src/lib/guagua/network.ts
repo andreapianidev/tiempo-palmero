@@ -32,11 +32,29 @@ export interface GuaguaRoute {
   last: string | null
 }
 
+/**
+ * Horas de paso de una línea EN UN SENTIDO, en minutos desde medianoche.
+ *
+ * Agrupar solo por línea perdía la mitad del servicio: en la parada 389 la 120
+ * pasa a las 07:38 hacia Barlovento y a las 07:38 hacia Santo Domingo, y sin el
+ * sentido una de las dos se deduplicaba con la otra.
+ */
+export interface StopTimes {
+  /** A dónde va ese viaje. */
+  d: string
+  /** `w` laborables, `s` sábados, `u` domingos. */
+  w: number[]
+  s: number[]
+  u: number[]
+}
+
 export interface GuaguaStopService {
   routes: string[]
   departures: DayCounts
   first: string | null
   last: string | null
+  /** Por línea y sentido. Vienen del mismo horario caducado que las cuentas. */
+  times: Record<string, StopTimes[]>
 }
 
 export interface GuaguaNetwork {
@@ -120,6 +138,19 @@ export function serviceLevel(d: DayCounts | undefined): ServiceLevel {
   if (n >= 8) return 'regular'
   if (n >= 1) return 'sparse'
   return 'none'
+}
+
+/**
+ * 425 → `07:05`.
+ *
+ * Las horas ≥ 24 del GTFS —un viaje que sale antes de medianoche y para después—
+ * se dejan como 24:15 en vez de convertirlas a 00:15: en una tabla de paso, un
+ * 00:15 entre las 23:40 y las 23:55 parece un error de orden.
+ */
+export function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
 /** `2025-12-25` → `25/12/2025`, que es como se lee una fecha aquí. */

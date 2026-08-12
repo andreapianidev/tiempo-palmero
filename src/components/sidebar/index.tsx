@@ -20,6 +20,8 @@ import { Section } from './Section'
 import { PlaceSearch } from './PlaceSearch'
 import { VariablePicker } from './VariablePicker'
 import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
+import { PlaceSwitches, PLACE_COUNT, activePlaceCount } from './PlaceSwitches'
+import type { PlaceVisibility } from '../../hooks/usePlaces'
 import { ModelStatus } from './ModelStatus'
 import { WindStatus } from './WindStatus'
 import type { WindState } from '../../hooks/useWindField'
@@ -29,6 +31,8 @@ interface Props {
   onVariable: (v: DisplayVariable) => void
   visible: LayerVisibility
   onToggle: (key: keyof LayerVisibility) => void
+  places: PlaceVisibility
+  onTogglePlace: (kind: keyof PlaceVisibility) => void
   models: Record<InterpolableVariable, Model | null>
   census: NetworkCensus | null
   validation: { rmse: number; mae: number; n: number } | null
@@ -100,6 +104,13 @@ export function Sidebar(props: Props) {
           badge={`${activeLayerCount(props.visible)}/${LAYER_COUNT}`}
         >
           <LayerSwitches visible={props.visible} onToggle={props.onToggle} />
+        </Section>
+
+        <Section
+          title={t.places.title}
+          badge={`${activePlaceCount(props.places)}/${PLACE_COUNT}`}
+        >
+          <PlaceSwitches visible={props.places} onToggle={props.onTogglePlace} />
         </Section>
 
         {/* Solo cuando la capa está encendida: si no, describiría con detalle

@@ -79,6 +79,36 @@ describe('red de guaguas', () => {
     expect(counted.none).toBe(0)
   })
 
+  it('las horas de paso cuadran con el número de salidas que anuncia la ficha', () => {
+    // La ficha enseña «15 salidas laborables» y, debajo, la lista de horas. Si
+    // las dos cifras no salieran del mismo recuento, la parada se contradiría a
+    // sí misma dentro de la misma tarjeta. Cuadran porque las horas se agrupan
+    // por línea Y SENTIDO: agrupando solo por línea, las 15 de la parada 389 se
+    // quedaban en 8, porque la 120 pasa a la misma hora en los dos sentidos.
+    let duplicated = 0
+    for (const [id, s] of Object.entries(net.stops)) {
+      const w = Object.values(s.times)
+        .flat()
+        .reduce((n, slot) => n + slot.w.length, 0)
+      // Nunca puede haber MÁS horas que salidas: la lista se deduplica.
+      expect(w, `parada ${id}`).toBeLessThanOrEqual(s.departures.weekday)
+      duplicated += s.departures.weekday - w
+    }
+    // Y las que faltan son viajes literalmente repetidos en el feed —mismo
+    // sentido, misma hora—, que hoy son tres en toda la isla (parada 601). Si
+    // esto crece, el feed ha cambiado y hay que volver a mirarlo.
+    expect(duplicated).toBeLessThanOrEqual(3)
+  })
+
+  it('cada línea con horas en una parada es una de las que paran ahí', () => {
+    for (const s of Object.values(net.stops)) {
+      for (const [routeId, byDestination] of Object.entries(s.times)) {
+        expect(s.routes).toContain(routeId)
+        for (const slot of byDestination) expect(typeof slot.d).toBe('string')
+      }
+    }
+  })
+
   it('una parada sin nombre conserva su identidad', () => {
     const p = readStop({ stop_id: '77', stop_code: 'A-77' }, -17.9, 28.6)
     expect(p.name).toBe('A-77')

@@ -45,8 +45,8 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
   decisiones que los sostienen · [Validación](#validación)
 - [Qué más publica el Cabildo](#qué-más-publica-el-cabildo-y-qué-falta-por-aprovechar)
   — hoja de ruta sobre los 49 conjuntos del portal
-- [La red de guaguas](#la-red-de-guaguas-se-dibuja-la-red-no-el-horario) — por
-  qué se dibuja la red y no el horario
+- [La red de guaguas](#la-red-de-guaguas-y-los-sitios-que-ahora-se-pueden-encender)
+  — la red en presente, el horario con su fecha delante
 - [El mapa de viento](#el-mapa-de-viento) — la única capa donde un modelo pinta
   sobre la isla, y cómo se declara ·
   [El histórico](#el-histórico-y-por-qué-no-hay-base-de-datos) — 2 MB por día en
@@ -94,9 +94,12 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
 - Calidad del aire, calidad del cielo, cámaras de incendios, senderos y sus
   1190 puntos de interés.
 - **Red de guaguas de TILP**: 23 líneas, 58 trazados y 913 paradas, con la ficha
-  de cada parada y el recorrido de cada línea resaltado en el mapa. Sin horas de
-  paso, y explicando por qué (ver
-  [la red de guaguas](#la-red-de-guaguas-se-dibuja-la-red-no-el-horario)).
+  de cada parada —líneas, servicio, accesibilidad y las horas de paso de la
+  última tabla publicada— y el recorrido de cada línea resaltado en el mapa (ver
+  [la red de guaguas](#la-red-de-guaguas-y-los-sitios-que-ahora-se-pueden-encender)).
+- **Sitios del Cabildo, uno a uno**: interés turístico, cultural e histórico,
+  zonas recreativas y puntos de recarga eléctrica, cada capa con su interruptor
+  y su icono, y **carreteras insulares** como referencia debajo de todo.
 - **Relieve sombreado** generado del mismo modelo de elevación que alimenta el
   cálculo. La isla es un volcán: la sombra es lo que la hace legible.
 
@@ -470,7 +473,7 @@ por lo que dice cubrir.
 ## Qué más publica el Cabildo, y qué falta por aprovechar
 
 El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**. Esta
-aplicación usa hoy **once capas estáticas** —de las doce que descarga; la única
+aplicación usa hoy **doce capas estáticas** —de las trece que descarga; la única
 que no se lee en runtime es el inventario de sensores de CO₂, que llega en
 directo de DEMASE— más el agregado del GTFS de guaguas. Lo que queda, ordenado
 por lo que aportaría de verdad:
@@ -493,7 +496,7 @@ filas de un día de histórico y en las 52 de `_lastdata`**. Se parsea igualment
 para que aparezca sola el día que exista, y queda escrito aquí para que nadie la
 persiga como si fuera un fallo de la aplicación.
 
-### La red de guaguas: se dibuja la red, no el horario
+### La red de guaguas, y los sitios que ahora se pueden encender
 
 La red de TILP es ya una capa del mapa, con su interruptor propio: los **58
 trazados** de las **23 líneas** y las **913 paradas**, apagada por defecto
@@ -503,30 +506,55 @@ subir en silla de ruedas—; al pinchar una línea, o una de las líneas de esa
 ficha, el mapa resalta el recorrido entero y todas sus paradas mientras la ficha
 está abierta.
 
-**Lo que no sale es la hora de paso, y es una decisión, no una carencia.** El
-GTFS que publica el Cabildo tiene los cinco calendarios de servicio caducados
-—el último, el **25 de diciembre de 2025**— sin una sola excepción con fecha
-posterior (comprobado el 12 ago 2026). El sitio de TILP está peor: su único
-documento de líneas es un PDF de septiembre de 2020. Google Maps sí tiene
-horarios porque TILP se los cede por acuerdo privado, pero esos datos no son
-redistribuibles y usarlos exigiría una clave de Google en tiempo de ejecución,
-que es justo lo que esta aplicación no tiene.
+**Y las horas de paso salen, con una advertencia que no se quita.** El GTFS que
+publica el Cabildo tiene los cinco calendarios de servicio caducados —el último,
+el **25 de diciembre de 2025**— sin una sola excepción con fecha posterior
+(comprobado el 12 ago 2026). El sitio de TILP está peor: su único documento de
+líneas es un PDF de septiembre de 2020. Google Maps sí tiene horarios porque
+TILP se los cede por acuerdo privado, pero esos datos no son redistribuibles y
+usarlos exigiría una clave de Google en tiempo de ejecución, que es justo lo que
+esta aplicación no tiene.
 
-Así que el archivo se parte en dos. **La red sobrevive a la caducidad** —la
-línea 100 sigue yendo de Santa Cruz a Barlovento por donde iba— y se enseña en
-presente. **El horario no**, y de él solo se da el volumen: cuántas salidas
-tenía esa parada de lunes a viernes, los sábados y los domingos, y entre qué
-horas empezaba y acababa el servicio, siempre bajo el rótulo «última tabla
-publicada», con la fecha de caducidad y un enlace a TILP en la misma ficha. Esa
-diferencia es la que distingue una parada de la línea 300 —348 salidas
-laborables en la estación de Santa Cruz— de un apeadero con una al día, y esa
-distinción sigue siendo cierta aunque la tabla haya vencido. Una hora concreta
-presentada como vigente, no: un horario caducado leído como bueno es una guagua
-perdida, y en esta isla eso no es un detalle.
+La primera versión de esta capa se callaba las horas por completo. Se ha
+cambiado a conciencia, no relajado: **TILP no ha renovado el archivo, pero
+tampoco ha cambiado el servicio**, así que esa tabla es la que está funcionando,
+y ocultarla dejaba a la aplicación sin responder a la única pregunta que se hace
+quien está de pie en una parada. Las condiciones con las que sale, que sí son
+innegociables:
+
+- va **plegada**, detrás de un botón que dice cuántas horas hay;
+- lleva encima el rótulo «última tabla publicada», la fecha de caducidad y el
+  enlace a TILP, en el mismo bloque —`ServiceTable` existe justo para que la
+  cifra y el aviso no puedan separarse;
+- **no se compara con el reloj**: no hay «próxima guagua» ni cuenta atrás, que
+  es lo que convertiría una referencia en una promesa;
+- y se agrupan **por línea y por sentido**. Esto no es cosmética: en la parada
+  389 la línea 120 pasa a las 07:38 hacia Barlovento y a las 07:38 hacia Santo
+  Domingo. Agrupando solo por línea, la mitad del servicio de esa parada
+  desaparecía por deduplicación —15 salidas se quedaban en 8— y el propio panel
+  se contradecía. Hay un test que compara las dos cifras parada por parada.
+
+Junto a las horas se da el volumen —cuántas salidas tenía de lunes a viernes,
+los sábados y los domingos, y entre qué horas—, que es lo que distingue una
+parada de la línea 300 —348 salidas laborables en la estación de Santa Cruz— de
+un apeadero con una al día.
 
 De paso, el GTFS contesta algo que nadie más publica: **ninguna de las 913
 paradas de la isla está declarada accesible**. 675 constan explícitamente como
 no accesibles y 238 sin información. La ficha lo dice tal cual, con esas cifras.
+
+**Y los sitios dejan de estar escondidos.** Las capas de interés turístico (50),
+cultural (92), histórico (390), zonas recreativas (33) y recarga eléctrica (54)
+solo asomaban dentro de «cerca de aquí»: había que tocar un punto para descubrir
+que a 300 m hay un mirador, así que se podían encontrar por azar pero no buscar.
+Ahora cada una tiene su interruptor con su icono en la barra lateral, se dibujan
+en el mapa y se pinchan para ver la ficha completa. Los 390 recintos históricos
+son polígonos y entran como su centro: a la escala en la que se mira la isla, un
+recinto de 200 m² es un punto, y su superficie sigue estando en la ficha.
+
+Debajo de todo eso van las **carreteras insulares** (53 tramos), que no son un
+dato sino una referencia: sin ellas, una parada de guagua flotaba sobre un
+relieve sin una sola vía y no había forma de situarla.
 
 ### Lo que cambiaría la aplicación de categoría
 
@@ -537,14 +565,11 @@ no accesibles y 238 sin información. La ficha lo dice tal cual, con esas cifras
 
 ### Capas estáticas listas para añadir (todas WGS84, ya descargables en build)
 
+Las de turismo, cultura, historia, zonas recreativas, recarga y carreteras ya no
+están en esta lista: están dentro, con interruptor propio. Lo que queda:
+
 | Conjunto | n | Interés |
 |---|---:|---|
-| `zonas-recreativas-de-la-palma` | 33 | El conjunto con más atributos del portal (22 claves): refugios, zonas de acampada, `permisos`, `capacidad_personas`. Encaja directamente con senderos y tiempo. |
-| `lugares-de-interes-turistico-de-titularidad-insular` | 50 | Los «Imprescindibles», con accesibilidad y ficha. |
-| `lugares-de-interes-historico-de-la-palma` | 390 | Polígonos, con superficie. |
-| `lugares-de-interes-cultural-de-la-palma` | 92 | Museos, iglesias, centros. |
-| `puntos-de-recarga-de-vehiculos-electricos` | 54 | Ojo: incluye previstos, no solo operativos (`prioridad` los separa). |
-| `vias-interurbanas` + Feature Server de ArcGIS | 53 | Red de carreteras, con capa viva. |
 | `instalaciones-deportivas` | 117 | EIEL 2023. |
 | `centros-sociosanitarios` / `servicios-atencion-social` | 26 / 36 | Con `tiene_uvi` y `numero_camas`. |
 | `alumbrado-publico-de-la-palma` | **21.070** | Con `potencia_instalada_w` y `regulacion_flujo_luminoso`. Cruzado con la red de fotómetros da un mapa de contaminación lumínica real, que para una Reserva Starlight es una aplicación en sí misma. |

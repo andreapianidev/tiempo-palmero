@@ -55,11 +55,31 @@ interface RouteEntry {
   last: string | null
 }
 
+/**
+ * Horas de paso de una línea en un sentido, en minutos desde medianoche.
+ *
+ * El sentido no es un adorno: en la parada 389 la línea 120 pasa a las 07:38
+ * hacia Barlovento y a las 07:38 hacia Santo Domingo. Agrupando solo por línea,
+ * una de las dos desaparecía —y con ella, la mitad del servicio de esa parada—
+ * o aparecía repetida sin decir a dónde iba.
+ */
+interface StopTimes {
+  /** Cabecera del viaje: a dónde va. */
+  d: string
+  /** `w` laborables, `s` sábados, `u` domingos. Claves cortas: son 913 paradas
+   *  y el nombre largo pesaba más que los propios datos. */
+  w: number[]
+  s: number[]
+  u: number[]
+}
+
 interface StopEntry {
   routes: string[]
   departures: DayCounts
   first: string | null
   last: string | null
+  /** Horas de paso de la última tabla publicada, por línea y sentido. */
+  times: Record<string, StopTimes[]>
 }
 
 interface GuaguaNetworkFile {
@@ -165,6 +185,22 @@ const zeroCounts = (): DayCounts => ({ weekday: 0, saturday: 0, sunday: 0 })
 /** `07:05:00` → `07:05`. GTFS admite horas ≥ 24 y se dejan como vienen. */
 const hhmm = (t: string): string | null => (/^\d{1,2}:\d{2}/.test(t) ? t.slice(0, 5) : null)
 
+/**
+ * `07:05:00` → 425 minutos.
+ *
+ * Se guardan minutos y no cadenas porque son ~35 000 horas de paso repartidas
+ * entre 913 paradas: en texto el fichero pasaba de 100 KB a más de 380, y son
+ * exactamente los mismos datos.
+ */
+function toMinutes(t: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})/.exec(t)
+  if (!m) return null
+  return Number(m[1]) * 60 + Number(m[2])
+}
+
+/** Ordenadas y sin repetir: dos viajes distintos pueden pasar a la misma hora. */
+const tidy = (xs: number[]): number[] => [...new Set(xs)].sort((a, b) => a - b)
+
 // --- Preparación -----------------------------------------------------------
 
 export async function prepareGuagua(): Promise<void> {
@@ -253,6 +289,8 @@ export async function prepareGuagua(): Promise<void> {
   const stopRoutes = new Map<string, Set<string>>()
   const stopCounts = new Map<string, DayCounts>()
   const stopWeekdayTimes = new Map<string, string[]>()
+  /** parada → «línea|sentido» → minutos por tipo de día. */
+  const timesByStop = new Map<string, Map<string, StopTimes>>()
 
   const bump = (m: Map<string, DayCounts>, key: string, days: Set<DayType>) => {
     if (!m.has(key)) m.set(key, zeroCounts())
@@ -291,6 +329,17 @@ export async function prepareGuagua(): Promise<void> {
       if (at && info.days.has('weekday')) {
         if (!stopWeekdayTimes.has(id)) stopWeekdayTimes.set(id, [])
         stopWeekdayTimes.get(id)!.push(at)
+      }
+      const minutes = toMinutes(st.departure_time || st.arrival_time || '')
+      if (minutes !== null) {
+        if (!timesByStop.has(id)) timesByStop.set(id, new Map())
+        const byRoute = timesByStop.get(id)!
+        const key = `${r}|${info.headsign}`
+        if (!byRoute.has(key)) byRoute.set(key, { d: info.headsign, w: [], s: [], u: [] })
+        const slots = byRoute.get(key)!
+        if (info.days.has('weekday')) slots.w.push(minutes)
+        if (info.days.has('saturday')) slots.s.push(minutes)
+        if (info.days.has('sunday')) slots.u.push(minutes)
       }
     }
   }
@@ -332,11 +381,27 @@ export async function prepareGuagua(): Promise<void> {
   const stopOut: Record<string, StopEntry> = {}
   for (const [id, set] of stopRoutes) {
     const times = (stopWeekdayTimes.get(id) ?? []).sort()
+    const byRoute = timesByStop.get(id) ?? new Map<string, StopTimes>()
+    const times2: Record<string, StopTimes[]> = {}
+    for (const [key, slots] of byRoute) {
+      const route = key.slice(0, key.indexOf('|'))
+      ;(times2[route] ??= []).push({
+        d: slots.d,
+        w: tidy(slots.w),
+        s: tidy(slots.s),
+        u: tidy(slots.u),
+      })
+    }
     stopOut[id] = {
       routes: [...set].sort(byLine),
       departures: stopCounts.get(id) ?? zeroCounts(),
       first: times[0] ?? null,
       last: times[times.length - 1] ?? null,
+      times: Object.fromEntries(
+        Object.keys(times2)
+          .sort(byLine)
+          .map((route) => [route, times2[route]]),
+      ),
     }
   }
 

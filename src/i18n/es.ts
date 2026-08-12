@@ -28,7 +28,9 @@ export const es = {
     co2: 'Sensores de CO₂',
     sky: 'Calidad del cielo',
     trails: 'Senderos y puntos de interés',
-    guagua: 'Guaguas: líneas y paradas',
+    guaguaLines: 'Líneas de guagua',
+    guaguaStops: 'Paradas de guagua',
+    roads: 'Carreteras insulares',
     fire: 'Cámaras de incendios',
     hillshade: 'Relieve sombreado',
   },
@@ -112,9 +114,58 @@ export const es = {
       charging: 'Recarga eléctrica',
     } as Record<string, string>,
     guaguaNoTimetable: (until: string) =>
-      `Se indican las líneas que paran, no los horarios: el archivo de horarios de TILP no se actualiza desde el ${until}. Consulta a TILP antes de contar con una guagua.`,
+      `Las horas de paso salen del último horario que publicó TILP, del ${until}, que no se ha renovado. Pincha la parada en el mapa para verlas, y compruébalas con TILP antes de contar con una guagua.`,
     guaguaSource: 'tilp.es',
     guaguaSourceUrl: 'https://www.tilp.es/',
+  },
+
+  /**
+   * Sitios que publica el Cabildo, encendibles uno a uno desde la barra.
+   */
+  places: {
+    title: 'Sitios de interés',
+    hint: 'Capas del Cabildo. Se descargan al encenderlas y se pinchan para ver la ficha completa.',
+    source: 'Capas del Cabildo Insular de La Palma (CC-BY 4.0).',
+    openLink: 'Abrir',
+    kinds: {
+      tourism: 'Interés turístico',
+      culture: 'Interés cultural',
+      history: 'Interés histórico',
+      recreation: 'Zonas recreativas',
+      charging: 'Recarga eléctrica',
+    } as Record<string, string>,
+    /** Etiquetas de los campos crudos; lo que no esté aquí sale con su nombre. */
+    fields: {
+      id: 'Identificador',
+      nombre: 'Nombre',
+      municipio: 'Municipio',
+      tipo: 'Tipo',
+      subtipo: 'Categoría',
+      categoria_lista: 'Categoría',
+      tipo_recurso: 'Tipo de recurso',
+      tipo_ingreso: 'Acceso',
+      accesible: 'Accesibilidad',
+      descripcion: 'Descripción',
+      direccion: 'Dirección',
+      telefono: 'Teléfono',
+      email: 'Correo',
+      web: 'Web',
+      web_externa: 'Web',
+      url_ficha: 'Ficha',
+      url_imagen: 'Imagen',
+      horario: 'Horario',
+      acceso: 'Acceso',
+      transporte: 'Transporte',
+      figura_protegida: 'Figura de protección',
+      permisos: 'Permisos',
+      capacidad_personas: 'Capacidad',
+      area_m2: 'Superficie (m²)',
+      propietario: 'Titular',
+      prioridad: 'Prioridad',
+      ref_catastral: 'Referencia catastral',
+      longitud: 'Longitud',
+      latitud: 'Latitud',
+    } as Record<string, string>,
   },
 
   /**
@@ -156,9 +207,9 @@ export const es = {
     } as Record<string, string>,
     /** El aviso que justifica todo lo anterior. Nunca se omite. */
     expired: (until: string) =>
-      `Estas cifras salen del último horario que publicó TILP, vencido el ${until}. ` +
-      'Describen el servicio que había diseñado, no a qué hora pasa la guagua hoy. ' +
-      'Antes de contar con una guagua, consulta a TILP.',
+      `Estas cifras salen del último horario que publicó TILP, vencido el ${until} y sin renovar desde entonces. ` +
+      'Es la tabla que sigue en la calle, pero no está garantizada: ' +
+      'antes de contar con una guagua, compruébala con TILP.',
     notExpired: (until: string) => `Horario de TILP vigente hasta el ${until}.`,
     operatorLink: 'Horarios vigentes en tilp.es',
     operatorUrl: 'https://www.tilp.es/',
@@ -171,6 +222,11 @@ export const es = {
     /** Medido sobre las 913 paradas del GTFS el 12 ago 2026. */
     wheelchairNote:
       'Dato de TILP. En toda la isla no hay ninguna parada declarada accesible: 675 constan como no accesibles y 238 sin información.',
+    timetable: 'Horas de paso de esa misma tabla',
+    timetableToggle: (n: number) => `Ver las ${n} horas de paso`,
+    timetableHide: 'Ocultar las horas',
+    timetableNote:
+      'Son las horas de la última tabla publicada por TILP, la misma que sigue en la calle porque no se ha renovado. Se dan como referencia, no como garantía: compruébalas con TILP antes de contar con una guagua.',
     weatherHere: 'Ver el tiempo en esta parada',
     source: 'Paradas, líneas y horarios: GTFS de TILP publicado por el Cabildo Insular de La Palma.',
     loading: 'Cargando la red de guaguas…',
@@ -439,10 +495,11 @@ export const es = {
     guaguaBody:
       'Paradas, trazados y horarios salen del GTFS de Transportes Insulares La Palma que ' +
       'publica el Cabildo: 23 líneas, 913 paradas y 742 viajes. La red —qué línea pasa por ' +
-      'dónde— se enseña tal cual; el horario NO, porque los cinco calendarios de servicio ' +
-      'del archivo vencieron el 25 de diciembre de 2025 y no hay ninguna excepción con ' +
-      'fecha posterior. Lo único que se da de ese horario caducado es el volumen de ' +
-      'servicio, siempre con la fecha de caducidad al lado y con enlace a TILP.',
+      'dónde— se enseña tal cual. Las horas de paso también, pero con una advertencia que ' +
+      'no se quita: los cinco calendarios de servicio del archivo vencieron el 25 de ' +
+      'diciembre de 2025 y no hay ninguna excepción posterior, así que son la última tabla ' +
+      'publicada —la que sigue en la calle porque no se ha renovado— y se dan como ' +
+      'referencia, no como garantía. Van plegadas, con su fecha y con enlace a TILP.',
     guaguaLicense: 'CC-BY 4.0 · GTFS de TILP',
     toponymsTitle: 'Topónimos',
     toponymsBody:

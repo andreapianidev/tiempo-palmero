@@ -19,7 +19,7 @@
  * mapa.
  */
 
-import maplibregl, {
+import {
   type CustomLayerInterface,
   type CustomRenderMethod,
   type Map as MlMap,
@@ -37,11 +37,46 @@ type Gl = Parameters<CustomRenderMethod>[0]
 type ViewMatrix = Parameters<CustomRenderMethod>[1]
 
 /**
- * Cuántas partículas. 2600 llenan la isla sin que el campo se vea granulado, y
- * son ~36 000 vértices por fotograma: nada para una GPU, y el coste real está
+ * Cuántas partículas. 4200 llenan la isla sin que el campo se vea granulado, y
+ * son ~76 000 vértices por fotograma: nada para una GPU, y el coste real está
  * en la simulación en JavaScript, que es lineal en este número.
  */
-const PARTICLE_COUNT = 2600
+const PARTICLE_COUNT = 4200
+
+/**
+ * Grosor, en píxeles CSS, de las dos pasadas.
+ *
+ * `gl.LINES` dibuja siempre un píxel —`lineWidth` mayor que 1 lo ignoran casi
+ * todas las implementaciones de WebGL— así que el grosor se consigue repitiendo
+ * el mismo buffer con el vértice desplazado. El trazo se dibuja cinco veces en
+ * medio píxel, que a efectos visuales son dos píxeles de línea clara; el halo,
+ * cuatro veces a 1,7 px alrededor.
+ *
+ * Las proporciones importan y costaron dos intentos: con el halo a un píxel y
+ * el trazo a uno solo, a zoom alto —donde la estela mide cuatro píxeles— las
+ * cuatro pasadas oscuras pesaban más que la clara y el viento se veía NEGRO
+ * sobre la malla. La regla es que la tinta clara supere siempre a la oscura.
+ */
+const CASING_PX = 1.7
+const CORE_PX = 0.5
+
+/** Las cuatro direcciones del halo. Con dos —solo vertical— las estelas
+ *  horizontales, que en esta isla son casi todas, se quedaban sin contraste. */
+const CASING_OFFSETS: [number, number][] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+]
+
+/** El trazo: el centro y cuatro diagonales a medio píxel. */
+const CORE_OFFSETS: [number, number][] = [
+  [0, 0],
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
+]
 
 /** Escala de color: a partir de aquí una racha se pinta del tono más fuerte. */
 const STRONG_WIND_MS = 14
@@ -49,6 +84,26 @@ const STRONG_WIND_MS = 14
 /** Techo del paso de integración. Sin esto, volver a una pestaña dormida
  *  teletransportaría todas las partículas de golpe. */
 const MAX_DT = 0.05
+
+/**
+ * Mercator normalizado, a mano.
+ *
+ * Es exactamente lo que hace `MercatorCoordinate.fromLngLat`, pero sin devolver
+ * un objeto: a 4200 partículas con estela de diez son 76 000 objetos por
+ * fotograma, y el recolector de basura se notaba en la animación más que el
+ * dibujo.
+ */
+function mercatorX(lon: number): number {
+  return (180 + lon) / 360
+}
+
+function mercatorY(lat: number): number {
+  return (
+    (180 -
+      (180 / Math.PI) * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360))) /
+    360
+  )
+}
 
 function compile(gl: Gl, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type)
@@ -75,6 +130,8 @@ export class WindLayer implements CustomLayerInterface {
   private aStyle = -1
   private uMatrix: WebGLUniformLocation | null = null
   private uOpacity: WebGLUniformLocation | null = null
+  private uOffset: WebGLUniformLocation | null = null
+  private uCasing: WebGLUniformLocation | null = null
 
   private field: WindField | null = null
   private visible = true
@@ -140,6 +197,8 @@ export class WindLayer implements CustomLayerInterface {
     this.aStyle = gl.getAttribLocation(program, 'a_style')
     this.uMatrix = gl.getUniformLocation(program, 'u_matrix')
     this.uOpacity = gl.getUniformLocation(program, 'u_opacity')
+    this.uOffset = gl.getUniformLocation(program, 'u_offset')
+    this.uCasing = gl.getUniformLocation(program, 'u_casing')
 
     this.buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
@@ -200,7 +259,27 @@ export class WindLayer implements CustomLayerInterface {
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
     gl.disable(gl.DEPTH_TEST)
-    gl.drawArrays(gl.LINES, 0, vertexCount)
+
+    // Primero el halo, en cuatro desplazamientos de un píxel, y encima el
+    // trazo. Es el mismo buffer cinco veces: no cuesta un vértice más de CPU,
+    // que es donde esta capa tiene el límite.
+    const canvas = gl.canvas as HTMLCanvasElement
+    const ratio = window.devicePixelRatio || 1
+    // De píxeles CSS a espacio de recorte: la ventana mide 2 unidades de ancho.
+    const ux = 2 / Math.max(1, canvas.width / ratio)
+    const uy = 2 / Math.max(1, canvas.height / ratio)
+
+    gl.uniform1f(this.uCasing, 1)
+    for (const [ox, oy] of CASING_OFFSETS) {
+      gl.uniform2f(this.uOffset, ox * CASING_PX * ux, oy * CASING_PX * uy)
+      gl.drawArrays(gl.LINES, 0, vertexCount)
+    }
+
+    gl.uniform1f(this.uCasing, 0)
+    for (const [ox, oy] of CORE_OFFSETS) {
+      gl.uniform2f(this.uOffset, ox * CORE_PX * ux, oy * CORE_PX * uy)
+      gl.drawArrays(gl.LINES, 0, vertexCount)
+    }
 
     gl.disableVertexAttribArray(this.aPos)
     gl.disableVertexAttribArray(this.aStyle)
@@ -233,23 +312,14 @@ export class WindLayer implements CustomLayerInterface {
         // La cabeza de la estela es la más opaca; la cola se apaga.
         const a0 = 1 - k / TAIL_LENGTH
         const a1 = 1 - (k + 1) / TAIL_LENGTH
-        const m0 = maplibregl.MercatorCoordinate.fromLngLat({
-          lng: p.tailLon[base + k],
-          lat: p.tailLat[base + k],
-        })
-        const m1 = maplibregl.MercatorCoordinate.fromLngLat({
-          lng: p.tailLon[base + k + 1],
-          lat: p.tailLat[base + k + 1],
-        })
-
-        out[n++] = m0.x
-        out[n++] = m0.y
+        out[n++] = mercatorX(p.tailLon[base + k])
+        out[n++] = mercatorY(p.tailLat[base + k])
         out[n++] = a0
         out[n++] = speed
         out[n++] = station
 
-        out[n++] = m1.x
-        out[n++] = m1.y
+        out[n++] = mercatorX(p.tailLon[base + k + 1])
+        out[n++] = mercatorY(p.tailLat[base + k + 1])
         out[n++] = a1
         out[n++] = speed
         out[n++] = station

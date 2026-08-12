@@ -216,6 +216,14 @@ const LAYERS: LayerSpec[] = [
     label: 'Líneas de guagua (TILP)',
   },
   {
+    out: 'carreteras.geojson',
+    dataset: 'vias-interurbanas-de-titularidad-insular-de-la-palma',
+    // Tres shapefiles en tres CRS y un GeoJSON: se elige por nombre, que es lo
+    // único que distingue el que ya viene en WGS84.
+    pick: (r) => (r.format ?? '').toUpperCase() === 'GEOJSON',
+    label: 'Vías interurbanas (carreteras insulares)',
+  },
+  {
     out: 'recarga-electrica.geojson',
     dataset: 'puntos-de-recarga-de-vehiculos-electricos-de-la-palma',
     label: 'Puntos de recarga eléctrica',

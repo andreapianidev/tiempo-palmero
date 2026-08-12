@@ -72,3 +72,15 @@
   background: rgba(255, 255, 255, 0.05);
   color: var(--fg-faint);
 }
+
+/* Horas de paso, plegadas por defecto en la ficha de la parada. */
+.guagua-timetable { margin-top: 8px; display: grid; gap: 10px; }
+.guagua-timetable-line h4 { margin: 0 0 4px; font-size: 12px; font-weight: 500; }
+.guagua-timetable-line p {
+  margin: 0 0 3px;
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+.guagua-hours { font-size: 11.5px; line-height: 1.6; color: var(--fg-dim); word-spacing: 2px; }

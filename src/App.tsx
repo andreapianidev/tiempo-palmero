@@ -7,6 +7,7 @@ import { SourcesScreen } from './components/SourcesScreen'
 import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { useWindField } from './hooks/useWindField'
 import { useGuagua } from './hooks/useGuagua'
+import { usePlaces, NO_PLACES, type PlaceVisibility } from './hooks/usePlaces'
 import { elevationAt } from './lib/dem'
 import { DEWPOINT_STOPS, HUMIDITY_STOPS, TEMP_STOPS, type RgbStop } from './lib/palette'
 import type { DisplayVariable } from './lib/interpolate'
@@ -27,7 +28,9 @@ const INITIAL_LAYERS: LayerVisibility = {
   co2: true,
   sky: false,
   trails: false,
-  guagua: false,
+  guaguaLines: false,
+  guaguaStops: false,
+  roads: false,
   fire: true,
   wind: false,
 }
@@ -41,7 +44,11 @@ export default function App() {
   const [visible, setVisible] = useState<LayerVisibility>(INITIAL_LAYERS)
   // Al revés que el viento: la red de guaguas son 1,5 MB y no alimenta ningún
   // cálculo, así que no se pide hasta que alguien enciende la capa.
-  const guagua = useGuagua(visible.guagua)
+  const guagua = useGuagua(visible.guaguaLines || visible.guaguaStops)
+  // Los sitios se encienden uno a uno; la capa del mapa está siempre viva y lo
+  // que cambia es qué puntos entran en ella.
+  const [placesOn, setPlacesOn] = useState<PlaceVisibility>(NO_PLACES)
+  const places = usePlaces(placesOn, visible.roads)
   const [variable, setVariable] = useState<DisplayVariable>('temperature')
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
@@ -138,6 +145,8 @@ export default function App() {
         // Así no puede quedarse una línea encendida en el mapa sin nada que
         // explique por qué.
         guaguaRoute={selection?.kind === 'busRoute' ? selection.value.routeId : null}
+        places={places.places}
+        roads={places.roads}
         wind={wind.field}
         visible={visible}
         probe={probe}
@@ -177,6 +186,17 @@ export default function App() {
           setProbe(null)
           setSelection({ kind: 'busRoute', value: { routeId } })
         }}
+        onPlace={(place) => {
+          setProbe(null)
+          setSelection({
+            kind: 'place',
+            value: {
+              ...place,
+              elevation: data.dem ? elevationAt(data.dem, place.lon, place.lat) : null,
+              municipality: municipalityOf(data.municipalities, place.lon, place.lat),
+            },
+          })
+        }}
         onPoi={(poi) => {
           setProbe(null)
           // La altitud y el municipio no vienen en la capa de puntos: los pone
@@ -197,6 +217,8 @@ export default function App() {
         onVariable={setVariable}
         visible={visible}
         onToggle={toggle}
+        places={placesOn}
+        onTogglePlace={(kind) => setPlacesOn((p) => ({ ...p, [kind]: !p[kind] }))}
         models={data.models}
         census={data.census}
         validation={data.validation}

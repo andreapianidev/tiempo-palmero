@@ -19,6 +19,15 @@ import {
   GUAGUA_CLICK_LAYERS,
 } from './guagua/GuaguaLayer'
 import { readStop, type GuaguaStopPoint } from '../lib/guagua/network'
+import {
+  addPlacesLayers,
+  setPlacesData,
+  setPlacesVisible,
+  setRoadsData,
+  setRoadsVisible,
+  PLACES_LAYER,
+} from './places/PlacesLayer'
+import { addPlaceIcons, readPlace, type PlaceRecord } from '../lib/places'
 import type { WindField } from '../lib/wind/field'
 import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
@@ -35,7 +44,9 @@ export interface LayerVisibility {
   co2: boolean
   sky: boolean
   trails: boolean
-  guagua: boolean
+  guaguaLines: boolean
+  guaguaStops: boolean
+  roads: boolean
   fire: boolean
   wind: boolean
 }
@@ -58,6 +69,9 @@ interface Props {
   guaguaStops: GeoJSON.FeatureCollection | null
   /** Línea resaltada mientras su ficha está abierta. */
   guaguaRoute: string | null
+  /** Sitios encendidos, ya fusionados en una colección de puntos. */
+  places: GeoJSON.FeatureCollection | null
+  roads: GeoJSON.FeatureCollection | null
   wind: WindField | null
   visible: LayerVisibility
   probe: { lon: number; lat: number } | null
@@ -70,6 +84,7 @@ interface Props {
   onPoi: (poi: PoiRecord) => void
   onBusStop: (stop: GuaguaStopPoint) => void
   onBusRoute: (routeId: string) => void
+  onPlace: (place: PlaceRecord) => void
 }
 
 /** Qué topónimos merecen etiqueta a cada zoom. Sin esto la isla es ilegible. */
@@ -169,6 +184,15 @@ export function MapView(props: Props) {
       windLayerRef.current = windLayer
       map.addLayer(windLayer, 'municipal-boundaries')
 
+      // Las carreteras y los sitios se crean antes que senderos y guaguas: las
+      // vías son el fondo sobre el que se leen las demás capas, y los iconos de
+      // sitios comparten rejilla con los de los senderos.
+      await addPlaceIcons(map)
+      if (!mapRef.current) return // desmontado mientras se decodificaban
+      addPlacesLayers(map, {
+        onPlace: (props, lon, lat) => handlers.current.onPlace(readPlace(props, lon, lat)),
+      })
+
       map.addSource('trails', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       map.addLayer({
         id: 'trails-line',
@@ -235,9 +259,12 @@ export function MapView(props: Props) {
       map.on('click', (e) => {
         // Un clic sobre un pin ya lo gestiona el propio marcador; los puntos de
         // interés y sus grupos tienen su propio manejador, más abajo.
-        const layers = ['trail-pois-cluster', 'trail-pois-point', ...GUAGUA_CLICK_LAYERS].filter(
-          (l) => map.getLayer(l),
-        )
+        const layers = [
+          'trail-pois-cluster',
+          'trail-pois-point',
+          PLACES_LAYER,
+          ...GUAGUA_CLICK_LAYERS,
+        ].filter((l) => map.getLayer(l))
         if (layers.length && map.queryRenderedFeatures(e.point, { layers }).length) return
         handlers.current.onPick(e.lngLat.lng, e.lngLat.lat)
       })
@@ -373,8 +400,31 @@ export function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
-    setGuaguaVisible(map, visible.guagua)
-  }, [ready, visible.guagua])
+    setGuaguaVisible(map, { lines: visible.guaguaLines, stops: visible.guaguaStops })
+  }, [ready, visible.guaguaLines, visible.guaguaStops])
+
+  // --- sitios y carreteras -------------------------------------------------
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setPlacesData(map, props.places)
+  }, [ready, props.places])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setRoadsData(map, props.roads)
+  }, [ready, props.roads])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    // La capa de sitios no tiene interruptor propio: se ve si hay algún tipo
+    // encendido. Un interruptor más que solo puede estar en «sí» sería una
+    // casilla que no decide nada.
+    setPlacesVisible(map, (props.places?.features.length ?? 0) > 0)
+    setRoadsVisible(map, visible.roads)
+  }, [ready, props.places, visible.roads])
 
   useEffect(() => {
     const map = mapRef.current

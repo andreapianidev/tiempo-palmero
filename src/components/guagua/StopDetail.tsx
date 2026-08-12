@@ -7,8 +7,10 @@
  * responde es «a qué hora pasa»: eso lo tiene TILP, y la ficha enlaza allí.
  */
 
+import { useState } from 'react'
 import { BusIcon } from './BusIcon'
 import { ServiceTable } from './ServiceTable'
+import { StopTimetable, countTimes } from './StopTimetable'
 import {
   compareLines,
   serviceLevel,
@@ -34,6 +36,10 @@ export function StopDetail({ stop, net, onRoute, onWeather }: Props) {
   const service = net?.stops[stop.stopId] ?? null
   const routes = [...(service?.routes ?? [])].sort((a, b) => compareLines(net, a, b))
   const level = service ? serviceLevel(service.departures) : null
+  // Plegada por defecto: son hasta 348 horas en la estación de Santa Cruz, y
+  // desplegadas empujan fuera de la pantalla lo que sí es de fiar.
+  const [showTimes, setShowTimes] = useState(false)
+  const times = service ? countTimes(service) : 0
 
   return (
     <>
@@ -98,6 +104,20 @@ export function StopDetail({ stop, net, onRoute, onWeather }: Props) {
             last={service.last}
             net={net}
           />
+
+          {times > 0 && (
+            <>
+              <button className="link-btn" onClick={() => setShowTimes((v) => !v)}>
+                {showTimes ? t.guagua.timetableHide : t.guagua.timetableToggle(times)}
+              </button>
+              {showTimes && (
+                <>
+                  <h3>{t.guagua.timetable}</h3>
+                  <StopTimetable service={service} net={net} />
+                </>
+              )}
+            </>
+          )}
         </>
       )}
 

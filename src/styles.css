@@ -696,3 +696,7 @@ table.kv td:first-child { color: var(--fg-dim); }
 .chart-line { fill: none; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
 .chart-cursor { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 3; }
 .chart figcaption { min-height: 14px; margin-top: 2px; }
+
+/* Interruptores con icono: la leyenda es la propia lista. */
+.switches-icon label { gap: 7px; }
+.switches-icon img { flex: 0 0 auto; opacity: 0.9; }

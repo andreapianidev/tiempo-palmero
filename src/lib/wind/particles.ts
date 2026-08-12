@@ -23,10 +23,13 @@ export interface ParticleBounds {
 }
 
 /** Cuántas posiciones antiguas guarda cada partícula para dibujar la estela. */
-export const TAIL_LENGTH = 8
+export const TAIL_LENGTH = 14
 
-/** Por debajo de esto la partícula no se mueve y ocupa sitio sin decir nada. */
-const MIN_SPEED_MS = 0.15
+/** Por debajo de esto la partícula no se mueve y ocupa sitio sin decir nada.
+ *  0,05 y no 0,15: con el umbral alto, las zonas resguardadas del interior se
+ *  quedaban sin una sola partícula —un agujero en el mapa que parecía un fallo
+ *  de datos— cuando lo que hay ahí es calma, que también es información. */
+const MIN_SPEED_MS = 0.05
 
 export interface StepOptions {
   /** Dónde pueden nacer las partículas: normalmente la vista actual. */
@@ -136,8 +139,23 @@ export class ParticleSystem {
       // Un grado de longitud mide menos que uno de latitud, y cada vez menos
       // según se sube: sin el coseno las partículas derivarían hacia el este.
       const cos = Math.max(0.2, Math.cos((this.lat[i] * Math.PI) / 180))
-      this.lon[i] += (reading.u * degPerSecondPerMs * dt) / cos
-      this.lat[i] += reading.v * degPerSecondPerMs * dt
+      const boost = speedBoost(sp)
+      this.lon[i] += (reading.u * boost * degPerSecondPerMs * dt) / cos
+      this.lat[i] += reading.v * boost * degPerSecondPerMs * dt
+
+      // El salto puede haberla dejado fuera del campo. Se comprueba AQUÍ y no
+      // al principio del paso siguiente: si no, la partícula se queda un
+      // fotograma dibujada donde no hay dato, y a zoom alto ese fotograma es
+      // una estela entera cruzando el borde.
+      const [west, south, east, north] = field.bounds
+      if (
+        this.lon[i] < west ||
+        this.lon[i] > east ||
+        this.lat[i] < south ||
+        this.lat[i] > north
+      ) {
+        this.respawn(i, spawn)
+      }
     }
   }
 }
@@ -151,9 +169,34 @@ export class ParticleSystem {
  * partícula de 10 m/s tarda aproximadamente `SECONDS_TO_CROSS` segundos en
  * recorrer la vista, se vea la isla entera o un solo barranco.
  */
-const SECONDS_TO_CROSS = 14
+// 10 s y no 14: la estela mide `TAIL_LENGTH` fotogramas de recorrido, así que
+// el tiempo de travesía fija su longitud EN PÍXELES. Con 14 s, a zoom alto y
+// con el viento flojo del interior la estela bajaba de cuatro píxeles y el
+// halo se la comía; con 10 s son unos veinte a 10 m/s y nueve a 2 m/s.
+const SECONDS_TO_CROSS = 10
 const REFERENCE_SPEED_MS = 10
 
 export function degPerSecondPerMs(viewportHeightDeg: number): number {
   return viewportHeightDeg / SECONDS_TO_CROSS / REFERENCE_SPEED_MS
+}
+
+/**
+ * Compresión de la escala de velocidad, solo para el dibujo.
+ *
+ * Con el desplazamiento proporcional a la velocidad, los 2 m/s del interior de
+ * la isla dejaban una estela de dos píxeles: sobre la malla interpolada eso no
+ * es una estela, es ruido, y el mapa parecía tener viento solo en el mar. La
+ * exageración pasa a ser `v^0.6`, que mantiene el orden —más viento sigue
+ * corriendo más— y sube 1,9 veces el flojo sin tocar el fuerte.
+ *
+ * Se puede hacer porque la velocidad NO se comunica con la animación: la dicen
+ * el color del trazo y la cifra del panel. Esto es solo legibilidad.
+ */
+const SPEED_EXPONENT = 0.6
+
+export function speedBoost(speedMs: number): number {
+  if (speedMs <= 0) return 0
+  return (
+    (REFERENCE_SPEED_MS * Math.pow(speedMs / REFERENCE_SPEED_MS, SPEED_EXPONENT)) / speedMs
+  )
 }

@@ -27,6 +27,10 @@ export const COLORS = {
   // senderos: en esta isla las dos redes se cruzan constantemente.
   guagua: 'rgba(127,178,217,0.45)',
   guaguaBright: '#a8d2ef',
+  // Las carreteras son referencia, no contenido: gris cálido, por debajo de
+  // todo lo que sí es un dato. Sin ellas, una parada de guagua flotaba sobre un
+  // relieve sin una sola vía y no había forma de situarla.
+  road: 'rgba(214,201,183,0.42)',
 } as const
 
 export function buildStyle(dem: DemManifest): StyleSpecification {
