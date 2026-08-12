@@ -6,7 +6,12 @@
 
 import { inIslandBbox } from './geo'
 import { num, parseLocation, parseTimeinstant, type CdaRow } from './cabildo'
-import { normalizePressure } from './psychro'
+import {
+  clampHumidity,
+  dewpointFrom,
+  normalizePressure,
+  relativeHumidityFrom,
+} from './psychro'
 
 /** Límites de plausibilidad para La Palma (0–2426 m, subtropical). */
 export const BOUNDS: Record<string, [number, number]> = {
@@ -47,6 +52,46 @@ export interface Station {
   solarradiation: number | null
   /** Fila cruda, para el panel «todos los valores» de la estación. */
   raw: CdaRow
+}
+
+/** Las tres variables que la app pinta. Coincide con `DisplayVariable`. */
+export type MeasuredVariable = 'temperature' | 'relativehumidity' | 'dewpoint'
+
+export interface Reading {
+  value: number
+  /** true si no lo publica la estación y se ha calculado con sus otras dos. */
+  derived: boolean
+}
+
+/**
+ * Qué vale una variable EN la estación.
+ *
+ * Temperatura, humedad y rocío no son tres medidas independientes: dadas dos,
+ * la tercera está determinada (Magnus-Tetens, ver `psychro.ts`). Así que una
+ * estación que publica T y RH sí dice cuál es su punto de rocío, aunque no
+ * traiga la columna — son 21 de las 37 vivas, contra 10 que lo publican. Con
+ * la regla anterior («un pin es una medida») esas 21 salían con un punto en
+ * vez de una cifra, encima de una malla que sí estaba pintada y que se calcula
+ * exactamente así: la incoherencia que la regla quería evitar.
+ *
+ * Lo que se calcula aquí se marca como calculado y la interfaz lo distingue;
+ * lo que no sale ni con las dos columnas (6 estaciones, sin humedad ni rocío)
+ * devuelve null y se queda sin número, que eso sí es no saberlo.
+ */
+export function stationReading(s: Station, variable: MeasuredVariable): Reading | null {
+  const measured = s[variable]
+  if (measured !== null) return { value: measured, derived: false }
+  if (s.temperature === null) return null
+  if (variable === 'dewpoint' && s.relativehumidity !== null) {
+    return { value: dewpointFrom(s.temperature, s.relativehumidity), derived: true }
+  }
+  if (variable === 'relativehumidity' && s.dewpoint !== null) {
+    return {
+      value: clampHumidity(relativeHumidityFrom(s.temperature, s.dewpoint)),
+      derived: true,
+    }
+  }
+  return null
 }
 
 export type Freshness = 'live' | 'recent' | 'dead'

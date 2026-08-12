@@ -37,7 +37,7 @@ export const es = {
     relativehumidity: 'Humedad relativa',
     dewpoint: 'Punto de rocío',
     derivedHint:
-      'El punto de rocío se calcula a partir de la temperatura y la humedad estimadas, no se interpola por separado: solo 10 de las 52 estaciones lo publican. Así las tres cifras nunca se contradicen entre sí.',
+      'El punto de rocío se calcula a partir de la temperatura y la humedad, no se interpola por separado: solo 10 de las 52 estaciones lo publican con datos frescos. Aquí sale de las estimadas para este punto; en cada pin, de las que mide esa estación. Así las tres cifras nunca se contradicen entre sí.',
     wind: 'Viento',
     precipitation: 'Precipitación',
     pressure: 'Presión',
@@ -118,6 +118,8 @@ export const es = {
     age: 'Antigüedad',
     elevation: 'Altitud (modelo de elevación)',
     allValues: 'Valores registrados',
+    derivedValue:
+      'Esta estación no publica esta columna: la cifra sale de su propia temperatura y humedad, no de las estaciones vecinas.',
     fresh: 'En directo',
     recent: 'Hace horas',
     dead: 'Sin señal',

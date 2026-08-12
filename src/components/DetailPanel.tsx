@@ -9,7 +9,7 @@
 
 import { formatIslandTime } from '../lib/cabildo'
 import { co2Band } from '../lib/palette'
-import { freshness, type Station } from '../lib/quality'
+import { freshness, stationReading, type Station } from '../lib/quality'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { Model } from '../lib/interpolate'
 import { n, n0, t, humanAge } from '../i18n'
@@ -95,11 +95,22 @@ function StationDetail({ s, model, now }: { s: Station; model: Model | null; now
       <table className="kv">
         <tbody>
           {RAW_FIELDS.map(([key, label, unit]) => {
-            const v = s[key]
-            if (typeof v !== 'number') return null
+            const raw = s[key]
+            // El rocío y la humedad se completan el uno al otro cuando falta
+            // uno de los dos: es la misma cifra que enseña el pin, y aquí va
+            // dicho de dónde sale.
+            const derived =
+              typeof raw !== 'number' && (key === 'dewpoint' || key === 'relativehumidity')
+                ? stationReading(s, key)
+                : null
+            const v = typeof raw === 'number' ? raw : (derived?.value ?? null)
+            if (v === null) return null
             return (
               <tr key={String(key)}>
-                <td>{label}</td>
+                <td>
+                  {label}
+                  {derived && <em className="dim"> · {t.point.derived}</em>}
+                </td>
                 <td className="mono">
                   {n(v, key === 'relativehumidity' || key === 'uv' ? 0 : 1)} {unit}
                 </td>

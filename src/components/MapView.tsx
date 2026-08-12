@@ -8,7 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { buildStyle, COLORS } from '../lib/mapStyle'
 import { renderGrid } from '../lib/grid'
 import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette'
-import { freshness, type Station } from '../lib/quality'
+import { freshness, stationReading, type Station } from '../lib/quality'
 import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
@@ -401,29 +401,32 @@ export function MapView(props: Props) {
     if (visible.stations) {
       const rejected = new Set(model?.rejected.map((r) => r.entityId) ?? [])
       for (const s of stations) {
-        // El pin enseña lo que la estación MIDE. Para el rocío eso significa
-        // que muchas no tienen nada que enseñar: solo 10 lo publican, y aquí no
-        // se rellena con el valor derivado — un pin es una medida.
-        const value =
-          variable === 'temperature'
-            ? s.temperature
-            : variable === 'relativehumidity'
-              ? s.relativehumidity
-              : s.dewpoint
+        // El pin enseña lo que la estación sabe de esa variable, que no es lo
+        // mismo que las columnas que publica: con T y humedad el rocío está
+        // determinado. Lo calculado se marca (subrayado de puntos) para que
+        // siga distinguiéndose de lo medido.
+        const reading = stationReading(s, variable)
         const isRejected = rejected.has(s.entityId)
         const label =
-          value === null
+          reading === null
             ? '·'
             : variable === 'relativehumidity'
-              ? `${Math.round(value)}%`
-              : `${n(value, 1)}°`
+              ? `${Math.round(reading.value)}%`
+              : `${n(reading.value, 1)}°`
         const el = pill(
           label,
-          value === null || isRejected ? '#4a453f' : cssColor(stops, value),
-          value === null || isRejected ? '#cfc9c1' : '#141311',
+          reading === null || isRejected ? '#4a453f' : cssColor(stops, reading.value),
+          reading === null || isRejected ? '#cfc9c1' : '#141311',
         )
         if (isRejected) el.classList.add('mk-rejected')
-        el.setAttribute('aria-label', `${s.name}, ${label}`)
+        if (reading?.derived) {
+          el.classList.add('mk-derived')
+          el.title = `${s.name} · ${t.station.derivedValue}`
+        }
+        el.setAttribute(
+          'aria-label',
+          `${s.name}, ${label}${reading?.derived ? `, ${t.point.derived}` : ''}`,
+        )
         el.addEventListener('click', (ev) => {
           ev.stopPropagation()
           handlers.current.onStation(s)

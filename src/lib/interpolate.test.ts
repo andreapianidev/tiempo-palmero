@@ -13,7 +13,13 @@
 
 import { describe, it, expect } from 'vitest'
 import snapshot from './__fixtures__/weather-snapshot.json'
-import { buildStations, dedupeByEntityId, usable, type Station } from './quality'
+import {
+  buildStations,
+  dedupeByEntityId,
+  stationReading,
+  usable,
+  type Station,
+} from './quality'
 import { parseLocation, parseTimeinstant, type CdaRow } from './cabildo'
 import { haversineKm } from './geo'
 import {
@@ -106,6 +112,59 @@ describe('filtro de calidad', () => {
     expect(census.usable + dropped).toBe(census.total)
     expect(census.usable).toBe(stations.length)
     expect(census.total).toBeGreaterThanOrEqual(stations.length)
+  })
+})
+
+describe('lectura de la estación: lo que sabe, no lo que publica', () => {
+  it('una columna publicada se enseña tal cual, sin marcarla de calculada', () => {
+    const measured = stations.filter((s) => s.dewpoint !== null)
+    expect(measured.length).toBeGreaterThan(0)
+    for (const s of measured) {
+      const r = stationReading(s, 'dewpoint')
+      expect(r).toEqual({ value: s.dewpoint, derived: false })
+    }
+  })
+
+  it('con T y humedad hay rocío aunque no venga la columna', () => {
+    const derivable = stations.filter(
+      (s) => s.dewpoint === null && s.relativehumidity !== null,
+    )
+    // Sobre este snapshot son 21 de las 37 vivas: la mayoría del mapa. Con la
+    // regla anterior sus pines salían con un punto sobre una malla pintada.
+    expect(derivable.length).toBeGreaterThan(10)
+    for (const s of derivable) {
+      const r = stationReading(s, 'dewpoint')
+      expect(r?.derived).toBe(true)
+      // Coherencia: la humedad que implica ese rocío es la que mide ella.
+      expect(relativeHumidityFrom(s.temperature!, r!.value)).toBeCloseTo(
+        s.relativehumidity!,
+        6,
+      )
+      // Y el rocío nunca supera la temperatura del aire.
+      expect(r!.value).toBeLessThanOrEqual(s.temperature! + 1e-9)
+    }
+  })
+
+  it('sin humedad ni rocío no se inventa una cifra', () => {
+    const blind = stations.filter(
+      (s) => s.dewpoint === null && s.relativehumidity === null,
+    )
+    for (const s of blind) {
+      expect(stationReading(s, 'dewpoint')).toBeNull()
+      expect(stationReading(s, 'relativehumidity')).toBeNull()
+    }
+  })
+
+  it('la humedad se completa desde el rocío, que es el caso simétrico', () => {
+    const s = stations.find((x) => x.relativehumidity !== null && x.dewpoint !== null)!
+    const fake: Station = { ...s, relativehumidity: null }
+    const r = stationReading(fake, 'relativehumidity')
+    expect(r?.derived).toBe(true)
+    // No sale clavada: los tres sensores de una estación no son perfectamente
+    // consistentes entre sí. La desviación medida sobre las que publican las
+    // tres columnas es de 0,99 % de media y 2,45 % como máximo (ver
+    // `psychro.ts`), así que el umbral es ese máximo, no el redondeo.
+    expect(Math.abs(r!.value - s.relativehumidity!)).toBeLessThan(2.5)
   })
 })
 

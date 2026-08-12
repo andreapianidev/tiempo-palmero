@@ -403,6 +403,18 @@ table.kv td:first-child { color: var(--fg-dim); }
 }
 .mk-rejected { opacity: 0.55; text-decoration: line-through; }
 
+/* Cifra calculada con la T y la humedad de la propia estación, no publicada
+   por ella. El subrayado de puntos es el único canal libre: el color dice el
+   valor y el anillo dice la frescura. */
+.mk-derived {
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+/* Si además está excluida por control de calidad, manda el tachado: lo que
+   hay que ver primero es que ese sensor no entra en el modelo. */
+.mk-rejected.mk-derived { text-decoration: line-through; }
+
 .mk-dot {
   width: 11px;
   height: 11px;
