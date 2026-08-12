@@ -1,6 +1,6 @@
 {
-  "generated": "2026-08-12T21:26:11.642Z",
-  "source": "Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island)",
+  "generated": "2026-08-12T22:00:04.995Z",
+  "source": "Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island), catálogo CKAN y visor ArcGIS de opendatalapalma.es",
   "license": "CC-BY 4.0 / ODC-BY (límites administrativos)",
   "layers": {
     "senderos": {
@@ -58,15 +58,20 @@
       "features": 58,
       "label": "Líneas de guagua (TILP)"
     },
-    "carreteras": {
-      "file": "/layers/carreteras.geojson",
-      "features": 53,
-      "label": "Vías interurbanas (carreteras insulares)"
-    },
     "recarga-electrica": {
       "file": "/layers/recarga-electrica.geojson",
       "features": 54,
       "label": "Puntos de recarga eléctrica"
+    },
+    "carreteras": {
+      "file": "/layers/carreteras.geojson",
+      "features": 61,
+      "label": "Red de carreteras de la isla (61 tramos)"
+    },
+    "miradores": {
+      "file": "/layers/miradores.geojson",
+      "features": 29,
+      "label": "Miradores (29)"
     }
   }
 }

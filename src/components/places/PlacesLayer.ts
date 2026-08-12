@@ -8,9 +8,13 @@
  * encender o apagar una es cambiar los datos, no tocar el estilo.
  *
  * Las carreteras son otra cosa y por eso están aquí también pero aparte: son
- * líneas, van por debajo de todo lo demás y no se pinchan. Sirven para situar,
- * que es justo lo que faltaba cuando las paradas de guagua flotaban sobre un
- * relieve sin una sola vía.
+ * líneas y van por debajo de todo lo demás. Sirven para situar, que es justo lo
+ * que faltaba cuando las paradas de guagua flotaban sobre un relieve sin una
+ * sola vía — pero ahora también se pinchan, y para eso hacen falta DOS capas:
+ * la que se ve, de 1 a 3 px, y una gemela transparente de 14 px que es la que
+ * recoge el clic. Un trazo de un píxel es imposible de acertar con el dedo, y
+ * engordar el visible para poder pincharlo convertiría el mapa en un plano de
+ * carreteras con el tiempo de fondo, que es lo contrario de lo que es.
  */
 
 import type { Map as MlMap, GeoJSONSource, LayerSpecification } from 'maplibre-gl'
@@ -21,6 +25,8 @@ const SRC_ROADS = 'carreteras'
 
 export const PLACES_LAYER = 'places-punto'
 export const ROADS_LAYER = 'carreteras-linea'
+/** La gemela transparente: no pinta nada, solo recoge el clic. */
+export const ROADS_HIT_LAYER = 'carreteras-toque'
 
 const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
 
@@ -35,6 +41,15 @@ export const PLACES_LAYER_SPECS: LayerSpecification[] = [
       'line-color': COLORS.road,
       'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.6, 12, 1.4, 16, 3.2],
     },
+  },
+  {
+    id: ROADS_HIT_LAYER,
+    type: 'line',
+    source: SRC_ROADS,
+    layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
+    // `line-opacity: 0` y no `visibility: none`: una capa oculta no aparece en
+    // `queryRenderedFeatures`, y entonces no habría clic que recoger.
+    paint: { 'line-color': COLORS.road, 'line-opacity': 0, 'line-width': 14 },
   },
   {
     id: PLACES_LAYER,
@@ -67,12 +82,18 @@ export function addPlacesLayers(map: MlMap, handlers: Handlers, beforeId?: strin
     const [lon, lat] = f.geometry.coordinates as [number, number]
     handlers.onPlace({ ...(f.properties ?? {}) }, lon, lat)
   })
-  map.on('mouseenter', PLACES_LAYER, () => {
-    map.getCanvas().style.cursor = 'pointer'
-  })
-  map.on('mouseleave', PLACES_LAYER, () => {
-    map.getCanvas().style.cursor = 'crosshair'
-  })
+  // El clic de las carreteras NO se registra aquí. Va en el manejador general
+  // del mapa, que es el único sitio donde se sabe qué hay por encima: una
+  // parada de guagua sobre una carretera tiene que abrir la parada, y dos
+  // manejadores independientes abrirían las dos fichas, una tapando a la otra.
+  for (const layer of [PLACES_LAYER, ROADS_HIT_LAYER]) {
+    map.on('mouseenter', layer, () => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', layer, () => {
+      map.getCanvas().style.cursor = 'crosshair'
+    })
+  }
 }
 
 export function setPlacesData(map: MlMap, places: GeoJSON.FeatureCollection | null): void {
@@ -90,7 +111,11 @@ export function setPlacesVisible(map: MlMap, visible: boolean): void {
 }
 
 export function setRoadsVisible(map: MlMap, visible: boolean): void {
-  if (map.getLayer(ROADS_LAYER)) {
-    map.setLayoutProperty(ROADS_LAYER, 'visibility', visible ? 'visible' : 'none')
+  // Las dos a la vez: si la de toque se quedara encendida, la capa apagada
+  // seguiría pinchándose y saldría la ficha de una carretera invisible.
+  for (const id of [ROADS_LAYER, ROADS_HIT_LAYER]) {
+    if (map.getLayer(id)) {
+      map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
+    }
   }
 }

@@ -15,6 +15,7 @@ export type PlaceVisibility = Record<PlaceKind, boolean>
 
 export const NO_PLACES: PlaceVisibility = {
   tourism: false,
+  viewpoint: false,
   culture: false,
   history: false,
   recreation: false,

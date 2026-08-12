@@ -53,6 +53,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'tilp.es',
   },
   {
+    title: t.sources.placesTitle,
+    body: t.sources.placesBody,
+    license: t.sources.placesLicense,
+    href: 'https://www.opendatalapalma.es/search?groupIds=c27000c1d7a84444bf4321b87e8d2223',
+    hrefLabel: 'Catálogo del Cabildo en opendatalapalma.es',
+  },
+  {
     title: t.sources.toponymsTitle,
     body: t.sources.toponymsBody,
     license: t.sources.toponymsLicense,

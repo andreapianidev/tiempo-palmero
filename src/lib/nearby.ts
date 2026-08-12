@@ -18,6 +18,7 @@ export type NearbyKind =
   | 'trailPoi'
   | 'recreation'
   | 'tourism'
+  | 'viewpoint'
   | 'culture'
   | 'history'
   | 'busStop'
@@ -159,6 +160,16 @@ const LAYERS: LayerSpec[] = [
     name: (p) => str(p.nombre),
     detail: (p) => str(p.tipo_recurso) ?? str(p.categoria_lista),
     url: (p) => str(p.url_ficha) ?? str(p.web_externa),
+  },
+  {
+    // Radio corto y una sola entrada: un mirador a cuatro kilómetros no es
+    // «cerca de aquí», y la capa no trae nada más que el nombre con lo que
+    // justificar una segunda línea.
+    file: 'miradores.geojson',
+    kind: 'viewpoint',
+    radiusKm: 2.5,
+    limit: 2,
+    name: (p) => str(p.nombre),
   },
   {
     file: 'interes-cultural.geojson',

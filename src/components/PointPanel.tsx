@@ -57,6 +57,9 @@ const KIND_ICON: Record<NearbyKind, string> = {
   trailPoi: '◆',
   recreation: '⛺',
   tourism: '★',
+  // El ojo del mirador. No se repite el monte de los senderos: lo que distingue
+  // un mirador de una cumbre es que se mira desde él, no que sea alto.
+  viewpoint: '◉',
   culture: '❖',
   history: '⌂',
   busStop: '⬤',

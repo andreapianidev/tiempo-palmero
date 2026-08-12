@@ -24,8 +24,19 @@ import {
   utm28nToWgs84,
 } from '../src/lib/geo.js'
 import { fetchCda } from '../src/lib/cabildo.js'
-import { ROOT, PUBLIC, UA, CKAN, getJson, log, warn, type CkanResource } from './shared.js'
+import {
+  ROOT,
+  PUBLIC,
+  UA,
+  CKAN,
+  getJson,
+  log,
+  warn,
+  roundCoords,
+  type CkanResource,
+} from './shared.js'
 import { prepareGuagua } from './prepare-guagua.js'
+import { prepareArcgis } from './prepare-arcgis.js'
 
 // ---------------------------------------------------------------------------
 // 1. DEM — teselas terrarium
@@ -215,14 +226,11 @@ const LAYERS: LayerSpec[] = [
     pick: (r) => /l[ií]nea/i.test(r.name),
     label: 'Líneas de guagua (TILP)',
   },
-  {
-    out: 'carreteras.geojson',
-    dataset: 'vias-interurbanas-de-titularidad-insular-de-la-palma',
-    // Tres shapefiles en tres CRS y un GeoJSON: se elige por nombre, que es lo
-    // único que distingue el que ya viene en WGS84.
-    pick: (r) => (r.format ?? '').toUpperCase() === 'GEOJSON',
-    label: 'Vías interurbanas (carreteras insulares)',
-  },
+  // Las carreteras ya no salen de aquí. CKAN publica
+  // `vias-interurbanas-de-titularidad-insular-de-la-palma`, que son 53 tramos:
+  // solo los insulares. El Feature Service del portal trae los mismos 53 más
+  // ocho —la carretera del Parque Nacional, la del aeropuerto y seis
+  // municipales— así que se descarga en `prepare-arcgis.ts`.
   {
     out: 'recarga-electrica.geojson',
     dataset: 'puntos-de-recarga-de-vehiculos-electricos-de-la-palma',
@@ -283,20 +291,6 @@ function repairText(value: unknown, tally: { count: number }): unknown {
     )
   }
   return value
-}
-
-/**
- * Recorta las coordenadas a 6 decimales (~11 cm en el ecuador).
- *
- * Sin esto el fichero de municipios reproyectado sale a 4,4 MB porque cada
- * número lleva 15 cifras de coma flotante, y el navegador tiene que
- * descargarlo entero para poder decir en qué municipio has tocado. Con el
- * recorte baja a una fracción, y la precisión que se pierde está muy por
- * debajo del error del propio trazado del límite.
- */
-function roundCoords(c: unknown): unknown {
-  if (typeof c === 'number') return Math.round(c * 1e6) / 1e6
-  return Array.isArray(c) ? c.map(roundCoords) : c
 }
 
 async function prepareLayers(): Promise<void> {
@@ -375,13 +369,19 @@ async function prepareLayers(): Promise<void> {
     }
   }
 
+  // Las capas del visor ArcGIS entran en el MISMO índice: para la aplicación
+  // son ficheros de `/layers/` igual que los demás, y de qué catálogo salió
+  // cada uno es asunto de este script, no suyo.
+  Object.assign(index, await prepareArcgis())
+
   await writeFile(
     path.join(PUBLIC, 'layers', 'index.json'),
     JSON.stringify(
       {
         generated: new Date().toISOString(),
         source:
-          'Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island)',
+          'Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island), ' +
+          'catálogo CKAN y visor ArcGIS de opendatalapalma.es',
         license: 'CC-BY 4.0 / ODC-BY (límites administrativos)',
         layers: index,
       },

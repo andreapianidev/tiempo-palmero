@@ -197,6 +197,10 @@ export default function App() {
             },
           })
         }}
+        onRoad={(road, lon, lat) => {
+          setProbe(null)
+          setSelection({ kind: 'road', value: { ...road, lon, lat } })
+        }}
         onPoi={(poi) => {
           setProbe(null)
           // La altitud y el municipio no vienen en la capa de puntos: los pone

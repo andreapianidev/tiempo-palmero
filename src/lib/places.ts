@@ -1,7 +1,7 @@
 /**
  * Los sitios que publica el Cabildo y que se pueden encender uno a uno.
  *
- * Hasta ahora estas cinco capas solo existían dentro de «cerca de aquí»: había
+ * Hasta ahora estas capas solo existían dentro de «cerca de aquí»: había
  * que tocar un punto del mapa para enterarse de que a 300 m hay un mirador. El
  * mapa no las dibujaba, así que no se podían BUSCAR, solo encontrar por azar.
  * Aquí están declaradas como catálogo —fichero, icono, color y cómo se llama
@@ -16,7 +16,13 @@
 
 import type { Map as MlMap } from 'maplibre-gl'
 
-export type PlaceKind = 'tourism' | 'culture' | 'history' | 'recreation' | 'charging'
+export type PlaceKind =
+  | 'tourism'
+  | 'viewpoint'
+  | 'culture'
+  | 'history'
+  | 'recreation'
+  | 'charging'
 
 export interface PlaceSpec {
   kind: PlaceKind
@@ -38,7 +44,19 @@ export const PLACES: PlaceSpec[] = [
     kind: 'tourism',
     file: 'interes-turistico.geojson',
     color: '#e0a96a',
-    // Un mirador: dos montes y el arco de la vista.
+    // Una estrella: los «imprescindibles» que destaca el Cabildo. Este dibujo
+    // era antes el de los dos montes y el arco de la vista, que es literalmente
+    // un mirador — y desde que los miradores son su propia capa, tenerlo aquí
+    // era decir «mirador» en el sitio equivocado.
+    glyph: 'M12 6.2l1.9 3.9 4.3.6-3.1 3 .7 4.3-3.8-2-3.8 2 .7-4.3-3.1-3 4.3-.6z',
+    name: (p) => str(p.nombre),
+  },
+  {
+    kind: 'viewpoint',
+    file: 'miradores.geojson',
+    color: '#7fc6c0',
+    // Dos montes y el arco de la vista: lo que se ve desde el mirador, no el
+    // mirador en sí. Un balcón dibujado a 22 px es una reja ilegible.
     glyph: 'M5.8 15.6l4-5.2 2.6 3.2 2-2.4 3.8 4.4M6.4 17.6c2.4-1.6 8.8-1.6 11.2 0',
     name: (p) => str(p.nombre),
   },

@@ -17,6 +17,7 @@ import { StationHistory } from './StationHistory'
 import { StopDetail, type GuaguaStopSelection } from './guagua/StopDetail'
 import { RouteDetail } from './guagua/RouteDetail'
 import { PlaceDetail, type PlaceSelection } from './places/PlaceDetail'
+import { RoadDetail, type RoadSelection } from './places/RoadDetail'
 import type { GuaguaNetwork } from '../lib/guagua/network'
 import { n, n0, t, humanAge } from '../i18n'
 
@@ -36,6 +37,7 @@ export type Selection =
   | { kind: 'busStop'; value: GuaguaStopSelection }
   | { kind: 'busRoute'; value: { routeId: string } }
   | { kind: 'place'; value: PlaceSelection }
+  | { kind: 'road'; value: RoadSelection }
 
 interface Props {
   selection: Selection
@@ -122,6 +124,7 @@ export function DetailPanel({
       {selection.kind === 'place' && (
         <PlaceDetail place={selection.value} onWeather={onWeather} />
       )}
+      {selection.kind === 'road' && <RoadDetail road={selection.value} onWeather={onWeather} />}
     </section>
   )
 }

@@ -108,6 +108,7 @@ export const es = {
       trailPoi: 'Punto del sendero',
       recreation: 'Zona recreativa',
       tourism: 'Interés turístico',
+      viewpoint: 'Mirador',
       culture: 'Interés cultural',
       history: 'Interés histórico',
       busStop: 'Parada de guagua',
@@ -129,6 +130,7 @@ export const es = {
     openLink: 'Abrir',
     kinds: {
       tourism: 'Interés turístico',
+      viewpoint: 'Miradores',
       culture: 'Interés cultural',
       history: 'Interés histórico',
       recreation: 'Zonas recreativas',
@@ -166,6 +168,25 @@ export const es = {
       longitud: 'Longitud',
       latitud: 'Latitud',
     } as Record<string, string>,
+  },
+
+  /**
+   * Carreteras. La capa dice de dónde a dónde va cada tramo y cuánto mide, y
+   * eso es todo lo que dice: no hay estado del firme, ni cortes, ni obras. Lo
+   * que no está aquí es porque no está en el dato.
+   */
+  roads: {
+    ownerLabel: (owner: string) =>
+      owner === 'insular' ? 'Titularidad insular' : `Titularidad: ${owner}`,
+    officialLength: 'Longitud oficial',
+    gisLength: 'Longitud del trazado',
+    gisHint:
+      'Medida sobre la línea dibujada. La diferencia con la oficial es del propio inventario del Cabildo.',
+    cartoColor: 'Color cartográfico',
+    cartoHint: 'El color con el que la cartografía oficial dibuja la vía; aquí no se usa.',
+    weatherHere: 'El tiempo en este punto de la vía',
+    note: 'La capa no publica estado del firme, cortes ni obras.',
+    source: 'Red de carreteras de la isla de La Palma — Cabildo Insular (CC-BY 4.0).',
   },
 
   /**
@@ -501,6 +522,17 @@ export const es = {
       'publicada —la que sigue en la calle porque no se ha renovado— y se dan como ' +
       'referencia, no como garantía. Van plegadas, con su fecha y con enlace a TILP.',
     guaguaLicense: 'CC-BY 4.0 · GTFS de TILP',
+    placesTitle: 'Sitios, miradores y carreteras',
+    placesBody:
+      'El Cabildo publica en DOS sitios distintos y no traen lo mismo. Del catálogo de datos ' +
+      'abiertos salen los lugares de interés turístico (50), cultural (92) e histórico (390), ' +
+      'las zonas recreativas (33) y los 54 puntos de recarga eléctrica. Del visor de ' +
+      'opendatalapalma.es —servicios ArcGIS, no ficheros— salen los 29 miradores, que no ' +
+      'están en el catálogo, y la red de carreteras: 61 tramos, que son los 53 de titularidad ' +
+      'insular del catálogo más la carretera del Parque Nacional, la del aeropuerto y seis ' +
+      'municipales. Cada capa se enciende por separado y cada elemento se pincha para ver su ' +
+      'ficha completa, con los campos tal como los publica la fuente.',
+    placesLicense: 'CC-BY 4.0',
     toponymsTitle: 'Topónimos',
     toponymsBody:
       '© colaboradores de OpenStreetMap. Extraídos una sola vez en tiempo de compilación mediante Overpass; la aplicación no consulta OpenStreetMap en tiempo de ejecución.',

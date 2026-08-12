@@ -29,6 +29,24 @@ export interface CkanResource {
   url: string
 }
 
+/**
+ * Recorta las coordenadas a 6 decimales (~11 cm en el ecuador).
+ *
+ * Sin esto el fichero de municipios reproyectado sale a 4,4 MB porque cada
+ * número lleva 15 cifras de coma flotante, y el navegador tiene que
+ * descargarlo entero para poder decir en qué municipio has tocado. Con el
+ * recorte baja a una fracción, y la precisión que se pierde está muy por
+ * debajo del error del propio trazado del límite.
+ *
+ * Los servicios ArcGIS son aún peores en esto: devuelven la reproyección a
+ * WGS84 con toda la basura del `double`, y la red de carreteras pasa de 2,2 MB
+ * a 1,2 MB solo con esto.
+ */
+export function roundCoords(c: unknown): unknown {
+  if (typeof c === 'number') return Math.round(c * 1e6) / 1e6
+  return Array.isArray(c) ? c.map(roundCoords) : c
+}
+
 export async function getJson<T>(
   url: string,
   tries = 4,

@@ -190,6 +190,15 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   margin-left: 6px;
 }
 
+/* Código de vía: se lee como lo que es, la matrícula de la carretera. */
+.chip-road {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg);
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+}
+
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-btn {
   font: 500 12px/1 var(--sans);

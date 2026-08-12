@@ -97,9 +97,10 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   de cada parada —líneas, servicio, accesibilidad y las horas de paso de la
   última tabla publicada— y el recorrido de cada línea resaltado en el mapa (ver
   [la red de guaguas](#la-red-de-guaguas-y-los-sitios-que-ahora-se-pueden-encender)).
-- **Sitios del Cabildo, uno a uno**: interés turístico, cultural e histórico,
-  zonas recreativas y puntos de recarga eléctrica, cada capa con su interruptor
-  y su icono, y **carreteras insulares** como referencia debajo de todo.
+- **Sitios del Cabildo, uno a uno**: interés turístico, **miradores**, interés
+  cultural e histórico, zonas recreativas y puntos de recarga eléctrica, cada
+  capa con su interruptor y su icono, y la **red de carreteras** debajo de todo,
+  que también se pincha para ver de dónde a dónde va cada tramo.
 - **Relieve sombreado** generado del mismo modelo de elevación que alimenta el
   cálculo. La isla es un volcán: la sombra es lo que la hace legible.
 
@@ -552,9 +553,48 @@ en el mapa y se pinchan para ver la ficha completa. Los 390 recintos históricos
 son polígonos y entran como su centro: a la escala en la que se mira la isla, un
 recinto de 200 m² es un punto, y su superficie sigue estando en la ficha.
 
-Debajo de todo eso van las **carreteras insulares** (53 tramos), que no son un
-dato sino una referencia: sin ellas, una parada de guagua flotaba sobre un
-relieve sin una sola vía y no había forma de situarla.
+#### El segundo catálogo: los miradores y la red de carreteras
+
+El Cabildo publica en dos sitios que no contienen lo mismo, y esto no está
+documentado en ninguna parte: el catálogo CKAN de
+`lapalmasmart-open.lapalma.es` sirve ficheros estáticos de 49 conjuntos, y
+**opendatalapalma.es sirve un catálogo distinto**, de servicios ArcGIS vivos, con
+100 capas. Hay cosas que solo están en uno de los dos.
+
+- **Miradores (29)**: no existen en CKAN. Lo más cercano son las zonas
+  recreativas, que son áreas de descanso, no vistas. La capa trae una sola
+  columna —el nombre— y la ficha la completa con lo que sabe la aplicación:
+  altitud del modelo de elevación y municipio por geometría, marcados aparte de
+  lo que dice la fuente. El icono —dos montes y el arco de la vista— era el de
+  interés turístico, que ha pasado a una estrella: era literalmente el dibujo de
+  un mirador en la capa que no son los miradores.
+- **Red de carreteras (61 tramos)**, en sustitución de las 53 vías interurbanas
+  de CKAN. Son **las mismas 53** —comprobadas una a una por nomenclatura y
+  denominación— más ocho que CKAN no publica porque su fichero es solo el de
+  titularidad insular: la **carretera del Parque Nacional**, la del **aeropuerto**
+  y seis municipales, entre ellas los accesos a El Tablado y a Juan Adalid.
+- **Puntos de recarga (54)**: los dos catálogos publican exactamente los mismos
+  54, los mismos nombres y los mismos 12 sin nombre. Se sigue leyendo de CKAN,
+  que además trae `longitud`/`latitud` y el identificador del portal.
+
+Las carreteras siguen yendo debajo de todo, porque son la referencia sobre la
+que se leen las demás capas —sin ellas una parada de guagua flotaba sobre un
+relieve sin una sola vía— pero ahora **se pinchan**. Y para eso hacen falta dos
+capas: la que se ve, de 1 a 3 px según el zoom, y una gemela transparente de
+14 px que recoge el clic, porque un trazo de un píxel no se acierta con el dedo
+y engordar el visible convertiría el mapa del tiempo en un plano de carreteras.
+Las carreteras se consultan las últimas: una parada de guagua encima de la LP-1
+abre la parada, y hay un test que fija ese orden.
+
+La ficha del tramo enseña las **dos longitudes** que publica el inventario, la
+oficial y la del trazado dibujado, con la diferencia entre ambas. La LP-1 mide
+102,4 km de inventario y 102,6 km de trazado: esos 137 m son del propio dato del
+Cabildo, y esconderlos detrás de una sola cifra fingiría una precisión que no
+tiene. La titularidad no es una columna de esa capa —CKAN podía publicarla
+porque su fichero era todo insular—, así que se lee de la nomenclatura: un
+código `LP-n` es una vía insular, y los ocho restantes llevan ahí a su titular
+(«Municipal», «Parque Nacional», y «Aerpuerto», sin la o, tal como lo publica la
+fuente).
 
 ### Lo que cambiaría la aplicación de categoría
 
@@ -565,8 +605,9 @@ relieve sin una sola vía y no había forma de situarla.
 
 ### Capas estáticas listas para añadir (todas WGS84, ya descargables en build)
 
-Las de turismo, cultura, historia, zonas recreativas, recarga y carreteras ya no
-están en esta lista: están dentro, con interruptor propio. Lo que queda:
+Las de turismo, miradores, cultura, historia, zonas recreativas, recarga y
+carreteras ya no están en esta lista: están dentro, con interruptor propio. Lo
+que queda:
 
 | Conjunto | n | Interés |
 |---|---:|---|
@@ -742,6 +783,8 @@ servido como fichero estático.
 
 ```
 scripts/prepare-data.ts   Compilación. Se ejecuta una vez.
+  ├── prepare-guagua.ts   GTFS de TILP → red de líneas, paradas y horarios
+  ├── prepare-arcgis.ts   Servicios ArcGIS del visor: miradores y carreteras
   ├── public/dem/         118 teselas terrarium, z9–z12 (~34 m/px a z12)
   ├── public/layers/      GeoJSON del Cabildo; municipios reproyectado a WGS84
   └── public/gazetteer.json  789 topónimos extraídos de OSM
@@ -851,6 +894,10 @@ clave que configurar.
   de La Palma, Servicio de Transformación Digital (La Palma Smart Island).
   CC-BY 4.0. <https://www.opendatalapalma.es>
 - **Límites municipales e insular** — Cabildo Insular de La Palma. ODC-BY.
+- **Sitios, miradores y red de carreteras** — Cabildo Insular de La Palma.
+  CC-BY 4.0. Los sitios y la recarga eléctrica salen del catálogo CKAN; los
+  miradores y las carreteras, de los servicios ArcGIS del visor del Cabildo:
+  <https://www.opendatalapalma.es/search?groupIds=c27000c1d7a84444bf4321b87e8d2223>
 - **Red de sensores de CO₂** — DEMASE, publicada a través del portal del
   Cabildo.
 - **Transporte público** — GTFS de Transportes Insulares La Palma (TILP),

@@ -26,8 +26,10 @@ import {
   setRoadsData,
   setRoadsVisible,
   PLACES_LAYER,
+  ROADS_HIT_LAYER,
 } from './places/PlacesLayer'
 import { addPlaceIcons, readPlace, type PlaceRecord } from '../lib/places'
+import { readRoad, type RoadRecord } from '../lib/roads'
 import type { WindField } from '../lib/wind/field'
 import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
@@ -85,6 +87,7 @@ interface Props {
   onBusStop: (stop: GuaguaStopPoint) => void
   onBusRoute: (routeId: string) => void
   onPlace: (place: PlaceRecord) => void
+  onRoad: (road: RoadRecord, lon: number, lat: number) => void
 }
 
 /** Qué topónimos merecen etiqueta a cada zoom. Sin esto la isla es ilegible. */
@@ -266,6 +269,23 @@ export function MapView(props: Props) {
           ...GUAGUA_CLICK_LAYERS,
         ].filter((l) => map.getLayer(l))
         if (layers.length && map.queryRenderedFeatures(e.point, { layers }).length) return
+
+        // Las carreteras se consultan LAS ÚLTIMAS: son el fondo sobre el que se
+        // leen las demás capas, y una parada de guagua encima de una carretera
+        // tiene que abrir la parada. Con la capa apagada no devuelve nada, así
+        // que no hace falta preguntar por la visibilidad.
+        if (map.getLayer(ROADS_HIT_LAYER)) {
+          const road = map.queryRenderedFeatures(e.point, { layers: [ROADS_HIT_LAYER] })[0]
+          if (road) {
+            handlers.current.onRoad(
+              readRoad({ ...(road.properties ?? {}) }),
+              e.lngLat.lng,
+              e.lngLat.lat,
+            )
+            return
+          }
+        }
+
         handlers.current.onPick(e.lngLat.lng, e.lngLat.lat)
       })
 
