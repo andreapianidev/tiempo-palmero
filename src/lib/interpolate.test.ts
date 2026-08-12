@@ -96,6 +96,35 @@ describe('filtro de calidad', () => {
     }
   })
 
+  it('la estación muerta de la cumbre no entra jamás, y es la que más daño haría', () => {
+    // El feed sirve `Taburiente`, ~2314 m, con una lectura de mayo de 2023 y
+    // 12,5 °C, como una fila normal y sin ninguna marca de calidad.
+    //
+    // Este test no vigila un caso raro: vigila el PEOR caso posible. Es la fila
+    // más alta de todo el archivo, y el ajuste altitudinal es una recta cuyo
+    // brazo largo la convierte en la muestra con más influencia de la red. Una
+    // temperatura de hace tres años en el punto de máxima palanca arrastraría
+    // el gradiente y con él la estimación de toda la isla — que es exactamente
+    // el efecto que documenta «Por qué existe» para un solo sensor mal.
+    //
+    // Hoy la excluye `MAX_AGE_H = 2`. El test existe para que siga excluida si
+    // ese filtro cambia por cualquier otra razón.
+    const cumbre = ROWS.filter((r) => {
+      const t = parseTimeinstant(r.timeinstant)
+      return t !== null && (NOW - t) / 3_600_000 > 24 * 30
+    })
+    expect(cumbre.length).toBeGreaterThan(0)
+    for (const r of cumbre) {
+      expect(usable(r, { now: NOW })).toBe(false)
+      expect(stations.some((s) => s.entityId === String(r.entityid))).toBe(false)
+    }
+
+    // Y ninguna superviviente puede estar por encima de lo que la red publica
+    // de verdad: si aparece una estación viva sobre 2000 m es que ha entrado
+    // una fila muerta por otro camino.
+    for (const s of stations) expect(s.elevation).toBeLessThan(2000)
+  })
+
   it('descarta lo rancio: nada superviviente pasa de 2 h', () => {
     for (const s of stations) expect(s.ageHours).toBeLessThanOrEqual(2)
   })
