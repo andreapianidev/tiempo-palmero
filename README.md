@@ -45,6 +45,10 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
   decisiones que los sostienen · [Validación](#validación)
 - [Qué más publica el Cabildo](#qué-más-publica-el-cabildo-y-qué-falta-por-aprovechar)
   — hoja de ruta sobre los 49 conjuntos del portal
+- [El mapa de viento](#el-mapa-de-viento) — la única capa donde un modelo pinta
+  sobre la isla, y cómo se declara ·
+  [El histórico](#el-histórico-y-por-qué-no-hay-base-de-datos) — 2 MB por día en
+  origen, 124 KB en el navegador, cero almacenamiento propio
 - [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — qué se
   llama de verdad, y con qué permiso
 - [Arquitectura](#arquitectura)
@@ -440,6 +444,15 @@ de guagua. Las capas se cargan **bajo demanda** —son 10 MB en total y la mayor
 de las visitas no llegan a tocar el mapa— y la lista se recorta a las ocho más
 cercanas, con el resto plegado.
 
+Desde esta tanda, además: la **evolución de 24 h y 7 días** de cada estación con
+su máxima y su mínima, el **mapa de viento animado** con partículas en WebGL, y
+tres columnas crudas que estaban en el payload sin enseñarse —sensación térmica,
+iluminancia y visibilidad—. De las tres, `visibility` no llegará a pintarse
+mientras el Cabildo no la rellene: es de tipo texto y está **vacía en las 4939
+filas de un día de histórico y en las 52 de `_lastdata`**. Se parsea igualmente
+para que aparezca sola el día que exista, y queda escrito aquí para que nadie la
+persiga como si fuera un fallo de la aplicación.
+
 **Las guaguas se muestran sin horarios, a propósito.** El GTFS que publica el
 Cabildo tiene todos los calendarios de servicio caducados el **25 de diciembre
 de 2025**, sin una sola excepción con fecha de 2026 (comprobado el 12 ago 2026).
@@ -458,9 +471,8 @@ isla eso no es un detalle.
 
 | Fuente | Qué habilita |
 |---|---|
-| `weatherobserved` — histórico crudo, **35.274 filas / semana** | Gráficas de 24 h y 7 días por estación, máximas y mínimas del día, y **evolución del punto interpolado en el tiempo**. También multiplicaría la validación: hoy los criterios se miden sobre un instante, y con histórico se medirían sobre un ciclo diurno completo, que es donde la capa de inversión hace de las suyas. |
-| **Campos ya presentes que no se muestran** en `weatherobserved_lastdata` | `uv` (índice UV — en Canarias no es un adorno), `solarradiation`, `atmosphericpressure` (interpolable con corrección barométrica, ~1 hPa cada 8 m), `illuminance`, `dailyevapotranspiration`, `visibility`, `feellikestemperature`. La presión es la tercera variable que de verdad admite interpolación y no está. |
-| `count_today` / `count_historic` — **77 aforos, la única red 100 % viva** | Aforos de senderos y tráfico. Cruzado con el tiempo responde a «¿va a estar lleno el sendero mañana?», que ninguna otra app de la isla contesta. Y es la red más sana del portal, sin una sola estación muerta. |
+| **Evolución del punto interpolado**, no solo de la estación | El histórico ya está dentro, pero dibuja la serie de cada estación. Aplicar el motor a cada instante del archivo daría la curva de un punto cualquiera, y sobre todo **mediría la validación a lo largo de un ciclo diurno completo** en vez de sobre un instante — que es donde la capa de inversión hace de las suyas. |
+| `count_today` / `count_historic` — **72 aforos, la única red 100 % viva** | Aforos de senderos y tráfico: 18 de bicicletas, 18 de peatones, 12 de coches, 12 de motos y 12 de pesados, **todos con lectura de hoy** (comprobado el 12 ago 2026 a las 14:20; el más reciente, de las 13:20). Cruzado con el tiempo responde a «¿va a estar lleno el sendero mañana?», que ninguna otra app de la isla contesta. Y es la red más sana del portal, sin una sola estación muerta. |
 
 ### Capas estáticas listas para añadir (todas WGS84, ya descargables en build)
 

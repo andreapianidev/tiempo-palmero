@@ -15,7 +15,6 @@
 import { mkdir, writeFile, readFile, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
 import {
   ISLAND_BBOX,
@@ -25,31 +24,8 @@ import {
   utm28nToWgs84,
 } from '../src/lib/geo.js'
 import { fetchCda } from '../src/lib/cabildo.js'
-
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const PUBLIC = path.join(ROOT, 'public')
-
-const UA = {
-  'User-Agent': 'TiempoPalmero/0.1 (build-time data preparation; andreapiani.dev@gmail.com)',
-}
-
-const log = (...a: unknown[]) => console.log('·', ...a)
-const warn = (...a: unknown[]) => console.warn('!', ...a)
-
-async function getJson<T>(url: string, tries = 4, init: RequestInit = {}): Promise<T> {
-  let last: unknown
-  for (let i = 0; i < tries; i++) {
-    try {
-      const res = await fetch(url, { ...init, headers: { ...UA, ...(init.headers ?? {}) } })
-      if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`)
-      return (await res.json()) as T
-    } catch (e) {
-      last = e
-      if (i < tries - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)))
-    }
-  }
-  throw last
-}
+import { ROOT, PUBLIC, UA, CKAN, getJson, log, warn, type CkanResource } from './shared.js'
+import { prepareGuagua } from './prepare-guagua.js'
 
 // ---------------------------------------------------------------------------
 // 1. DEM — teselas terrarium
@@ -166,14 +142,6 @@ async function prepareDem(): Promise<void> {
 // ---------------------------------------------------------------------------
 // 2. Capas estáticas — CKAN
 // ---------------------------------------------------------------------------
-
-const CKAN = 'https://lapalmasmart-open.lapalma.es/datosabiertos/catalogo/api/3/action'
-
-interface CkanResource {
-  name: string
-  format: string
-  url: string
-}
 
 interface LayerSpec {
   /** Fichero de salida en public/layers/ */
@@ -416,145 +384,6 @@ async function prepareLayers(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// 2b. GTFS de TILP — qué líneas paran en cada parada
-// ---------------------------------------------------------------------------
-//
-// El feed publica horarios que NO se pueden usar: comprobado el 12 ago 2026,
-// todos los calendarios de servicio caducaron el 25 dic 2025 y no hay ni una
-// excepción con fecha de 2026. Anunciar esos horarios sería decirle a alguien
-// que pasa una guagua que no pasa.
-//
-// Lo que sí sobrevive a la caducidad es la topología: qué línea para dónde y
-// cómo se llama. Eso se extrae aquí y se marca con la fecha de caducidad, para
-// que la interfaz pueda enseñar el recorrido y callarse los horarios.
-
-interface GtfsStopRoutes {
-  generated: string
-  source: string
-  /** Última fecha de validez encontrada en calendar.txt (YYYY-MM-DD). */
-  validUntil: string | null
-  expired: boolean
-  routesByStop: Record<string, string[]>
-  routeNames: Record<string, string>
-}
-
-function parseCsv(text: string): Record<string, string>[] {
-  const lines = text.trim().split(/\r?\n/)
-  if (!lines.length) return []
-  const split = (line: string) => {
-    // Los campos GTFS pueden llevar comas dentro de comillas.
-    const out: string[] = []
-    let cur = ''
-    let quoted = false
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i]
-      if (c === '"') {
-        if (quoted && line[i + 1] === '"') {
-          cur += '"'
-          i++
-        } else quoted = !quoted
-      } else if (c === ',' && !quoted) {
-        out.push(cur)
-        cur = ''
-      } else cur += c
-    }
-    out.push(cur)
-    return out
-  }
-  const head = split(lines[0]).map((h) => h.replace(/^\uFEFF/, '').trim())
-  return lines.slice(1).map((l) => {
-    const cells = split(l)
-    const row: Record<string, string> = {}
-    head.forEach((h, i) => (row[h] = (cells[i] ?? '').trim()))
-    return row
-  })
-}
-
-async function prepareGtfs(): Promise<void> {
-  const pkg = await getJson<{ result: { resources: CkanResource[] } }>(
-    `${CKAN}/package_show?id=transporte-publico-de-la-palma-paradas-y-lineas-de-guagua`,
-  )
-  const res = pkg.result.resources.find((r) => (r.format ?? '').toUpperCase() === 'GTFS')
-  if (!res) {
-    warn('GTFS: no hay recurso en el catálogo')
-    return
-  }
-
-  const buf = Buffer.from(await (await fetch(res.url, { headers: UA })).arrayBuffer())
-  // `inflateRawSync`, no `unzipSync`: las entradas ZIP con método 8 son deflate
-  // CRUDO, sin la cabecera zlib/gzip que `unzipSync` espera.
-  const { inflateRawSync } = await import('node:zlib')
-  // El ZIP se lee a mano: añadir una dependencia por cuatro ficheros de texto
-  // no compensa. Sólo se soportan entradas STORE (0) y DEFLATE (8), que es lo
-  // que produce cualquier generador de GTFS.
-  const files = new Map<string, string>()
-  for (let i = 0; i < buf.length - 3; i++) {
-    if (buf.readUInt32LE(i) !== 0x04034b50) continue
-    const method = buf.readUInt16LE(i + 8)
-    const compSize = buf.readUInt32LE(i + 18)
-    const nameLen = buf.readUInt16LE(i + 26)
-    const extraLen = buf.readUInt16LE(i + 28)
-    const name = buf.toString('utf8', i + 30, i + 30 + nameLen)
-    const start = i + 30 + nameLen + extraLen
-    // compSize 0 significa que el tamaño va en un descriptor detrás de los
-    // datos; ese caso no aparece en este feed y no se adivina.
-    if (!compSize) continue
-    const raw = buf.subarray(start, start + compSize)
-    try {
-      files.set(
-        name,
-        method === 0 ? raw.toString('utf8') : inflateRawSync(raw).toString('utf8'),
-      )
-    } catch {
-      /* entrada que no interesa */
-    }
-  }
-
-  const routes = parseCsv(files.get('routes.txt') ?? '')
-  const trips = parseCsv(files.get('trips.txt') ?? '')
-  const stopTimes = parseCsv(files.get('stop_times.txt') ?? '')
-  const calendar = parseCsv(files.get('calendar.txt') ?? '')
-
-  const routeNames: Record<string, string> = {}
-  for (const r of routes) {
-    routeNames[r.route_id] = r.route_short_name || r.route_long_name || r.route_id
-  }
-  const routeOfTrip = new Map(trips.map((t) => [t.trip_id, t.route_id]))
-
-  const byStop = new Map<string, Set<string>>()
-  for (const st of stopTimes) {
-    const routeId = routeOfTrip.get(st.trip_id)
-    if (!routeId) continue
-    if (!byStop.has(st.stop_id)) byStop.set(st.stop_id, new Set())
-    byStop.get(st.stop_id)!.add(routeId)
-  }
-
-  const endDates = calendar.map((c) => c.end_date).filter(Boolean).sort()
-  const last = endDates[endDates.length - 1] ?? null
-  const validUntil = last ? `${last.slice(0, 4)}-${last.slice(4, 6)}-${last.slice(6, 8)}` : null
-  const expired = validUntil !== null && validUntil < new Date().toISOString().slice(0, 10)
-
-  const out: GtfsStopRoutes = {
-    generated: new Date().toISOString(),
-    source: res.url,
-    validUntil,
-    expired,
-    routeNames,
-    routesByStop: Object.fromEntries(
-      [...byStop].map(([stop, set]) => [
-        stop,
-        [...set].sort((a, b) => (routeNames[a] ?? a).localeCompare(routeNames[b] ?? b, 'es')),
-      ]),
-    ),
-  }
-  await writeFile(path.join(PUBLIC, 'guagua-lineas.json'), JSON.stringify(out))
-  log(
-    `GTFS: ${routes.length} líneas, ${byStop.size} paradas con servicio` +
-      ` · validez hasta ${validUntil} ${expired ? '(CADUCADO — sin horarios en la app)' : ''}`,
-  )
-}
-
-// ---------------------------------------------------------------------------
 // 3. Gazetteer — Overpass, EN BUILD TIME
 // ---------------------------------------------------------------------------
 
@@ -775,7 +604,7 @@ async function main() {
   await mkdir(PUBLIC, { recursive: true })
   if (run('dem')) await prepareDem()
   if (run('layers')) await prepareLayers()
-  if (run('gtfs')) await prepareGtfs()
+  if (run('gtfs')) await prepareGuagua()
   if (run('gazetteer')) await prepareGazetteer()
   if (run('snapshot')) await prepareSnapshot()
   log('listo')
