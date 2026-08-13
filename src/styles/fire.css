@@ -1,0 +1,26 @@
+/*
+ * La capa experimental de incendios.
+ *
+ * Casi todo reutiliza las clases que ya existen —`.kv`, `.warn`, `.switches`,
+ * `.band-scale`—, y aquí solo está lo que no tenía dónde ir: la cifra grande
+ * del índice en la ficha del punto.
+ */
+
+/*
+ * El índice, en grande, con el color de su tramo.
+ *
+ * Va sin unidad a propósito: un «40 %» junto a un mapa de incendios se lee
+ * como «cuarenta posibilidades de cien de que arda», y no es eso. El número va
+ * desnudo y la tabla de debajo explica de qué.
+ */
+.fire-index {
+  font-size: 2.1rem;
+  line-height: 1.1;
+  margin: 0.2rem 0 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.fire-index .small {
+  font-size: 0.8rem;
+  vertical-align: middle;
+}

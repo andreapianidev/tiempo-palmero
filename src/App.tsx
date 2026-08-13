@@ -22,6 +22,8 @@ import { elevationAt } from './lib/dem'
 import { VARIABLES, isBundleVariable, type MapVariable } from './lib/variables'
 import { buildCo2Field } from './lib/co2/field'
 import { useCoverage } from './hooks/useCoverage'
+import { useFireRisk } from './hooks/useFireRisk'
+import { fireValueAt } from './lib/fire/field'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
 import type { BasemapId } from './lib/basemaps'
@@ -214,6 +216,40 @@ export default function App() {
         : null
 
   /**
+   * La capa experimental de incendios. Se pide solo cuando está elegida: son
+   * 134 KB de cartografía rasterizada y modelo, más una llamada al archivo de
+   * lluvia, y la mayoría de las visitas vienen a mirar la temperatura.
+   */
+  const fire = useFireRisk(variable === 'fire')
+
+  /**
+   * El campo continuo que no sale del motor. Hoy solo el de incendios; llega
+   * a `MapView` por la misma puerta que el enmascarado, para que añadir el
+   * siguiente no signifique volver a tocar el mapa.
+   */
+  const fireInput = useMemo(
+    () =>
+      fire.statics && data.dem
+        ? {
+            statics: fire.statics,
+            dem: data.dem,
+            models: data.models,
+            wind: wind.field,
+            drought: fire.drought,
+          }
+        : null,
+    [fire.statics, fire.drought, data.dem, data.models, wind.field],
+  )
+
+  const gridField = useMemo(
+    () =>
+      variable === 'fire' && fireInput
+        ? { valueAt: fireValueAt(fireInput), stops: VARIABLES.fire.stops }
+        : null,
+    [variable, fireInput],
+  )
+
+  /**
    * El mar de nubes NO cuesta una petición: sale de los perfiles verticales
    * que el motor ya descarga para anclar las cotas altas. Lo único que hacía
    * falta era pedirle a la misma llamada la nubosidad baja, que es lo que
@@ -333,6 +369,7 @@ export default function App() {
       faulty={faultyIds}
       eto={agro.eto}
       tdt={tdt.mask}
+      fire={fireInput}
       now={now}
       onClose={() => setProbe(null)}
     />
@@ -389,6 +426,7 @@ export default function App() {
         variable={variable}
         stops={stops}
         maskedField={maskedField}
+        gridField={gridField}
         stations={data.stations}
         summit={data.summit}
         health={data.health.diagnoses}
@@ -511,6 +549,7 @@ export default function App() {
         onVariable={setVariable}
         co2Field={co2Field}
         coverage={coverage}
+        fire={fire}
         basemap={basemap}
         onBasemap={setBasemap}
         terrain={terrain}

@@ -12,6 +12,7 @@ import type { InterpolableVariable, Model } from '../../lib/interpolate'
 import type { MapVariable } from '../../lib/variables'
 import type { Co2Field } from '../../lib/co2/field'
 import type { CoverageState } from '../../hooks/useCoverage'
+import type { FireRiskState } from '../../hooks/useFireRisk'
 import type { NetworkCensus, Station } from '../../lib/quality'
 import type { SensorHealth } from '../../hooks/useSensorHealth'
 import type { GazetteerEntry } from '../../lib/api'
@@ -22,6 +23,7 @@ import { t } from '../../i18n'
 import { Section } from './Section'
 import { PlaceSearch } from './PlaceSearch'
 import { VariablePicker } from './VariablePicker'
+import { FireRisk } from './FireRisk'
 import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
 import { PlaceSwitches, PLACE_COUNT, activePlaceCount } from './PlaceSwitches'
 import type { PlaceVisibility } from '../../hooks/usePlaces'
@@ -61,6 +63,8 @@ interface Props {
   co2Field: Co2Field | null
   /** El sondeo de cobertura de 2013. Solo se descarga si se elige. */
   coverage: CoverageState
+  /** La capa experimental de incendios: su modelo y qué le falta. */
+  fire: FireRiskState
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
@@ -218,6 +222,25 @@ export function Sidebar(props: Props) {
               <CoverageStatus state={props.coverage} />
             </Section>
           )}
+
+          {/*
+            «Experimental» va DESPUÉS de las capas y no entre las variables, y
+            plegada por defecto. Es la sección donde entrarán las funciones que
+            todavía no se sostienen como el resto de la aplicación, y ponerla
+            arriba las igualaría con lo que sí está medido.
+          */}
+          <Section
+            title={t.fireRisk.title}
+            badge={props.variable === 'fire' ? 'activa' : '1'}
+          >
+            <FireRisk
+              fire={props.fire}
+              active={props.variable === 'fire'}
+              onActivate={() =>
+                props.onVariable(props.variable === 'fire' ? 'temperature' : 'fire')
+              }
+            />
+          </Section>
 
           <Section
             title={t.layers.title}

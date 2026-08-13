@@ -55,6 +55,9 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
   origen, 124 KB en el navegador, cero almacenamiento propio ·
   [La vista 3D](#la-vista-3d) — sin una descarga más, y por qué no exagera el
   relieve
+- [La sección experimental](#la-sección-experimental-y-el-índice-de-incendio) —
+  el índice de incendio: cinco incendios, un clasificador validado escondiendo
+  uno entero cada vez, y todo lo que no puede hacer
 - [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — qué se
   llama de verdad, y con qué permiso
 - [Arquitectura](#arquitectura)
@@ -1306,6 +1309,217 @@ que una completa, y la forma no puede ser el único aviso.
 
 ---
 
+---
+
+## La sección experimental, y el índice de incendio
+
+Es la primera función que entra en un sitio nuevo de la barra lateral,
+**«Experimental»**, plegado y detrás de un aviso. Va ahí y no entre las
+variables normales porque no se sostiene igual que el resto de la aplicación, y
+ponerla al lado de la temperatura la igualaría con una medida.
+
+**Lo primero, lo que no es.** No es un aviso oficial ni sustituye a ninguno.
+Los avisos de riesgo, las alertas y las prohibiciones las publican el Cabildo
+Insular y el Gobierno de Canarias. No es una probabilidad de que algo arda hoy.
+No dice dónde va a empezar un incendio. Y el número que enseña va de 0 a 100
+**sin el signo de porcentaje**, precisamente porque un «40 %» sobre un mapa de
+incendios se lee como «cuarenta posibilidades de cien», y no es eso.
+
+Lo que sí es: el producto de dos cosas medidas por separado.
+
+### 1. Dónde se quema esta isla — un clasificador, y cinco incendios
+
+La pregunta que el modelo contesta es estrecha a propósito: **dado que en La
+Palma se declara un gran incendio, ¿qué probabilidad hay de que llegue a este
+punto?** Es la geografía de lo ya quemado proyectada sobre el resto de la isla.
+
+Se entrena con **los cinco incendios de los que existe perímetro publicado**, que
+son todos los grandes del siglo XXI menos los que nadie cartografió:
+
+| año | fuente | declarado | celdas de 201 m | AUC del pliegue |
+|---|---|---:|---:|---:|
+| 2009 | Cabildo, `Perimetro_incendio_2009` | 4.023 ha | 990 | 0,882 |
+| 2012 | Cabildo, `Perimetro_incendio_2012` | 3.180 ha | 780 | 0,856 |
+| 2016 | Copernicus EFFIS (El Paso) | 4.629 ha | 1.153 | 0,944 |
+| 2020 | Copernicus EFFIS (Garafía) | 1.200 ha | 301 | **0,653** |
+| 2023 | Copernicus EFFIS (Tijarafe) | 2.925 ha | 725 | 0,833 |
+
+Rasterizar el perímetro y contar celdas devuelve la superficie declarada con un
+error por debajo del 1 % en los cinco casos —4.009 ha contra 4.023, 3.159 contra
+3.180, 4.669 contra 4.629, 1.219 contra 1.200 y 2.936 contra 2.925—, que es la
+comprobación de que la malla, la proyección y el rasterizador están bien. En
+total **3.219 celdas quemadas, el 18,3 % de la isla**.
+
+Se dejan fuera dos cosas y conviene decir cuáles: el incendio de 2005, del que
+hay 38 detecciones de satélite y ningún perímetro, y el de 2024, que son 5 ha —o
+sea **una celda**, que no enseña nada espacial y sí mete una fila con peso
+propio.
+
+Los predictores son el modelo de combustible, la pendiente, hacia dónde mira la
+ladera, la altitud y la distancia a la vía más cercana. La importancia que les
+da el modelo, medida:
+
+| predictor | peso |
+|---|---:|
+| altitud | 29,7 % |
+| orientación al oeste | 23,9 % |
+| combustible: hojarasca de pinar | 12,4 % |
+| orientación al sur | 12,4 % |
+| pendiente | 8,0 % |
+| combustible: pasto | 7,5 % |
+| combustible: matorral bajo arbolado | 3,7 % |
+| distancia a una vía | **1,4 %** |
+
+**La distancia a una vía casi no pesa, y eso es un resultado, no un fallo.** El
+supuesto de partida era el contrario —los incendios los empieza alguien, así que
+la proximidad humana debería mandar—, y esta isla lo desmiente por una razón
+concreta: tiene 2.225 km de pistas agrícolas y forestales, y el **60,5 % de las
+celdas tienen una vía dentro**. La mediana de la distancia es 0 m. Aquí casi
+nada es remoto, así que la variable no separa nada.
+
+### 2. Cómo de excepcional es el día — un percentil, no un umbral
+
+Los cinco incendios son cinco días. Con cinco días **no se ajusta un modelo
+meteorológico**: se ajusta un recuerdo. Así que la parte del tiempo no se
+entrena, se mide contra el clima.
+
+Se calcula el índice de Fosberg —humedad de equilibrio del combustible fino, de
+Simard (1968), más viento— y los días sin llover de **los 8.766 días de 2001 a
+2024** sobre las seis celdas que el archivo de reanálisis resuelve en la isla, y
+el peligro de hoy es su **percentil dentro de esa distribución**. Cuando la
+interfaz dice 0,93 está diciendo «hoy es peor que el 93 % de los días de los
+últimos veinticuatro años», que es una frase comprobable.
+
+Los dos ingredientes se combinan con la **media geométrica**, que exige que los
+dos estén altos: seco pero en calma, o ventoso sobre suelo mojado, es justo la
+situación en la que no pasa nada.
+
+Y esto es lo que salió al situar los cinco arranques en esa escala:
+
+| incendio | Fosberg | percentil | días sin llover | percentil |
+|---|---:|---:|---:|---:|
+| 2009 | 44,6 | 98,4 | 126 | 90,6 |
+| 2012 | 27,4 | 63,5 | 119 | 89,1 |
+| 2016 | 35,4 | 88,4 | 87 | 81,2 |
+| 2020 | 22,4 | **42,8** | 66 | 74,4 |
+| 2023 | 32,5 | 81,3 | 24 | 50,0 |
+
+**Cuatro de los cinco arrancaron con el tiempo en la mitad alta, y uno no.** El
+de Garafía de 2020 empezó en un día del montón. Con cinco casos eso no valida la
+escala ni la desmiente: la sitúa, y se publica tal cual en vez de quedarse con
+los cuatro que quedan bien.
+
+### La validación es la parte seria
+
+Es donde casi todos los mapas de riesgo de incendio que circulan hacen trampa
+sin querer. Repartir las celdas al azar entre entrenamiento y prueba da un AUC
+magnífico y **falso**: las celdas de un mismo incendio son vecinas, así que la
+mitad de prueba está rodeada de celdas de entrenamiento y al modelo le basta con
+interpolar.
+
+Aquí se deja **un incendio entero fuera** cada vez, se entrena con los otros
+cuatro y se puntúa sobre el que no vio. Medido con el mismo modelo:
+
+| protocolo | AUC |
+|---|---:|
+| repartiendo celdas al azar | **0,903** ← la cifra que no se publica |
+| escondiendo un incendio entero | **0,833** |
+| el peor pliegue, Garafía 2020 | **0,653** |
+
+Esas siete centésimas de diferencia son el tamaño del autoengaño. Y el peor
+pliegue se publica en la propia interfaz en vez de esconderse tras la media:
+**lo que el modelo aprendió del sur y del oeste no le sirvió del todo en el
+noroeste**, y quien mire el mapa de Garafía tiene derecho a saberlo.
+
+La sutileza que hace honesto el reparto: en el pliegue que esconde 2016, sus
+celdas **no pueden contar como «no se quemó»** al entrenar. Se quemaron, solo
+que el modelo no tiene derecho a saberlo todavía, así que se sacan del ajuste
+por completo. Meterlas como negativas enseñaría que el sitio donde de verdad
+ardió es un sitio que no arde.
+
+### Por qué árboles y no una recta
+
+Se midió, con el mismo protocolo duro:
+
+| familia | AUC media | peor pliegue |
+|---|---:|---:|
+| regresión logística | 0,735 | **0,513** |
+| árboles con potenciación del gradiente | 0,834 | **0,653** |
+| bosque aleatorio | 0,833 | 0,611 |
+
+Un AUC de 0,513 es no distinguir nada. La razón se ve en el propio mapa: la
+relación entre altitud y quemarse **no es monótona** —arde la banda del pinar,
+entre unos 800 y 1.500 m, y no arde ni la costa regada ni la cumbre pelada—, y
+una recta solo puede decir «cuanto más alto, más» o «cuanto más alto, menos»,
+que son las dos falsas a la vez.
+
+Se publica el conjunto de árboles y no el bosque aleatorio porque, empatados de
+media, es mejor donde importa: 0,653 contra 0,611 en el peor pliegue. Y se elige
+**profundidad 2**, aunque profundidad 4 saque 0,662, porque esa décima está
+dentro del ruido de tener cinco pliegues mientras que las interacciones de
+cuatro variables ajustadas sobre cinco incendios son exactamente cómo se
+memoriza un perímetro.
+
+### Qué llega al navegador
+
+Nada de todo eso. El entrenamiento vive en `scripts/ml/`, en Python con
+scikit-learn, y se corre a mano; lo que se despliega son **dos ficheros**:
+
+- `public/fire/static.png`, **26 KB** — 298 × 384, un píxel por celda de 201 m,
+  con el modelo de combustible en el rojo, la distancia a la vía en el verde y
+  la pendiente en el azul. Detrás hay 217.137 polígonos de cultivos y 14.153 de
+  modelos de combustible que no llegan a salir del script.
+- `public/fire/model.json`, **108 KB** — 150 árboles, 1.050 nodos, más las
+  métricas de validación y las fuentes. El navegador lo recorre con dos
+  comparaciones por árbol y sin ninguna biblioteca.
+
+Es el mismo trato que este proyecto ya le da al DEM y al viario de
+OpenStreetMap: lo pesado se congela en compilación.
+
+**Y que las dos mitades digan lo mismo no se supone.** El entrenamiento congela
+cuarenta celdas repartidas por la isla con sus entradas en crudo y la
+probabilidad que les dio scikit-learn, y un test de vitest exige que el código
+del navegador saque **la misma cifra hasta la sexta decimal**. Un umbral
+comparado con `<` en vez de `<=`, la tasa de aprendizaje aplicada dos veces o el
+orden de las columnas cambiado al reentrenar no rompen nada: producen un mapa
+con la forma de la isla, colores verosímiles y cifras equivocadas.
+
+### El combustible, y el año que lleva pegado
+
+La cartografía de **modelos de combustible de Canarias** que publica el Gobierno
+de Canarias trae La Palma ya recortada: 14.153 polígonos a 25 m con la
+clasificación estándar de Anderson (1982), los modelos NFFL. No es un mapa de
+vegetación que haya que traducir —viene traducido—, y de los trece modelos, en
+esta isla aparecen nueve. El más extenso es el 7, matorral bajo arbolado, con
+18.965 ha; el pinar canario es el 9, con 7.561.
+
+Esa cartografía cubre lo forestal y deja fuera la agricultura, así que el 24 %
+restante se rellena con el mapa de cultivos de 2002–2008 traducido a los mismos
+modelos. **Ese mapa es anterior a la erupción de 2021 y a quince años más de
+abandono agrícola**, y la interfaz lo dice donde lo usa. Se equivoca hacia
+abajo: el abandono solo ha ido a más.
+
+Quedan **1.268 celdas —el 7,2 % de la isla— sin clasificar por ninguna de las
+dos**, casi todas en el borde de la costa. Ahí no se pinta nada y la ficha lo
+dice. «No lo sé» y «aquí no arde» son cosas distintas, y colapsarlas pintaría de
+tranquilo justo lo que nadie ha mirado.
+
+### Lo que esta capa no puede hacer
+
+- **No predice igniciones.** Aprende dónde llegan los incendios, no dónde
+  empiezan.
+- **Cinco episodios son cinco.** Las 3.219 celdas quemadas no son 3.219 datos
+  independientes; el error real está dominado por tener cinco eventos, y por eso
+  se publican los cinco pliegues en vez de una media sola.
+- **La lluvia es de un modelo de 11 km.** Resuelve seis celdas sobre la isla, no
+  un barranco. No se interpola entre ellas —cada punto toma la suya— porque la
+  vertiente noreste recibe múltiplos de la suroeste y una superficie continua
+  entre dos puntos sería inventada.
+- **No hay cortafuegos, ni torres de vigilancia, ni hidrantes.** No están
+  publicados: una búsqueda sobre los 793 servicios del visor del Cabildo no
+  devuelve ni uno.
+
+
 ## Licencias en tiempo de ejecución
 
 La procedencia de cada byte importa, así que aquí está escrita.
@@ -1803,6 +2017,16 @@ clave que configurar.
   <https://www.openstreetmap.org/copyright>
 - **Modelo de elevación y relieve** — Mapzen Terrain Tiles vía AWS Open Data,
   derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM.
+- **Áreas quemadas** — Copernicus Emergency Management Service, EFFIS
+  (incendios de 2016, 2020 y 2023). <https://forest-fire.emergency.copernicus.eu>
+  Los perímetros de 2009 y 2012 son del Cabildo Insular de La Palma, CC-BY 4.0.
+- **Modelos de combustible** — Gobierno de Canarias, Consejería de Medio
+  Ambiente, cartografía de modelos de combustible, hoja de La Palma. El mapa de
+  cultivos 2002–2008 que rellena la agricultura también es del Gobierno de
+  Canarias, servido por el visor ArcGIS del Cabildo.
+- **Archivo meteorológico** — Open-Meteo, archivo de reanálisis (ERA5), usado
+  para los días sin llover y para el clima de 2001–2024 con el que se calibra la
+  escala del peligro. Es un modelo, no una medida, y va etiquetado como tal.
 
 El **código** es MIT. Los **datos** conservan las licencias de arriba: quien
 reutilice este repositorio mantiene las atribuciones. Ver [LICENSE](LICENSE).

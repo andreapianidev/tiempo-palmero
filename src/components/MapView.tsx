@@ -125,6 +125,17 @@ interface Props {
    * construcciones separadas podrían acabar contando cosas distintas.
    */
   maskedField: MaskedField | null
+  /**
+   * Un campo CONTINUO que no sale del motor de interpolación.
+   *
+   * Existe por la capa experimental de incendios, que cubre la isla entera
+   * como la malla higrotérmica pero no se calcula con `estimateBundle`. Llega
+   * como un cierre `valueAt` en vez de como una malla ya pintada por el mismo
+   * motivo que `maskedField`: quien decide el paso y el recorte es el
+   * rasterizador, y quien cuenta las cifras en el panel tiene que estar usando
+   * exactamente el mismo campo que el mapa.
+   */
+  gridField: { valueAt: (lon: number, lat: number, elevation: number) => number | null; stops: RgbStop[] } | null
   stations: Station[]
   /**
    * La estación de la cumbre (TNG, 2387 m), si está fresca.
@@ -692,9 +703,15 @@ export function MapView(props: Props) {
     const src = map.getSource('grid') as maplibregl.ImageSource | undefined
     if (!src) return
 
-    const masked = !isBundleVariable(variable)
+    // Tres campos distintos comparten esta capa: el higrotérmico continuo que
+    // sale del motor, los enmascarados que solo existen donde alguien midió, y
+    // el continuo del modelo de incendios, que cubre la isla pero no viene de
+    // `estimateBundle`. Para quien mira son la misma cosa —lo que colorea el
+    // mapa— y por eso comparten fuente de imagen.
+    const external = props.gridField
+    const masked = !isBundleVariable(variable) && !external
     const field = props.maskedField
-    if (!visible.grid || (masked ? !field : !models.temperature)) {
+    if (!visible.grid || (external ? false : masked ? !field : !models.temperature)) {
       map.setLayoutProperty('grid-raster', 'visibility', 'none')
       return
     }
@@ -705,7 +722,9 @@ export function MapView(props: Props) {
       masked ? 'nearest' : 'linear',
     )
 
-    const grid = masked
+    const grid = external
+      ? renderGrid(dem, external.valueAt, external.stops)
+      : masked
       ? (() => {
           const raster = rasterizeMasked(field!)
           return {
@@ -735,7 +754,7 @@ export function MapView(props: Props) {
         [w, s],
       ],
     })
-  }, [ready, dem, models, variable, stops, visible.grid, props.maskedField])
+  }, [ready, dem, models, variable, stops, visible.grid, props.maskedField, props.gridField])
 
   // --- viento animado ------------------------------------------------------
   //
