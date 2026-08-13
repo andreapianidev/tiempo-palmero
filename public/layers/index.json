@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-13T12:14:53.639Z",
+  "generated": "2026-08-13T12:59:27.201Z",
   "source": "Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island), catálogo CKAN y visor ArcGIS de opendatalapalma.es. Las capas con `source` propio no vienen de ahí: dice cada una de dónde sale y con qué licencia.",
   "license": "CC-BY 4.0 / ODC-BY (límites administrativos)",
   "layers": {
@@ -79,6 +79,31 @@
       "label": "Viario completo de OSM (19.770 trazados, 3.373 km)",
       "source": "OpenStreetMap vía Overpass API",
       "license": "ODbL 1.0"
+    },
+    "faros": {
+      "file": "/layers/faros.geojson",
+      "features": 4,
+      "label": "Faros (4)"
+    },
+    "telecomunicaciones": {
+      "file": "/layers/telecomunicaciones.geojson",
+      "features": 100,
+      "label": "Antenas de telecomunicaciones (100)"
+    },
+    "cobertura-movil": {
+      "file": "/layers/cobertura-movil.geojson",
+      "features": 669,
+      "label": "Sondeo de cobertura móvil de 2013 (669 medidas)"
+    },
+    "hidrico": {
+      "file": "/layers/hidrico.geojson",
+      "features": 433,
+      "label": "Captación y almacenamiento de agua: balsas, nacientes, pozos y galerías (433)"
+    },
+    "hidrico-canales": {
+      "file": "/layers/hidrico-canales.geojson",
+      "features": 133,
+      "label": "Canales de transporte de agua LP-I, LP-II y LP-III (133)"
     }
   }
 }
