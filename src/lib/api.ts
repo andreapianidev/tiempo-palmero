@@ -10,6 +10,7 @@
 
 import { decode, isCdaPayload, type CdaRow, type Vertical } from './cabildo'
 import { dataUrl } from './endpoints'
+import { clockSkewMs } from './co2/clock'
 
 export class UpstreamDownError extends Error {
   constructor(public readonly detail: string) {
@@ -70,8 +71,14 @@ export interface Co2Reading {
    */
   heightM: number | null
   battery: number | null
-  /** Epoch ms. `Ts` viene en segundos y es la referencia fiable: `Fecha` es
-   *  DD/MM/YYYY y ordena mal como cadena. */
+  /**
+   * Epoch ms UTC, ya corregido.
+   *
+   * `Ts` viene en segundos y sigue siendo la referencia buena frente a
+   * `Fecha`, que es DD/MM/YYYY y ordena mal como cadena. Lo que no era cierto
+   * es que `Ts` fuese UTC: es hora canaria emitida como tal, así que en verano
+   * llega una hora adelantada. Ver `co2/clock.ts`.
+   */
   at: number
 }
 
@@ -104,6 +111,15 @@ export async function fetchCo2Readings(): Promise<{ fetchedAt: number; readings:
       valores?: { Id: number; Co2?: number; 'co2%'?: number; temp?: number; bat?: number }
     }[]
   }
+  // `Ts` viene en hora canaria emitida como si fuera UTC, así que en verano
+  // llega una hora adelantado y NINGUNA lectura llegaba a marcarse rancia. Ver
+  // `co2/clock.ts`: el desfase se mide en el propio lote y en invierno vale
+  // cero solo.
+  const skew = clockSkewMs(
+    body.data.map((r) => r.Ts * 1000),
+    body.fetchedAt,
+  )
+
   const readings: Co2Reading[] = []
   for (const r of body.data) {
     const v = r.valores
@@ -115,7 +131,7 @@ export async function fetchCo2Readings(): Promise<{ fetchedAt: number; readings:
       tempC: v.temp ?? null,
       heightM: typeof r.Altura === 'number' ? r.Altura : null,
       battery: v.bat ?? null,
-      at: r.Ts * 1000,
+      at: r.Ts * 1000 - skew,
     })
   }
   return { fetchedAt: body.fetchedAt, readings }

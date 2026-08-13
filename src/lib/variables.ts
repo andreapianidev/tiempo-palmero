@@ -19,21 +19,51 @@
 
 import type { DisplayVariable } from './interpolate'
 import {
+  CO2_BANDS,
   DEWPOINT_STOPS,
   HUMIDITY_STOPS,
   TEMP_STOPS,
   VPD_STOPS,
+  type Co2Band,
   type RgbStop,
 } from './palette'
 import { n, t } from '../i18n'
 
+/**
+ * Lo que el selector de variable ofrece.
+ *
+ * Es MÁS ancho que `DisplayVariable` a propósito. Aquélla es el paquete
+ * higrotérmico que sale de un mismo ajuste y se puede estimar en cualquier
+ * punto de la isla; el CO₂ no sale de ahí ni se parece: viene de otra red, se
+ * pinta con otro método y solo existe donde hay sensores. Comparten sitio en
+ * la interfaz —las dos son «lo que colorea el mapa»— y nada más, y por eso el
+ * tipo se abre aquí en vez de ensanchar el del motor.
+ */
+export type MapVariable = DisplayVariable | 'co2'
+
 export interface VariableSpec {
-  id: DisplayVariable
+  id: MapVariable
   label: string
   /** Etiqueta corta para chips estrechos. */
   short: string
   unit: string
+  /**
+   * Rampa continua. El CO₂ también la trae, pero solo para que el tipo sea
+   * uno: quien pinta CO₂ usa `bands`, nunca esto (ver `co2/raster.ts`).
+   */
   stops: RgbStop[]
+  /**
+   * Escala por TRAMOS en vez de degradado. Solo el CO₂. Un gradiente suave
+   * entre 900 y 1100 ppm sugiere una transición gradual donde lo que hay es un
+   * umbral de decisión, así que la leyenda se dibuja escalonada.
+   */
+  bands?: Co2Band[]
+  /**
+   * La variable NO cubre la isla: solo existe donde hay sensores propios. La
+   * interfaz lo dice antes de que nadie busque su pueblo en el mapa y no
+   * encuentre color.
+   */
+  local?: string
   /** Decimales con los que se enseña. El VPD necesita dos: su rango útil es 0–4. */
   decimals: number
   /**
@@ -46,7 +76,7 @@ export interface VariableSpec {
   hint?: string
 }
 
-export const VARIABLES: Record<DisplayVariable, VariableSpec> = {
+export const VARIABLES: Record<MapVariable, VariableSpec> = {
   temperature: {
     id: 'temperature',
     label: t.variables.temperature,
@@ -83,9 +113,31 @@ export const VARIABLES: Record<DisplayVariable, VariableSpec> = {
     derived: true,
     hint: t.variables.vpdHint,
   },
+  co2: {
+    id: 'co2',
+    label: t.variables.co2,
+    short: 'CO₂',
+    unit: t.units.ppm,
+    // Presente por el tipo, no por el mapa: el raster de CO₂ colorea con
+    // `co2Band`, que es escalonada. Si algo llegase a muestrear esta rampa
+    // saldría un color intermedio entre dos tramos, que es justo lo que la
+    // escala por bandas existe para no hacer.
+    stops: CO2_BANDS.map((b) => [b.from, b.color] as RgbStop),
+    bands: CO2_BANDS,
+    decimals: 0,
+    local: t.variables.co2Local,
+    hint: t.variables.co2Hint,
+  },
 }
 
-/** En el orden en que se enseñan. Lo medido primero, lo derivado después. */
+/**
+ * En el orden en que se enseñan. Lo medido primero, lo derivado después.
+ *
+ * Son las cuatro del paquete higrotérmico y NADA más: esta lista es la que
+ * decide qué puede pedirle la interfaz al motor de interpolación, y la app
+ * nativa la usa para separar variables de capas. Meter aquí el CO₂ haría que
+ * el móvil tratase su capa de sensores como una malla.
+ */
 export const VARIABLE_ORDER: readonly DisplayVariable[] = [
   'temperature',
   'relativehumidity',
@@ -93,8 +145,24 @@ export const VARIABLE_ORDER: readonly DisplayVariable[] = [
   'vpd',
 ]
 
+/** Lo que enseña el selector: las cuatro de arriba y el CO₂ al final. */
+export const MAP_VARIABLE_ORDER: readonly MapVariable[] = [...VARIABLE_ORDER, 'co2']
+
+/**
+ * Comprueba pertenencia contra `VARIABLE_ORDER`, no contra `VARIABLES`.
+ *
+ * Antes era `id in VARIABLES`, y en cuanto el catálogo admitió el CO₂ esa
+ * forma habría empezado a decir que sí para «co2» —que en el móvil es el
+ * nombre de una CAPA de sensores, no de una malla— y a mandar esa capa por el
+ * camino del interpolador.
+ */
 export function isDisplayVariable(id: string): id is DisplayVariable {
-  return id in VARIABLES
+  return (VARIABLE_ORDER as readonly string[]).includes(id)
+}
+
+/** La variable elegida sale del paquete higrotérmico y no de una red aparte. */
+export function isBundleVariable(v: MapVariable): v is DisplayVariable {
+  return isDisplayVariable(v)
 }
 
 /**

@@ -14,6 +14,23 @@ export interface GridResult extends GridRaster {
   canvas: HTMLCanvasElement
 }
 
+/**
+ * Píxeles sueltos → `<canvas>`. Lo comparten la malla de la isla y la mancha
+ * de CO₂, que son dos rasters distintos con el mismo último paso.
+ */
+export function rasterToCanvas(
+  pixels: Uint8ClampedArray<ArrayBuffer>,
+  cols: number,
+  rows: number,
+): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = cols
+  canvas.height = rows
+  const ctx = canvas.getContext('2d')!
+  ctx.putImageData(new ImageData(pixels, cols, rows), 0, 0)
+  return canvas
+}
+
 /** La malla ya montada en un `<canvas>`, que es lo que consume la web. */
 export function renderGrid(
   dem: Dem,
@@ -22,10 +39,5 @@ export function renderGrid(
   opts: GridOptions = {},
 ): GridResult {
   const raster = rasterizeGrid(dem, valueAt, stops, opts)
-  const canvas = document.createElement('canvas')
-  canvas.width = raster.cols
-  canvas.height = raster.rows
-  const ctx = canvas.getContext('2d')!
-  ctx.putImageData(new ImageData(raster.pixels, raster.cols, raster.rows), 0, 0)
-  return { ...raster, canvas }
+  return { ...raster, canvas: rasterToCanvas(raster.pixels, raster.cols, raster.rows) }
 }

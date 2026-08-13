@@ -58,6 +58,14 @@ export const es = {
       'El VPD mide la sed del aire: cuánto vapor le falta para saturarse. Se calcula de la temperatura y la humedad, no se interpola aparte. Dice lo que la humedad relativa esconde — 80 % a 12 °C son 0,28 kPa y 80 % a 28 °C son 0,76, casi el triple de demanda con el mismo número en pantalla.',
     derivedHint:
       'El punto de rocío se calcula a partir de la temperatura y la humedad, no se interpola por separado: solo 10 de las 52 estaciones lo publican con datos frescos. Aquí sale de las estimadas para este punto; en cada pin, de las que mide esa estación. Así las tres cifras nunca se contradicen entre sí.',
+    co2: 'CO₂ del suelo',
+    co2Local: 'Solo Puerto Naos, La Bombilla y su entorno',
+    co2Hint:
+      'Concentración de CO₂ medida por la red DEMASE. No se promedia entre sensores: cada punto del mapa enseña la lectura del sensor más cercano, y solo hasta 80 m. Fuera de la zona vigilada no hay ni un sensor de CO₂ en la isla, así que no se pinta nada.',
+    co2Scope:
+      'La red cubre la zona vigilada del oeste. En el resto de la isla no hay sensores de CO₂ —la red de calidad del aire del Cabildo no mide esta variable— y el único dato disponible es el fondo atmosférico del modelo CAMS, unos 437 ppm iguales para toda la isla.',
+    co2NoAverage:
+      'Sin promediar: el color de cada punto es la medida de un sensor a menos de 80 m.',
     wind: 'Viento',
     precipitation: 'Precipitación',
     pressure: 'Presión',
@@ -589,8 +597,15 @@ export const es = {
     networkDown: 'La red de sensores de CO₂ no responde.',
     networkDownDetail:
       'No se muestra ninguna lectura anterior. Consulta la fuente oficial del Cabildo.',
+    // Esta frase decía «nunca se interpola ni se colorea el área entre
+    // sensores», y dejó de ser cierta el día que el mapa pasó a colorear la
+    // zona vigilada. Lo que sigue siendo cierto —y es lo que importa— es que
+    // no se promedia nada: el color de un punto es la lectura de un sensor
+    // concreto, no una mezcla de varios, y se corta a 80 m.
     neverInterpolated:
-      'Nunca se interpola ni se colorea el área entre sensores. Cada punto es la medida de ese sensor y de ningún otro sitio.',
+      'Entre sensores no se promedia nada: cada punto del mapa toma la lectura del sensor más cercano y solo hasta 80 m. Más allá no se colorea, porque ahí no hay medida.',
+    noneLive:
+      'Ahora mismo no hay ninguna lectura exterior fresca, así que no se pinta ningún campo.',
     officialSource: 'Información oficial del Cabildo Insular',
     officialSourceUrl: 'https://www.cabildodelapalma.es/',
     sensorsReporting: (fresh: number, total: number) =>

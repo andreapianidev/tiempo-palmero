@@ -14,9 +14,11 @@ import { useAgro } from './hooks/useAgro'
 import { useTrailReports } from './hooks/useTrailReports'
 import { summarizeDeck } from './lib/clouds'
 import { elevationAt } from './lib/dem'
-import { VARIABLES } from './lib/variables'
+import { VARIABLES, isBundleVariable, type MapVariable } from './lib/variables'
+import { buildCo2Field } from './lib/co2/field'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
+import type { BasemapId } from './lib/basemaps'
 import { warmNearbyLayers } from './lib/nearby'
 import { t } from './i18n'
 
@@ -66,7 +68,10 @@ export default function App() {
   // Igual que las guaguas: tres peticiones al servicio del Cabildo que no se
   // hacen mientras el interruptor esté apagado.
   const counters = useCounters(visible.counters)
-  const [variable, setVariable] = useState<DisplayVariable>('temperature')
+  const [variable, setVariable] = useState<MapVariable>('temperature')
+  // El fondo de casa es el de arranque, y a propósito: es el único que no
+  // depende de un servicio ajeno para que la isla aparezca en pantalla.
+  const [basemap, setBasemap] = useState<BasemapId>('relieve')
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [showSources, setShowSources] = useState(false)
@@ -99,7 +104,22 @@ export default function App() {
     return () => clearTimeout(id)
   }, [data.dem])
 
-  const stops = VARIABLES[variable].stops
+  /**
+   * La variable higrotérmica en juego. Con el CO₂ elegido no hay ninguna, y en
+   * su lugar va la temperatura: los pines de estación y la ficha de punto
+   * siguen hablando del tiempo, que es lo que esas estaciones miden.
+   */
+  const bundleVariable: DisplayVariable = isBundleVariable(variable)
+    ? variable
+    : 'temperature'
+  const stops = VARIABLES[bundleVariable].stops
+
+  /**
+   * El campo de CO₂ se construye UNA vez y lo comparten mapa y panel. Si cada
+   * uno lo armara por su cuenta, el panel podría estar contando 187 sensores
+   * mientras el mapa pinta otros tantos.
+   */
+  const co2Field = useMemo(() => buildCo2Field(data.co2), [data.co2])
 
   /**
    * El mar de nubes NO cuesta una petición: sale de los perfiles verticales
@@ -196,6 +216,7 @@ export default function App() {
         models={data.models}
         variable={variable}
         stops={stops}
+        co2Field={co2Field}
         stations={data.stations}
         health={data.health.diagnoses}
         air={data.air}
@@ -218,6 +239,7 @@ export default function App() {
         canalsVisible={placesOn.water}
         counters={counters.sites}
         wind={wind.field}
+        basemap={basemap}
         visible={visible}
         probe={probe}
         onPick={(lon, lat) => pick(lon, lat)}
@@ -304,6 +326,9 @@ export default function App() {
       <Sidebar
         variable={variable}
         onVariable={setVariable}
+        co2Field={co2Field}
+        basemap={basemap}
+        onBasemap={setBasemap}
         visible={visible}
         onToggle={toggle}
         places={placesOn}
@@ -313,7 +338,6 @@ export default function App() {
         health={data.health}
         stations={data.stations}
         validation={data.validation}
-        stops={stops}
         gazetteer={data.gazetteer}
         onSearch={onSearch}
         lastUpdate={data.lastUpdate}
@@ -367,7 +391,7 @@ export default function App() {
           point={probe}
           models={data.models}
           stations={data.stations}
-          variable={variable}
+          variable={bundleVariable}
           stops={stops}
           dem={data.dem}
           faulty={faultyIds}

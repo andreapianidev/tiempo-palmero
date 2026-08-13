@@ -86,8 +86,12 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
 
 ## Qué hace
 
-- **Malla interpolada** de temperatura, humedad relativa y punto de rocío,
-  recalculada sobre el retículo del modelo de elevación con celda de ~200 m.
+- **Malla interpolada** de temperatura, humedad relativa, punto de rocío y
+  déficit de vapor, recalculada sobre el retículo del modelo de elevación con
+  celda de ~200 m. Se enciende junto a los chips de variable, y no en la lista
+  de capas: lo que pinta es justo la variable que se acaba de elegir.
+- **Mancha de CO₂** de la zona vigilada del oeste, con celda de 15 m —la escala
+  a la que está puesta la red DEMASE— y sin promediar entre sensores.
 - **Consulta punto a punto**: altitud del DEM, municipio calculado
   geométricamente, valor estimado **con su margen**, y las tres estaciones que
   más han contribuido, con su distancia y su desnivel.
@@ -136,9 +140,23 @@ Las reglas que la aplicación no se salta:
   Lo que ocupa el hueco no es una media de las lejanas, sino Open-Meteo, que sí
   resuelve la orografía; y cada celda lleva escrito cuál de los dos la sostiene.
   Ver «El mapa de viento» más abajo.
-- **La calidad del aire y el CO₂ no se interpolan nunca.** Son medidas
-  puntuales; dibujar una superficie entre ellas sería inventar lecturas donde
-  no hay sensor.
+- **La calidad del aire no se interpola nunca.** Veinte estaciones repartidas
+  por la isla son medidas puntuales; dibujar una superficie entre ellas sería
+  inventar lecturas donde no hay sensor.
+- **El CO₂ se colorea, pero no se promedia.** Es la única excepción a la regla
+  anterior, y sale de la densidad de la red, no de un cambio de criterio: los
+  209 sensores DEMASE de Puerto Naos y La Bombilla están a una separación
+  *mediana de 15 m* (medido el 13 ago 2026), así que cada punto de la zona
+  vigilada tiene una medida real casi encima. El mapa enseña la lectura del
+  sensor **más cercano** y se corta a 80 m; no hay IDW, no hay media, no hay
+  corrección altimétrica. Dos motivos, y el segundo es el que manda: entre dos
+  sensores separados 20 m se han medido 400 y 69 301 ppm el mismo minuto —una
+  media dibujaría una pluma que no existe—, y promediar un dato de seguridad lo
+  baja. Fuera de esa zona la isla se queda **sin color**: no hay ni un sensor
+  de CO₂ más (la red de calidad del aire del Cabildo trae la columna `co2`
+  vacía en sus 20 estaciones) y lo único disponible es el fondo del modelo
+  CAMS, 436–439 ppm iguales para toda la isla sobre una malla de 40 km, que es
+  ruido de celda y no un campo. Ver `src/lib/co2/field.ts`.
 - **Los valores implausibles se descartan, no se recortan.** Recortar un sensor
   que marca 70 °C a un máximo de 45 lo convertiría en un dato creíble. Vale
   igual para los valores *calculados*: CABLPA-BELLIDO publica 1 % de humedad a

@@ -4,7 +4,14 @@
 
 import { describe, expect, it } from 'vitest'
 import { saturationVapourPressure, vapourPressureDeficit } from './psychro'
-import { VARIABLES, VARIABLE_ORDER, pinLabel, vpdBand } from './variables'
+import {
+  VARIABLES,
+  VARIABLE_ORDER,
+  MAP_VARIABLE_ORDER,
+  isDisplayVariable,
+  pinLabel,
+  vpdBand,
+} from './variables'
 import { BOUNDS, stationReading, type Station } from './quality'
 
 describe('vapourPressureDeficit', () => {
@@ -121,10 +128,28 @@ describe('catálogo de variables', () => {
     }
   })
 
-  it('el orden cubre TODAS las claves del catálogo', () => {
+  it('el orden del selector cubre TODAS las claves del catálogo', () => {
     // Si alguien añade una variable y se olvida del orden, la web la pinta y
     // el móvil no. Esto lo detiene aquí.
-    expect([...VARIABLE_ORDER].sort()).toEqual(Object.keys(VARIABLES).sort())
+    expect([...MAP_VARIABLE_ORDER].sort()).toEqual(Object.keys(VARIABLES).sort())
+  })
+
+  it('el orden higrotérmico NO se traga las variables de red propia', () => {
+    // `VARIABLE_ORDER` es lo que se le puede pedir al motor de interpolación,
+    // y la app nativa la usa además para separar variables de capas. Si el
+    // CO₂ se colara aquí, el móvil trataría su capa de sensores como una
+    // malla y `isDisplayVariable('co2')` empezaría a decir que sí.
+    expect(VARIABLE_ORDER).not.toContain('co2')
+    expect(isDisplayVariable('co2')).toBe(false)
+    for (const id of VARIABLE_ORDER) expect(isDisplayVariable(id)).toBe(true)
+  })
+
+  it('lo que no cubre la isla lo dice en su propia ficha', () => {
+    // El CO₂ solo existe donde hay sensores. Sin esta línea el mapa en blanco
+    // sobre Santa Cruz se lee como «aquí no hay CO₂» en vez de «aquí no hay
+    // sensor», que es lo que de verdad dice.
+    expect(VARIABLES.co2.local).toBeTruthy()
+    expect(VARIABLES.co2.bands?.length).toBeGreaterThan(1)
   })
 
   it('lo derivado lleva su explicación, y lo medido no la necesita', () => {

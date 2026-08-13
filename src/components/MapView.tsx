@@ -6,8 +6,17 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl, { type LngLatLike, type Map as MlMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { buildStyle, COLORS } from '../lib/mapStyle'
-import { pinLabel } from '../lib/variables'
-import { renderGrid } from '../lib/grid-canvas'
+import {
+  BASEMAPS,
+  EXTERNAL_BASEMAPS,
+  basemapLayerId,
+  basemapSourceId,
+  type BasemapId,
+} from '../lib/basemaps'
+import { isBundleVariable, pinLabel, type MapVariable } from '../lib/variables'
+import { renderGrid, rasterToCanvas } from '../lib/grid-canvas'
+import { rasterizeCo2 } from '../lib/co2/raster'
+import type { Co2Field } from '../lib/co2/field'
 import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette'
 import { freshness, stationReading, type Station } from '../lib/quality'
 import { decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
@@ -36,7 +45,7 @@ import { readRoad, type RoadRecord } from '../lib/roads'
 import { counterMarkerElement } from './counters/CounterMarker'
 import type { CounterSite } from '../lib/counters/model'
 import type { WindField } from '../lib/wind/field'
-import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
+import { estimateBundle, type Model, type InterpolableVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { Diagnosis } from '../lib/sensor-health'
@@ -64,8 +73,15 @@ export interface LayerVisibility {
 interface Props {
   dem: Dem | null
   models: Record<InterpolableVariable, Model | null>
-  variable: DisplayVariable
+  variable: MapVariable
+  /** La rampa de la variable higrotérmica en juego. El CO₂ va por bandas. */
   stops: RgbStop[]
+  /**
+   * El campo de CO₂ ya construido. Llega hecho desde fuera porque el panel
+   * lateral cuenta las mismas cifras que el mapa pinta, y con dos
+   * construcciones separadas podrían acabar contando cosas distintas.
+   */
+  co2Field: Co2Field | null
   stations: Station[]
   /** Diagnóstico temporal por `entityId`. Vacío mientras no se haya revisado. */
   health: Map<string, Diagnosis>
@@ -98,6 +114,8 @@ interface Props {
   /** Aforos con datos en la ventana; llegan solo si se enciende la capa. */
   counters: CounterSite[]
   wind: WindField | null
+  /** Fondo elegido. Los tres están declarados; solo uno tiene capa visible. */
+  basemap: BasemapId
   visible: LayerVisibility
   probe: { lon: number; lat: number } | null
   onPick: (lon: number, lat: number) => void
@@ -138,6 +156,13 @@ const PLACE_MIN_ZOOM: Record<string, number> = {
 export function MapView(props: Props) {
   const { dem, models, variable, stops, stations, visible, probe } = props
   const model = models.temperature
+  /**
+   * Los pines son de las estaciones del Cabildo, que no miden CO₂. Con esa
+   * variable elegida siguen enseñando la temperatura en vez de vaciarse: son
+   * la otra mitad de lo que está en pantalla, y quedarían en blanco por una
+   * decisión que no va con ellos.
+   */
+  const pinVariable = isBundleVariable(variable) ? variable : 'temperature'
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MlMap | null>(null)
   // Estado, no ref: cuando el mapa termina de cargar hay que volver a ejecutar
@@ -185,6 +210,29 @@ export function MapView(props: Props) {
     )
 
     map.on('load', async () => {
+      // Los fondos externos van los primeros: quedan justo encima del relieve
+      // de casa y por debajo de todo lo demás, que es lo que son —fondo—. Se
+      // declaran los tres a la vez y apagados; MapLibre no pide una sola
+      // tesela de una fuente sin capa visible, así que declararlos no cuesta
+      // nada mientras nadie los encienda.
+      //
+      // El relieve de casa NO se apaga al encender uno: mientras las teselas
+      // del servicio llegan, lo que se ve por los huecos es la isla, no un
+      // rectángulo negro.
+      for (const b of EXTERNAL_BASEMAPS) {
+        map.addSource(basemapSourceId(b.id), b.source)
+        map.addLayer(
+          {
+            id: basemapLayerId(b.id),
+            type: 'raster',
+            source: basemapSourceId(b.id),
+            layout: { visibility: 'none' },
+            paint: { 'raster-fade-duration': 0 },
+          },
+          'municipal-boundaries',
+        )
+      }
+
       // Fuente de la malla interpolada. Se crea con un píxel transparente y se
       // reemplaza la imagen en cada recálculo: recrear la fuente entera hace
       // parpadear el mapa.
@@ -390,27 +438,71 @@ export function MapView(props: Props) {
     }
   }, [dem])
 
+  // --- fondo de mapa -------------------------------------------------------
+  //
+  // Cambiar de fondo NO reconstruye el estilo. Un `setStyle()` se llevaría por
+  // delante la malla, el viento, los senderos, las guaguas y los sitios, que
+  // se añaden a mano cuando el mapa carga y no volverían solos. Lo único que
+  // cambia aquí es qué capa raster está visible.
+  //
+  // La clase del contenedor va con ello: sobre la carta topográfica, que es
+  // papel claro, el texto casi blanco de los marcadores deja de leerse.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    for (const b of EXTERNAL_BASEMAPS) {
+      map.setLayoutProperty(
+        basemapLayerId(b.id),
+        'visibility',
+        b.id === props.basemap ? 'visible' : 'none',
+      )
+    }
+    containerRef.current?.classList.toggle('map-light', BASEMAPS[props.basemap].light)
+  }, [ready, props.basemap])
+
   // --- malla interpolada ---------------------------------------------------
+  //
+  // Una sola fuente de imagen para dos campos que no se parecen en nada. El
+  // higrotérmico cubre la isla entera a 200 m por celda y se remuestrea suave,
+  // porque es continuo de verdad; el de CO₂ cubre 1,5 km a 15 m por celda y se
+  // remuestrea a vecino más cercano, porque sus bandas son umbrales y un
+  // degradado entre dos de ellas inventaría un tramo intermedio. Comparten
+  // capa porque para quien mira son la misma: lo que colorea el mapa.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready || !dem) return
     const src = map.getSource('grid') as maplibregl.ImageSource | undefined
     if (!src) return
 
-    if (!visible.grid || !models.temperature) {
+    const co2Selected = variable === 'co2'
+    const field = props.co2Field
+    if (!visible.grid || (co2Selected ? !field : !models.temperature)) {
       map.setLayoutProperty('grid-raster', 'visibility', 'none')
       return
     }
     map.setLayoutProperty('grid-raster', 'visibility', 'visible')
-
-    const grid = renderGrid(
-      dem,
-      (lon, lat, elevation) => {
-        const bundle = estimateBundle(models, lon, lat, elevation)
-        return bundle[variable]?.value ?? null
-      },
-      stops,
+    map.setPaintProperty(
+      'grid-raster',
+      'raster-resampling',
+      co2Selected ? 'nearest' : 'linear',
     )
+
+    const grid = co2Selected
+      ? (() => {
+          const raster = rasterizeCo2(field!)
+          return {
+            bounds: raster.bounds,
+            canvas: rasterToCanvas(raster.pixels, raster.cols, raster.rows),
+          }
+        })()
+      : renderGrid(
+          dem,
+          (lon, lat, elevation) => {
+            const bundle = estimateBundle(models, lon, lat, elevation)
+            return isBundleVariable(variable) ? (bundle[variable]?.value ?? null) : null
+          },
+          stops,
+        )
     const [[w, s], [e, nth]] = grid.bounds
     // Si al llegar aquí seguía cargando la malla anterior, MapLibre aborta esa
     // carga y deja un `AbortError` en la consola. Es lo que queremos —gana la
@@ -425,7 +517,7 @@ export function MapView(props: Props) {
         [w, s],
       ],
     })
-  }, [ready, dem, models, variable, stops, visible.grid])
+  }, [ready, dem, models, variable, stops, visible.grid, props.co2Field])
 
   // --- viento animado ------------------------------------------------------
   //
@@ -730,8 +822,8 @@ export function MapView(props: Props) {
         // número— y en su lugar va la estimación del modelo, con tilde delante
         // para que no pueda confundirse con una medida. Ver `station-fallback`.
         const faulty = props.health.get(s.entityId)?.faulty === true
-        const fallback = faulty ? fallbackReading(models, s, variable) : null
-        const reading = faulty ? null : stationReading(s, variable)
+        const fallback = faulty ? fallbackReading(models, s, pinVariable) : null
+        const reading = faulty ? null : stationReading(s, pinVariable)
         const isRejected = rejected.has(s.entityId)
 
         const shown = reading ?? fallback
@@ -744,7 +836,7 @@ export function MapView(props: Props) {
             ? faulty
               ? '⚠'
               : '·'
-            : `${fallback ? '~' : ''}${pinLabel(variable, shown.value)}`
+            : `${fallback ? '~' : ''}${pinLabel(pinVariable, shown.value)}`
 
         const muted = shown === null || isRejected || faulty
         const el = pill(
@@ -764,7 +856,7 @@ export function MapView(props: Props) {
         el.setAttribute(
           'aria-label',
           faulty
-            ? `${s.name}, ${t.health.faulty}${fallback ? `, ${t.health.fallbackTag} ${pinLabel(variable, fallback.value)}` : ''}`
+            ? `${s.name}, ${t.health.faulty}${fallback ? `, ${t.health.fallbackTag} ${pinLabel(pinVariable, fallback.value)}` : ''}`
             : `${s.name}, ${label}${reading?.derived ? `, ${t.point.derived}` : ''}`,
         )
         el.addEventListener('click', (ev) => {
@@ -900,6 +992,11 @@ export function MapView(props: Props) {
   ])
 
   // --- topónimos, filtrados por zoom --------------------------------------
+  //
+  // Sobre la carta topográfica se ceden a partir de su `labelsFrom`: desde ese
+  // zoom la carta rotula ella misma y los nuestros encima serían los mismos
+  // nombres dos veces. Por debajo siguen siendo los únicos que se leen.
+  const labelsFrom = BASEMAPS[props.basemap].labelsFrom
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready || !props.gazetteer.length) return
@@ -908,6 +1005,9 @@ export function MapView(props: Props) {
       for (const m of placeMarkersRef.current) m.remove()
       placeMarkersRef.current = []
       const z = map.getZoom()
+      // Desde aquí rotula el fondo. Se sale después de haber vaciado los
+      // marcadores: el relevo es limpio, no se solapan ni un fotograma.
+      if (labelsFrom !== null && z >= labelsFrom) return
       const bounds = map.getBounds()
       // Orden de prioridad: primero las categorías grandes, para que en un
       // choque sobreviva «Los Llanos de Aridane» y no un caserío homónimo.
@@ -940,7 +1040,7 @@ export function MapView(props: Props) {
       for (const m of placeMarkersRef.current) m.remove()
       placeMarkersRef.current = []
     }
-  }, [ready, props.gazetteer])
+  }, [ready, labelsFrom, props.gazetteer])
 
   // --- marcador del punto consultado --------------------------------------
   useEffect(() => {

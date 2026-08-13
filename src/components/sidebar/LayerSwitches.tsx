@@ -3,6 +3,11 @@
  *
  * El orden es el de la lista, no el de pintado: se lee de arriba abajo como un
  * índice de lo que hay en la isla.
+ *
+ * La malla interpolada NO está aquí: se enciende junto a los chips de variable
+ * (`VariablePicker`), porque su contenido es justo la variable elegida y desde
+ * esta lista, seis entradas más abajo, esa relación no se veía. Sigue siendo
+ * `visible.grid` —una capa del mapa— pero se maneja donde se decide qué pinta.
  */
 
 import type { LayerVisibility } from '../MapView'
@@ -10,7 +15,6 @@ import { poiIconDataUrl, type PoiFamily } from '../../lib/poi'
 import { t } from '../../i18n'
 
 const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
-  { id: 'grid', label: t.layers.grid },
   { id: 'wind', label: t.layers.wind },
   { id: 'stations', label: t.layers.stations },
   { id: 'air', label: t.layers.air },

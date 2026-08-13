@@ -217,6 +217,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .ramp { height: 8px; border-radius: 4px; margin: 10px 0 4px; }
 .ramp-ends { display: flex; justify-content: space-between; font-size: 10px; }
 
+/* Escala por tramos: cuatro filas separadas, no un degradado. Que se vean
+   despegadas entre sí es la mitad del mensaje. */
+.band-scale { list-style: none; margin: 10px 0 4px; padding: 0; display: grid; gap: 3px; }
+.band-scale li { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.band-swatch { flex: 0 0 auto; width: 14px; height: 10px; border-radius: 2px; }
+.band-range { flex: 0 0 auto; min-width: 92px; }
+.band-label { font-size: 10px; }
+
 .switches { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .switches label {
   display: flex;
@@ -543,6 +551,35 @@ table.kv td:first-child { color: var(--fg-dim); }
 .mk-place-locality, .mk-place-isolated_dwelling, .mk-place-farm, .mk-place-plot {
   font-size: 10px;
   color: rgba(230, 226, 218, 0.62);
+}
+
+/* ---------- fondo de mapa claro ---------- */
+
+/* Con la carta topográfica de fondo el mapa deja de ser oscuro, y todo lo que
+   se leía por contraste con el negro se pierde. No se invierte la app entera:
+   solo lo que se dibuja SOBRE el mapa y no lleva fondo propio. Los pines de
+   estación no están aquí porque ya traen su color de relleno.
+
+   Los topónimos sí hacen falta: sobre la carta se dibujan hasta z12,5, que es
+   donde ella empieza a rotular por su cuenta, y hasta ahí son texto claro
+   sobre papel claro. */
+.map-light .mk-place {
+  color: rgba(24, 22, 19, 0.9);
+  text-shadow: 0 0 3px #fff, 0 1px 4px rgba(255, 255, 255, 0.9);
+}
+.map-light .mk-place-city, .map-light .mk-place-town { color: #141311; }
+.map-light .mk-place-locality,
+.map-light .mk-place-isolated_dwelling,
+.map-light .mk-place-farm,
+.map-light .mk-place-plot { color: rgba(30, 28, 24, 0.7); }
+
+.map-light .maplibregl-ctrl-attrib { background: rgba(250, 249, 246, 0.85) !important; }
+.map-light .maplibregl-ctrl-attrib,
+.map-light .maplibregl-ctrl-attrib a { color: #33302b !important; }
+.map-light .maplibregl-ctrl-scale {
+  background: rgba(250, 249, 246, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.35) !important;
+  color: #33302b !important;
 }
 
 /* ---------- fuentes ---------- */

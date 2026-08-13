@@ -8,12 +8,13 @@
  */
 
 import { useMemo, useState } from 'react'
-import type { DisplayVariable, InterpolableVariable, Model } from '../../lib/interpolate'
+import type { InterpolableVariable, Model } from '../../lib/interpolate'
+import type { MapVariable } from '../../lib/variables'
+import type { Co2Field } from '../../lib/co2/field'
 import type { NetworkCensus, Station } from '../../lib/quality'
 import type { SensorHealth } from '../../hooks/useSensorHealth'
 import type { GazetteerEntry } from '../../lib/api'
 import type { LayerVisibility } from '../MapView'
-import type { RgbStop } from '../../lib/palette'
 import { landShareAbove, type Dem } from '../../lib/dem'
 import { t } from '../../i18n'
 
@@ -33,6 +34,9 @@ import { CloudSea } from './CloudSea'
 import { RoqueStatus } from './RoqueStatus'
 import { TrailAlerts } from './TrailAlerts'
 import { AgroStatus } from './AgroStatus'
+import { Co2Status } from './Co2Status'
+import { BasemapPicker } from './BasemapPicker'
+import { BASEMAPS, type BasemapId } from '../../lib/basemaps'
 import type { WindState } from '../../hooks/useWindField'
 import type { CountersData } from '../../hooks/useCounters'
 import type { AgroState } from '../../hooks/useAgro'
@@ -41,8 +45,12 @@ import type { TrailReport } from '../../lib/trails/alerts'
 import { zoneAt, type CloudDeck } from '../../lib/clouds'
 
 interface Props {
-  variable: DisplayVariable
-  onVariable: (v: DisplayVariable) => void
+  variable: MapVariable
+  onVariable: (v: MapVariable) => void
+  /** El campo de CO₂ que sostiene el mapa, o `null` si la red no da para uno. */
+  co2Field: Co2Field | null
+  basemap: BasemapId
+  onBasemap: (id: BasemapId) => void
   visible: LayerVisibility
   onToggle: (key: keyof LayerVisibility) => void
   places: PlaceVisibility
@@ -53,7 +61,6 @@ interface Props {
   /** Todas las del mapa, averiadas incluidas: el bloque de salud las nombra. */
   stations: Station[]
   validation: { rmse: number; mae: number; n: number } | null
-  stops: RgbStop[]
   gazetteer: GazetteerEntry[]
   onSearch: (entry: GazetteerEntry) => void
   dem: Dem | null
@@ -126,9 +133,22 @@ export function Sidebar(props: Props) {
           <VariablePicker
             variable={props.variable}
             onVariable={props.onVariable}
-            stops={props.stops}
+            gridOn={props.visible.grid}
+            onToggleGrid={() => props.onToggle('grid')}
           />
         </Section>
+
+        {/* Solo con el CO₂ elegido: es el único sitio donde hace falta contar
+            de qué red sale el color y hasta dónde llega. */}
+        {props.variable === 'co2' && (
+          <Section
+            title={t.variables.co2}
+            defaultOpen
+            badge={props.co2Field ? `${props.co2Field.nodes.length}` : '—'}
+          >
+            <Co2Status field={props.co2Field} now={props.now} />
+          </Section>
+        )}
 
         <Section
           title={t.layers.title}
@@ -148,6 +168,13 @@ export function Sidebar(props: Props) {
           badge={`${activePlaceCount(props.places)}/${PLACE_COUNT}`}
         >
           <PlaceSwitches visible={props.places} onToggle={props.onTogglePlace} />
+        </Section>
+
+        {/* Debajo de las capas porque es lo que hay debajo de las capas. La
+            pestaña dice cuál está puesto: plegada, es la única forma de saber
+            si lo que se está viendo es cálculo de casa o carta ajena. */}
+        <Section title="Fondo del mapa" badge={BASEMAPS[props.basemap].label}>
+          <BasemapPicker basemap={props.basemap} onBasemap={props.onBasemap} />
         </Section>
 
         {/* Solo cuando la capa está encendida: si no, describiría con detalle
