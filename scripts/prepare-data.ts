@@ -61,6 +61,48 @@ const DEM_MIN_ZOOM = 9
 const DEM_URL = (z: number, x: number, y: number) =>
   `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`
 
+/**
+ * El fondo del mar se aplana a cero antes de guardar la tesela.
+ *
+ * POR QUÉ. Las teselas de Mapzen traen batimetría, pero SOLO en los zooms
+ * bajos, y eso las hace incoherentes entre sí. Medido sobre lo descargado el
+ * 13 de agosto de 2026, antes de este recorte:
+ *
+ *   z9  — mínimo −4533,7 m, el 95,2 % de los píxeles por debajo de −100 m
+ *   z10 — mínimo −4356,6 m, el 93,3 %
+ *   z11 — mínimo   −32,2 m, el 0,0 %
+ *   z12 — mínimo   −26,9 m, el 0,0 %
+ *
+ * O sea que el talud submarino existe hasta z10 y desaparece a z11. En el mapa
+ * plano no se notaba —el mar se pinta opaco encima—, pero con la vista 3D la
+ * isla se levantaba sobre un cono submarino de 4,5 km que se desvanecía en
+ * cuanto uno se acercaba: un relieve que cambia de forma al hacer zoom no es un
+ * relieve, es un fallo.
+ *
+ * Se recorta al guardar y no al dibujar porque el que lee estas teselas para el
+ * terreno es MapLibre, que las decodifica él y al que no se le puede meter un
+ * filtro por el medio.
+ *
+ * NO CAMBIA NINGUNA COTA DE TIERRA: `SEA_LEVEL_M` ya da por mar todo lo que
+ * esté por debajo de 1,5 m, así que nada de lo que el motor consulta pasa por
+ * aquí. Y el talud, que es de verdad y es lo más llamativo de esta isla —sube
+ * 6,9 km desde el fondo—, no se puede enseñar mientras solo exista en dos de
+ * los cuatro niveles.
+ */
+function flattenSeafloor(png: PNG): boolean {
+  let touched = false
+  for (let p = 0; p < png.data.length; p += 4) {
+    const h = png.data[p] * 256 + png.data[p + 1] + png.data[p + 2] / 256 - 32768
+    if (h >= 0) continue
+    // Cero exacto en terrarium: 32768 = 128 · 256 + 0, y B = 0.
+    png.data[p] = 128
+    png.data[p + 1] = 0
+    png.data[p + 2] = 0
+    touched = true
+  }
+  return touched
+}
+
 interface DemManifest {
   /** Zoom del que se leen las altitudes: siempre el más fino. */
   zoom: number
@@ -102,6 +144,7 @@ function tileRange(z: number, margin = 1) {
 async function prepareDem(): Promise<void> {
   let downloaded = 0
   let cached = 0
+  let flattened = 0
 
   for (let z = DEM_MIN_ZOOM; z <= DEM_ZOOM; z++) {
     const r = tileRange(z)
@@ -112,6 +155,15 @@ async function prepareDem(): Promise<void> {
         const file = path.join(dir, `${ty}.png`)
         if (existsSync(file) && (await stat(file)).size > 0) {
           cached++
+          // Las que ya estaban se revisan igual: una tesela descargada antes de
+          // que existiera este recorte sigue teniendo el talud dentro, y sin
+          // esta pasada haría falta borrar `public/dem/` a mano para arreglarla.
+          // Es idempotente: a la segunda vuelta no queda nada que aplanar.
+          const png = PNG.sync.read(await readFile(file))
+          if (flattenSeafloor(png)) {
+            await writeFile(file, PNG.sync.write(png))
+            flattened++
+          }
           continue
         }
         await mkdir(dir, { recursive: true })
@@ -120,7 +172,9 @@ async function prepareDem(): Promise<void> {
           try {
             const res = await fetch(DEM_URL(z, tx, ty), { headers: UA })
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
-            await writeFile(file, Buffer.from(await res.arrayBuffer()))
+            const png = PNG.sync.read(Buffer.from(await res.arrayBuffer()))
+            if (flattenSeafloor(png)) flattened++
+            await writeFile(file, PNG.sync.write(png))
             ok = true
             downloaded++
           } catch (e) {
@@ -131,6 +185,7 @@ async function prepareDem(): Promise<void> {
       }
     }
   }
+  if (flattened) log(`DEM: fondo marino aplanado en ${flattened} teselas`)
 
   const r = tileRange(DEM_ZOOM)
   const manifest: DemManifest = {

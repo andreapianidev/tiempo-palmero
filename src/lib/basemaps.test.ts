@@ -39,13 +39,32 @@ describe('fondos externos', () => {
     }
   })
 
-  it('no piden fuera de la isla', () => {
+  /**
+   * Las dos orillas pesan igual, como en todo lo demás: el recuadro tiene que
+   * cubrir la isla ENTERA —si se queda corto, la costa se dibuja sin fondo— y
+   * no mucho más —cada grado de sobra es océano que GRAFCAN dibuja para nada—.
+   *
+   * El límite insular publicado por el Cabildo va de −18,008 a −17,724 y de
+   * 28,453 a 28,858 (medido sobre `limite-insular.geojson` el 13 ago 2026).
+   */
+  it('cubren la isla entera', () => {
     for (const b of EXTERNAL_BASEMAPS) {
       const [w, s, e, n] = b.source.bounds!
-      expect(w, b.id).toBeLessThan(-18)
-      expect(e, b.id).toBeGreaterThan(-17.5)
-      expect(s, b.id).toBeLessThan(28.4)
-      expect(n, b.id).toBeGreaterThan(28.9)
+      expect(w, b.id).toBeLessThanOrEqual(-18.008)
+      expect(e, b.id).toBeGreaterThanOrEqual(-17.724)
+      expect(s, b.id).toBeLessThanOrEqual(28.453)
+      expect(n, b.id).toBeGreaterThanOrEqual(28.858)
+    }
+  })
+
+  it('y no piden un océano de más', () => {
+    // El área de la isla es 0,284° × 0,405°. Se admite hasta el triple de esa
+    // superficie —margen de costa de sobra—; el recuadro viejo, que era el
+    // `maxBounds` del mapa, pedía 8,3 veces.
+    const islandArea = 0.284 * 0.405
+    for (const b of EXTERNAL_BASEMAPS) {
+      const [w, s, e, n] = b.source.bounds!
+      expect((e - w) * (n - s) / islandArea, b.id).toBeLessThan(3)
     }
   })
 

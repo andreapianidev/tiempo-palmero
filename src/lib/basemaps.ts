@@ -33,6 +33,7 @@
  */
 
 import type { RasterSourceSpecification } from 'maplibre-gl'
+import { ISLAND_BBOX } from './geo'
 
 export type BasemapId = 'relieve' | 'topografico' | 'satelite'
 
@@ -72,11 +73,25 @@ export interface Basemap {
 }
 
 /**
- * El mismo recuadro que `maxBounds` en el mapa. Sin él, MapLibre pide teselas
- * de océano abierto que no aportan nada y que el servicio tiene que dibujar
- * igual.
+ * El recuadro de la ISLA, no el de la ventana del mapa.
+ *
+ * Era `maxBounds` —el rectángulo hasta donde se puede arrastrar la vista— y eso
+ * son 92,5 × 111 km para una isla que mide 27,7 × 45: **8,3 veces su área**,
+ * casi toda océano abierto que GRAFCAN tiene que dibujar tesela a tesela para
+ * devolver agua. Justo lo que el «se prohíbe la descarga masiva de información»
+ * de su licencia pide no hacer.
+ *
+ * Con `ISLAND_BBOX` —el mismo recuadro que ya usa el motor, con unos 3 km de
+ * margen sobre la costa— se pide lo que se mira. Y de paso se nota en la vista
+ * 3D: con el recuadro viejo, la ortofoto sobresalía del mar como una bandeja
+ * cuadrada flotando alrededor de la isla.
  */
-const ISLAND_BOUNDS: [number, number, number, number] = [-18.35, 28.15, -17.4, 29.15]
+const ISLAND_BOUNDS: [number, number, number, number] = [
+  ISLAND_BBOX.west,
+  ISLAND_BBOX.south,
+  ISLAND_BBOX.east,
+  ISLAND_BBOX.north,
+]
 
 /**
  * Un servicio WMS de GRAFCAN, envuelto como fuente raster.

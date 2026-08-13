@@ -24,6 +24,7 @@ import { useCoverage } from './hooks/useCoverage'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
 import type { BasemapId } from './lib/basemaps'
+import { DEFAULT_EXAGGERATION, type Exaggeration } from './lib/terrain'
 import { warmNearbyLayers } from './lib/nearby'
 import { t } from './i18n'
 
@@ -81,6 +82,19 @@ export default function App() {
   // El fondo de casa es el de arranque, y a propósito: es el único que no
   // depende de un servicio ajeno para que la isla aparezca en pantalla.
   const [basemap, setBasemap] = useState<BasemapId>('relieve')
+  /**
+   * La vista 3D. Apagada al llegar, y no por prudencia técnica: en plano se
+   * compara una ladera con otra de un vistazo, y eso es lo que esta aplicación
+   * hace. La 3D es para entender la isla, no para leerla.
+   *
+   * No está en `LayerVisibility` porque no es una capa: no añade nada al mapa,
+   * cambia la cámara. Meterla ahí haría que el contador de «capas activas» del
+   * panel contara una cosa que no se dibuja.
+   */
+  const [terrain, setTerrain] = useState<{ on: boolean; exaggeration: Exaggeration }>({
+    on: false,
+    exaggeration: DEFAULT_EXAGGERATION,
+  })
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [showSources, setShowSources] = useState(false)
@@ -354,6 +368,7 @@ export default function App() {
         canalsVisible={placesOn.water}
         counters={counters.sites}
         wind={wind.field}
+        terrain={terrain}
         basemap={basemap}
         visible={visible}
         probe={probe}
@@ -448,6 +463,9 @@ export default function App() {
         coverage={coverage}
         basemap={basemap}
         onBasemap={setBasemap}
+        terrain={terrain}
+        onTerrain={() => setTerrain((s) => ({ ...s, on: !s.on }))}
+        onExaggeration={(exaggeration) => setTerrain((s) => ({ ...s, exaggeration }))}
         visible={visible}
         onToggle={toggle}
         places={placesOn}

@@ -52,7 +52,9 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
 - [El mapa de viento](#el-mapa-de-viento) — la única capa donde un modelo pinta
   sobre la isla, y cómo se declara ·
   [El histórico](#el-histórico-y-por-qué-no-hay-base-de-datos) — 2 MB por día en
-  origen, 124 KB en el navegador, cero almacenamiento propio
+  origen, 124 KB en el navegador, cero almacenamiento propio ·
+  [La vista 3D](#la-vista-3d) — sin una descarga más, y por qué no exagera el
+  relieve
 - [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — qué se
   llama de verdad, y con qué permiso
 - [Arquitectura](#arquitectura)
@@ -1265,12 +1267,52 @@ De paso, el proxy concentra el tráfico en una petición cacheada por despliegue
 en vez de una por visitante. La API del Cabildo es un servicio público pequeño
 que ya se cae solo a ratos; no se le manda una estampida.
 
-### El DEM tiene dos usos, y son las mismas teselas
+### El DEM tiene tres usos, y son las mismas teselas
 
-Las teselas terrarium de `public/dem/` alimentan a la vez el lookup de altitud
-del motor y la fuente `raster-dem` del sombreado de MapLibre. Descargar dos
-modelos de elevación distintos para la misma isla sería tirar ancho de banda y
-arriesgarse a que el relieve que se ve y el que se calcula no coincidan.
+Las teselas terrarium de `public/dem/` alimentan el lookup de altitud del motor,
+la fuente `raster-dem` del sombreado de MapLibre y —desde la vista 3D— la
+geometría del terreno. Descargar dos modelos de elevación distintos para la
+misma isla sería tirar ancho de banda y arriesgarse a que el relieve que se ve y
+el que se calcula no coincidan.
+
+**El fondo del mar se aplana a cero al generarlas.** Las teselas de Mapzen traen
+batimetría, pero solo en los zooms bajos, y eso las hace incoherentes entre sí.
+Medido el 13 de agosto de 2026 sobre lo descargado, antes del recorte: z9 bajaba
+a **−4533,7 m** con el 95,2 % de sus píxeles por debajo de −100 m, z10 a
+−4356,6 m con el 93,3 %, y z11 y z12 se quedaban en −32,2 y −26,9 m, con el
+0,0 %. En el mapa plano no se notaba —el mar se pinta opaco encima—, pero con la
+cámara inclinada la isla se levantaba sobre un cono submarino de 4,5 km que se
+desvanecía en cuanto uno se acercaba. Un relieve que cambia de forma al hacer
+zoom no es un relieve. Ninguna cota de tierra cambia: `SEA_LEVEL_M` ya da por
+mar todo lo que esté por debajo de 1,5 m.
+
+El talud es real y es lo más llamativo de esta isla —sube 6,9 km desde el
+fondo—, pero no se puede enseñar mientras solo exista en dos de los cuatro
+niveles.
+
+### La vista 3D
+
+Un modo aparte que se enciende en el panel, no una capa más: no añade nada al
+mapa, cambia la cámara. Se apoya entera en teselas que ya estaban en memoria por
+el sombreado, así que encenderla **no cuesta ni una descarga**.
+
+MapLibre proyecta sobre el terreno las capas `background`, `fill`, `line`,
+`raster` y `hillshade`, y eso cubre todo lo que dibuja esta aplicación: la malla
+interpolada es una fuente `image` con capa `raster` y se pega al relieve sola.
+Lo único que se queda fuera es el viento, que es una capa personalizada y cuyas
+partículas se calculan a cota cero; mientras la vista esté inclinada se apaga, y
+el panel dice por qué.
+
+La **exageración vertical** es lo único de esta vista que puede mentir, así que
+por defecto es 1 —la isla como es— y el tope es 1,5×, con el multiplicador
+escrito en el propio botón. Medido sobre el DEM: la pendiente máxima píxel a
+píxel es del 362,7 %, o sea **74,6°**, que son las paredes de la Caldera de
+Taburiente. A 1,5× se dibujan a 79,6°, y a 2× a 82,1° — una pared vertical donde
+no la hay. Por eso 2× no está en el selector.
+
+En plano la cámara queda bloqueada a `pitch` 0. MapLibre trae el arrastre con el
+botón derecho activado de fábrica y hasta ahora eso permitía inclinar la vista
+sin querer y sin relieve debajo, que no es una vista: es un accidente.
 
 ### La misma web, en un teléfono
 

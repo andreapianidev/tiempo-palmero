@@ -39,7 +39,9 @@ import { AgroStatus } from './AgroStatus'
 import { Co2Status } from './Co2Status'
 import { CoverageStatus } from './CoverageStatus'
 import { BasemapPicker } from './BasemapPicker'
+import { Scene3D } from './Scene3D'
 import { BASEMAPS, type BasemapId } from '../../lib/basemaps'
+import { exaggerationLabel, type Exaggeration } from '../../lib/terrain'
 import type { WindState } from '../../hooks/useWindField'
 import type { CountersData } from '../../hooks/useCounters'
 import type { AgroState } from '../../hooks/useAgro'
@@ -57,6 +59,10 @@ interface Props {
   coverage: CoverageState
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
+  /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
+  terrain: { on: boolean; exaggeration: Exaggeration }
+  onTerrain: () => void
+  onExaggeration: (x: Exaggeration) => void
   visible: LayerVisibility
   onToggle: (key: keyof LayerVisibility) => void
   places: PlaceVisibility
@@ -233,6 +239,23 @@ export function Sidebar(props: Props) {
               onBasemap={props.onBasemap}
               gridOn={props.visible.grid}
               onToggleGrid={() => props.onToggle('grid')}
+            />
+          </Section>
+
+          {/* Justo después del fondo, porque es la otra mitad de la misma
+              pregunta: el fondo dice de qué está hecha la superficie y esto,
+              con qué forma se dibuja. Plegada, la pestaña dice si la vista está
+              inclinada y por cuánto va estirada la vertical. */}
+          <Section
+            title="Vista 3D"
+            badge={props.terrain.on ? exaggerationLabel(props.terrain.exaggeration) : 'plana'}
+          >
+            <Scene3D
+              on={props.terrain.on}
+              onToggle={props.onTerrain}
+              exaggeration={props.terrain.exaggeration}
+              onExaggeration={props.onExaggeration}
+              windOn={props.visible.wind}
             />
           </Section>
 

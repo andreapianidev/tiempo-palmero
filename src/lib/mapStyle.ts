@@ -16,6 +16,7 @@
 import type { StyleSpecification } from 'maplibre-gl'
 import { dataUrl } from './endpoints'
 import { pixelXToLon, pixelYToLat } from './geo'
+import { SKY } from './terrain'
 import type { DemManifest } from './dem'
 
 export const COLORS = {
@@ -67,6 +68,10 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
   return {
     version: 8,
     name: 'Tiempo Palmero',
+    // El cielo está siempre declarado y nunca se apaga: con la cámara a cero el
+    // horizonte cae en el infinito y su sombreador no pinta un solo píxel. Solo
+    // aparece cuando la vista 3D inclina la cámara. Ver `terrain.ts`.
+    sky: SKY,
     sources: {
       terrain: {
         type: 'raster-dem',

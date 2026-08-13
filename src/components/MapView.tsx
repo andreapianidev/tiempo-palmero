@@ -21,6 +21,8 @@ import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette
 import { freshness, stationReading, type Station } from '../lib/quality'
 import { decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
 import { WindLayer } from './wind/WindLayer'
+import { Terrain3D } from './terrain/Terrain3D'
+import { FLAT_MAX_PITCH, type Exaggeration } from '../lib/terrain'
 import {
   addGuaguaLayers,
   setGuaguaData,
@@ -149,6 +151,11 @@ interface Props {
   /** Aforos con datos en la ventana; llegan solo si se enciende la capa. */
   counters: CounterSite[]
   wind: WindField | null
+  /**
+   * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
+   * capa más: cambia la cámara, no lo que se dibuja. Ver `lib/terrain.ts`.
+   */
+  terrain: { on: boolean; exaggeration: Exaggeration }
   /** Fondo elegido. Los tres están declarados; solo uno tiene capa visible. */
   basemap: BasemapId
   visible: LayerVisibility
@@ -238,6 +245,8 @@ export function MapView(props: Props) {
   /** La capa de viento es un objeto WebGL con estado propio: vive en una ref y
    *  se le pasan los datos, en vez de recrearla en cada render. */
   const windLayerRef = useRef<WindLayer | null>(null)
+  /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
+  const terrainRef = useRef<Terrain3D | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
   const pillsRef = useRef<{ el: HTMLElement; lon: number; lat: number; priority: number }[]>([])
   /**
@@ -268,6 +277,12 @@ export function MapView(props: Props) {
       zoom: 9.6,
       minZoom: 8.5,
       maxZoom: 16,
+      // El plano arranca plano. MapLibre trae el arrastre con el botón derecho
+      // activado de fábrica y hasta ahora eso permitía inclinar la vista sin
+      // querer, sin relieve debajo: un mapa torcido, que no enseña nada que el
+      // mapa recto no enseñara mejor. Lo desbloquea `Terrain3D` al encender la
+      // vista 3D, y lo vuelve a bloquear al apagarla.
+      maxPitch: FLAT_MAX_PITCH,
       maxBounds: [
         [-18.35, 28.15],
         [-17.4, 29.15],
@@ -361,6 +376,10 @@ export function MapView(props: Props) {
       const windLayer = new WindLayer()
       windLayerRef.current = windLayer
       map.addLayer(windLayer, 'municipal-boundaries')
+
+      // El relieve no añade ninguna capa: reutiliza la fuente `terrain` del
+      // estilo, que ya está cargada porque la usa el sombreado.
+      terrainRef.current = new Terrain3D(map)
 
       // El viario de OSM es lo primero de todo lo que se dibuja encima del
       // fondo: son 19.770 trazados que sitúan, no que informan, y tienen que
@@ -536,11 +555,23 @@ export function MapView(props: Props) {
     })
 
     return () => {
+      terrainRef.current?.destroy()
+      terrainRef.current = null
       map.remove()
       mapRef.current = null
       setReady(false)
     }
   }, [dem])
+
+  // --- vista 3D ------------------------------------------------------------
+  // La exageración se manda ANTES que el interruptor: si llegara después, al
+  // encender la vista se levantaría con el valor anterior y daría un salto de
+  // relieve en el primer fotograma.
+  useEffect(() => {
+    if (!ready) return
+    terrainRef.current?.setExaggeration(props.terrain.exaggeration)
+    terrainRef.current?.setEnabled(props.terrain.on)
+  }, [ready, props.terrain.on, props.terrain.exaggeration])
 
   // --- fondo de mapa -------------------------------------------------------
   //
@@ -636,10 +667,18 @@ export function MapView(props: Props) {
   // Apagarla es dejar de dibujar Y dejar de pedir fotogramas: la animación se
   // sostiene con `triggerRepaint`, así que con la capa oculta el mapa vuelve a
   // quedarse quieto y no consume batería.
+  //
+  // Y se apaga entera con la vista 3D encendida. La capa de viento es una capa
+  // PERSONALIZADA, y esas MapLibre no las proyecta sobre el terreno: las
+  // partículas se calculan sobre el elipsoide, a cota cero, así que con la
+  // cámara inclinada se dibujarían atravesando la montaña por dentro. No es un
+  // defecto visual menor —sería viento pintado donde no puede haberlo—, y hasta
+  // que las partículas sepan su cota, la respuesta honesta es no dibujarlas.
+  // El panel lo dice donde se enciende la 3D, no aquí.
   useEffect(() => {
     if (!ready) return
-    windLayerRef.current?.setVisible(visible.wind)
-  }, [ready, visible.wind])
+    windLayerRef.current?.setVisible(visible.wind && !props.terrain.on)
+  }, [ready, visible.wind, props.terrain.on])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {
