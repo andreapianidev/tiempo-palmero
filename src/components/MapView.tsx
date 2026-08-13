@@ -22,6 +22,10 @@ import { freshness, stationReading, type Station } from '../lib/quality'
 import { decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
 import { WindLayer } from './wind/WindLayer'
 import { Terrain3D } from './terrain/Terrain3D'
+import { markerSize } from './markers/size'
+import { silenceDepthProbe } from './markers/depthProbe'
+import { hiddenByRelief, type Camera } from '../lib/occlusion'
+import { elevationAt } from '../lib/dem'
 import { FLAT_MAX_PITCH, type Exaggeration } from '../lib/terrain'
 import {
   addGuaguaLayers,
@@ -213,15 +217,16 @@ const PLACE_MIN_ZOOM: Record<string, number> = {
 /**
  * El rectángulo que un marcador ocupa en pantalla.
  *
- * Se mide SIEMPRE expandido: si se midiera un pin ya encogido, su ancho sería
- * el del punto y no volvería a abrirse nunca al separarse de sus vecinos. Por
- * eso deshace el encogido antes de preguntar por el tamaño.
+ * SOLO LEE. Antes escribía —deshacía el encogido y forzaba la visibilidad—
+ * justo antes de preguntar por el tamaño, y escribir y leer alternándose
+ * obliga al navegador a recalcular el diseño de la página entera entre cada
+ * par: 249 recálculos por pasada para averiguar unos anchos que no cambian.
+ * El tamaño lo recuerda ahora `markers/size.ts`, que lo mide una vez.
  */
 function box(map: MlMap, el: HTMLElement, lon: number, lat: number): Box {
-  el.classList.remove('mk-pill-dot')
-  el.style.visibility = 'visible'
   const pt = map.project([lon, lat])
-  return { x: pt.x, y: pt.y, w: el.offsetWidth || 44, h: el.offsetHeight || 18 }
+  const { w, h } = markerSize(el)
+  return { x: pt.x, y: pt.y, w, h }
 }
 
 export function MapView(props: Props) {
@@ -248,7 +253,9 @@ export function MapView(props: Props) {
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
   const terrainRef = useRef<Terrain3D | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
-  const pillsRef = useRef<{ el: HTMLElement; lon: number; lat: number; priority: number }[]>([])
+  const pillsRef = useRef<
+    { el: HTMLElement; lon: number; lat: number; priority: number; elevation?: number }[]
+  >([])
   /**
    * Las cámaras de incendio, que también compiten por el sitio.
    *
@@ -290,6 +297,14 @@ export function MapView(props: Props) {
       attributionControl: false,
     })
     mapRef.current = map
+    // Solo en desarrollo, y no es una comodidad: es lo que hace MEDIBLE el
+    // umbral de `lib/occlusion.ts`. `scripts/checks/occlusion-margin.mjs`
+    // necesita preguntarle a MapLibre, desde fuera, qué considera él tapado
+    // para poder comparar con lo que dice el DEM. En el paquete de producción
+    // esta línea no existe.
+    if (import.meta.env.DEV) {
+      ;(window as unknown as Record<string, unknown>).__map = map
+    }
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
     // La atribución compacta nace DESPLEGADA, y desplegada son dos líneas de
@@ -855,6 +870,38 @@ export function MapView(props: Props) {
 
     const els: HTMLElement[] = []
     const items: DeclutterItem[] = []
+    /** Los que no se reparten porque hay montaña delante. Ver más abajo. */
+    const behind: HTMLElement[] = []
+
+    /**
+     * ¿Hay relieve entre la cámara y este punto?
+     *
+     * Solo con la vista inclinada: en plano la cámara mira desde arriba y no
+     * hay nada que se pueda poner delante de nada.
+     *
+     * Esta es la mitad visible del cambio que quitó los 1.694 ms de espera a la
+     * GPU por cada seis segundos de vista 3D. La comprobación la hacía MapLibre
+     * marcador a marcador leyendo el búfer de profundidad; ahora se hace aquí,
+     * con el modelo de elevación que ya está en memoria, en la misma pasada que
+     * reparte los solapamientos. El porqué completo, con las cifras medidas,
+     * está en `lib/occlusion.ts`.
+     *
+     * Un punto tapado se ESCONDE y no compite por el sitio: dejarlo en el
+     * reparto haría que un dato invisible desalojara a uno que sí se ve.
+     */
+    const camera: Camera | null =
+      props.terrain.on && dem
+        ? (() => {
+            const c = map.transform.getCameraPosition()
+            return { lon: c.lngLat.lng, lat: c.lngLat.lat, altitude: c.altitude }
+          })()
+        : null
+
+    const covered = (lon: number, lat: number, elevation?: number): boolean => {
+      if (!camera || !dem) return false
+      const z = elevation ?? elevationAt(dem, lon, lat) ?? 0
+      return hiddenByRelief(dem, camera, { lon, lat, elevation: z }, props.terrain.exaggeration)
+    }
 
     /**
      * Las cámaras de incendio entran en el reparto, que hasta ahora no lo
@@ -863,6 +910,10 @@ export function MapView(props: Props) {
      * prioridad de cada clase de marcador está en `lib/declutter`.
      */
     for (const f of firesRef.current) {
+      if (covered(f.lon, f.lat)) {
+        behind.push(f.el)
+        continue
+      }
       els.push(f.el)
       items.push({
         rank: f.alert ? RANK.fireAlert : RANK.fireQuiet,
@@ -873,6 +924,10 @@ export function MapView(props: Props) {
     for (const m of placeMarkersRef.current) {
       const el = m.getElement()
       const ll = m.getLngLat()
+      if (covered(ll.lng, ll.lat)) {
+        behind.push(el)
+        continue
+      }
       const major = el.classList.contains('mk-place-city') || el.classList.contains('mk-place-town')
       els.push(el)
       items.push({
@@ -883,6 +938,14 @@ export function MapView(props: Props) {
     }
     const maxElev = Math.max(1, ...pillsRef.current.map((p) => p.priority))
     for (const p of pillsRef.current) {
+      // La pastilla de una estación sí sabe su cota de verdad —la publica el
+      // Cabildo— y se le pasa: consultar el DEM en su lugar movería el punto de
+      // salida del rayo unos metros justo donde más se nota, en una estación
+      // asomada al borde de una pared.
+      if (covered(p.lon, p.lat, p.elevation)) {
+        behind.push(p.el)
+        continue
+      }
       els.push(p.el)
       items.push({
         rank: pillRank(p.priority, maxElev),
@@ -892,11 +955,15 @@ export function MapView(props: Props) {
     }
 
     const placement = place(items)
+    // Las escrituras van TODAS al final, después de la última lectura. Mezclarlas
+    // con las consultas de posición devolvería el recálculo de diseño por
+    // marcador que `markers/size.ts` acaba de quitar de en medio.
     for (let i = 0; i < els.length; i++) {
       const el = els[i]
       el.classList.toggle('mk-pill-dot', placement[i] === 'dot')
       el.style.visibility = placement[i] === 'hidden' ? 'hidden' : 'visible'
     }
+    for (const el of behind) el.style.visibility = 'hidden'
   }
 
   // Se guarda en una ref y se refresca en cada render: los listeners del mapa
@@ -906,23 +973,67 @@ export function MapView(props: Props) {
   declutterRef.current = declutterImpl
   const declutter = () => declutterRef.current()
 
+  /**
+   * Cada cuánto se rehace el reparto mientras la cámara se mueve, en ms.
+   *
+   * ANTES NO HABÍA NINGUNO, y no por decisión: el planificador cancelaba su
+   * propio fotograma pendiente en cada evento `move`, así que durante un
+   * arrastre continuo —que emite un `move` por fotograma— la pasada no llegaba
+   * a ejecutarse casi nunca. Medido en producción, un arrastre de seis segundos
+   * disparaba dos pasadas. Funcionaba de casualidad y como un límite escondido.
+   *
+   * Ahora el límite es explícito y va en la otra dirección: se COALESCE por
+   * fotograma —varios `move` seguidos son una sola pasada— pero se deja de
+   * posponer indefinidamente. 60 ms es el paso en el que la oclusión por
+   * relieve sigue el giro de la cámara sin que se vea el retraso, y son ~16
+   * pasadas por segundo en vez de 60: con 249 marcadores, la diferencia entre
+   * ~11 ms/s de reparto y ~42 ms/s.
+   */
+  const DECLUTTER_MS = 60
+
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
     let raf = 0
+    let last = 0
     const run = () => {
-      cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => declutterRef.current())
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        raf = 0
+        const now = performance.now()
+        if (now - last < DECLUTTER_MS) return
+        last = now
+        declutterRef.current()
+      })
+    }
+    // Al soltar sí se rehace siempre, sin mirar el reloj: es el fotograma que
+    // se queda en pantalla, y dejarlo con el reparto de hace 59 ms sería dejar
+    // una pastilla escondida detrás de una montaña que ya no está delante.
+    const settle = () => {
+      last = 0
+      declutterRef.current()
     }
     map.on('move', run)
     map.on('zoom', run)
-    run()
+    map.on('moveend', settle)
+    map.on('zoomend', settle)
+    settle()
     return () => {
       cancelAnimationFrame(raf)
       map.off('move', run)
       map.off('zoom', run)
+      map.off('moveend', settle)
+      map.off('zoomend', settle)
     }
   }, [ready])
+
+  // Encender o apagar la 3D cambia quién está tapado por el relieve, y eso no
+  // lo provoca ningún movimiento de cámara: sin esto, los marcadores se
+  // quedarían con el reparto del modo anterior hasta que alguien tocara el mapa.
+  useEffect(() => {
+    if (!ready) return
+    declutterRef.current()
+  }, [ready, props.terrain.on, props.terrain.exaggeration])
 
   // --- marcadores del DOM --------------------------------------------------
   // Estaciones, sensores y topónimos son pocos (decenas), y como marcadores del
@@ -938,6 +1049,13 @@ export function MapView(props: Props) {
     const add = (lon: number, lat: number, el: HTMLElement, zIndex = 1) => {
       el.style.zIndex = String(zIndex)
       const marker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map)
+      // Después de `addTo`, que es quien encola la primera comprobación. La
+      // oclusión no se pierde: la hace `declutterImpl` con el DEM.
+      silenceDepthProbe(marker)
+      // Y se mide aquí, una vez, mientras la pastilla está recién puesta y
+      // expandida: dentro del bucle de reparto la medición costaba un recálculo
+      // de diseño de la página entera por marcador y por pasada.
+      markerSize(el)
       markersRef.current.push(marker)
     }
 
@@ -951,7 +1069,14 @@ export function MapView(props: Props) {
       return el
     }
 
-    const pills: { el: HTMLElement; lon: number; lat: number; priority: number }[] = []
+    const pills: {
+      el: HTMLElement
+      lon: number
+      lat: number
+      priority: number
+      /** Cota publicada por el Cabildo. Los aforos no la traen. */
+      elevation?: number
+    }[] = []
 
     if (visible.stations) {
       const rejected = new Set(model?.rejected.map((r) => r.entityId) ?? [])
@@ -1017,7 +1142,7 @@ export function MapView(props: Props) {
         add(s.lon, s.lat, el, 40)
         // Prioridad por altitud: en una isla de 2426 m las estaciones altas son
         // las que cuentan la historia, y son justo las que menos vecinas tienen.
-        pills.push({ el, lon: s.lon, lat: s.lat, priority: s.elevation })
+        pills.push({ el, lon: s.lon, lat: s.lat, priority: s.elevation, elevation: s.elevation })
       }
     }
 
@@ -1179,9 +1304,12 @@ export function MapView(props: Props) {
         const el = document.createElement('span')
         el.className = `mk-place mk-place-${p.kind}`
         el.textContent = p.name
-        placeMarkersRef.current.push(
-          new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(map),
-        )
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([p.lon, p.lat])
+          .addTo(map)
+        silenceDepthProbe(marker)
+        markerSize(el)
+        placeMarkersRef.current.push(marker)
       }
       declutter()
     }
@@ -1215,6 +1343,7 @@ export function MapView(props: Props) {
     probeMarkerRef.current = new maplibregl.Marker({ element: el })
       .setLngLat([probe.lon, probe.lat])
       .addTo(map)
+    silenceDepthProbe(probeMarkerRef.current)
   }, [ready, probe])
 
   // --- dónde está quien mira ----------------------------------------------
@@ -1231,6 +1360,7 @@ export function MapView(props: Props) {
     meMarkerRef.current = new maplibregl.Marker({ element: el })
       .setLngLat([props.me.lon, props.me.lat])
       .addTo(map)
+    silenceDepthProbe(meMarkerRef.current)
   }, [ready, props.me])
 
   // --- mando a distancia ---------------------------------------------------
