@@ -46,10 +46,27 @@ export function buildStatus({
   }
   if (loading && !models.temperature) return [{ text: t.loading.stations }]
 
-  const used = models.temperature?.used.length ?? 0
-  const total = census?.total ?? used
+  /**
+   * El recuento sale del CENSO, no del modelo, y es el mismo par que enseña
+   * `ModelStatus` en el escritorio.
+   *
+   * Esta línea decía «N de M estaciones activas» con `models.temperature.used`
+   * de numerador, y ese número es otra cosa: son las que sobreviven al rechazo
+   * de anomalías MÁS todo lo que sostiene el mapa por encima del techo de la
+   * red —las anclas de Open-Meteo y la cumbre del TNG—, que no son estaciones
+   * activas del Cabildo y dos de las tres ni siquiera son estaciones. Sobre el
+   * fixture del 13 ago 2026 daban 36 de 52 en el escritorio y 32 de 52 aquí, y
+   * en producción, con las cuatro anclas vivas y la cumbre, el móvil podía
+   * enseñar un numerador MAYOR que las que de verdad publicaban.
+   *
+   * La misma cadena en dos pantallas tiene que ser el mismo número. Si algún
+   * día hace falta enseñar cuántas sostienen el ajuste —que es legítimo y es
+   * otra cifra— hay que cambiar la CADENA, no el numerador.
+   */
+  if (!census) return [{ text: t.loading.stations }]
+
   const out: StatusPart[] = [
-    { text: t.model.stationsUsed(used, total), strong: true },
+    { text: t.model.stationsUsed(census.usable, census.total), strong: true },
     { text: t.mobile.live },
   ]
   // El estado del GPS va al final y solo cuando hay algo que decir: mientras
