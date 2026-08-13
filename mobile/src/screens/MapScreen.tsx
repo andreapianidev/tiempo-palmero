@@ -23,16 +23,22 @@ import {
   type RgbStop,
 } from '@core/lib/palette'
 import type { Station } from '@core/lib/quality'
+import { routeBounds } from '@core/lib/guagua/display'
 import { n, n0, t } from '@core/i18n'
 import { isVariable, type LayerId } from '../layers'
 import { color, font, space } from '../theme'
 import { Header } from '../components/Header'
 import { LayerChips } from '../components/LayerChips'
+import { LayerSheet } from '../components/LayerSheet'
 import { TopFade } from '../components/TopFade'
 import { Fabs } from '../components/Fabs'
 import { PeekCard } from '../components/PeekCard'
 import { IslandMap, type MapHandle } from '../map/IslandMap'
 import { useGridImage } from '../hooks/useGridImage'
+import { useMapIcons } from '../hooks/useMapIcons'
+import { useOverlays } from '../hooks/useOverlays'
+import { SelectionSheet } from '../sheets'
+import type { Selection } from '../sheets/selection'
 import { DetailScreen, type DetailPoint } from './DetailScreen'
 
 const STOPS: Record<DisplayVariable, RgbStop[]> = {
@@ -44,6 +50,8 @@ const STOPS: Record<DisplayVariable, RgbStop[]> = {
 export function MapScreen() {
   const insets = useSafeAreaInsets()
   const island = useIslandData()
+  const overlays = useOverlays()
+  const icons = useMapIcons()
   const mapHandle = useRef<MapHandle | null>(null)
 
   const [layer, setLayer] = useState<LayerId>('temperature')
@@ -54,6 +62,10 @@ export function MapScreen() {
   const [detail, setDetail] = useState(false)
   const [me, setMe] = useState<{ lon: number; lat: number } | null>(null)
   const [locating, setLocating] = useState(false)
+  const [sheet, setSheet] = useState(false)
+  /** Lo elegido en una capa superpuesta: parada, línea, sitio, aforo… */
+  const [selection, setSelection] = useState<Selection | null>(null)
+  const [stopsZoomReached, setStopsZoomReached] = useState(false)
 
   // Reloj de presentación: sin él, «hace 4 min» sigue diciendo 4 media hora
   // después. No alimenta el modelo, solo lo que se lee en pantalla.
@@ -89,6 +101,9 @@ export function MapScreen() {
       if (elevation === null) return
       const municipality = municipalityOf(island.municipalities, lon, lat)
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      // Tocar el mapa cierra la ficha de lo que hubiera elegido: la aguja nueva
+      // y una parada de guagua de hace dos toques no son la misma pregunta.
+      setSelection(null)
       setProbe({
         lon,
         lat,
@@ -133,6 +148,33 @@ export function MapScreen() {
     if (isVariable(next)) setVariable(next)
   }, [])
 
+  /**
+   * Elegir una línea: se resalta, se encuadra el recorrido entero y la hoja
+   * pasa a ser la de la línea.
+   *
+   * El encuadre es lo que convierte «esta línea existe» en «esta línea va de
+   * aquí a allá». En la web se puede ver el trazado sin mover la vista porque
+   * la isla entera cabe al lado del panel; en un teléfono, no.
+   */
+  const showRoute = useCallback(
+    (routeId: string) => {
+      setSelection({ kind: 'route', routeId })
+      const bounds = routeBounds(overlays.guagua.lines, routeId)
+      if (bounds) mapHandle.current?.fitBounds(bounds)
+    },
+    [overlays.guagua.lines],
+  )
+
+  /** «El tiempo aquí»: cierra la ficha de la capa y abre la del punto. */
+  const weatherAt = useCallback(
+    (lon: number, lat: number, label: string) => {
+      setSelection(null)
+      pick(lon, lat, label)
+      mapHandle.current?.flyTo(lon, lat, 13)
+    },
+    [pick],
+  )
+
   const status = useMemo(() => buildStatus(island, grid, computing), [island, grid, computing])
 
   if (!island.dem) {
@@ -173,6 +215,25 @@ export function MapScreen() {
         onPick={pick}
         onStation={onStation}
         handleRef={mapHandle}
+        overlays={overlays.visible}
+        icons={icons}
+        guaguaLines={overlays.guagua.lines}
+        guaguaStops={overlays.guagua.stops}
+        guaguaRoute={selection?.kind === 'route' ? selection.routeId : null}
+        places={overlays.placesData.places}
+        roads={overlays.placesData.roads}
+        trails={island.trails}
+        trailPois={island.trailPois}
+        counters={overlays.counters.sites}
+        fire={island.fire}
+        onSelect={(next) => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          // Elegir algo de una capa retira la aguja: la tarjeta del punto y la
+          // ficha de una parada no caben a la vez en la parte de abajo.
+          setProbe(null)
+          setSelection(next)
+        }}
+        onStopsZoom={setStopsZoomReached}
       />
 
       <TopFade />
@@ -192,9 +253,12 @@ export function MapScreen() {
       <View style={[styles.fabs, { bottom: probe ? 158 : 40 + insets.bottom }]} pointerEvents="box-none">
         <Fabs
           locating={locating}
+          layerCount={overlays.count}
+          onLayers={() => setSheet(true)}
           onLocate={locate}
           onReset={() => {
             setProbe(null)
+            setSelection(null)
             mapHandle.current?.reset()
           }}
         />
@@ -216,6 +280,30 @@ export function MapScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
           setDetail(true)
         }}
+      />
+
+      <SelectionSheet
+        selection={selection}
+        net={overlays.guagua.network}
+        countersToday={overlays.counters.today}
+        firePolledAt={island.firePolledAt}
+        now={now}
+        onRoute={showRoute}
+        onWeather={weatherAt}
+        onClose={() => setSelection(null)}
+      />
+
+      <LayerSheet
+        open={sheet}
+        visible={overlays.visible}
+        places={overlays.places}
+        guaguaLoading={overlays.guagua.loading}
+        stopsZoomReached={stopsZoomReached}
+        placesLoading={overlays.placesData.loading}
+        countersError={overlays.counters.error}
+        onToggle={overlays.toggle}
+        onTogglePlace={overlays.togglePlace}
+        onClose={() => setSheet(false)}
       />
 
       <DetailScreen

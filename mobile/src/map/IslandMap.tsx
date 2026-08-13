@@ -11,10 +11,11 @@
  * puente 36 veces por fotograma, y esa cuenta solo vale con el norte arriba.
  */
 
-import { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import {
   Camera,
+  Images,
   ImageSource,
   Layer,
   Map as MapLibreMap,
@@ -26,21 +27,33 @@ import type { NativeSyntheticEvent } from 'react-native'
 import { buildStyle } from '@core/lib/mapStyle'
 import { cssColor, co2Band, type RgbStop } from '@core/lib/palette'
 import { stationReading, type Station } from '@core/lib/quality'
+import { STOPS_MIN_ZOOM } from '@core/lib/guagua/display'
 import { n } from '@core/i18n'
 import type { Dem } from '@core/lib/dem'
-import type { AirStation, Co2Point, SkyStation } from '@core/hooks/useIslandData'
+import type { AirStation, Co2Point, FireCamera, SkyStation } from '@core/hooks/useIslandData'
+import type { CounterSite } from '@core/lib/counters/model'
 import { ISLAND_CENTER, ISLAND_ZOOM, MAX_ZOOM, MIN_ZOOM } from '../config'
 import { isVariable, type LayerId } from '../layers'
+import type { OverlayVisibility } from '../overlays'
 import { color } from '../theme'
 import { declutter, type DeclutterItem, type Viewport } from './declutter'
 import { StationPin } from './StationPin'
 import { WindPin } from './WindPin'
 import { SensorDot } from './SensorDot'
+import { CountersOverlay } from './overlays/CountersOverlay'
+import { FireOverlay } from './overlays/FireOverlay'
+import { GuaguaOverlay } from './overlays/GuaguaOverlay'
+import { PlacesOverlay } from './overlays/PlacesOverlay'
+import { RoadsOverlay } from './overlays/RoadsOverlay'
+import { TrailsOverlay } from './overlays/TrailsOverlay'
+import type { Selection } from '../sheets/selection'
 import type { GridImage } from '../hooks/useGridImage'
 
 export interface MapHandle {
   flyTo: (lon: number, lat: number, zoom?: number) => void
   reset: () => void
+  /** Encuadra un rectángulo, para enseñar el recorrido entero de una línea. */
+  fitBounds: (bounds: [[number, number], [number, number]]) => void
 }
 
 interface Props {
@@ -59,6 +72,24 @@ interface Props {
   onPick: (lon: number, lat: number) => void
   onStation: (station: Station) => void
   handleRef: React.RefObject<MapHandle | null>
+
+  // --- capas superpuestas -------------------------------------------------
+  overlays: OverlayVisibility
+  /** Iconos ya rasterizados. Sin ellos no se montan las capas de símbolos. */
+  icons: Record<string, string> | null
+  guaguaLines: GeoJSON.FeatureCollection | null
+  guaguaStops: GeoJSON.FeatureCollection | null
+  /** Línea resaltada, la de la ficha abierta. */
+  guaguaRoute: string | null
+  places: GeoJSON.FeatureCollection
+  roads: GeoJSON.FeatureCollection | null
+  trails: unknown | null
+  trailPois: unknown | null
+  counters: CounterSite[]
+  fire: FireCamera[]
+  onSelect: (selection: Selection) => void
+  /** Se avisa al cruzar el umbral de zoom de las paradas, no en cada fotograma. */
+  onStopsZoom: (reached: boolean) => void
 }
 
 export function IslandMap({
@@ -77,6 +108,19 @@ export function IslandMap({
   onPick,
   onStation,
   handleRef,
+  overlays,
+  icons,
+  guaguaLines,
+  guaguaStops,
+  guaguaRoute,
+  places,
+  roads,
+  trails,
+  trailPois,
+  counters,
+  fire,
+  onSelect,
+  onStopsZoom,
 }: Props) {
   const cameraRef = useRef<CameraRef>(null)
   const [viewport, setViewport] = useState<Viewport | null>(null)
@@ -87,6 +131,13 @@ export function IslandMap({
       cameraRef.current?.flyTo({ center: [lon, lat], zoom, duration: 700 }),
     reset: () =>
       cameraRef.current?.flyTo({ center: ISLAND_CENTER, zoom: ISLAND_ZOOM, duration: 700 }),
+    fitBounds: ([[west, south], [east, north]]) =>
+      cameraRef.current?.fitBounds([west, south, east, north], {
+        // Sitio para la cabecera arriba y para la hoja de la línea abajo: sin
+        // margen, medio recorrido queda tapado justo por lo que lo describe.
+        padding: { top: 130, right: 40, bottom: 320, left: 40 },
+        duration: 700,
+      }),
   }))
 
   const style = useMemo(() => buildStyle(dem.manifest), [dem])
@@ -161,6 +212,18 @@ export function IslandMap({
     [onPick],
   )
 
+  // Cruzar el umbral de zoom de las paradas se avisa una sola vez por cruce, no
+  // en cada fotograma: la hoja de capas necesita saberlo para no dejar una
+  // casilla marcada sobre un mapa que no cambia, y nada más.
+  const crossed = useRef<boolean | null>(null)
+  useEffect(() => {
+    if (!viewport) return
+    const reached = viewport.zoom >= STOPS_MIN_ZOOM
+    if (crossed.current === reached) return
+    crossed.current = reached
+    onStopsZoom(reached)
+  }, [viewport, onStopsZoom])
+
   return (
     <View
       style={StyleSheet.absoluteFill}
@@ -205,6 +268,44 @@ export function IslandMap({
             />
           </ImageSource>
         )}
+
+        {/* Los iconos, antes que cualquier capa que los use: una capa de
+            símbolos cuyas imágenes no existen se pinta vacía. */}
+        {icons && <Images images={icons} />}
+
+        {/* El orden es el de la web y no es cosmético. Las carreteras son el
+            fondo sobre el que se leen las demás, así que van debajo de todo; la
+            red de guaguas va debajo de los puntos de interés, porque donde un
+            sendero y una línea se cruzan lo que hay que poder tocar es el
+            punto, que es un sitio. */}
+        <RoadsOverlay
+          roads={roads}
+          visible={overlays.roads}
+          onRoad={(road, lon, lat) => onSelect({ kind: 'road', road, lon, lat })}
+        />
+
+        <PlacesOverlay
+          places={places}
+          icons={icons}
+          onPlace={(place) => onSelect({ kind: 'place', place })}
+        />
+
+        <GuaguaOverlay
+          lines={guaguaLines}
+          stops={guaguaStops}
+          visible={overlays.guagua}
+          route={guaguaRoute}
+          onStop={(stop) => onSelect({ kind: 'stop', stop })}
+          onRoute={(routeId) => onSelect({ kind: 'route', routeId })}
+        />
+
+        <TrailsOverlay
+          trails={trails}
+          pois={trailPois}
+          icons={icons}
+          visible={overlays.trails}
+          onPoi={(poi) => onSelect({ kind: 'poi', poi })}
+        />
 
         {/* El pin tapado NO se monta con contenido vacío: un `Marker` sin
             hijos hace que MapLibre dibuje encima su chincheta roja de serie, y
@@ -288,6 +389,21 @@ export function IslandMap({
                 />
               </Marker>
             ))}
+
+        {/* Los aforos y las cámaras son marcadores y no capas: son diecisiete y
+            cuatro, llevan una cifra o un glifo dentro, y eso se dibuja mucho
+            mejor con una vista que con un símbolo del estilo. */}
+        <CountersOverlay
+          sites={counters}
+          visible={overlays.counters}
+          onSite={(site) => onSelect({ kind: 'counter', site })}
+        />
+
+        <FireOverlay
+          cameras={fire}
+          visible={overlays.fire}
+          onCamera={(camera) => onSelect({ kind: 'fire', camera })}
+        />
 
         {probe && (
           <Marker lngLat={[probe.lon, probe.lat]}>

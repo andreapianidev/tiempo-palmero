@@ -900,13 +900,49 @@ mobile/
   metro.config.js          `@core` → ../src, y React fijado al del móvil
   src/
     theme.ts               Los tokens del diseño de iOS
-    layers.ts              Las siete capas de la fila de chips
+    layers.ts              Las siete variables de la fila de chips
+    overlays.ts            Las capas superpuestas y los seis catálogos de sitios
     config.ts              Origen de los datos, paso de la malla, vista inicial
     map/                   Mapa, pins y reparto de pins
-    components/            Cabecera, chips, FABs, tarjeta peek, cristal
-    detail/                Los bloques de la ficha
+    map/overlays/          Guaguas, sitios, carreteras, senderos, aforos, fuego
+    map/icons.ts           Los iconos del catálogo, rasterizados con Skia
+    components/            Cabecera, chips, FABs, hoja de capas, cristal
+    detail/                Los bloques de la ficha del punto
+    sheets/                Las fichas de las capas: parada, línea, sitio, aforo…
     screens/               MapScreen y DetailScreen
 ```
+
+### Chips arriba, interruptores abajo
+
+La fila de chips y la hoja de capas no son dos sitios para lo mismo. Los chips
+son **excluyentes**: temperatura, humedad, rocío, viento, aire, CO₂ y cielo son
+formas distintas de mirar la isla, y solo se mira una. Las capas superpuestas
+—senderos, guaguas, carreteras, aforos, cámaras y los seis catálogos de sitios—
+**se acumulan**, y en 393 px no caben al lado del mapa como en la barra lateral
+del escritorio: van en una hoja que sube desde abajo, con un contador en el
+botón para que apagarlas no sea una búsqueda.
+
+Los avisos son los de la barra lateral, palabra por palabra, porque salen del
+mismo `@core/i18n`: cuántos megas está bajando la red de guaguas, y que las
+paradas no aparecen hasta cierto acercamiento.
+
+### Los iconos se dibujan dos veces, con el mismo trazo
+
+La web registra los iconos de sitios y de puntos de sendero como SVG —
+`new Image()`, una `data:` url y `map.addImage()`—. En el móvil no hay quien
+decodifique un SVG: ni el navegador, que no está, ni el cargador de imágenes de
+React Native, que no sabe. Así que `map/icons.ts` los dibuja con Skia y los
+escribe como PNG en la caché, y `<Images>` de MapLibre los carga de ahí.
+
+Lo que **no** se duplica es el dibujo: el trazo y el color salen de `PLACES` y
+de `poiGlyph()`/`poiColor()` en `@core`, los mismos que compone el SVG de la
+web. El registro en el mapa —lo único atado a cada motor— vive aparte:
+`components/MapIcons.ts` en la web, `map/icons.ts` en el móvil.
+
+Los bitmaps se generan a ×3 y las capas piden un tercio del tamaño que pide la
+web. MapLibre nativo mide un PNG suelto en puntos de pantalla, sin el
+`pixelRatio` que la web sí puede declarar: a tamaño nominal se verían borrosos
+en cualquier teléfono.
 
 ### Qué se comparte y qué no
 
@@ -919,6 +955,9 @@ fichero, no por `if`**:
 | Origen de los datos | `setDataOrigin(location.origin)` | `setDataOrigin(DATA_ORIGIN)` |
 | Descargar el DEM | `dem-loader.ts` — `<canvas>` | `dem-loader.native.ts` — Skia |
 | Pintar la malla | `grid-canvas.ts` — `<canvas>` | PNG de Skia a fichero |
+| Iconos del catálogo | SVG y `map.addImage()` | PNG de Skia y `<Images>` |
+| Declarar una capa | `map.addLayer(spec)` | `<GeoJSONSource><Layer/>` |
+| Acertar una carretera | Capa gemela invisible de 14 px | Caja de toque de 44×44 |
 
 El par `dem-loader.ts` / `dem-loader.native.ts` se elige solo: Metro prefiere el
 sufijo `.native`, Vite ni lo ve. Quien importa `loadDem` no sabe en qué

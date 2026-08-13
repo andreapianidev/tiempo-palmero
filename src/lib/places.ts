@@ -14,8 +14,6 @@
  * superficie sigue estando en la ficha, que es donde se puede leer.
  */
 
-import type { Map as MlMap } from 'maplibre-gl'
-
 export type PlaceKind =
   | 'tourism'
   | 'viewpoint'
@@ -118,21 +116,6 @@ export function placeIconDataUrl(kind: PlaceKind, size = ICON_SIZE): string {
 }
 
 export const placeImageId = (kind: PlaceKind) => `place-${kind}`
-
-/** Igual que con los puntos de los senderos: las imágenes antes que la capa. */
-export async function addPlaceIcons(map: MlMap): Promise<void> {
-  await Promise.all(
-    PLACES.map(async ({ kind }) => {
-      const id = placeImageId(kind)
-      if (map.hasImage(id)) return
-      const img = new Image(ICON_SIZE * 2, ICON_SIZE * 2)
-      img.src = placeIconDataUrl(kind, ICON_SIZE * 2)
-      await img.decode().catch(() => undefined)
-      if (!map.getStyle() || map.hasImage(id)) return
-      map.addImage(id, img, { pixelRatio: 2 })
-    }),
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Geometría y ficha

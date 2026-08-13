@@ -12,15 +12,7 @@
  * parecer que la isla se ha quedado sin tráfico justo ahí.
  */
 
-import type { CounterSite } from '../../lib/counters/model'
-import { n, n0 } from '../../i18n'
-
-/** Miles abreviados: en la entrada de Santa Cruz caben 20.000 pasos al día. */
-export function compactCount(value: number): string {
-  if (value < 1000) return n0(value)
-  if (value < 10_000) return `${n(value / 1000, 1)} k`
-  return `${n0(value / 1000)} k`
-}
+import { compactCount, type CounterSite } from '../../lib/counters/model'
 
 const COLOR = {
   road: '#c98f5a',

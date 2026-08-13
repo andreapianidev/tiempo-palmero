@@ -17,8 +17,6 @@
  * ninguna dependencia externa en tiempo de ejecución.
  */
 
-import type { Map as MlMap } from 'maplibre-gl'
-
 export type PoiFamily = 'servicios' | 'cultural' | 'natural'
 
 /** Un color por familia, el mismo que usa la ficha y la leyenda. */
@@ -166,31 +164,28 @@ export function poiIconDataUrl(icon: string, size = ICON_SIZE): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(poiIconSvg(icon, size))}`
 }
 
+/**
+ * Las dos piezas del icono, sueltas: el trazo y el color de su familia.
+ *
+ * El SVG de arriba solo sirve donde hay un navegador que lo decodifique. La app
+ * nativa dibuja estos mismos iconos con Skia, y para eso necesita el trazo, no
+ * una cadena `<svg>` que en iOS y en Android nadie sabe leer. Salen de aquí y
+ * no de una copia en el móvil: un icono que se dibuja distinto en cada
+ * plataforma deja de ser el mismo icono.
+ */
+export function poiGlyph(icon: string): string {
+  return GLYPH[icon] ?? GLYPH.senal
+}
+
+export function poiColor(icon: string): string {
+  return FAMILY_COLOR[FAMILY_OF_ICON[icon] ?? 'servicios']
+}
+
 /** Todos los iconos del catálogo, para la leyenda y para registrarlos en el mapa. */
 export const POI_ICONS = Object.keys(GLYPH)
 
 /** Nombre de la imagen dentro del estilo. */
 export const imageId = (icon: string) => `poi-${icon}`
-
-/**
- * Registra los iconos en el mapa. Hay que esperar a que las imágenes estén
- * decodificadas antes de añadir la capa: si no, MapLibre pinta la capa sin
- * icono y avisa por consola de cada imagen que falta.
- */
-export async function addPoiIcons(map: MlMap): Promise<void> {
-  await Promise.all(
-    POI_ICONS.map(async (icon) => {
-      const id = imageId(icon)
-      if (map.hasImage(id)) return
-      const img = new Image(ICON_SIZE * 2, ICON_SIZE * 2)
-      img.src = poiIconDataUrl(icon, ICON_SIZE * 2)
-      await img.decode().catch(() => undefined)
-      // El mapa puede haberse destruido mientras se decodificaban.
-      if (!map.getStyle() || map.hasImage(id)) return
-      map.addImage(id, img, { pixelRatio: 2 })
-    }),
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Ficha

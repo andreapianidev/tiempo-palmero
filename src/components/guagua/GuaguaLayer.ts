@@ -6,21 +6,15 @@
  * `addLayer` más. El componente del mapa solo la enciende, le da los datos y le
  * pasa los dos manejadores de clic.
  *
- * Las paradas aparecen a partir de z10,5. Son 913 sobre una isla de 42 km: por
- * debajo de ese zoom no son un mapa de paradas, son una mancha, y el trazado de
- * las líneas ya cuenta por dónde pasa el transporte público.
- *
- * Ese zoom mínimo es, además, lo que permite que la red tenga UNA sola casilla
- * en vez de dos. Estuvieron separadas un tiempo —una para trazados y otra para
- * paradas—, pero leídas seguidas en la lista parecían la misma entrada
- * repetida, y el motivo de separarlas era evitar que encender la red tapara el
- * mapa con 913 puntos: eso ya no puede pasar, porque a la distancia en la que
- * molestarían no se dibujan.
+ * Aquí queda solo lo que habla con `maplibre-gl`. El zoom mínimo de las
+ * paradas, el marcado de qué líneas sirven cada una y el rectángulo de un
+ * recorrido están en `lib/guagua/display.ts`: son las mismas decisiones en la
+ * web y en la app nativa, y esta plataforma no puede ser la dueña de ellas.
  */
 
 import type { Map as MlMap, GeoJSONSource, LayerSpecification } from 'maplibre-gl'
 import { COLORS } from '../../lib/mapStyle'
-import type { GuaguaNetwork } from '../../lib/guagua/network'
+import { STOPS_MIN_ZOOM } from '../../lib/guagua/display'
 
 const SRC_LINES = 'guagua-lineas'
 const SRC_STOPS = 'guagua-paradas'
@@ -39,41 +33,9 @@ export const GUAGUA_CLICK_LAYERS = [STOPS, STOPS_SEL, LINES, LINES_SEL]
 
 const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] }
 
-/**
- * Zoom a partir del cual se dibujan las 913 paradas.
- *
- * Se exporta porque la vista de llegada es z9,6 y esto es z10,5: quien enciende
- * el interruptor allí no ve aparecer nada, y una casilla marcada sobre un mapa
- * que no cambia se lee como una capa rota. La barra lateral lo dice mientras
- * ocurre, y para decirlo necesita este número.
- */
-export const STOPS_MIN_ZOOM = 10.5
-
 interface Handlers {
   onStop: (props: Record<string, unknown>, lon: number, lat: number) => void
   onRoute: (routeId: string) => void
-}
-
-/**
- * Marca cada parada con las líneas que la sirven, para que el resaltado sea un
- * filtro del estilo y no una segunda fuente.
- *
- * El valor va entre barras —`|100|500|`— porque el operador `in` de MapLibre
- * busca subcadena: sin delimitador, la línea 2 casaría con la 200 y al elegir
- * una línea corta se iluminaría media isla.
- */
-export function decorateStops(
-  fc: GeoJSON.FeatureCollection,
-  net: GuaguaNetwork | null,
-): GeoJSON.FeatureCollection {
-  return {
-    ...fc,
-    features: fc.features.map((f) => {
-      const id = String(f.properties?.stop_id ?? '')
-      const routes = net?.stops[id]?.routes ?? []
-      return { ...f, properties: { ...(f.properties ?? {}), routes: `|${routes.join('|')}|` } }
-    }),
-  }
 }
 
 /**
@@ -215,43 +177,11 @@ export function setGuaguaVisible(
   on(STOPS_SEL, visible.stops || chosen)
 }
 
-/**
- * El rectángulo que ocupa un recorrido, para poder encuadrarlo.
- *
- * Sin esto, «ver el recorrido en el mapa» no movía el mapa: si la línea caía
- * fuera de la vista —o detrás de la propia ficha, que ocupa el lado derecho—,
- * el botón parecía no hacer nada.
- */
-export function routeBounds(
-  lines: GeoJSON.FeatureCollection | null,
-  routeId: string,
-): [[number, number], [number, number]] | null {
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  const walk = (c: unknown): void => {
-    if (Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number') {
-      minX = Math.min(minX, c[0])
-      maxX = Math.max(maxX, c[0])
-      minY = Math.min(minY, c[1])
-      maxY = Math.max(maxY, c[1])
-      return
-    }
-    if (Array.isArray(c)) for (const part of c) walk(part)
-  }
-  for (const f of lines?.features ?? []) {
-    if (String(f.properties?.route_id ?? '') !== routeId) continue
-    walk((f.geometry as { coordinates?: unknown }).coordinates)
-  }
-  return Number.isFinite(minX) ? [[minX, minY], [maxX, maxY]] : null
-}
-
 /** Resalta una línea y sus paradas. Con `null` vuelve la red entera, sin nada elegido. */
 export function setGuaguaRoute(map: MlMap, routeId: string | null): void {
   // Un identificador que no existe apaga el filtro sin tener que quitar la capa
   // ni recalcular la fuente.
-  const id = routeId ?? ' '
+  const id = routeId ?? ' '
   if (map.getLayer(LINES_SEL)) map.setFilter(LINES_SEL, ['==', ['get', 'route_id'], id])
   if (map.getLayer(STOPS_SEL)) map.setFilter(STOPS_SEL, ['in', `|${id}|`, ['get', 'routes']])
 }

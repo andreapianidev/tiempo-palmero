@@ -9,17 +9,16 @@ import { buildStyle, COLORS } from '../lib/mapStyle'
 import { renderGrid } from '../lib/grid-canvas'
 import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette'
 import { freshness, stationReading, type Station } from '../lib/quality'
-import { addPoiIcons, decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
+import { decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
 import { WindLayer } from './wind/WindLayer'
 import {
   addGuaguaLayers,
   setGuaguaData,
   setGuaguaRoute,
   setGuaguaVisible,
-  routeBounds,
-  STOPS_MIN_ZOOM,
   GUAGUA_CLICK_LAYERS,
 } from './guagua/GuaguaLayer'
+import { routeBounds, STOPS_MIN_ZOOM } from '../lib/guagua/display'
 import { readStop, type GuaguaStopPoint } from '../lib/guagua/network'
 import {
   addPlacesLayers,
@@ -30,7 +29,8 @@ import {
   PLACES_LAYER,
   ROADS_HIT_LAYER,
 } from './places/PlacesLayer'
-import { addPlaceIcons, readPlace, type PlaceRecord } from '../lib/places'
+import { readPlace, type PlaceRecord } from '../lib/places'
+import { addPlaceIcons, addPoiIcons } from './MapIcons'
 import { readRoad, type RoadRecord } from '../lib/roads'
 import { counterMarkerElement } from './counters/CounterMarker'
 import type { CounterSite } from '../lib/counters/model'

@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchLayer } from '../lib/api'
 import { loadGuaguaNetwork, type GuaguaNetwork } from '../lib/guagua/network'
-import { decorateStops } from '../components/guagua/GuaguaLayer'
+import { decorateStops } from '../lib/guagua/display'
 
 export interface GuaguaData {
   network: GuaguaNetwork | null

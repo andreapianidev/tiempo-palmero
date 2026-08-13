@@ -1,13 +1,17 @@
 /**
- * Los dos botones redondos: mi ubicación y volver a ver la isla entera.
+ * Los botones redondos: capas, mi ubicación y volver a ver la isla entera.
  *
  * Los trazados son los del prototipo, carácter por carácter. El botón de
  * ubicación parpadea en ámbar mientras el GPS busca, que es la única señal que
  * hay de que está pasando algo.
+ *
+ * El de capas lleva un contador cuando hay alguna encendida. Sin él, cerrar la
+ * hoja deja el mapa lleno de senderos y guaguas sin nada que recuerde de dónde
+ * salieron ni dónde se apagan.
  */
 
 import { useEffect } from 'react'
-import { Pressable, StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import Animated, {
   useAnimatedStyle,
@@ -17,16 +21,19 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics'
-import { color, radius } from '../theme'
+import { color, font, radius } from '../theme'
 import { Glass } from './Glass'
 
 interface Props {
   locating: boolean
+  /** Cuántas capas superpuestas hay encendidas. 0 = sin distintivo. */
+  layerCount: number
+  onLayers: () => void
   onLocate: () => void
   onReset: () => void
 }
 
-export function Fabs({ locating, onLocate, onReset }: Props) {
+export function Fabs({ locating, layerCount, onLayers, onLocate, onReset }: Props) {
   const pulse = useSharedValue(1)
 
   useEffect(() => {
@@ -43,6 +50,26 @@ export function Fabs({ locating, onLocate, onReset }: Props) {
 
   return (
     <View style={styles.stack}>
+      <Fab
+        label="Capas del mapa"
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          onLayers()
+        }}
+        badge={layerCount}
+      >
+        {/* Tres láminas apiladas: el dibujo universal de «capas». */}
+        <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M12 3.5l8 4.2-8 4.2-8-4.2zM4.4 12.2l7.6 4 7.6-4M4.4 16.3l7.6 4 7.6-4"
+            stroke={layerCount > 0 ? color.amber : color.fg}
+            strokeWidth={1.7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </Fab>
+
       <Fab
         label="Mi ubicación"
         onPress={() => {
@@ -94,22 +121,29 @@ export function Fabs({ locating, onLocate, onReset }: Props) {
 function Fab({
   label,
   onPress,
+  badge = 0,
   children,
 }: {
   label: string
   onPress: () => void
+  badge?: number
   children: React.ReactNode
 }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={badge > 0 ? `${label}, ${badge} encendidas` : label}
       style={({ pressed }) => [pressed && styles.down]}
     >
       <Glass intensity={22} style={styles.fab} fallback={color.floatSolid}>
         {children}
       </Glass>
+      {badge > 0 && (
+        <View style={styles.badge} pointerEvents="none">
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      )}
     </Pressable>
   )
 }
@@ -126,4 +160,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  badge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    backgroundColor: color.amber,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { fontFamily: font.monoSemibold, fontSize: 10.5, color: color.onLight },
 })

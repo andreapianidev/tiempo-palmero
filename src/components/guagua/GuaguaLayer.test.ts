@@ -14,7 +14,8 @@
 
 import { describe, it, expect } from 'vitest'
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec'
-import { GUAGUA_LAYER_SPECS, decorateStops, routeBounds, setGuaguaVisible } from './GuaguaLayer'
+import { GUAGUA_LAYER_SPECS, setGuaguaVisible } from './GuaguaLayer'
+import { decorateStops, routeBounds } from '../../lib/guagua/display'
 import type { GuaguaNetwork } from '../../lib/guagua/network'
 
 const EMPTY = { type: 'FeatureCollection', features: [] } as const
