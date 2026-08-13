@@ -19,11 +19,18 @@
  * se ve?» — esconder una estación que está a la vista es peor que dibujar una
  * que no lo está, porque el dato desaparece sin decir por qué.
  *
- * CÓMO SE USA. Necesita el servidor de desarrollo en marcha, que es donde
- * `MapView` expone el mapa:
+ * CÓMO SE USA. Necesita dos cosas que no están en el proyecto a propósito:
+ * Playwright —que no es dependencia de esta aplicación y no debe serlo, porque
+ * esto se ejecuta a mano y solo cuando se toca el umbral— y el servidor de
+ * desarrollo en marcha, que es donde `MapView` expone el mapa.
  *
+ *   npx playwright install chromium
+ *   npm i --no-save playwright
  *   npm run dev &
  *   npx tsx scripts/checks/occlusion-margin.ts
+ *
+ * Por eso este fichero está excluido en `tsconfig.json`: sin la exclusión,
+ * `tsc --noEmit` busca Playwright durante el despliegue y lo tumba.
  *
  * No pide un solo byte a ninguna API: el relieve y el modelo de elevación son
  * ficheros estáticos del propio repositorio.
