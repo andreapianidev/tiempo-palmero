@@ -13,7 +13,7 @@
  * mapa taparía justo lo que explica.
  */
 
-import { MAP_VARIABLE_ORDER, VARIABLES, type MapVariable } from '../../lib/variables'
+import { PICKER_VARIABLE_ORDER, VARIABLES, type MapVariable } from '../../lib/variables'
 import { t } from '../../i18n'
 
 interface Props {
@@ -26,7 +26,7 @@ interface Props {
 export function VariableChips({ variable, onVariable, gridOn, onToggleGrid }: Props) {
   return (
     <div className="mchips">
-      {MAP_VARIABLE_ORDER.map((id) => VARIABLES[id]).map((v) => (
+      {PICKER_VARIABLE_ORDER.map((id) => VARIABLES[id]).map((v) => (
         <button
           key={v.id}
           className="mchip"

@@ -24,11 +24,13 @@
  * de quien conoce la finca.
  */
 
+import { dataUrl } from '../endpoints'
 import { ISLAND_BBOX } from '../geo'
 import { elevationAt, type Dem } from '../dem'
 import { modelGridPoints, parseModelTime, type GridPoint } from '../wind/model'
 
-export const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast'
+/** Por el proxy cacheado, no directo. El porqué está en `openmeteo.ts`. */
+export const OPEN_METEO_URL = () => dataUrl('/api/openmeteo?kind=eto')
 
 export interface EtoSample {
   lon: number
@@ -65,7 +67,7 @@ export async function fetchEto(
   if (!points.length) return null
 
   const url =
-    `${OPEN_METEO_URL}?latitude=${points.map((p) => p.lat.toFixed(4)).join(',')}` +
+    `${OPEN_METEO_URL()}&latitude=${points.map((p) => p.lat.toFixed(4)).join(',')}` +
     `&longitude=${points.map((p) => p.lon.toFixed(4)).join(',')}` +
     `&elevation=${points.map((p) => p.elevation).join(',')}` +
     `&daily=et0_fao_evapotranspiration,precipitation_sum` +

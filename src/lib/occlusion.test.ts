@@ -1,69 +1,148 @@
-/**
- * La oclusión de marcadores.
- *
- * El terreno de prueba es la propia isla en corte: una cresta de 2.400 m en el
- * medio, con la mar a los dos lados. Es el caso que importa —un pin de
- * Tazacorte visto desde el este, con la Cumbre en medio— y también el que
- * decide si el margen vertical está bien puesto: un pin en la ladera de la
- * cresta, mirado desde arriba, NO puede taparse a sí mismo.
- */
-
 import { describe, expect, it } from 'vitest'
-import { isOccluded } from './occlusion'
+import { emptyDem, type Dem, type DemManifest } from './dem'
+import {
+  CLEARANCE_MARGIN_M,
+  hiddenByRelief,
+  reliefAboveSight,
+  SAMPLE_STEP_M,
+} from './occlusion'
+import { lonToPixelX, latToPixelY } from './geo'
 
-/** Cresta triangular centrada en −17,88, de 2.400 m y 8 km de ancho. */
-const ridge = (lon: number): number => {
-  const d = Math.abs(lon + 17.88)
-  return d > 0.04 ? 0 : 2400 * (1 - d / 0.04)
+/**
+ * Un relieve de laboratorio, no la isla.
+ *
+ * La calibración contra la isla de verdad ya está hecha y no cabe en una prueba
+ * unitaria: son 1.843 puntos comparados con el veredicto del propio MapLibre
+ * sobre la escena dibujada, y vive en `scripts/checks/occlusion-margin.ts`. Lo
+ * que se comprueba aquí es lo otro: que la geometría del rayo esté bien, que la
+ * exageración vertical se aplique donde toca, y —sobre todo— **que un punto que
+ * se ve no se esconda**, que es el error caro.
+ */
+const MANIFEST: DemManifest = {
+  zoom: 12,
+  minZoom: 12,
+  tileSize: 256,
+  x0: 1841,
+  y0: 1703,
+  cols: 4,
+  rows: 4,
+  metersPerPixel: 33.54,
+  attribution: '',
+  encoding: 'terrarium',
+  generated: '',
 }
 
-const island = (lon: number, _lat: number): number => ridge(lon)
+/** Pone una altura en el píxel del DEM que le toca a estas coordenadas. */
+function poke(dem: Dem, lon: number, lat: number, height: number, radiusPx = 2): void {
+  const cx = Math.round(lonToPixelX(lon, MANIFEST.zoom) - dem.originX)
+  const cy = Math.round(latToPixelY(lat, MANIFEST.zoom) - dem.originY)
+  for (let j = -radiusPx; j <= radiusPx; j++) {
+    for (let i = -radiusPx; i <= radiusPx; i++) {
+      const x = cx + i
+      const y = cy + j
+      if (x < 0 || y < 0 || x >= dem.width || y >= dem.height) continue
+      dem.heights[y * dem.width + x] = height
+    }
+  }
+}
 
-const camera = { lon: -17.6, lat: 28.66, altitudeM: 6000 }
+/** Longitud del centro de la malla, y dos puntos a su este y a su oeste. */
+const LAT = 28.72
+const WEST = -17.94
+const MID = -17.9
+const EAST = -17.86
 
-describe('isOccluded', () => {
-  it('la Cumbre tapa lo que hay detrás', () => {
-    // Un pin en la costa oeste, con la cresta de 2.400 m en medio y la cámara
-    // al este a 6 km de altura: la línea de visión pasa por debajo.
-    expect(isOccluded(camera, { lon: -18.0, lat: 28.66, elevationM: 20 }, island)).toBe(true)
+const flat = () => {
+  const dem = emptyDem(MANIFEST)
+  // Toda la malla a 10 m: mar no, tierra baja. Un cero se confundiría con
+  // «fuera del modelo» en las pruebas de borde.
+  dem.heights.fill(10)
+  return dem
+}
+
+describe('¿hay montaña delante?', () => {
+  const camera = { lon: WEST, lat: LAT, altitude: 400 }
+  const target = { lon: EAST, lat: LAT, elevation: 10 }
+
+  it('sobre terreno llano el rayo pasa limpio', () => {
+    const above = reliefAboveSight(flat(), camera, target)
+    expect(above).not.toBeNull()
+    expect(above!).toBeLessThan(0)
+    expect(hiddenByRelief(flat(), camera, target)).toBe(false)
   })
 
-  it('no tapa lo que está delante de ella', () => {
-    expect(isOccluded(camera, { lon: -17.75, lat: 28.66, elevationM: 50 }, island)).toBe(false)
+  it('una cresta entre medias tapa el punto', () => {
+    const dem = flat()
+    poke(dem, MID, LAT, 900)
+    const above = reliefAboveSight(dem, camera, target)
+    // A mitad de camino la visual va por ~205 m y la cresta está a 900.
+    expect(above!).toBeGreaterThan(600)
+    expect(hiddenByRelief(dem, camera, target)).toBe(true)
   })
 
-  it('desde bastante más alto se ve por encima de la cresta', () => {
-    const high = { ...camera, altitudeM: 30000 }
-    expect(isOccluded(high, { lon: -18.0, lat: 28.66, elevationM: 20 }, island)).toBe(false)
+  it('la misma cresta, más baja que la visual, no tapa nada', () => {
+    const dem = flat()
+    poke(dem, MID, LAT, 150)
+    expect(hiddenByRelief(dem, camera, target)).toBe(false)
   })
 
-  it('un pin en la propia ladera no se tapa a sí mismo', () => {
-    // A media ladera del lado de la cámara, a 1.200 m. Sin el margen vertical,
-    // el propio suelo del que sale lo daría por escondido.
-    expect(isOccluded(camera, { lon: -17.86, lat: 28.66, elevationM: 1200 }, island)).toBe(
-      false,
-    )
+  /**
+   * EL LADO QUE MÁS PESA. Una cresta que se queda justo por debajo de la línea
+   * de visión no puede esconder el dato: el margen está para absorber la
+   * diferencia entre dos mallas, no para tapar por si acaso.
+   */
+  it('no esconde un punto cuya cresta se queda dentro del margen', () => {
+    const dem = flat()
+    const above = reliefAboveSight(flat(), camera, target)!
+    // Una cresta que asome exactamente la mitad del margen por encima del rayo.
+    poke(dem, MID, LAT, 205 + CLEARANCE_MARGIN_M / 2)
+    const raised = reliefAboveSight(dem, camera, target)!
+    expect(raised).toBeGreaterThan(above)
+    expect(raised).toBeLessThan(CLEARANCE_MARGIN_M)
+    expect(hiddenByRelief(dem, camera, target)).toBe(false)
   })
 
-  it('con la cámara casi encima no se pregunta nada', () => {
-    const above = { lon: -17.881, lat: 28.66, altitudeM: 4000 }
-    expect(isOccluded(above, { lon: -17.88, lat: 28.66, elevationM: 2400 }, island)).toBe(
-      false,
-    )
+  it('la exageración vertical levanta el relieve y también la oclusión', () => {
+    const dem = flat()
+    poke(dem, MID, LAT, 190)
+    // A 1× la cresta se queda por debajo de la visual; a 1,5× la corta.
+    expect(hiddenByRelief(dem, camera, target, 1)).toBe(false)
+    expect(hiddenByRelief(dem, camera, target, 1.5)).toBe(true)
   })
 
-  it('el mar abierto no tapa', () => {
-    const sea = () => null
-    expect(isOccluded(camera, { lon: -18.2, lat: 28.66, elevationM: 0 }, sea)).toBe(false)
+  /**
+   * El suelo del propio punto no puede taparlo. Sin recortar el último tramo
+   * del rayo, un punto en una ladera se escondería a sí mismo SIEMPRE, que era
+   * la forma más fácil de que desaparecieran justo las estaciones de montaña.
+   */
+  it('el terreno del propio punto no lo esconde', () => {
+    const dem = flat()
+    poke(dem, EAST, LAT, 800, 3)
+    expect(hiddenByRelief(dem, camera, { ...target, elevation: 800 })).toBe(false)
   })
 
-  it('la exageración vertical hace tapar antes', () => {
-    // Un caso al límite: con la vertical sin estirar se ve, y con 1,5× la misma
-    // cresta ya corta la visión. Es exactamente lo que pasa en pantalla, y por
-    // eso la exageración tiene que entrar en la cuenta.
-    const target = { lon: -18.0, lat: 28.66, elevationM: 20 }
-    const shallow = { lon: -17.6, lat: 28.66, altitudeM: 10000 }
-    expect(isOccluded(shallow, target, island, 1)).toBe(false)
-    expect(isOccluded(shallow, target, island, 1.5)).toBe(true)
+  it('fuera del modelo no se afirma nada, y por tanto no se esconde', () => {
+    const dem = flat()
+    const lejos = { lon: -16.5, lat: 28.5, elevation: 100 }
+    expect(hiddenByRelief(dem, { lon: -16.6, lat: 28.5, altitude: 500 }, lejos)).toBe(false)
+  })
+
+  it('sin modelo de elevación se enseña, no se calla', () => {
+    expect(hiddenByRelief(null, camera, target)).toBe(false)
+  })
+
+  it('la cámara justo encima del punto no inventa una montaña', () => {
+    const dem = flat()
+    expect(hiddenByRelief(dem, { lon: EAST, lat: LAT, altitude: 3000 }, target)).toBe(false)
+  })
+
+  /**
+   * El paso tiene que seguir siendo más fino que el píxel del DEM. Si alguien
+   * lo sube «para ir más rápido», las cuchillas de la Cumbre Nueva —crestas de
+   * menos de 100 m de ancho— dejan de existir para el rayo.
+   */
+  it('el paso de muestreo no salta píxeles del modelo', () => {
+    expect(SAMPLE_STEP_M).toBeGreaterThan(0)
+    expect(SAMPLE_STEP_M).toBeLessThanOrEqual(2 * MANIFEST.metersPerPixel)
   })
 })

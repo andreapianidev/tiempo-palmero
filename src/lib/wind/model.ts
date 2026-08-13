@@ -16,10 +16,12 @@
  */
 
 import { elevationAt, type Dem } from '../dem'
+import { dataUrl } from '../endpoints'
 import { ISLAND_BBOX } from '../geo'
 import { toComponents, type WindSample } from './field'
 
-export const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast'
+/** Por el proxy cacheado, no directo. El porqué está en `openmeteo.ts`. */
+export const OPEN_METEO_URL = () => dataUrl('/api/openmeteo?kind=wind')
 
 /**
  * Puntos por lado de la rejilla del modelo.
@@ -79,7 +81,7 @@ export async function fetchModelWind(
   if (!points.length) return { samples: [], observedAt: NaN }
 
   const url =
-    `${OPEN_METEO_URL}?latitude=${points.map((p) => p.lat.toFixed(4)).join(',')}` +
+    `${OPEN_METEO_URL()}&latitude=${points.map((p) => p.lat.toFixed(4)).join(',')}` +
     `&longitude=${points.map((p) => p.lon.toFixed(4)).join(',')}` +
     `&elevation=${points.map((p) => p.elevation).join(',')}` +
     `&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms&timezone=UTC`

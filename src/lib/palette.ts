@@ -166,6 +166,59 @@ export function coverageBand(dbm: number): Co2Band {
 }
 
 // ---------------------------------------------------------------------------
+// Índice experimental de incendios — bandas de 0 a 1
+// ---------------------------------------------------------------------------
+
+/**
+ * Los cortes salen del reparto del propio índice sobre la isla, no de una
+ * escala inventada. Medido con el modelo publicado el 13 ago 2026, la
+ * susceptibilidad sola tiene **mediana 8,7 y percentil 90 en 60,6** sobre 100;
+ * el índice que se pinta es eso multiplicado por el peligro del día, que es un
+ * percentil de 0 a 1. Los cuatro tramos parten esa distribución en cuartos
+ * aproximados, de modo que «alto» quiera decir «alto para esta isla» y no
+ * «alto en una escala universal que no existe».
+ *
+ * La escala va de 0 a 100 y **no lleva el signo de porcentaje**. Un «40 %»
+ * junto a un mapa de incendios se lee como «cuarenta posibilidades de cien de
+ * que arda», y no es eso: es un índice relativo. El número va desnudo y la
+ * ficha explica de qué.
+ *
+ * Y LAS ETIQUETAS DESCRIBEN EL ÍNDICE, NO PROMETEN NADA. Aquí no aparece la
+ * palabra «seguro», igual que en el CO₂ y por el mismo motivo: quien declara
+ * seguro un lugar es el Cabildo. El tramo de abajo se llama «índice bajo» y no
+ * «sin riesgo», porque el 18 % de esta isla que ya se ha quemado incluye sitios
+ * que antes de arder tenían el índice bajo.
+ */
+export const FIRE_BANDS: Co2Band[] = [
+  { from: 0, color: '#4a6b7a', label: 'Índice bajo' },
+  { from: 15, color: '#8fae82', label: 'Índice moderado' },
+  { from: 35, color: '#c8a850', label: 'Índice alto' },
+  { from: 60, color: '#b8322c', label: 'Índice muy alto' },
+]
+
+export function fireBand(index: number): Co2Band {
+  let band = FIRE_BANDS[0]
+  for (const b of FIRE_BANDS) if (index >= b.from) band = b
+  return band
+}
+
+/**
+ * La rampa continua equivalente, para pintar la malla.
+ *
+ * A diferencia del CO₂ y de la cobertura, esta capa **sí** se dibuja con
+ * degradado: no es una medida puntual con umbrales de decisión, es un campo
+ * calculado en las 17.545 celdas de la isla, y un escalón entre dos celdas
+ * vecinas sugeriría una frontera que el modelo no ha encontrado.
+ */
+export const FIRE_STOPS: RgbStop[] = [
+  [0, '#3d5a68'],
+  [15, '#8fae82'],
+  [35, '#c8a850'],
+  [60, '#c9612f'],
+  [85, '#b8322c'],
+]
+
+// ---------------------------------------------------------------------------
 // Frescura de las estaciones
 // ---------------------------------------------------------------------------
 

@@ -137,6 +137,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'registry.opendata.aws/terrain-tiles',
   },
   {
+    title: t.sources.fireTitle,
+    body: t.sources.fireBody,
+    license: t.sources.fireLicense,
+    href: 'https://forest-fire.emergency.copernicus.eu/',
+    hrefLabel: 'forest-fire.emergency.copernicus.eu',
+  },
+  {
     title: t.sources.codeTitle,
     body: t.sources.codeBody,
     license: 'MIT',

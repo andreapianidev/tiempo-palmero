@@ -12,6 +12,7 @@ import type { InterpolableVariable, Model } from '../../lib/interpolate'
 import type { MapVariable } from '../../lib/variables'
 import type { Co2Field } from '../../lib/co2/field'
 import type { CoverageState } from '../../hooks/useCoverage'
+import type { FireRiskState } from '../../hooks/useFireRisk'
 import type { NetworkCensus, Station } from '../../lib/quality'
 import type { SensorHealth } from '../../hooks/useSensorHealth'
 import type { GazetteerEntry } from '../../lib/api'
@@ -22,6 +23,7 @@ import { t } from '../../i18n'
 import { Section } from './Section'
 import { PlaceSearch } from './PlaceSearch'
 import { VariablePicker } from './VariablePicker'
+import { FireRisk } from './FireRisk'
 import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
 import { PlaceSwitches, PLACE_COUNT, activePlaceCount } from './PlaceSwitches'
 import type { PlaceVisibility } from '../../hooks/usePlaces'
@@ -45,6 +47,9 @@ import { Ocean } from './Ocean'
 import { OceanStatus } from './OceanStatus'
 import type { OceanQuality } from '../../lib/ocean/quality'
 import type { OceanData } from '../../hooks/useOcean'
+import { VaporControls } from './VaporControls'
+import type { VaporField } from '../../lib/vapor/field'
+import type { Breath } from '../../lib/vapor/breath'
 import { BASEMAPS, type BasemapId } from '../../lib/basemaps'
 import { exaggerationLabel, type Exaggeration } from '../../lib/terrain'
 import type { WindState } from '../../hooks/useWindField'
@@ -62,6 +67,8 @@ interface Props {
   co2Field: Co2Field | null
   /** El sondeo de cobertura de 2013. Solo se descarga si se elige. */
   coverage: CoverageState
+  /** La capa experimental de incendios: su modelo y qué le falta. */
+  fire: FireRiskState
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
@@ -96,6 +103,15 @@ interface Props {
   /** Y para la cobertura de TDT, que se descarga y se decodifica a píxeles. */
   tdt: { loading: boolean; failed: boolean }
   deck: CloudDeck | null
+  /** La respiración de la isla: el campo, la fase y el reloj acelerado. */
+  vapor: {
+    field: VaporField | null
+    breath: Breath
+    playing: boolean
+    onPlay: () => void
+    clock: Date
+    progress: number
+  }
   roque: RoqueData | null
   /** La vertical medida entre el techo de la red y la cumbre. Ver `summit.ts`. */
   summitLayer: SummitLayer | null
@@ -216,6 +232,25 @@ export function Sidebar(props: Props) {
               <CoverageStatus state={props.coverage} />
             </Section>
           )}
+
+          {/*
+            «Experimental» va DESPUÉS de las capas y no entre las variables, y
+            plegada por defecto. Es la sección donde entrarán las funciones que
+            todavía no se sostienen como el resto de la aplicación, y ponerla
+            arriba las igualaría con lo que sí está medido.
+          */}
+          <Section
+            title={t.fireRisk.title}
+            badge={props.variable === 'fire' ? 'activa' : '1'}
+          >
+            <FireRisk
+              fire={props.fire}
+              active={props.variable === 'fire'}
+              onActivate={() =>
+                props.onVariable(props.variable === 'fire' ? 'temperature' : 'fire')
+              }
+            />
+          </Section>
 
           <Section
             title={t.layers.title}
@@ -361,6 +396,26 @@ export function Sidebar(props: Props) {
               hereM={props.here?.elevationM ?? null}
               hereLabel={props.here?.label ?? null}
               now={props.now}
+            />
+          </Section>
+
+          {/* Va pegada al mar de nubes a propósito: son el mismo fenómeno por
+              sus dos extremos. Lo que sube de las laderas es lo que acaba
+              siendo la manta, y el techo de esta capa es la base de aquella. */}
+          <Section
+            title="La isla respira"
+            badge={props.vapor.breath.phase === 'up' ? 'inspira' : 'espira'}
+          >
+            <VaporControls
+              on={props.visible.vapor}
+              onToggle={() => props.onToggle('vapor')}
+              terrainOn={props.terrain.on}
+              field={props.vapor.field}
+              breath={props.vapor.breath}
+              playing={props.vapor.playing}
+              onPlay={props.vapor.onPlay}
+              clock={props.vapor.clock}
+              progress={props.vapor.progress}
             />
           </Section>
 

@@ -22,6 +22,8 @@ import {
   CO2_BANDS,
   COVERAGE_BANDS,
   DEWPOINT_STOPS,
+  FIRE_BANDS,
+  FIRE_STOPS,
   HUMIDITY_STOPS,
   TEMP_STOPS,
   VPD_STOPS,
@@ -40,7 +42,7 @@ import { n, t } from '../i18n'
  * la interfaz —las dos son «lo que colorea el mapa»— y nada más, y por eso el
  * tipo se abre aquí en vez de ensanchar el del motor.
  */
-export type MapVariable = DisplayVariable | 'co2' | 'coverage'
+export type MapVariable = DisplayVariable | 'co2' | 'coverage' | 'fire'
 
 export interface VariableSpec {
   id: MapVariable
@@ -144,6 +146,19 @@ export const VARIABLES: Record<MapVariable, VariableSpec> = {
     local: t.variables.coverageLocal,
     hint: t.variables.coverageHint,
   },
+  fire: {
+    id: 'fire',
+    label: t.variables.fire,
+    short: 'Incendio',
+    unit: '',
+    stops: FIRE_STOPS,
+    bands: FIRE_BANDS,
+    // Un índice de 0 a 1 con dos decimales sería falsa precisión: el modelo
+    // tiene 0,653 de AUC en su peor pliegue. Se enseña de 0 a 100 sin decimales.
+    decimals: 0,
+    local: t.variables.fireLocal,
+    hint: t.variables.fireHint,
+  },
 }
 
 /**
@@ -166,7 +181,24 @@ export const MAP_VARIABLE_ORDER: readonly MapVariable[] = [
   ...VARIABLE_ORDER,
   'co2',
   'coverage',
+  'fire',
 ]
+
+/**
+ * Las que NO salen en la fila de chips de variables.
+ *
+ * El índice de incendios está en el catálogo porque colorea el mapa igual que
+ * las demás —y por eso tiene que estar, o el test de completitud falla—, pero
+ * no se elige desde ahí: se enciende desde la sección «Experimental», que es
+ * donde está escrito lo que es y lo que no es. Un chip suelto entre
+ * «Temperatura» y «CO₂» lo pondría al mismo nivel que una medida, y no lo es.
+ */
+export const EXPERIMENTAL_VARIABLES: ReadonlySet<MapVariable> = new Set(['fire'])
+
+/** Los chips de variable, que son el catálogo menos lo experimental. */
+export const PICKER_VARIABLE_ORDER: readonly MapVariable[] = MAP_VARIABLE_ORDER.filter(
+  (v) => !EXPERIMENTAL_VARIABLES.has(v),
+)
 
 /**
  * Comprueba pertenencia contra `VARIABLE_ORDER`, no contra `VARIABLES`.

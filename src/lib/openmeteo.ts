@@ -32,8 +32,12 @@
  * El relevo lo hace la geometría, no un `if`.
  *
  * Open-Meteo es un MODELO (mezcla ICON/GFS/ECMWF), no una medida, y por eso no
- * se le deja tocar el ajuste. Es keyless y sin registro; envía `Access-Control-
- * Allow-Origin: *`, así que se llama desde el navegador sin proxy.
+ * se le deja tocar el ajuste. Es keyless y sin registro, y envía
+ * `Access-Control-Allow-Origin: *`, así que **se podía** llamar desde el
+ * navegador sin proxy — y así se hacía. Ya no: el 13 de agosto de 2026
+ * contestó 429 a las tres llamadas de la aplicación, porque su plan gratuito
+ * limita por IP y sin proxy cada pestaña pide por su cuenta. Ahora va por
+ * `api/openmeteo.ts`, cacheada, igual que el Cabildo.
  *
  * DE DÓNDE SALE EL VALOR DEL ANCLA. Ya no de `temperature_2m`, sino del perfil
  * vertical (`profile.ts`). El valor de superficie con `elevation=` forzada era
@@ -52,10 +56,20 @@
 
 import type { Dem } from './dem'
 import { SEA_LEVEL_M } from './dem'
+import { dataUrl } from './endpoints'
 import { pixelXToLon, pixelYToLat } from './geo'
 import { fetchProfiles, humidityAt, sampleProfile, type VerticalProfile } from './profile'
 
-export const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast'
+/**
+ * Ya NO se llama a `api.open-meteo.com` desde el navegador.
+ *
+ * Se llamaba, porque Open-Meteo sí manda CORS y la llamada directa funciona; y
+ * precisamente por funcionar, cada pestaña abierta pedía por su cuenta y el
+ * límite por IP del plan gratuito acabó contestando 429. Ahora va por
+ * `api/openmeteo.ts`, que cachea igual que el proxy del Cabildo. El `kind` es
+ * lo que decide la frescura al otro lado.
+ */
+export const OPEN_METEO_URL = () => dataUrl('/api/openmeteo?kind=surface')
 /** Nombre con el que se presenta en cualquier sitio donde salga una fuente. */
 export const MODEL_SOURCE_LABEL = 'Open-Meteo'
 
@@ -196,7 +210,7 @@ export async function fetchAnchors(
 ): Promise<Anchor[]> {
   if (!points.length) return []
   const url =
-    `${OPEN_METEO_URL}?latitude=${points.map((p) => p.lat.toFixed(5)).join(',')}` +
+    `${OPEN_METEO_URL()}&latitude=${points.map((p) => p.lat.toFixed(5)).join(',')}` +
     `&longitude=${points.map((p) => p.lon.toFixed(5)).join(',')}` +
     `&elevation=${points.map((p) => Math.round(p.elevation)).join(',')}` +
     `&current=temperature_2m,relative_humidity_2m&timezone=UTC`

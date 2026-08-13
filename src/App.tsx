@@ -23,11 +23,25 @@ import { elevationAt } from './lib/dem'
 import { VARIABLES, isBundleVariable, type MapVariable } from './lib/variables'
 import { buildCo2Field } from './lib/co2/field'
 import { useCoverage } from './hooks/useCoverage'
+import { useFireRisk } from './hooks/useFireRisk'
+import { fireValueAt } from './lib/fire/field'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
 import type { BasemapId } from './lib/basemaps'
 import { DEFAULT_EXAGGERATION, type Exaggeration } from './lib/terrain'
 import { autoQuality, type OceanQuality } from './lib/ocean/quality'
+import { buildVaporField } from './lib/vapor/field'
+import { breathAt } from './lib/vapor/breath'
+import { PARTICLE_SPEEDUP } from './lib/vapor/clock'
+import { useBreathClock } from './hooks/useBreathClock'
+
+/**
+ * Dónde se evalúa la respiración de la isla. El centro, y uno solo: la brisa de
+ * ladera invierte a la misma hora en toda La Palma —la manda el sol, no la
+ * vertiente— y dar una fase por ladera fingiría un detalle que no hay.
+ */
+const ISLAND_BREATH_LON = -17.86
+const ISLAND_BREATH_LAT = 28.66
 import { warmNearbyLayers } from './lib/nearby'
 import { t } from './i18n'
 
@@ -45,6 +59,10 @@ const INITIAL_LAYERS: LayerVisibility = {
   counters: false,
   fire: true,
   wind: false,
+  // Apagada al llegar, como el viento y por el mismo motivo: es una capa
+  // animada, y una animación que arranca sola le quita a la isla el primer
+  // vistazo, que es de lo que se está midiendo.
+  vapor: false,
 }
 
 export default function App() {
@@ -237,6 +255,40 @@ export default function App() {
         : null
 
   /**
+   * La capa experimental de incendios. Se pide solo cuando está elegida: son
+   * 134 KB de cartografía rasterizada y modelo, más una llamada al archivo de
+   * lluvia, y la mayoría de las visitas vienen a mirar la temperatura.
+   */
+  const fire = useFireRisk(variable === 'fire')
+
+  /**
+   * El campo continuo que no sale del motor. Hoy solo el de incendios; llega
+   * a `MapView` por la misma puerta que el enmascarado, para que añadir el
+   * siguiente no signifique volver a tocar el mapa.
+   */
+  const fireInput = useMemo(
+    () =>
+      fire.statics && data.dem
+        ? {
+            statics: fire.statics,
+            dem: data.dem,
+            models: data.models,
+            wind: wind.field,
+            drought: fire.drought,
+          }
+        : null,
+    [fire.statics, fire.drought, data.dem, data.models, wind.field],
+  )
+
+  const gridField = useMemo(
+    () =>
+      variable === 'fire' && fireInput
+        ? { valueAt: fireValueAt(fireInput), stops: VARIABLES.fire.stops }
+        : null,
+    [variable, fireInput],
+  )
+
+  /**
    * El mar de nubes NO cuesta una petición: sale de los perfiles verticales
    * que el motor ya descarga para anclar las cotas altas. Lo único que hacía
    * falta era pedirle a la misma llamada la nubosidad baja, que es lo que
@@ -250,6 +302,24 @@ export default function App() {
   // La cumbre ya no se pide aquí: desde que entra en el motor la trae
   // `useIslandData`, y el panel enseña exactamente la misma lectura que el mapa
   // está usando. Dos peticiones al TNG podrían contestar dos horas distintas.
+  /**
+   * De dónde sale vapor y hasta dónde sube. Se construye AQUÍ y no dentro de la
+   * capa por lo mismo que el campo de CO₂: el panel enseña el techo de
+   * condensación y la fracción de isla activa, y el mapa las dibuja. Con dos
+   * construcciones separadas podrían acabar contando cosas distintas.
+   *
+   * Depende del mar de nubes, así que va después de `deck`.
+   */
+  const vaporField = useMemo(
+    () => (visible.vapor ? buildVaporField(data.dem, data.models, deck) : null),
+    [visible.vapor, data.dem, data.models, deck],
+  )
+  const breathClock = useBreathClock(visible.vapor)
+  const breath = useMemo(
+    () => breathAt(breathClock.at, ISLAND_BREATH_LON, ISLAND_BREATH_LAT),
+    [breathClock.at],
+  )
+
   const roque = data.roque
   const agro = useAgro(data.dem, openSections.agro)
   const trailReports = useTrailReports(
@@ -338,6 +408,7 @@ export default function App() {
       faulty={faultyIds}
       eto={agro.eto}
       tdt={tdt.mask}
+      fire={fireInput}
       now={now}
       onClose={() => setProbe(null)}
     />
@@ -394,6 +465,7 @@ export default function App() {
         variable={variable}
         stops={stops}
         maskedField={maskedField}
+        gridField={gridField}
         stations={data.stations}
         summit={data.summit}
         health={data.health.diagnoses}
@@ -418,6 +490,11 @@ export default function App() {
         canalsVisible={placesOn.water}
         counters={counters.sites}
         wind={wind.field}
+        vapor={vaporField}
+        vaporClock={{
+          at: breathClock.at,
+          timeScale: breathClock.playing ? PARTICLE_SPEEDUP : 1,
+        }}
         terrain={terrain}
         ocean={ocean}
         oceanData={oceanData}
@@ -513,6 +590,7 @@ export default function App() {
         onVariable={setVariable}
         co2Field={co2Field}
         coverage={coverage}
+        fire={fire}
         basemap={basemap}
         onBasemap={setBasemap}
         terrain={terrain}
@@ -541,6 +619,14 @@ export default function App() {
         viario={{ loading: viario.loading, failed: viario.failed, tracksZoomReached }}
         tdt={{ loading: tdt.loading, failed: tdt.failed }}
         deck={deck}
+        vapor={{
+          field: vaporField,
+          breath,
+          playing: breathClock.playing,
+          onPlay: breathClock.toggle,
+          clock: breathClock.at,
+          progress: breathClock.progress,
+        }}
         roque={roque}
         summitLayer={data.summitLayer}
         agro={agro}

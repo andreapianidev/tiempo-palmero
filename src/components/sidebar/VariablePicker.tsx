@@ -16,7 +16,7 @@
  */
 
 import { rampCss } from '../../lib/palette'
-import { VARIABLES, MAP_VARIABLE_ORDER, type MapVariable } from '../../lib/variables'
+import { VARIABLES, PICKER_VARIABLE_ORDER, type MapVariable } from '../../lib/variables'
 import { BandScale } from './BandScale'
 import { n0, t } from '../../i18n'
 
@@ -35,7 +35,7 @@ export function VariablePicker({ variable, onVariable, gridOn, onToggleGrid }: P
   return (
     <>
       <div className="chips">
-        {MAP_VARIABLE_ORDER.map((id) => VARIABLES[id]).map((v) => (
+        {PICKER_VARIABLE_ORDER.map((id) => VARIABLES[id]).map((v) => (
           <button
             key={v.id}
             className="chip-btn"

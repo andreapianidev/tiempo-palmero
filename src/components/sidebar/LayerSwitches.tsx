@@ -4,10 +4,22 @@
  * El orden es el de la lista, no el de pintado: se lee de arriba abajo como un
  * índice de lo que hay en la isla.
  *
- * La malla interpolada NO está aquí: se enciende junto a los chips de variable
- * (`VariablePicker`), porque su contenido es justo la variable elegida y desde
- * esta lista, seis entradas más abajo, esa relación no se veía. Sigue siendo
- * `visible.grid` —una capa del mapa— pero se maneja donde se decide qué pinta.
+ * DOS CAPAS NO ESTÁN EN ESTA LISTA, y en los dos casos por el mismo motivo: se
+ * encienden donde se entiende lo que hacen, no en un índice alfabético.
+ *
+ *  - La **malla interpolada** va junto a los chips de variable
+ *    (`VariablePicker`), porque su contenido es justo la variable elegida y
+ *    desde esta lista, seis entradas más abajo, esa relación no se veía.
+ *  - La **evaporación** va dentro de «La isla respira», que es donde se explica
+ *    qué es la brisa de ladera y —sobre todo— qué parte de lo que se ve es dato
+ *    y qué parte es dibujo. Una casilla suelta aquí encendería la capa más
+ *    espectacular de la aplicación sin nada de eso al lado.
+ *
+ * Las dos siguen siendo `LayerVisibility`, así que el mapa las trata como a
+ * cualquier otra; lo que cambia es dónde está su interruptor. Y por eso el
+ * contador de la pestaña cuenta sobre `LAYERS` y no sobre las claves del
+ * objeto: dice cuántas de LAS DE ESTA LISTA están encendidas, que es lo que
+ * hay debajo de él.
  */
 
 import type { LayerVisibility } from '../MapView'

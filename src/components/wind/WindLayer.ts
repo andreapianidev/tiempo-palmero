@@ -12,6 +12,15 @@
  * de WebGL. Con suficientes partículas finas el campo se lee mejor que con
  * pocas gruesas.
  *
+ * EN 3D LAS PARTÍCULAS VAN SOBRE EL TERRENO, NO POR DENTRO. Cada vértice lleva
+ * su cota —la del modelo de elevación que ya está en memoria— convertida a la Z
+ * conforme que espera la matriz de MapLibre, y la capa se declara con
+ * `renderingMode: '3d'`, que es lo que hace que comparta el búfer de
+ * profundidad con el relieve: una estela detrás de una cresta queda TAPADA por
+ * la cresta, que es la diferencia entre viento en tres dimensiones y viento
+ * pintado encima de una foto en tres dimensiones. En el mapa plano la Z vale
+ * cero y no se toca la profundidad, así que se dibuja exactamente como antes.
+ *
  * NO USA FRAMEBUFFERS PROPIOS. La técnica clásica de estelas —acumular en una
  * textura que se desvanece— obliga a cambiar el framebuffer activo en mitad
  * del ciclo de dibujo de MapLibre y a devolverlo exactamente como estaba. La
@@ -25,6 +34,8 @@ import {
   type Map as MlMap,
 } from 'maplibre-gl'
 import { degPerSecondPerMs, ParticleSystem, TAIL_LENGTH } from '../../lib/wind/particles'
+import { mercatorZ, viewportHeightDeg, windAltitudeM } from '../../lib/wind/altitude'
+import { elevationAt, type Dem } from '../../lib/dem'
 import type { WindField } from '../../lib/wind/field'
 import { FRAGMENT_SHADER, VERTEX_SHADER } from './shaders'
 
@@ -134,7 +145,13 @@ function compile(gl: Gl, type: number, source: string): WebGLShader {
 export class WindLayer implements CustomLayerInterface {
   readonly id = WIND_LAYER_ID
   readonly type = 'custom' as const
-  readonly renderingMode = '2d' as const
+  /**
+   * `3d` y no `2d`: es lo que hace que MapLibre le dé a esta capa el búfer de
+   * profundidad compartido con el relieve —lo pone él, con `LEQUAL`— y que la Z
+   * de la matriz sea conforme. En el mapa plano se desactiva la prueba de
+   * profundidad a mano, así que declararlo así no cambia nada de lo de antes.
+   */
+  readonly renderingMode = '3d' as const
 
   private map: MlMap | null = null
   private program: WebGLProgram | null = null
@@ -155,19 +172,29 @@ export class WindLayer implements CustomLayerInterface {
   private backgroundAt = 0
 
   private field: WindField | null = null
+  /** El modelo de elevación, para saber por dónde va el suelo. */
+  private dem: Dem | null = null
   private visible = true
   private lastFrame = 0
 
   private readonly particles = new ParticleSystem(PARTICLE_COUNT)
   /**
-   * `x, y, alpha, speed, station` por vértice; dos vértices por segmento.
+   * `x, y, z, alpha, speed, station` por vértice; dos vértices por segmento.
    *
    * `TAIL_LENGTH` segmentos y no `TAIL_LENGTH - 1`: el primero va de la
    * posición actual —que no está en la estela todavía— a la última apuntada.
    * Sin él la cabeza se quedaba clavada hasta el siguiente apunte y la estela
    * crecía a saltos de 40 ms en vez de deslizarse.
    */
-  private readonly vertices = new Float32Array(PARTICLE_COUNT * TAIL_LENGTH * 2 * 5)
+  private readonly vertices = new Float32Array(PARTICLE_COUNT * TAIL_LENGTH * 2 * 6)
+
+  /**
+   * El modelo de elevación. Sin él la capa sigue funcionando: dibuja plano, que
+   * es lo que hacía antes de que existiera la vista 3D.
+   */
+  setDem(dem: Dem | null): void {
+    this.dem = dem
+  }
 
   setField(field: WindField | null): void {
     const first = this.field === null
@@ -183,7 +210,9 @@ export class WindLayer implements CustomLayerInterface {
 
   private resetParticles(): void {
     const b = this.spawnBounds()
-    if (b) this.particles.reset(b)
+    if (!b) return
+    const dem = this.dem
+    this.particles.reset(b, dem ? (lon, lat) => elevationAt(dem, lon, lat) ?? 0 : undefined)
   }
 
   /** Dónde pueden nacer: la vista actual recortada al campo. */
@@ -320,16 +349,33 @@ export class WindLayer implements CustomLayerInterface {
 
     const spawn = this.spawnBounds()
     if (!spawn) return
-    const bounds = map.getBounds()
-    const viewportHeightDeg = Math.max(0.001, bounds.getNorth() - bounds.getSouth())
+
+    // Cuánto abarca la pantalla se mide POR EL ZOOM, en el centro, y no por el
+    // rectángulo envolvente de la vista: con la cámara inclinada ese rectángulo
+    // llega hasta el horizonte y es tres veces más alto, así que inclinar el
+    // mapa habría triplicado la velocidad de las partículas sin que el viento
+    // cambiara. Ver `lib/wind/altitude.ts`.
+    const canvas = gl.canvas as HTMLCanvasElement
+    const ratio = window.devicePixelRatio || 1
+    const heightCss = Math.max(1, canvas.height / ratio)
+    const viewDeg = viewportHeightDeg(map.getZoom(), map.getCenter().lat, heightCss)
+
+    // La exageración de la escena, tal como la tiene puesta el mapa AHORA. Sin
+    // terreno es `null`, y entonces todo esto vale cero y se dibuja plano.
+    const terrain = map.getTerrain()
+    const exaggeration = terrain ? (terrain.exaggeration ?? 1) : 0
+    const dem = exaggeration > 0 ? this.dem : null
 
     this.particles.step(this.field, {
       spawn,
-      degPerSecondPerMs: degPerSecondPerMs(viewportHeightDeg),
+      degPerSecondPerMs: degPerSecondPerMs(viewDeg),
       dt,
+      // Fuera de la cobertura del modelo, nivel del mar: el campo de viento se
+      // extiende un poco más allá de la costa y ahí el suelo es el agua.
+      elevationAt: dem ? (lon, lat) => elevationAt(dem, lon, lat) ?? 0 : undefined,
     })
 
-    const vertexCount = this.fillVertices()
+    const vertexCount = this.fillVertices(exaggeration)
     if (vertexCount === 0) {
       map.triggerRepaint()
       return
@@ -342,13 +388,13 @@ export class WindLayer implements CustomLayerInterface {
 
     gl.useProgram(this.program)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.subarray(0, vertexCount * 5))
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.subarray(0, vertexCount * 6))
 
-    const stride = 5 * 4
+    const stride = 6 * 4
     gl.enableVertexAttribArray(this.aPos)
-    gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, stride, 0)
+    gl.vertexAttribPointer(this.aPos, 3, gl.FLOAT, false, stride, 0)
     gl.enableVertexAttribArray(this.aStyle)
-    gl.vertexAttribPointer(this.aStyle, 3, gl.FLOAT, false, stride, 2 * 4)
+    gl.vertexAttribPointer(this.aStyle, 3, gl.FLOAT, false, stride, 3 * 4)
 
     gl.uniformMatrix4fv(this.uMatrix, false, matrix as unknown as Float32List)
     gl.uniform1f(this.uOpacity, 1)
@@ -366,16 +412,35 @@ export class WindLayer implements CustomLayerInterface {
     // shader ya multiplica el color por su alpha.
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-    gl.disable(gl.DEPTH_TEST)
+
+    /*
+     * PROFUNDIDAD. MapLibre deja puesto, antes de llamar aquí, `LEQUAL` con
+     * escritura para las capas `3d`. Eso es justo lo que hace falta con el
+     * relieve encendido —una estela detrás de una cresta se descarta contra la
+     * profundidad de la cresta— con UNA corrección: no se escribe. Las estelas
+     * son translúcidas y se cruzan entre ellas; si escribieran, la primera que
+     * pasa por un píxel taparía a las de detrás aunque fuera casi transparente,
+     * y el campo se llenaría de agujeros con forma de estela.
+     *
+     * En plano se apaga entera, como estaba. Y se apaga y se restaura leyendo
+     * el estado real: MapLibre lleva su propia caché de estado de GL, y dejarlo
+     * distinto de como estaba le rompería el dibujo a la capa siguiente.
+     */
+    const depthWasOn = gl.isEnabled(gl.DEPTH_TEST)
+    const depthMaskWas = gl.getParameter(gl.DEPTH_WRITEMASK) as boolean
+    if (exaggeration > 0) {
+      gl.depthMask(false)
+    } else {
+      gl.disable(gl.DEPTH_TEST)
+    }
 
     // Primero el halo, en cuatro desplazamientos de un píxel, y encima el
     // trazo. Es el mismo buffer cinco veces: no cuesta un vértice más de CPU,
     // que es donde esta capa tiene el límite.
-    const canvas = gl.canvas as HTMLCanvasElement
-    const ratio = window.devicePixelRatio || 1
+    //
     // De píxeles CSS a espacio de recorte: la ventana mide 2 unidades de ancho.
     const ux = 2 / Math.max(1, canvas.width / ratio)
-    const uy = 2 / Math.max(1, canvas.height / ratio)
+    const uy = 2 / heightCss
 
     gl.uniform1f(this.uCasing, 1)
     for (const [ox, oy] of CASING_OFFSETS) {
@@ -392,6 +457,10 @@ export class WindLayer implements CustomLayerInterface {
     gl.disableVertexAttribArray(this.aPos)
     gl.disableVertexAttribArray(this.aStyle)
 
+    // Se devuelve el estado de profundidad exactamente como estaba.
+    if (exaggeration > 0) gl.depthMask(depthMaskWas)
+    else if (depthWasOn) gl.enable(gl.DEPTH_TEST)
+
     // La animación no la mueve un `requestAnimationFrame` propio: se pide otro
     // fotograma al mapa, que así conserva el control del ciclo de dibujo.
     map.triggerRepaint()
@@ -401,12 +470,16 @@ export class WindLayer implements CustomLayerInterface {
    * Vuelca las estelas al buffer y devuelve cuántos vértices se han escrito.
    *
    * La conversión a coordenadas Mercator se hace aquí, en CPU, porque el
-   * `u_matrix` de MapLibre espera Mercator normalizado, no grados. Son dos
+   * `u_matrix` de MapLibre espera Mercator normalizado, no grados. Son tres
    * operaciones por vértice y ocurre una vez por fotograma.
+   *
+   * `exaggeration` a cero significa mapa plano: la Z se escribe a cero y ni
+   * siquiera se mira la cota. Es el mismo camino de código de siempre.
    */
-  private fillVertices(): number {
+  private fillVertices(exaggeration: number): number {
     const p = this.particles
     const out = this.vertices
+    const flat = exaggeration <= 0
     let n = 0
 
     for (let i = 0; i < p.count; i++) {
@@ -420,22 +493,29 @@ export class WindLayer implements CustomLayerInterface {
         // todavía no está apuntada; el de los demás, la estela.
         const lon0 = k === 0 ? p.lon[i] : p.tailLon[base + k - 1]
         const lat0 = k === 0 ? p.lat[i] : p.tailLat[base + k - 1]
+        const ground0 = k === 0 ? p.elevation[i] : p.tailElevation[base + k - 1]
+        const lon1 = p.tailLon[base + k]
+        const lat1 = p.tailLat[base + k]
+        const ground1 = p.tailElevation[base + k]
         // La cabeza de la estela es la más opaca; la cola se apaga.
         const a0 = 1 - k / (TAIL_LENGTH + 1)
         const a1 = 1 - (k + 1) / (TAIL_LENGTH + 1)
+
         out[n++] = mercatorX(lon0)
         out[n++] = mercatorY(lat0)
+        out[n++] = flat ? 0 : mercatorZ(windAltitudeM(ground0, exaggeration), lat0)
         out[n++] = a0
         out[n++] = speed
         out[n++] = station
 
-        out[n++] = mercatorX(p.tailLon[base + k])
-        out[n++] = mercatorY(p.tailLat[base + k])
+        out[n++] = mercatorX(lon1)
+        out[n++] = mercatorY(lat1)
+        out[n++] = flat ? 0 : mercatorZ(windAltitudeM(ground1, exaggeration), lat1)
         out[n++] = a1
         out[n++] = speed
         out[n++] = station
       }
     }
-    return n / 5
+    return n / 6
   }
 }

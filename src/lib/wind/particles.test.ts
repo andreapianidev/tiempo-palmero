@@ -226,3 +226,88 @@ describe('velocidad en pantalla', () => {
     expect(secondsToCross).toBeLessThan(30)
   })
 })
+
+describe('cota de las partículas', () => {
+  /**
+   * Un terreno de juguete que sube 1.000 m por grado hacia el este, para poder
+   * comprobar con una cuenta lo que en pantalla solo se ve como una estela que
+   * se pega a la ladera.
+   */
+  const ground = (lon: number) => (lon + 18.05) * 1000
+
+  /** Del oeste: empuja hacia el este, o sea cuesta arriba en este terreno. */
+  const WEST_WIND = uniformField(10, 270)
+
+  it('sin muestreador la cota se queda a cero, que es el mapa plano', () => {
+    // La capa no pasa `elevationAt` cuando el relieve está apagado, y entonces
+    // esto tiene que comportarse exactamente como antes de que existiera la 3D.
+    const p = new ParticleSystem(20, seeded(7))
+    p.reset(SPAWN)
+    for (let i = 0; i < 40; i++) p.step(WEST_WIND, OPTS)
+    expect([...p.elevation].every((e) => e === 0)).toBe(true)
+    expect([...p.tailElevation].every((e) => e === 0)).toBe(true)
+  })
+
+  it('cada punto de la estela guarda LA COTA DE SU SITIO', () => {
+    // Es lo que hace que la estela se pegue a la ladera en vez de quedarse
+    // horizontal a la altura de la cabeza. La comprobación no mira la forma:
+    // exige que cada pareja (longitud, cota) cumpla la función del terreno.
+    const p = new ParticleSystem(30, seeded(13))
+    p.reset(SPAWN)
+    for (let i = 0; i < 40; i++) {
+      p.step(WEST_WIND, { ...OPTS, elevationAt: (lon) => ground(lon) })
+    }
+    let checked = 0
+    for (let i = 0; i < p.count; i++) {
+      const base = i * TAIL_LENGTH
+      expect(p.elevation[i]).toBeCloseTo(ground(p.lon[i]), 2)
+      for (let k = 0; k < p.tailFill[i]; k++) {
+        expect(p.tailElevation[base + k]).toBeCloseTo(ground(p.tailLon[base + k]), 2)
+        checked++
+      }
+    }
+    expect(checked).toBeGreaterThan(100)
+  })
+
+  it('la estela sube cuando la partícula sube', () => {
+    // Con viento del oeste sobre una rampa que asciende hacia el este, la cola
+    // —más vieja, más al oeste— tiene que quedar por debajo de la cabeza. Si
+    // la cota se copiara de la cabeza a toda la estela, esto sería plano.
+    const p = new ParticleSystem(1, () => 0.5)
+    p.reset(SPAWN)
+    for (let i = 0; i < 40; i++) {
+      p.step(WEST_WIND, { ...OPTS, elevationAt: (lon) => ground(lon) })
+    }
+    const fill = p.tailFill[0]
+    expect(fill).toBeGreaterThan(3)
+    for (let k = 1; k < fill; k++) {
+      expect(p.tailElevation[k]).toBeLessThan(p.tailElevation[k - 1])
+    }
+    expect(p.elevation[0]).toBeGreaterThan(p.tailElevation[0])
+  })
+
+  it('la cabeza NO se dibuja a la altura de donde venía', () => {
+    // El error que se corrigió leyendo la cota dos veces por paso: con una
+    // sola lectura, la cabeza iba a la cota de la posición anterior. A 600
+    // aumentos eso son 100 m de terreno por fotograma.
+    const p = new ParticleSystem(1, () => 0.5)
+    p.reset(SPAWN)
+    for (let i = 0; i < 10; i++) {
+      p.step(WEST_WIND, { ...OPTS, elevationAt: (lon) => ground(lon) })
+    }
+    const before = p.elevation[0]
+    p.step(WEST_WIND, { ...OPTS, elevationAt: (lon) => ground(lon) })
+    expect(p.elevation[0]).toBeCloseTo(ground(p.lon[0]), 2)
+    expect(p.elevation[0]).not.toBeCloseTo(before, 2)
+  })
+
+  it('al reciclarse, la partícula no se lleva la cota de donde estaba', () => {
+    const p = new ParticleSystem(1, () => 0.5)
+    p.reset(SPAWN)
+    p.step(WEST_WIND, { ...OPTS, elevationAt: () => 2000 })
+    expect(p.elevation[0]).toBe(2000)
+    p.respawn(0, SPAWN)
+    expect(p.elevation[0]).toBe(0)
+    expect(p.tailFill[0]).toBe(0)
+  })
+})

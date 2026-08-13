@@ -4,6 +4,16 @@ dist
 .env
 .env.local
 
+# El entrenamiento offline del modelo de incendios (scripts/ml/). No hace falta
+# para construir ni para desplegar: lo que la aplicación usa son el PNG y el
+# JSON de public/fire/, y ésos sí están versionados.
+#
+# La caché tampoco entra: son 40 MB de cartografía descargada, y es reproducible
+# desde las URLs, que sí están en el código.
+.venv-ml
+scripts/ml/cache/
+__pycache__/
+
 # Árboles de trabajo que crean los agentes dentro del repo. Son copias
 # completas del proyecto: sin esta línea, un `git add -A` de cualquiera se
 # lleva 19 MB y los tests del árbol ajeno al commit.

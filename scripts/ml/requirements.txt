@@ -1,0 +1,11 @@
+# El entrenamiento del modelo experimental de incendios. NO hace falta para
+# construir ni desplegar la aplicación: lo que ésta consume es el PNG y el JSON
+# que salen de aquí, y los dos están versionados.
+#
+#   python3 -m venv .venv-ml
+#   .venv-ml/bin/pip install -r scripts/ml/requirements.txt
+#   .venv-ml/bin/python scripts/ml/run.py
+numpy>=2.0
+scikit-learn>=1.5
+pillow>=10.0
+pyshp>=2.3

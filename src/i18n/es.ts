@@ -74,6 +74,12 @@ export const es = {
       'Nivel de señal GSM medido por el Cabildo recorriendo la isla en noviembre y diciembre de 2013. Son las 669 medidas que existen: no hay ninguna posterior. Las sombras que dibuja son de relieve y siguen ahí, pero el despliegue de red ha cambiado por completo desde entonces —en 2013 no había 4G, ni 5G, y la erupción de 2021 se llevó parte de la red del oeste—. No se promedia entre medidas: cada punto toma la más cercana, hasta 600 m.',
     coverageScope:
       'El sondeo siguió las carreteras, así que lo que no se recorrió se queda sin color: no es que no haya cobertura, es que allí nadie midió. Las antenas que dan esa señal —incluidas las 32 de televisión digital— se encienden aparte, en «Sitios de interés».',
+    fire: 'Índice de incendio (experimental)',
+    fireLocal: 'Modelo experimental · no es un aviso oficial',
+    fireHint:
+      'Índice relativo de 0 a 100 que combina dos cosas medidas por separado: dónde se ha quemado esta isla —un clasificador entrenado con los cinco incendios con perímetro publicado entre 2009 y 2023— y cómo de excepcional es el tiempo de hoy, en percentil sobre veinticuatro años de archivo. No es una probabilidad: sirve para ordenar sitios y días entre sí, no para leer «un 40 % de posibilidades».',
+    fireScope:
+      'No sustituye a nada. Los avisos de riesgo de incendio, las alertas y las prohibiciones las publica el Cabildo Insular y el Gobierno de Canarias, y son lo que hay que mirar. Esto es una capa experimental que enseña la geografía de lo ya quemado puesta al día de hoy.',
     wind: 'Viento',
     precipitation: 'Precipitación',
     pressure: 'Presión',
@@ -755,6 +761,47 @@ export const es = {
     age: 'Sondeo de noviembre y diciembre de 2013. No hay medidas posteriores: esto NO es la cobertura de hoy. Desde entonces se desplegó el 4G, llegó el 5G y la erupción de 2021 se llevó parte de la red del oeste.',
   },
 
+  fireRisk: {
+    title: 'Experimental',
+    layer: 'Índice de incendio',
+    loading: 'Cargando el modelo de incendios…',
+    failed: 'No se pudo cargar el modelo de incendios.',
+    /**
+     * El aviso no es una nota al pie. Va arriba de la sección, siempre visible,
+     * y dice las dos cosas que hacen falta para no leer mal el mapa: quién sí
+     * avisa de verdad, y qué es esta cifra.
+     */
+    disclaimer:
+      'Función experimental. No es un aviso oficial ni sustituye a ninguno: los avisos de riesgo, las alertas y las prohibiciones las publican el Cabildo Insular y el Gobierno de Canarias.',
+    what: 'Qué es esta cifra',
+    whatBody:
+      'El producto de dos números. El primero contesta «si hay un gran incendio en La Palma, ¿llega hasta aquí?», y sale de un clasificador entrenado con los cinco incendios de los que existe perímetro publicado. El segundo dice cómo de excepcional es el tiempo de hoy, como percentil sobre veinticuatro años de archivo. No es una probabilidad de que algo arda.',
+    site: 'El sitio',
+    today: 'El día de hoy',
+    fuel: 'Combustible',
+    slope: 'Pendiente',
+    distance: 'A la vía más cercana',
+    fosberg: 'Índice de Fosberg',
+    dryness: 'Sin llover',
+    why: 'Qué pesa en esta celda',
+    whyHint:
+      'Cuánto se movería la cifra si ese rasgo fuera el de una celda corriente de la isla, dejando los demás como están. Son efectos por separado: no tienen por qué sumar el total.',
+    validation: 'Cómo de fiable es',
+    validationHint:
+      'Se esconde un incendio entero, se entrena con los otros cuatro y se puntúa sobre el que no vio. Es la prueba dura: repartir celdas al azar daría 0,90 y sería engañarse, porque las celdas de un incendio son vecinas.',
+    trainedOn: 'Entrenado con',
+    worstFold: 'El peor pliegue',
+    worstFoldHint:
+      'Garafía 2020 es el incendio que el modelo peor reconstruye, y se publica en vez de esconderlo tras la media. Lo que aprendió del sur y del oeste no le sirvió del todo en el noroeste.',
+    droughtModel:
+      'Los días sin llover salen del archivo de reanálisis de Open-Meteo, un modelo de ~11 km que resuelve seis celdas sobre la isla. No se interpola entre ellas: cada punto toma la suya. Las 37 estaciones frescas del Cabildo publican cero de precipitación diaria, así que no hay medida insular que usar.',
+    noDrought:
+      'Sin el archivo de lluvia, el índice se queda solo con la mitad que sale de las estaciones.',
+    unknownFuel: 'La cartografía de combustible no llega a este punto, así que aquí no se puntúa.',
+    fuelYear:
+      'Modelos de combustible de Canarias y, donde ésa no llega, el mapa de cultivos de 2002–2008. Ese mapa es anterior a la erupción de 2021 y al abandono agrícola de los últimos quince años.',
+  },
+
   freshness: {
     justNow: 'ahora mismo',
     minutes: (n: number) => `hace ${n} min`,
@@ -917,6 +964,20 @@ export const es = {
     demBody:
       'Mapzen Terrain Tiles (formato terrarium), servidas por AWS Open Data. Derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM. Las mismas teselas generan el sombreado del relieve y las altitudes del cálculo.',
     demLicense: 'Dominio público / CC-BY',
+    fireTitle: 'Índice experimental de incendio',
+    fireBody:
+      'Capa experimental, y lo primero que hay que saber de ella es que NO es un aviso ' +
+      'oficial: los avisos de riesgo, las alertas y las prohibiciones las publican el Cabildo ' +
+      'Insular y el Gobierno de Canarias. Sale de juntar cuatro fuentes abiertas. Los ' +
+      'perímetros de los incendios de 2009 y 2012 los publica el Cabildo en su visor; los de ' +
+      '2016, 2020 y 2023, el servicio europeo Copernicus EFFIS. La cartografía de modelos de ' +
+      'combustible es del Gobierno de Canarias, y donde ésa no llega —la agricultura— se ' +
+      'rellena con el mapa de cultivos de 2002–2008. El relieve sale del mismo modelo de ' +
+      'elevación que el resto de la aplicación, y los días sin llover, del archivo de ' +
+      'reanálisis de Open-Meteo, que es un modelo de unos 11 km y va etiquetado como tal. ' +
+      'El clasificador se entrena y se valida fuera del navegador, con cinco incendios y ' +
+      'escondiendo uno entero cada vez; lo que llega aquí son 150 árboles en un JSON.',
+    fireLicense: 'CC-BY 4.0 · Copernicus EFFIS · Gobierno de Canarias',
     codeTitle: 'Código',
     codeBody: 'Software libre. El motor de interpolación y sus pruebas son públicos.',
     noTrackingTitle: 'Sin rastreo',

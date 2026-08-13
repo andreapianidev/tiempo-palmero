@@ -39,6 +39,8 @@ import type { Dem } from '../lib/dem'
 import { PointHistory } from './PointHistory'
 import { TdtPointBlock } from './tdt/TdtPointBlock'
 import type { TdtMask } from '../lib/tdt/mask'
+import { FireBlock } from './FireBlock'
+import type { FireFieldInput } from '../lib/fire/field'
 
 export interface ProbePoint {
   lon: number
@@ -62,6 +64,13 @@ interface Props {
   eto: EtoField | null
   /** Máscara de cobertura TDT, si ya se ha descargado. */
   tdt: TdtMask | null
+  /**
+   * El modelo experimental de incendios, si la capa está encendida.
+   *
+   * Llega `null` mientras no lo esté, y entonces el bloque no existe: no se
+   * descarga un modelo de 134 KB para una ficha que nadie ha pedido.
+   */
+  fire: FireFieldInput | null
   now: number
   onClose: () => void
 }
@@ -91,6 +100,7 @@ export function PointPanel({
   faulty,
   eto,
   tdt,
+  fire,
   now,
   onClose,
 }: Props) {
@@ -368,6 +378,8 @@ export function PointPanel({
           hace: por eso está aquí abajo, al lado de la parcela y de lo que hay
           cerca, y no entre las variables meteorológicas. */}
       <TdtPointBlock mask={tdt} lon={point.lon} lat={point.lat} />
+
+      {fire && <FireBlock input={fire} lon={point.lon} lat={point.lat} />}
 
       <NearbySection lon={point.lon} lat={point.lat} />
     </section>
