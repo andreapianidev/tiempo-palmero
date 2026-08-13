@@ -642,7 +642,7 @@ nota que lo dice.
 
 El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**, y el visor
 ArcGIS del Cabildo —que no es el mismo inventario— tiene **2.387 elementos**
-más. Esta aplicación usa hoy **dieciséis capas estáticas** —de las diecisiete que
+más. Esta aplicación usa hoy **diecinueve capas estáticas** —de las veinte que
 descarga; la única que no se lee en runtime es el inventario de sensores de CO₂,
 que llega en directo de DEMASE— más el resumen de cultivos y el agregado del
 GTFS de guaguas. Lo que queda, ordenado por lo que aportaría de verdad:
