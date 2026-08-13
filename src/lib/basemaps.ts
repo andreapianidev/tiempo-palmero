@@ -34,6 +34,7 @@
 
 import type { RasterSourceSpecification } from 'maplibre-gl'
 import { ISLAND_BBOX } from './geo'
+import { screenDensity, TILE_CSS_SIZE } from './realce/density'
 
 export type BasemapId = 'relieve' | 'topografico' | 'satelite'
 
@@ -109,6 +110,10 @@ function grafcan(
   layer: string,
   attribution: string,
 ): RasterSourceSpecification {
+  // Los píxeles que se piden NO son los de la tesela en pantalla: son los que
+  // esa tesela va a ocupar de verdad en esta pantalla. Ver `realce/density.ts`,
+  // donde está medido cuánto detalle nuevo trae eso y cuánto cuesta.
+  const px = String(TILE_CSS_SIZE * screenDensity())
   const q = new URLSearchParams({
     service: 'WMS',
     version: '1.1.1',
@@ -116,9 +121,12 @@ function grafcan(
     layers: layer,
     styles: '',
     srs: 'EPSG:3857',
+    // El servicio solo ofrece JPEG: su GetCapabilities declara `image/jpeg` y
+    // nada más, y pedirle PNG devuelve un `InvalidFormat`. Comprobado el 13 de
+    // agosto de 2026 contra los dos servicios.
     format: 'image/jpeg',
-    width: '512',
-    height: '512',
+    width: px,
+    height: px,
   })
   return {
     type: 'raster',
@@ -140,7 +148,7 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
   relieve: {
     id: 'relieve',
     label: 'Relieve',
-    note: 'Sombreado calculado aquí mismo con el modelo de elevación. Es el fondo sobre el que la malla de color se lee sin competencia.',
+    note: 'Sombreado calculado aquí mismo con el modelo de elevación: cuatro luces, oclusión del cielo y realce de textura. Es el fondo sobre el que la malla de color se lee sin competencia.',
     source: null,
     labelsFrom: null,
     light: false,
@@ -151,7 +159,7 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     // Curvas de nivel, barrancos con nombre, pistas y sendas. Es el fondo que
     // pide la capa de senderos: ahí lo que hace falta saber es la pendiente
     // que viene, no la temperatura.
-    note: 'Mapa Topográfico 1:20.000 de Canarias: curvas de nivel, topónimos y sendas. Trae sus propios nombres impresos.',
+    note: 'Mapa Topográfico 1:20.000 de Canarias: curvas de nivel, topónimos y sendas. Se pide a la resolución de esta pantalla, no a la mitad.',
     source: grafcan('MT20', 'MT20', `${GRAFCAN_CREDIT} · Mapa Topográfico 1:20.000`),
     labelsFrom: 12.5,
     light: true,
@@ -162,7 +170,7 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     // Sin cifras: la longitud de la colada se repite en muchos sitios con
     // muchos números distintos y aquí no hay con qué medirla. Lo que sí se ve
     // en la imagen, y es verdad, es que va del cono al mar.
-    note: 'Ortofoto territorial 2024-2025. La colada de Tajogaite se ve como lo que es: la cicatriz que baja del cono hasta el mar.',
+    note: 'Ortofoto territorial 2024-2025, a la resolución de esta pantalla y sin la calima del vuelo. La colada de Tajogaite se ve como lo que es: la cicatriz que baja del cono hasta el mar.',
     source: grafcan('Ortofoto', 'ortofoto', `${GRAFCAN_CREDIT} · Ortofoto Territorial 2024-2025`),
     // La ortofoto no rotula nada, así que los topónimos son nuestros a todas
     // las escalas. Y sobre imagen aérea el texto blanco con sombra negra es

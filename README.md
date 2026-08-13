@@ -125,7 +125,10 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   peatones, con los últimos ocho días en barras y el denominador de la red a la
   vista (ver [los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece)).
 - **Relieve sombreado** generado del mismo modelo de elevación que alimenta el
-  cálculo. La isla es un volcán: la sombra es lo que la hace legible.
+  cálculo: cuatro luces, oclusión del cielo y realce de textura, calculados en
+  la máquina de quien mira (ver [cómo se dibuja el
+  relieve](#el-relieve-se-dibuja-aquí-y-no-con-una-sola-luz)). La isla es un
+  volcán: la sombra es lo que la hace legible.
 
 Todo en castellano. La estructura de i18n está lista para más idiomas.
 
@@ -1393,6 +1396,122 @@ mar todo lo que esté por debajo de 1,5 m.
 El talud es real y es lo más llamativo de esta isla —sube 6,9 km desde el
 fondo—, pero no se puede enseñar mientras solo exista en dos de los cuatro
 niveles.
+
+### El relieve se dibuja aquí, y no con una sola luz
+
+El `hillshade` de MapLibre se queda debajo como red de seguridad, pero lo que se
+ve encima es un sombreado propio, calculado tesela a tesela en un shader con las
+mismas teselas terrarium de `public/dem/`. **No se descarga nada nuevo.** Lo que
+cambia es cuánto se les saca, y son tres cosas:
+
+**Cuatro luces en vez de una.** Con el sol en el noroeste —la convención
+cartográfica— toda ladera orientada al sureste cae al negro, y en La Palma eso
+es la vertiente de Mazo y Fuencaliente entera. Medido sobre las 63 teselas de
+z12 montadas (711 km² de tierra emergida, cota máxima 2400,1 m), el **32 %** de
+la isla mira entre el este y el suroeste. En esa parte, el porcentaje de píxeles
+que salen en negro sin forma —por debajo del 5 % de luminancia— pasa del
+**5,67 % al 0,33 %** al repartir la luz en cuatro focos con pesos.
+
+**Y el precio de esas cuatro luces también está medido.** Meterlas en el mismo
+rango de grises comprime el contraste local: el porcentaje de píxeles cuyo
+vecindario entero cae dentro de un mismo nivel de gris de 8 bits sube del 0,21 %
+al 0,53 %. Quien lo paga es el **realce de textura** —la altitud menos su propia
+versión suavizada, la idea de Leland Brown—, que lo devuelve a 0,35 % en toda la
+isla y a 0,10 % en las laderas oscuras, menos de la mitad de lo que daba la luz
+única. La combinación gana en las dos cuentas justo donde importa.
+
+**Y la superficie se reconstruye, no se amplía.** MapLibre lee el modelo en su
+malla y ahí se queda: a partir de z11 la imagen del sombreado se amplía y el
+relieve se vuelve manchas. Aquí la superficie se interpola bicúbica
+(Catmull-Rom) y la pendiente sale de la **derivada analítica** de esa superficie,
+no de restar píxeles vecinos —una malla de 33,5 m derivada por diferencias
+produce escalones de sombra; derivada de verdad, produce laderas—. Las teselas
+salen a 512 px y se siguen dibujando hasta dos niveles por encima del modelo,
+leyendo cada vez el trozo que toca. Entre dos cotas medidas se dibuja la curva
+que las une, que es lo mismo que hace el motor con la temperatura: **suavizar
+entre datos, nunca fabricarlos.** Por eso el margen son dos niveles y no cinco.
+
+La oclusión —una aproximación del factor de vista de cielo, ocho direcciones a
+dos distancias— es lo que hunde la Caldera de Taburiente en vez de dibujarla.
+
+Entra en el mapa por un esquema de URL propio (`relieve://`) registrado en
+MapLibre, así que usa su caché de teselas y se proyecta sobre el terreno en la
+vista 3D como cualquier otro fondo. Si no hay WebGL2, si el shader no compila o
+si faltan teselas del modelo, cada camino devuelve una tesela transparente y lo
+que se ve es el `hillshade` de siempre. Un fondo peor es un problema; un fondo
+negro es una aplicación rota.
+
+### A GRAFCAN se le piden los píxeles que la pantalla va a enseñar
+
+Las dos cartografías canarias se pedían en teselas de 512 px y se dibujaban en
+un cuadro de 512 CSS px, que en cualquier pantalla de las de hoy son 1024
+píxeles físicos: el navegador ampliaba cada tesela al doble antes de enseñarla.
+De ahí la carta topográfica lechosa.
+
+Que el servicio dibuja más fino —y no amplía— está medido. Tesela z16 sobre Los
+Llanos de Aridane, misma bbox, energía media del laplaciano en niveles de 0–255:
+
+| | 512 pedidos | 1024 pedidos | 512 ampliado a 1024 |
+|---|---|---|---|
+| Topográfico MT20 | 49,2 | 37,7 | **17,4** |
+| Ortofoto | 52,2 | 38,6 | **18,1** |
+
+Las dos columnas que se comparan son las dos formas de llenar los mismos 1024
+píxeles: el servidor pone **2,17×** (MT20) y **2,13×** (ortofoto) el detalle fino
+que pone el interpolador del navegador. El coste son 86,7 → 295 kB y 91,9 → 305
+kB por tesela, **con el mismo número de peticiones**, que es lo que le importa a
+un servicio. El tope es la densidad 2: a 2048 la ortofoto todavía trae detalle
+real —el vuelo está a 25 cm— pero la tesela pasa a pesar 1,07 MB, y la licencia
+de GRAFCAN dice «se prohíbe la descarga masiva de información». Quien tenga una
+pantalla de densidad 1 sigue recibiendo 512.
+
+**El enfoque se probó y se tiró.** La idea era pasar cada tesela por una máscara
+de enfoque antes de enseñarla. La pregunta buena no es «¿se ve más nítido?»
+—siempre se ve— sino «¿se parece más a lo que el servicio dibuja cuando se le
+pide de verdad esa escala?». Comparando contra la tesela de 2048 reducida, el
+error cuadrático medio sube con cada punto de enfoque y no tiene mínimo: 41,1 →
+55,2 en la carta y 61,4 → 87,2 en la ortofoto (×1000, enfoque de 0 a 1). Se
+repitió en el caso donde tendría algo que recuperar —una tesela ampliada— y
+también sube. El enfoque añade contraste que la cartografía real no tiene.
+
+**Lo que sí se hace es repartir los tonos que ya están**, con las propiedades
+`raster-*` de MapLibre, que son uniformes de su propio shader y cuestan cero. El
+presupuesto es 0,5 % de píxeles dañados —los que no estaban pegados al 0 o al 1
+y acaban pegados, contados canal a canal—. La carta topográfica **no se toca**:
+su negro está en 0,004 y su blanco en 1,000, ya ocupa todo el recorrido, y su
+problema era la resolución. A la ortofoto se le quita la calima: su negro por
+canal está en 0,039, un velo aditivo del Atlántico, y quitarlo cuesta un 0,35 %
+de daño y devuelve el croma medio de 0,149 a 0,173 sin tocar la saturación.
+Cabía subir más color —con +0,30 el daño seguía por debajo del presupuesto—,
+pero ahí ya no se recupera lo que el velo quitó, se pinta encima.
+
+### Las líneas cambian de color con el fondo, conservando su jerarquía
+
+Los colores de las carreteras, los senderos, las guaguas y los canales se
+eligieron mirando el relieve, que es un fondo oscuro. Sobre la carta topográfica
+—papel de luminancia mediana 0,808— una carretera de `rgba(214,201,183)` al 42 %
+es un gris claro sobre un blanco: existe y no se ve.
+
+La solución no es una segunda paleta escrita a mano. Se mide qué **relación de
+contraste** consigue cada tinta sobre el relieve, con la definición de la WCAG y
+sobre color linealizado, y se busca en cualquier otro fondo el color del mismo
+tono que consigue esa misma relación. Sobre el relieve la cuenta se resuelve
+sola y devuelve los colores de siempre bit a bit —hay un test que lo comprueba—;
+sobre la carta, el gris cálido se vuelve oscuro en vez de desaparecer.
+
+Lo que importa es que la **jerarquía se traslada entera**: el viario de OSM son
+19.770 trazados contra 61 carreteras insulares y tiene que seguir estando por
+debajo. No se sube todo a un mínimo legible; se mueve la escala completa. Hay un
+test que lo exige capa por capa.
+
+Lo que esto **no** arregla: una mediana describe un fondo liso, y la ortofoto no
+lo es —su variación local mediana es 0,0695, cinco veces la del relieve
+(0,0131)—. Sobre un invernadero blanco y un malpaís negro separados por diez
+metros no hay un solo color que funcione en los dos; hace falta que cada línea
+lleve su propio halo debajo, que es una capa más por cada capa de línea. Queda
+pendiente y los números para hacerlo ya están medidos. La capa de viento sí lo
+resuelve, porque es una capa personalizada y puede leer el fondo ya pintado (ver
+más arriba).
 
 ### La vista 3D
 

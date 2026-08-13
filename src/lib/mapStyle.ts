@@ -18,44 +18,62 @@ import { dataUrl } from './endpoints'
 import { pixelXToLon, pixelYToLat } from './geo'
 import { SKY } from './terrain'
 import type { DemManifest } from './dem'
+import { roleCss } from './contrast/roles'
+import { registerRelief } from './relief/protocol'
+import { RELIEF_SOURCE, reliefLayer, reliefSource } from './relief/source'
 
+/**
+ * Los colores del mapa.
+ *
+ * Los de las líneas de referencia YA NO son literales: salen de
+ * `contrast/roles.ts`, con exactamente los mismos valores que tenían. El motivo
+ * es que además de pintarse hay que poder recalcularlos —sobre la carta
+ * topográfica, que es papel blanco, este mismo gris cálido tiene que volverse
+ * oscuro para seguir viéndose—, y para eso hacen falta como tono más
+ * transparencia, no como cadena.
+ */
 export const COLORS = {
   sea: '#080b10',
   land: '#191714',
   outline: '#4a443d',
-  boundary: 'rgba(255,255,255,0.11)',
-  trail: 'rgba(226,197,106,0.5)',
+  boundary: roleCss('boundary'),
+  trail: roleCss('trail'),
   // Un sendero con aviso se pinta con el mismo color que su fila en el panel.
   // Opacos y más gruesos que `trail`: si el aviso se viera igual de tenue que
   // el trazado normal, no sería un aviso.
-  trailNotice: '#e2b45c',
-  trailWarning: '#d1483f',
+  trailNotice: roleCss('trailNotice'),
+  trailWarning: roleCss('trailWarning'),
   // Frío, para que la red de guaguas no se confunda con el ámbar de los
   // senderos: en esta isla las dos redes se cruzan constantemente.
-  guagua: 'rgba(127,178,217,0.45)',
-  guaguaBright: '#a8d2ef',
+  guagua: roleCss('guagua'),
+  guaguaBright: roleCss('guaguaBright'),
   // Las carreteras son referencia, no contenido: gris cálido, por debajo de
   // todo lo que sí es un dato. Sin ellas, una parada de guagua flotaba sobre un
   // relieve sin una sola vía y no había forma de situarla.
-  road: 'rgba(214,201,183,0.42)',
+  road: roleCss('road'),
   // El viario de OSM va por DEBAJO de esas carreteras y más apagado: son 19.770
   // trazados contra 61, y pintados con la misma fuerza convertirían el mapa en
   // un callejero con el tiempo de fondo. Tres tonos del mismo gris cálido —no
   // tres colores— porque lo que separa un nivel de otro es la importancia de la
   // vía, no de qué tipo de cosa se trata.
-  osmRoadMain: 'rgba(208,196,178,0.34)',
-  osmRoadLocal: 'rgba(200,190,175,0.26)',
+  osmRoadMain: roleCss('osmMain'),
+  osmRoadLocal: roleCss('osmLocal'),
   // La pista de tierra, discontinua: en las medianías la diferencia entre una
   // pista agrícola y un acceso asfaltado decide si se pasa o no se pasa.
-  osmTrack: 'rgba(190,174,150,0.30)',
-  osmService: 'rgba(196,188,176,0.20)',
+  osmTrack: roleCss('osmTrack'),
+  osmService: roleCss('osmService'),
   // Los canales de riego, discontinuos y en azul frío: infraestructura de
   // fondo, por debajo de los senderos, y sin confundirse con el ámbar de éstos
   // ni con el azul claro de las guaguas.
-  canal: 'rgba(111,176,216,0.55)',
+  canal: roleCss('canal'),
 } as const
 
 export function buildStyle(dem: DemManifest): StyleSpecification {
+  // El sombreado propio entra por un esquema de URL registrado en MapLibre, y
+  // este es el primer momento en que se sabe qué modelo hay debajo. Es
+  // idempotente: llamarlo otra vez solo actualiza el manifiesto.
+  registerRelief(dem)
+
   // Límites exactos de la cobertura descargada. Sin esto MapLibre pide las
   // teselas que cubren la ventana, incluidas las de mar abierto que no
   // existen: en producción son 404 y en desarrollo el servidor devuelve el
@@ -88,6 +106,7 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
           'Datos: <a href="https://www.opendatalapalma.es" target="_blank" rel="noreferrer">Cabildo Insular de La Palma</a> (CC-BY) · ' +
           'Topónimos y viario: © OpenStreetMap contributors (ODbL)',
       },
+      [RELIEF_SOURCE]: reliefSource(dem),
       island: { type: 'geojson', data: dataUrl('/layers/limite-insular.geojson') },
       municipios: { type: 'geojson', data: dataUrl('/layers/municipios.geojson') },
     },
@@ -111,6 +130,9 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
           'hillshade-illumination-direction': 315,
         },
       },
+      // El sombreado propio, encima del de la casa y tapándolo cuando funciona.
+      // Ver `relief/source.ts`: el de abajo es la red de seguridad.
+      reliefLayer(),
       {
         id: 'municipal-boundaries',
         type: 'line',

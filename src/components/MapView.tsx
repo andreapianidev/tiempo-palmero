@@ -13,6 +13,8 @@ import {
   basemapSourceId,
   type BasemapId,
 } from '../lib/basemaps'
+import { BASEMAP_LEVELS } from '../lib/realce/levels'
+import { applyOverlayContrast } from './contrast/OverlayContrast'
 import { isBundleVariable, pinLabel, type MapVariable } from '../lib/variables'
 import { place, pillRank, RANK, type Box, type DeclutterItem } from '../lib/declutter'
 import { renderGrid, rasterToCanvas } from '../lib/grid-canvas'
@@ -336,6 +338,7 @@ export function MapView(props: Props) {
       // del servicio llegan, lo que se ve por los huecos es la isla, no un
       // rectángulo negro.
       for (const b of EXTERNAL_BASEMAPS) {
+        const realce = BASEMAP_LEVELS[b.id]
         map.addSource(basemapSourceId(b.id), b.source)
         map.addLayer(
           {
@@ -343,7 +346,19 @@ export function MapView(props: Props) {
             type: 'raster',
             source: basemapSourceId(b.id),
             layout: { visibility: 'none' },
-            paint: { 'raster-fade-duration': 0 },
+            paint: {
+              'raster-fade-duration': 0,
+              // El realce del fondo son estos cuatro números y nada más: no hay
+              // shader propio ni teselas reprocesadas. Están medidos en
+              // `realce/levels.ts`, junto con el ensayo que descartó el enfoque.
+              'raster-contrast': realce.contrast,
+              'raster-brightness-min': realce.brightnessMin,
+              'raster-brightness-max': realce.brightnessMax,
+              'raster-saturation': realce.saturation,
+              // Interpolar en vez de repetir el píxel más cercano: entre dos
+              // niveles de zoom la tesela se dibuja escalada siempre.
+              'raster-resampling': 'linear',
+            },
           },
           'municipal-boundaries',
         )
@@ -602,6 +617,11 @@ export function MapView(props: Props) {
       )
     }
     containerRef.current?.classList.toggle('map-light', BASEMAPS[props.basemap].light)
+    // Y con ello, el color de todo lo que se dibuja ENCIMA del fondo. Sobre la
+    // carta topográfica, que es papel blanco, el gris cálido de las carreteras
+    // dejaba de verse: ver `contrast/palette.ts`, donde está la regla que lo
+    // corrige conservando la jerarquía entre unas líneas y otras.
+    applyOverlayContrast(map, props.basemap)
   }, [ready, props.basemap])
 
   // --- malla interpolada ---------------------------------------------------
