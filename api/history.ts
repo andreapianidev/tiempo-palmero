@@ -6,7 +6,8 @@
  * el 12 ago 2026 sobre el 5 y el 9 de agosto: 1965 KB / 4914 filas y 2029 KB /
  * 5065 filas, ~3 s cada uno). Una semana serían 14 MB al navegador por cada
  * visita que abra una gráfica. Aquí se recorta a las columnas que la gráfica
- * dibuja y se reescribe en un formato compacto: **260 KB por día**, y 45 KB si
+ * dibuja y se reescribe en un formato compacto: **124 KB por día** (medido el
+ * 13 ago 2026 sobre el 12 de agosto: 127 199 bytes y 37 estaciones), y 28 KB si
  * se piden medias horarias.
  *
  * POR QUÉ NO HAY BASE DE DATOS. No hace falta ninguna. El archivo ya vive en la

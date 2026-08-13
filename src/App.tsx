@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapView, type LayerVisibility } from './components/MapView'
 import { PointPanel, type ProbePoint } from './components/PointPanel'
 import { DetailPanel, type Selection } from './components/DetailPanel'
@@ -38,6 +38,21 @@ const INITIAL_LAYERS: LayerVisibility = {
 
 export default function App() {
   const data = useIslandData()
+
+  /**
+   * Las averiadas, como conjunto de ids.
+   *
+   * Se calcula una sola vez aquí en vez de en cada panel: la reconstrucción del
+   * pasado las excluye por la misma razón por la que el modelo de ahora las
+   * excluye, y conviene que las dos exclusiones salgan de la misma línea.
+   */
+  const faultyIds = useMemo(
+    () =>
+      new Set(
+        [...data.health.diagnoses.values()].filter((d) => d.faulty).map((d) => d.entityId),
+      ),
+    [data.health.diagnoses],
+  )
   // El viento se calcula siempre, esté la capa encendida o no: el panel enseña
   // cuántas estaciones lo miden aunque el mapa no lo dibuje, y el coste es una
   // petición al modelo cada refresco.
@@ -139,6 +154,7 @@ export default function App() {
         variable={variable}
         stops={stops}
         stations={data.stations}
+        health={data.health.diagnoses}
         air={data.air}
         sky={data.sky}
         fire={data.fire}
@@ -248,6 +264,8 @@ export default function App() {
         onTogglePlace={(kind) => setPlacesOn((p) => ({ ...p, [kind]: !p[kind] }))}
         models={data.models}
         census={data.census}
+        health={data.health}
+        stations={data.stations}
         validation={data.validation}
         stops={stops}
         gazetteer={data.gazetteer}
@@ -284,6 +302,8 @@ export default function App() {
           stations={data.stations}
           variable={variable}
           stops={stops}
+          dem={data.dem}
+          faulty={faultyIds}
           now={now}
           onClose={() => setProbe(null)}
         />
@@ -293,6 +313,7 @@ export default function App() {
         <DetailPanel
           selection={selection}
           model={data.models.temperature}
+          health={data.health.diagnoses}
           now={now}
           firePolledAt={data.firePolledAt}
           co2Down={data.co2Down}

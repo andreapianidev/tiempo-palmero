@@ -5,7 +5,7 @@
  * hace ahora»; esto contesta «cuánto ha apretado hoy», que es otra pregunta y
  * necesita máxima, mínima y la hora a la que ocurrieron.
  *
- * Se carga SOLO al abrirlo. Un día son 260 KB y la mayoría de quien abre el
+ * Se carga SOLO al abrirlo. Un día son 124 KB y la mayoría de quien abre el
  * panel de una estación quiere la lectura de ahora, no la curva.
  */
 

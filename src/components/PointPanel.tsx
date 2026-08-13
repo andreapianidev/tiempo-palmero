@@ -32,6 +32,8 @@ import {
   type GuaguaNetwork,
 } from '../lib/guagua/network'
 import { n, n0, t, humanAge } from '../i18n'
+import type { Dem } from '../lib/dem'
+import { PointHistory } from './PointHistory'
 
 export interface ProbePoint {
   lon: number
@@ -42,6 +44,10 @@ export interface ProbePoint {
 }
 
 interface Props {
+  /** Hace falta para reconstruir el pasado en este punto. */
+  dem: Dem | null
+  /** Estaciones averiadas: fuera de la reconstrucción, como lo están de hoy. */
+  faulty: ReadonlySet<string>
   point: ProbePoint
   models: Record<InterpolableVariable, Model | null>
   stations: Station[]
@@ -84,6 +90,8 @@ export function PointPanel({
   stations,
   variable,
   stops,
+  dem,
+  faulty,
   now,
   onClose,
 }: Props) {
@@ -333,6 +341,19 @@ export function PointPanel({
           )}
         </ul>
       </section>
+
+      {/* La curva va DESPUÉS del dato de ahora y ANTES de lo que hay cerca: es
+          la misma pregunta que el número de arriba, extendida hacia atrás. */}
+      {elevation !== null && (
+        <PointHistory
+          lon={point.lon}
+          lat={point.lat}
+          elevation={elevation}
+          dem={dem}
+          excluded={faulty}
+          now={now}
+        />
+      )}
 
       <NearbySection lon={point.lon} lat={point.lat} />
     </section>

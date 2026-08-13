@@ -38,6 +38,8 @@ import type { WindField } from '../lib/wind/field'
 import { estimateBundle, type Model, type InterpolableVariable, type DisplayVariable } from '../lib/interpolate'
 import type { Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
+import type { Diagnosis } from '../lib/sensor-health'
+import { fallbackReading } from '../lib/station-fallback'
 import type { GazetteerEntry } from '../lib/api'
 import { n, n0, t } from '../i18n'
 
@@ -64,6 +66,8 @@ interface Props {
   variable: DisplayVariable
   stops: RgbStop[]
   stations: Station[]
+  /** Diagnóstico temporal por `entityId`. Vacío mientras no se haya revisado. */
+  health: Map<string, Diagnosis>
   air: AirStation[]
   sky: SkyStation[]
   fire: FireCamera[]
@@ -652,27 +656,41 @@ export function MapView(props: Props) {
         // mismo que las columnas que publica: con T y humedad el rocío está
         // determinado. Lo calculado se marca (subrayado de puntos) para que
         // siga distinguiéndose de lo medido.
-        const reading = stationReading(s, variable)
+        //
+        // Salvo que no nos creamos a la estación. Entonces su propia lectura no
+        // se pinta —ni siquiera en gris, porque un número gris sigue siendo un
+        // número— y en su lugar va la estimación del modelo, con tilde delante
+        // para que no pueda confundirse con una medida. Ver `station-fallback`.
+        const faulty = props.health.get(s.entityId)?.faulty === true
+        const fallback = faulty ? fallbackReading(models, s, variable) : null
+        const reading = faulty ? null : stationReading(s, variable)
         const isRejected = rejected.has(s.entityId)
-        const label =
-          reading === null
-            ? '·'
-            : variable === 'relativehumidity'
-              ? `${Math.round(reading.value)}%`
-              : `${n(reading.value, 1)}°`
+
+        const shown = reading ?? fallback
+        const fmt = (v: number) =>
+          variable === 'relativehumidity' ? `${Math.round(v)}%` : `${n(v, 1)}°`
+        const label = shown === null ? (faulty ? '⚠' : '·') : `${fallback ? '~' : ''}${fmt(shown.value)}`
+
+        const muted = shown === null || isRejected || faulty
         const el = pill(
           label,
-          reading === null || isRejected ? '#4a453f' : cssColor(stops, reading.value),
-          reading === null || isRejected ? '#cfc9c1' : '#141311',
+          muted ? '#4a453f' : cssColor(stops, shown.value),
+          muted ? '#cfc9c1' : '#141311',
         )
         if (isRejected) el.classList.add('mk-rejected')
+        if (faulty) {
+          el.classList.add('mk-faulty')
+          el.title = `${s.name} · ${t.health.faulty}${fallback ? ` · ${t.health.fallbackTag}` : ''}`
+        }
         if (reading?.derived) {
           el.classList.add('mk-derived')
           el.title = `${s.name} · ${t.station.derivedValue}`
         }
         el.setAttribute(
           'aria-label',
-          `${s.name}, ${label}${reading?.derived ? `, ${t.point.derived}` : ''}`,
+          faulty
+            ? `${s.name}, ${t.health.faulty}${fallback ? `, ${t.health.fallbackTag} ${fmt(fallback.value)}` : ''}`
+            : `${s.name}, ${label}${reading?.derived ? `, ${t.point.derived}` : ''}`,
         )
         el.addEventListener('click', (ev) => {
           ev.stopPropagation()
@@ -786,6 +804,10 @@ export function MapView(props: Props) {
   }, [
     ready,
     stations,
+    // El diagnóstico llega en segundo plano, después del primer pintado: sin
+    // esta dependencia las averías no se marcarían hasta el refresco siguiente.
+    props.health,
+    models,
     model,
     variable,
     stops,

@@ -479,6 +479,21 @@ table.kv td:first-child { color: var(--fg-dim); }
    hay que ver primero es que ese sensor no entra en el modelo. */
 .mk-rejected.mk-derived { text-decoration: line-through; }
 
+/*
+ * Sensor averiado. La cifra que lleva NO es suya —es la estimación del modelo
+ * en su punto, con la tilde delante— así que el pin tiene que leerse distinto
+ * de un pin normal antes de leer el número. El borde discontinuo es el canal
+ * que quedaba libre: el fondo dice el valor, el anillo la frescura y el
+ * subrayado de puntos lo derivado.
+ */
+.mk-faulty {
+  border: 1px dashed var(--amber);
+  opacity: 0.9;
+  font-style: italic;
+}
+/* Averiada y encima rechazada: manda la avería, que es la causa. */
+.mk-faulty.mk-rejected { text-decoration: none; }
+
 .mk-dot {
   width: 11px;
   height: 11px;
@@ -668,21 +683,50 @@ table.kv td:first-child { color: var(--fg-dim); }
 
 /* --- histórico de estación ------------------------------------------------ */
 .history { margin-top: 18px; border-top: 1px solid var(--line-soft); padding-top: 12px; }
+/*
+ * El desplegable de la gráfica.
+ *
+ * ANTES ERA `background: none; border: 0; padding: 0`, y con eso se dibujaba
+ * exactamente igual que una fila más de la tabla de valores que tiene encima:
+ * nadie lo pulsaba porque nada decía que se pudiera pulsar, y la conclusión
+ * razonable era que la aplicación no tenía gráficas. Las tenía desde el
+ * principio. Lo que faltaba era esto.
+ */
 .history-toggle {
   width: 100%;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: none;
-  border: 0;
-  padding: 0;
+  margin-top: 4px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
   color: var(--fg);
   font: 600 13px/1.3 var(--sans);
   letter-spacing: 0.02em;
   cursor: pointer;
 }
-.history-toggle:hover { color: var(--amber); }
+.history-toggle:hover {
+  color: var(--amber);
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.08);
+}
+/* El chevron gira al abrir: dice a la vez que se puede pulsar y en qué estado
+   está, sin gastar una palabra más. */
+.history-toggle::after {
+  content: '⌄';
+  margin-left: auto;
+  font-size: 14px;
+  line-height: 1;
+  transform: translateY(-2px);
+  transition: transform 0.15s ease;
+}
+.history-toggle[aria-expanded='true']::after {
+  transform: translateY(1px) rotate(180deg);
+}
+.history-toggle .dim { margin-left: 0; }
 .history-body { margin-top: 12px; }
 .history-controls { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 .seg { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -710,3 +754,43 @@ table.kv td:first-child { color: var(--fg-dim); }
 /* Interruptores con icono: la leyenda es la propia lista. */
 .switches-icon label { gap: 7px; }
 .switches-icon img { flex: 0 0 auto; opacity: 0.9; }
+
+/* ---------------------------------------------------------------------------
+   Salud de la red y estaciones fuera del mapa
+   --------------------------------------------------------------------------- */
+
+/* Cada avería es un bloque, no una fila: lleva nombre, las cifras que la
+   sostienen y qué implica. Apretarlo en una línea obligaría a resumir «salta
+   16,2 °C entre dos lecturas» como «defectuoso», que es justo lo que no se
+   puede comprobar. */
+.fault-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.fault-list > li {
+  margin-bottom: 12px;
+  padding-left: 10px;
+  border-left: 2px solid var(--amber);
+}
+.fault-list > li:last-child { margin-bottom: 0; }
+.fault-name { margin: 0 0 3px; font: 600 12px/1.3 var(--sans); }
+
+.fault-why { list-style: none; margin: 0 0 4px; padding: 0; }
+.fault-why > li { color: var(--fg-dim); margin-bottom: 2px; }
+.fault-why > li::before { content: '· '; color: var(--amber); }
+
+.hidden-group { margin-bottom: 10px; }
+.hidden-group:last-of-type { margin-bottom: 6px; }
+.hidden-list { list-style: none; margin: 3px 0 0; padding: 0 0 0 10px; }
+.hidden-list > li { margin-bottom: 1px; }
+
+/*
+ * Curva ESTIMADA, no medida.
+ *
+ * La gráfica de un punto sin sensor usa el mismo componente que la de una
+ * estación, y ése es justo el riesgo: dos curvas idénticas que dicen cosas
+ * distintas. El trazo discontinuo es la diferencia que se ve antes de leer
+ * ninguna etiqueta. La nota de debajo lo explica; esto hace que no haga falta
+ * leerla para no equivocarse.
+ */
+.chart-estimated .chart-line {
+  stroke-dasharray: 5 3;
+  stroke-width: 1.6;
+}
