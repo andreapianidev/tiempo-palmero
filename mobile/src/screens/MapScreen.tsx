@@ -18,7 +18,7 @@ import { estimateBundle, type Bundle, type DisplayVariable } from '@core/lib/int
 import { VARIABLES } from '@core/lib/variables'
 import type { Station } from '@core/lib/quality'
 import { routeBounds } from '@core/lib/guagua/display'
-import { n, n0, t } from '@core/i18n'
+import { t } from '@core/i18n'
 import { isVariable, type LayerId } from '../layers'
 import { color, font, space } from '../theme'
 import { Header } from '../components/Header'
@@ -26,7 +26,7 @@ import { LayerChips } from '../components/LayerChips'
 import { LayerSheet } from '../components/LayerSheet'
 import { TopFade } from '../components/TopFade'
 import { Fabs } from '../components/Fabs'
-import { DetailSheet, SNAP } from '../components/sheet/DetailSheet'
+import { DetailSheet } from '../components/sheet/DetailSheet'
 import { IslandMap, type MapHandle } from '../map/IslandMap'
 import { useGridImage } from '../hooks/useGridImage'
 import { useMapIcons } from '../hooks/useMapIcons'
@@ -125,13 +125,16 @@ export function MapScreen() {
     return estimateBundle(island.models, probe.lon, probe.lat, probe.elevation)
   }, [island.models, probe])
 
-  const pick = useCallback(
+  /**
+   * Poner la aguja en un punto y calcular ahí. Sin vibración: la usa también el
+   * arranque, y una app que zumba sola al abrirse no está confirmando nada.
+   */
+  const probeAt = useCallback(
     (lon: number, lat: number, title?: string) => {
       // La altitud sale del DEM, nunca de la API: la API no publica ninguna.
       const elevation = island.dem ? elevationAt(island.dem, lon, lat) : null
       if (elevation === null) return
       const municipality = municipalityOf(island.municipalities, lon, lat)
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
       // Tocar el mapa cierra la ficha de lo que hubiera elegido: la aguja nueva
       // y una parada de guagua de hace dos toques no son la misma pregunta.
       setSelection(null)
@@ -146,6 +149,15 @@ export function MapScreen() {
     [island.dem, island.municipalities],
   )
 
+  /** Lo mismo, pero pedido con el dedo: eso sí se confirma al tacto. */
+  const pick = useCallback(
+    (lon: number, lat: number, title?: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      probeAt(lon, lat, title)
+    },
+    [probeAt],
+  )
+
   const onStation = useCallback(
     (s: Station) => {
       pick(s.lon, s.lat, s.name)
@@ -154,25 +166,54 @@ export function MapScreen() {
     [pick],
   )
 
-  const locate = useCallback(async () => {
-    setLocating(true)
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') return
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      })
-      const { longitude, latitude } = pos.coords
-      setMe({ lon: longitude, lat: latitude })
-      mapHandle.current?.flyTo(longitude, latitude, 12.5)
-      pick(longitude, latitude, 'Mi ubicación')
-    } catch {
-      // Sin ubicación la app entera sigue funcionando: es un atajo, no un
-      // requisito. El botón deja de parpadear y no aparece ningún diálogo.
-    } finally {
-      setLocating(false)
-    }
-  }, [pick])
+  /**
+   * Preguntar dónde está el teléfono y calcular ahí.
+   *
+   * `fly` distingue las dos veces que pasa. Con el botón, sí: se ha pedido ir a
+   * mi ubicación. Al arrancar, no: la vista de llegada es la isla entera, y
+   * meter un acercamiento antes de que a nadie le haya dado tiempo a mirar el
+   * mapa es quitarle a la app lo primero que enseña.
+   */
+  const locate = useCallback(
+    async (fly = true) => {
+      setLocating(true)
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync()
+        if (status !== 'granted') return
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        })
+        const { longitude, latitude } = pos.coords
+        setMe({ lon: longitude, lat: latitude })
+        if (fly) mapHandle.current?.flyTo(longitude, latitude, 12.5)
+        probeAt(longitude, latitude, 'Mi ubicación')
+      } catch {
+        // Sin ubicación la app entera sigue funcionando: es un atajo, no un
+        // requisito. El botón deja de parpadear y no aparece ningún diálogo.
+      } finally {
+        setLocating(false)
+      }
+    },
+    [probeAt],
+  )
+
+  /**
+   * Al abrir la app se pregunta la ubicación una sola vez, y lo que se hace con
+   * ella es dejarla escrita en la cabecera de la hoja: la hoja se queda como
+   * está, asomando, y el mapa entero a la vista. Quien quiera el detalle la
+   * sube; quien solo quería saber qué temperatura hace donde está, ya lo sabe.
+   *
+   * Espera al DEM y al modelo a propósito. Sin altitud no hay corrección
+   * altimétrica y sin modelo no hay nada que estimar: preguntar antes daría una
+   * aguja puesta sobre una ficha vacía.
+   */
+  const askedForLocation = useRef(false)
+  useEffect(() => {
+    if (askedForLocation.current) return
+    if (!island.dem || !island.models.temperature) return
+    askedForLocation.current = true
+    void locate(false)
+  }, [island.dem, island.models.temperature, locate])
 
   const onSelectLayer = useCallback((next: LayerId) => {
     setLayer(next)
@@ -300,7 +341,7 @@ export function MapScreen() {
           alertCount={trailReports.filter((r) => r.worst !== null).length}
           onLayers={() => setSheet(true)}
           onIsland={() => setIslandSheet(true)}
-          onLocate={locate}
+          onLocate={() => locate(true)}
           onReset={() => {
             setProbe(null)
             setSelection(null)
