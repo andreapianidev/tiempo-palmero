@@ -42,6 +42,7 @@ import { prepareGuagua } from './prepare-guagua.js'
 import { prepareArcgis } from './prepare-arcgis.js'
 import { prepareAgro } from './prepare-agro.js'
 import { prepareOsmRoads } from './prepare-osm-roads.js'
+import { prepareTdt } from './prepare-tdt.js'
 
 // ---------------------------------------------------------------------------
 // 1. DEM — teselas terrarium
@@ -641,6 +642,10 @@ async function main() {
   if (run('dem')) await prepareDem()
   if (run('layers')) await prepareLayers()
   if (run('viario')) await mergeLayerIndex(await prepareOsmRoads())
+  // La cobertura de TDT necesita `limite-insular.geojson` para recortar el mar,
+  // así que va DESPUÉS de las capas. En una ejecución suelta usa el que ya está
+  // en `public/layers/`, que es el mismo fichero.
+  if (run('tdt')) await mergeLayerIndex(await prepareTdt())
   if (run('gtfs')) await prepareGuagua()
   if (run('gazetteer')) await prepareGazetteer()
   if (run('snapshot')) await prepareSnapshot()

@@ -13,6 +13,10 @@ import {
   basemapSourceId,
   type BasemapId,
 } from '../lib/basemaps'
+import { BASEMAP_LEVELS } from '../lib/realce/levels'
+import { registerRelief } from '../lib/relief/protocol'
+import { RELIEF_SOURCE, reliefLayer, reliefSource } from '../lib/relief/source'
+import { applyOverlayContrast } from './contrast/OverlayContrast'
 import { isBundleVariable, pinLabel, type MapVariable } from '../lib/variables'
 import { place, pillRank, RANK, type Box, type DeclutterItem } from '../lib/declutter'
 import { renderGrid, rasterToCanvas } from '../lib/grid-canvas'
@@ -47,6 +51,7 @@ import {
   PLACES_LAYER,
   ROADS_HIT_LAYER,
 } from './places/PlacesLayer'
+import { addTdtLayer, setTdtVisible } from './tdt/TdtLayer'
 import {
   addOsmRoadsLayers,
   setOsmRoadsData,
@@ -95,6 +100,8 @@ export interface LayerVisibility {
   roads: boolean
   /** El viario completo de OSM, por debajo de las carreteras del Cabildo. */
   osmRoads: boolean
+  /** La mancha de cobertura simulada de los repetidores de TDT. */
+  tdt: boolean
   counters: boolean
   fire: boolean
   wind: boolean
@@ -364,7 +371,19 @@ export function MapView(props: Props) {
       // El relieve de casa NO se apaga al encender uno: mientras las teselas
       // del servicio llegan, lo que se ve por los huecos es la isla, no un
       // rectángulo negro.
+      // El sombreado propio, ANTES que los fondos externos: los dos se insertan
+      // delante de `municipal-boundaries`, así que el que entra primero queda
+      // debajo. Orden final: hillshade, relieve, GRAFCAN, líneas.
+      //
+      // Va aquí y no en `buildStyle` porque registrarlo importa `maplibre-gl`
+      // en tiempo de ejecución, y ese fichero lo comparte la app nativa, donde
+      // esa librería no existe. Ver la cabecera de `mapStyle.ts`.
+      registerRelief(dem.manifest)
+      map.addSource(RELIEF_SOURCE, reliefSource(dem.manifest))
+      map.addLayer(reliefLayer(), 'municipal-boundaries')
+
       for (const b of EXTERNAL_BASEMAPS) {
+        const realce = BASEMAP_LEVELS[b.id]
         map.addSource(basemapSourceId(b.id), b.source)
         map.addLayer(
           {
@@ -372,7 +391,19 @@ export function MapView(props: Props) {
             type: 'raster',
             source: basemapSourceId(b.id),
             layout: { visibility: 'none' },
-            paint: { 'raster-fade-duration': 0 },
+            paint: {
+              'raster-fade-duration': 0,
+              // El realce del fondo son estos cuatro números y nada más: no hay
+              // shader propio ni teselas reprocesadas. Están medidos en
+              // `realce/levels.ts`, junto con el ensayo que descartó el enfoque.
+              'raster-contrast': realce.contrast,
+              'raster-brightness-min': realce.brightnessMin,
+              'raster-brightness-max': realce.brightnessMax,
+              'raster-saturation': realce.saturation,
+              // Interpolar en vez de repetir el píxel más cercano: entre dos
+              // niveles de zoom la tesela se dibuja escalada siempre.
+              'raster-resampling': 'linear',
+            },
           },
           'municipal-boundaries',
         )
@@ -401,6 +432,12 @@ export function MapView(props: Props) {
         },
         'municipal-boundaries',
       )
+
+      // La cobertura de TDT, justo encima de la malla y por debajo de todo lo
+      // demás: es otro fondo temático, y compite con la malla por el mismo
+      // sitio. Por debajo del viento a propósito —las partículas tienen que
+      // leerse sobre ella— y muy por debajo de senderos, guaguas y viario.
+      addTdtLayer(map, 'municipal-boundaries')
 
       // El viento va POR ENCIMA de la malla interpolada y por debajo de los
       // contornos: se lee sobre el color de fondo sin tapar los límites ni las
@@ -634,6 +671,11 @@ export function MapView(props: Props) {
       )
     }
     containerRef.current?.classList.toggle('map-light', BASEMAPS[props.basemap].light)
+    // Y con ello, el color de todo lo que se dibuja ENCIMA del fondo. Sobre la
+    // carta topográfica, que es papel blanco, el gris cálido de las carreteras
+    // dejaba de verse: ver `contrast/palette.ts`, donde está la regla que lo
+    // corrige conservando la jerarquía entre unas líneas y otras.
+    applyOverlayContrast(map, props.basemap)
   }, [ready, props.basemap])
 
   // --- malla interpolada ---------------------------------------------------
@@ -705,21 +747,27 @@ export function MapView(props: Props) {
     windLayerRef.current?.setField(props.wind)
   }, [ready, props.wind])
 
+  // El modelo de elevación, para que cada partícula sepa por dónde va el suelo.
+  // Sin él la capa dibuja plano; con él, y con el relieve encendido, las estelas
+  // van sobre el terreno y las tapa la montaña que tienen delante.
+  useEffect(() => {
+    if (!ready) return
+    windLayerRef.current?.setDem(dem)
+  }, [ready, dem])
+
   // Apagarla es dejar de dibujar Y dejar de pedir fotogramas: la animación se
   // sostiene con `triggerRepaint`, así que con la capa oculta el mapa vuelve a
   // quedarse quieto y no consume batería.
   //
-  // Y se apaga entera con la vista 3D encendida. La capa de viento es una capa
-  // PERSONALIZADA, y esas MapLibre no las proyecta sobre el terreno: las
-  // partículas se calculan sobre el elipsoide, a cota cero, así que con la
-  // cámara inclinada se dibujarían atravesando la montaña por dentro. No es un
-  // defecto visual menor —sería viento pintado donde no puede haberlo—, y hasta
-  // que las partículas sepan su cota, la respuesta honesta es no dibujarlas.
-  // El panel lo dice donde se enciende la 3D, no aquí.
+  // Ya NO se apaga con la vista 3D. Se apagaba porque las partículas se
+  // calculaban a cota cero y con la cámara inclinada cruzaban las montañas por
+  // dentro; ahora cada vértice lleva la cota del punto por el que pasa y la
+  // capa comparte el búfer de profundidad con el relieve, así que una estela
+  // detrás de una cresta queda detrás de la cresta. Ver `WindLayer`.
   useEffect(() => {
     if (!ready) return
-    windLayerRef.current?.setVisible(visible.wind && !props.terrain.on)
-  }, [ready, visible.wind, props.terrain.on])
+    windLayerRef.current?.setVisible(visible.wind)
+  }, [ready, visible.wind])
 
   // --- evaporación del terreno --------------------------------------------
   //
@@ -855,6 +903,12 @@ export function MapView(props: Props) {
     if (!map || !ready) return
     setOsmRoadsVisible(map, visible.osmRoads)
   }, [ready, visible.osmRoads])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setTdtVisible(map, visible.tdt)
+  }, [ready, visible.tdt])
 
   useEffect(() => {
     const map = mapRef.current

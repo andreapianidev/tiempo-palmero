@@ -74,6 +74,16 @@ export interface StepOptions {
   degPerSecondPerMs: number
   /** Segundos transcurridos desde el paso anterior. */
   dt: number
+  /**
+   * Cota del terreno en metros, si hace falta saberla.
+   *
+   * Solo la pasa quien dibuja en tres dimensiones. Se apunta AQUÍ y no en el
+   * dibujo porque un punto de estela no se mueve nunca después de apuntado: su
+   * cota se lee una vez y sirve para todos los fotogramas en los que esa estela
+   * siga viva. Al revés —leyéndola al dibujar— serían 42.000 consultas al
+   * modelo de elevación por fotograma en vez de 4.200.
+   */
+  elevationAt?: (lon: number, lat: number) => number
 }
 
 export class ParticleSystem {
@@ -85,9 +95,13 @@ export class ParticleSystem {
   readonly speed: Float32Array
   /** Cuánto de la última lectura lo sostienen estaciones reales, 0–1. */
   readonly station: Float32Array
+  /** Cota del terreno bajo la posición actual, en metros. Cero sin muestreador. */
+  readonly elevation: Float32Array
   /** Estela: `TAIL_LENGTH` posiciones por partícula, la 0 es la más reciente. */
   readonly tailLon: Float32Array
   readonly tailLat: Float32Array
+  /** La cota de cada punto de la estela, apuntada con él. */
+  readonly tailElevation: Float32Array
   /** Cuántas posiciones válidas tiene la estela ahora mismo. */
   readonly tailFill: Uint8Array
   private readonly age: Float32Array
@@ -102,8 +116,10 @@ export class ParticleSystem {
     this.lat = new Float32Array(count)
     this.speed = new Float32Array(count)
     this.station = new Float32Array(count)
+    this.elevation = new Float32Array(count)
     this.tailLon = new Float32Array(count * TAIL_LENGTH)
     this.tailLat = new Float32Array(count * TAIL_LENGTH)
+    this.tailElevation = new Float32Array(count * TAIL_LENGTH)
     this.tailFill = new Uint8Array(count)
     this.age = new Float32Array(count)
     this.life = new Float32Array(count)
@@ -116,7 +132,11 @@ export class ParticleSystem {
    * Las vidas son distintas entre sí a propósito: con una vida común todas
    * desaparecerían a la vez y el mapa parpadearía entero cada pocos segundos.
    */
-  respawn(index: number, spawn: ParticleBounds): void {
+  respawn(
+    index: number,
+    spawn: ParticleBounds,
+    elevationAt?: (lon: number, lat: number) => number,
+  ): void {
     this.lon[index] = spawn.west + this.random() * (spawn.east - spawn.west)
     this.lat[index] = spawn.south + this.random() * (spawn.north - spawn.south)
     this.age[index] = 0
@@ -124,18 +144,24 @@ export class ParticleSystem {
     this.tailFill[index] = 0
     this.speed[index] = 0
     this.station[index] = 0
+    // La cota se lee YA, en el mismo sitio donde se pone la partícula. Dejarla
+    // a cero «porque todavía no se dibuja» funcionaba —una partícula sin estela
+    // no se pinta— pero dejaba el sistema en un estado que no se cumple a sí
+    // mismo, y eso es una trampa esperando a que alguien lea `elevation` un
+    // fotograma antes de lo previsto.
+    this.elevation[index] = elevationAt ? elevationAt(this.lon[index], this.lat[index]) : 0
   }
 
-  reset(spawn: ParticleBounds): void {
+  reset(spawn: ParticleBounds, elevationAt?: (lon: number, lat: number) => number): void {
     for (let i = 0; i < this.count; i++) {
-      this.respawn(i, spawn)
+      this.respawn(i, spawn, elevationAt)
       // Se reparten las edades para que el reciclaje no venga en oleadas.
       this.age[i] = this.random() * this.life[i]
     }
   }
 
   step(field: WindField, opts: StepOptions): void {
-    const { spawn, degPerSecondPerMs, dt } = opts
+    const { spawn, degPerSecondPerMs, dt, elevationAt } = opts
 
     // La estela se apunta por reloj, no por fotograma: así mide lo mismo en una
     // pantalla de 60 Hz que en una de 120. Se resta el intervalo en vez de
@@ -147,24 +173,31 @@ export class ParticleSystem {
     for (let i = 0; i < this.count; i++) {
       this.age[i] += dt
       if (this.age[i] > this.life[i]) {
-        this.respawn(i, spawn)
+        this.respawn(i, spawn, elevationAt)
         continue
       }
 
       const reading = sampleField(field, this.lon[i], this.lat[i])
       if (!reading) {
         // Se ha salido del campo: no se arrastra el último viento conocido.
-        this.respawn(i, spawn)
+        this.respawn(i, spawn, elevationAt)
         continue
       }
 
       const sp = speedOf(reading.u, reading.v)
       if (sp < MIN_SPEED_MS) {
-        this.respawn(i, spawn)
+        this.respawn(i, spawn, elevationAt)
         continue
       }
       this.speed[i] = sp
       this.station[i] = reading.station
+      // La cota se lee DOS veces por partícula y fotograma, y no es un
+      // descuido: la estela apunta la posición de ANTES de moverse, así que
+      // necesita la cota de ese punto; y la cabeza se dibuja en la posición de
+      // DESPUÉS. Con una sola lectura, la cabeza iba a la altura del sitio del
+      // que venía, y a 600 aumentos eso son 100 m de terreno por fotograma:
+      // sobre una ladera de Cumbre Nueva, 50 m de error vertical.
+      if (elevationAt) this.elevation[i] = elevationAt(this.lon[i], this.lat[i])
 
       // La estela se desplaza antes de mover el punto: la posición 0 pasa a
       // ser la 1, y la nueva posición entra en la 0.
@@ -173,9 +206,11 @@ export class ParticleSystem {
         for (let k = TAIL_LENGTH - 1; k > 0; k--) {
           this.tailLon[base + k] = this.tailLon[base + k - 1]
           this.tailLat[base + k] = this.tailLat[base + k - 1]
+          this.tailElevation[base + k] = this.tailElevation[base + k - 1]
         }
         this.tailLon[base] = this.lon[i]
         this.tailLat[base] = this.lat[i]
+        this.tailElevation[base] = this.elevation[i]
         if (this.tailFill[i] < TAIL_LENGTH) this.tailFill[i]++
       }
 
@@ -199,8 +234,11 @@ export class ParticleSystem {
         this.lat[i] < south ||
         this.lat[i] > north
       ) {
-        this.respawn(i, spawn)
+        this.respawn(i, spawn, elevationAt)
+        continue
       }
+
+      if (elevationAt) this.elevation[i] = elevationAt(this.lon[i], this.lat[i])
     }
   }
 }

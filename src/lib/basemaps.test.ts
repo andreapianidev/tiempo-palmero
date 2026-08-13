@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BASEMAPS, BASEMAP_ORDER, EXTERNAL_BASEMAPS } from './basemaps'
+import { screenDensity } from './realce/density'
 
 /**
  * Lo que se prueba aquí es la plantilla de la petición, no la cartografía.
@@ -31,11 +32,28 @@ describe('fondos externos', () => {
     }
   })
 
-  it('el tamaño pedido es el de la tesela declarada', () => {
+  /**
+   * Los píxeles pedidos YA NO son los de la tesela declarada: son los que esa
+   * tesela va a ocupar de verdad en la pantalla, o sea el lado por la densidad
+   * (ver `realce/density.ts`). En los tests no hay `window`, así que la
+   * densidad es 1 y las dos cosas coinciden — lo que se comprueba es que la
+   * relación sea esa y que el cuadrado siga siendo cuadrado.
+   */
+  it('el tamaño pedido es el de la tesela por la densidad de la pantalla', () => {
     for (const b of EXTERNAL_BASEMAPS) {
       const url = b.source.tiles![0]
-      expect(url, b.id).toContain(`width=${b.source.tileSize}`)
-      expect(url, b.id).toContain(`height=${b.source.tileSize}`)
+      const want = b.source.tileSize! * screenDensity()
+      expect(url, b.id).toContain(`width=${want}`)
+      expect(url, b.id).toContain(`height=${want}`)
+    }
+  })
+
+  it('y el formato es JPEG, que es el único que el servicio ofrece', () => {
+    // Su GetCapabilities declara `image/jpeg` y nada más; pedirle PNG devuelve
+    // un `ServiceException` con código `InvalidFormat`, que MapLibre no
+    // distingue de una tesela vacía. Comprobado el 13 de agosto de 2026.
+    for (const b of EXTERNAL_BASEMAPS) {
+      expect(b.source.tiles![0], b.id).toContain('format=image%2Fjpeg')
     }
   })
 

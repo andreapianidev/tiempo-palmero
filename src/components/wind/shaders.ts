@@ -30,7 +30,14 @@
 export const VERTEX_SHADER = `
 precision mediump float;
 
-attribute vec2 a_pos;
+/**
+ * x, y en Mercator normalizado y z en la MISMA unidad: con renderingMode 3d la
+ * Z de la matriz de MapLibre es conforme, así que la altura no va en metros
+ * sino en fracción de la circunferencia a esa latitud. La cuenta está en
+ * lib/wind/altitude.ts, comparada contra la de MapLibre.
+ * En el mapa plano z vale cero y esto se comporta como se comportaba.
+ */
+attribute vec3 a_pos;
 // x: opacidad por posición en la estela, y: velocidad normalizada 0–1,
 // z: cuánto de esa lectura la sostienen estaciones reales, 0–1.
 attribute vec3 a_style;
@@ -47,7 +54,7 @@ void main() {
   v_alpha = a_style.x;
   v_speed = a_style.y;
   v_station = a_style.z;
-  gl_Position = u_matrix * vec4(a_pos, 0.0, 1.0);
+  gl_Position = u_matrix * vec4(a_pos, 1.0);
   gl_Position.xy += u_offset * gl_Position.w;
 }
 `

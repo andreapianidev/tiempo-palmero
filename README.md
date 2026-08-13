@@ -115,12 +115,20 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   2.225 km son pistas agrícolas y forestales y caminos de servicio. Es lo que
   las 61 carreteras del Cabildo no pueden ser —un callejero— y va por debajo de
   todas ellas (ver [el viario](#el-viario-que-el-cabildo-no-publica)).
+- **Cobertura de TDT simulada**: las 49 simulaciones de propagación de los
+  repetidores que el Cabildo publica en un KMZ, fundidas en un mapa de celdas de
+  92 m. Cubren el 51,6 % de la isla, y la ficha de un punto dice cuántos
+  repetidores lo alcanzan (ver
+  [la cobertura de TDT](#la-cobertura-de-tdt-que-estaba-en-un-kmz)).
 - **Aforos de tráfico y de senderos**: cuánta gente pasa hoy por cada cruce y
   por cada acceso a sendero, separando coches, motos, pesados, bicicletas y
   peatones, con los últimos ocho días en barras y el denominador de la red a la
   vista (ver [los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece)).
 - **Relieve sombreado** generado del mismo modelo de elevación que alimenta el
-  cálculo. La isla es un volcán: la sombra es lo que la hace legible.
+  cálculo: cuatro luces, oclusión del cielo y realce de textura, calculados en
+  la máquina de quien mira (ver [cómo se dibuja el
+  relieve](#el-relieve-se-dibuja-aquí-y-no-con-una-sola-luz)). La isla es un
+  volcán: la sombra es lo que la hace legible.
 
 Todo en castellano. La estructura de i18n está lista para más idiomas.
 
@@ -644,7 +652,7 @@ nota que lo dice.
 
 El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**, y el visor
 ArcGIS del Cabildo —que no es el mismo inventario— tiene **2.387 elementos**
-más. Esta aplicación usa hoy **diecinueve capas estáticas** —de las veinte que
+más. Esta aplicación usa hoy **veinte capas estáticas** —de las veintiuna que
 descarga; la única que no se lee en runtime es el inventario de sensores de CO₂,
 que llega en directo de DEMASE— más el resumen de cultivos y el agregado del
 GTFS de guaguas. Lo que queda, ordenado por lo que aportaría de verdad:
@@ -978,6 +986,53 @@ Eso quita el 32 % de los vértices sin que se vea. El umbral está medido, no
 elegido: a 5e-5 (5,5 m, 2,6 px) las curvas de las medianías empiezan a verse
 recortadas.
 
+#### La cobertura de TDT que estaba en un KMZ
+
+La pregunta «¿llega la tele aquí?» tiene respuesta publicada, pero no donde se
+la busca. El catálogo CKAN no la tiene. La capa `Telecomunicaciones` del visor
+trae los **100 emplazamientos de antena** —33 de telefonía móvil, 32 de
+televisión, 14 de enlace, 11 de la red Tetra de emergencias y 10 de radio— y
+ninguna geometría de cobertura. Lo que sí existe es un **KMZ**,
+`Simulaciones_Rep_TDT.kmz`, colgado del portal del Cabildo en ArcGIS Online
+desde abril de 2018: dentro hay **49 simulaciones de propagación**, una por
+sector de repetidor, cada una como una imagen georreferenciada.
+
+Se funden en build (`scripts/prepare-osm-roads.ts` tiene un hermano,
+`prepare-tdt.ts`) en un solo PNG de 28 KB con celdas de **92 m** —la resolución
+de la más fina de las 49, subirla no inventaría detalle—, y con el número de
+sectores que alcanzan cada celda guardado en el canal alfa, en tres escalones.
+Por eso la ficha de un punto puede decir «la alcanzan 3 repetidores o más»
+leyendo **el mismo píxel** que el mapa pinta: no hay dos fuentes que puedan
+contradecirse.
+
+| | |
+|---|---:|
+| Superficie de la isla con simulación | **51,6 %** |
+| Celdas de tierra que alcanza 1 repetidor | 33.720 |
+| …2 repetidores | 11.823 |
+| …3 o más | 3.924 |
+| Celdas de mar recortadas | 43.143 |
+
+El recorte a la costa es una decisión, y se dice: la simulación pinta también
+mar abierto, donde no hay a quién dar señal. El límite insular es el mismo
+fichero del Cabildo que dibuja la isla, y la comprobación de que el recorte cae
+donde debe es aritmética: las 95.801 celdas de tierra que salen son **711 km²**,
+y La Palma tiene 708.
+
+**Lo que este dato NO dice**, y la interfaz lo repite en la leyenda, en la ficha
+del punto y en la pantalla de fuentes: no es una medida, es de 2018, y simula
+los repetidores, no el centro emisor principal. Quedar fuera de la mancha **no**
+significa que allí no llegue la señal. Lo que sí se ve en ella son las sombras
+de radio del relieve: la Caldera de Taburiente sale hueca, y en los barrancos
+del noreste el dibujo es un peine.
+
+Un detalle que obligó a escribir más código del previsto: a 92 m, un «no» de una
+sola celda engaña. El casco de **Villa de Mazo** y el puerto de **Tazacorte**
+caen los dos en un agujero de UNA celda con cobertura simulada a tres o cuatro
+celdas de distancia. Así que la ficha mira también alrededor —tres celdas, 276
+m— y distingue «aquí no, pero sí a menos de 300 m» de «fuera de las 49
+simulaciones». Son dos frases distintas porque son dos cosas distintas.
+
 ### Los aforos, y el endpoint que no dice lo que parece
 
 La red de aforos cuenta quién pasa por diecisiete cruces, carreteras y accesos a
@@ -1126,6 +1181,57 @@ legibilidad del viento flojo se resuelve ahora donde no cuesta mentir: alargando
 la exposición de la estela (10 px a 2 m/s, 71 px a 14 m/s, en una ventana de
 900 px con la isla a la vista).
 
+#### El viento en tres dimensiones
+
+Con el relieve encendido, el viento estuvo un tiempo APAGADO, y por una razón
+honesta: MapLibre no proyecta las capas personalizadas sobre el terreno, así que
+las partículas —calculadas a cota cero— cruzaban las montañas por dentro. Ya no.
+
+Cada vértice lleva su propia cota, sacada del mismo modelo de elevación que
+sombrea el mapa y que pone las altitudes del motor —ya está en memoria, así que
+esto **no descarga nada**—, convertida a la Z conforme que espera la matriz de
+una capa `renderingMode: '3d'`. La conversión es exactamente la de
+`MercatorCoordinate.fromLngLat`, y hay un test que las compara vértice a vértice
+en cinco altitudes y tres latitudes: si algún día se separaran, las estelas se
+dibujarían a una altura que no es la del terreno y **nadie vería un error**, sólo
+viento flotando.
+
+Tres decisiones que hacen que se vea como se ve:
+
+- **La cota se lee dos veces por partícula y fotograma.** La estela apunta la
+  posición de ANTES de moverse y la cabeza se dibuja en la de DESPUÉS: con una
+  sola lectura, la cabeza iba a la altura del sitio del que venía, y a 600
+  aumentos eso son 100 m de terreno por fotograma —sobre una ladera de Cumbre
+  Nueva, 50 m de error vertical—. Cada punto de la estela guarda la cota de SU
+  sitio, y por eso la estela se pega a la ladera en vez de quedarse horizontal.
+- **La montaña tapa el viento que hay detrás.** La capa comparte el búfer de
+  profundidad con el relieve (`LEQUAL`, que lo pone MapLibre) pero **no escribe**
+  en él: las estelas son translúcidas y se cruzan entre ellas, y si escribieran,
+  la primera que pasa por un píxel taparía a las de detrás aunque fuera casi
+  transparente. Se lee el estado real de GL antes de tocarlo y se devuelve como
+  estaba, porque MapLibre lleva su propia caché de estado y dejársela cambiada
+  le rompe el dibujo a la capa siguiente.
+- **Inclinar la cámara ya no acelera el viento.** La velocidad en pantalla se
+  ataba al rectángulo envolvente de la vista, y con la cámara a 65° ese
+  rectángulo llega hasta el horizonte y mide tres veces más: girar la vista
+  multiplicaba por tres la velocidad de las partículas sin que el viento hubiera
+  cambiado, que es exactamente lo que este mapa no puede hacer. Ahora se mide por
+  el zoom en el centro, que es donde MapLibre define la escala, y no depende de
+  la inclinación.
+
+El margen de dibujo sobre el suelo son **60 m**, y no es una afirmación sobre a
+qué altura sopla el viento —el campo es de superficie y las estaciones miden a un
+par de metros—: es que la malla del terreno que pinta MapLibre es más basta que
+el DEM del que se leen las cotas, y en una arista la superficie dibujada queda
+decenas de metros por encima. Por debajo de 40 m las estelas se hundían en las
+crestas de Cumbre Nueva; por encima de 100 empiezan a despegarse del suelo en los
+barrancos. Se estira con la exageración de la escena, para que a 1,5× sigan
+pegadas.
+
+Medido el 13 ago 2026 en una ventana de 1500×950 a ×2: **60 fps** con el viento
+encendido, en plano y en 3D, con la escena a 1 y a 1,5×. Las 8.400 consultas de
+cota por fotograma no se notan porque el DEM es un `Float32Array` en memoria.
+
 **El contraste se decide mirando el fondo, píxel a píxel.** Un trazo claro con
 halo oscuro se lee sobre el relieve sombreado y desaparece sobre la carta
 topográfica de GRAFCAN, que es papel casi blanco; y no basta con distinguir
@@ -1239,6 +1345,7 @@ scripts/prepare-data.ts   Compilación. Se ejecuta una vez.
   ├── prepare-guagua.ts   GTFS de TILP → red de líneas, paradas y horarios
   ├── prepare-arcgis.ts   Servicios ArcGIS del visor: miradores y carreteras
   ├── prepare-osm-roads.ts  Viario completo de OSM vía Overpass (19.770 trazados)
+  ├── prepare-tdt.ts      Cobertura simulada de TDT: 49 imágenes del KMZ → un PNG
   ├── public/dem/         118 teselas terrarium, z9–z12 (~34 m/px a z12)
   ├── public/layers/      GeoJSON del Cabildo; municipios reproyectado a WGS84
   └── public/gazetteer.json  789 topónimos extraídos de OSM
@@ -1290,6 +1397,122 @@ El talud es real y es lo más llamativo de esta isla —sube 6,9 km desde el
 fondo—, pero no se puede enseñar mientras solo exista en dos de los cuatro
 niveles.
 
+### El relieve se dibuja aquí, y no con una sola luz
+
+El `hillshade` de MapLibre se queda debajo como red de seguridad, pero lo que se
+ve encima es un sombreado propio, calculado tesela a tesela en un shader con las
+mismas teselas terrarium de `public/dem/`. **No se descarga nada nuevo.** Lo que
+cambia es cuánto se les saca, y son tres cosas:
+
+**Cuatro luces en vez de una.** Con el sol en el noroeste —la convención
+cartográfica— toda ladera orientada al sureste cae al negro, y en La Palma eso
+es la vertiente de Mazo y Fuencaliente entera. Medido sobre las 63 teselas de
+z12 montadas (711 km² de tierra emergida, cota máxima 2400,1 m), el **32 %** de
+la isla mira entre el este y el suroeste. En esa parte, el porcentaje de píxeles
+que salen en negro sin forma —por debajo del 5 % de luminancia— pasa del
+**5,67 % al 0,33 %** al repartir la luz en cuatro focos con pesos.
+
+**Y el precio de esas cuatro luces también está medido.** Meterlas en el mismo
+rango de grises comprime el contraste local: el porcentaje de píxeles cuyo
+vecindario entero cae dentro de un mismo nivel de gris de 8 bits sube del 0,21 %
+al 0,53 %. Quien lo paga es el **realce de textura** —la altitud menos su propia
+versión suavizada, la idea de Leland Brown—, que lo devuelve a 0,35 % en toda la
+isla y a 0,10 % en las laderas oscuras, menos de la mitad de lo que daba la luz
+única. La combinación gana en las dos cuentas justo donde importa.
+
+**Y la superficie se reconstruye, no se amplía.** MapLibre lee el modelo en su
+malla y ahí se queda: a partir de z11 la imagen del sombreado se amplía y el
+relieve se vuelve manchas. Aquí la superficie se interpola bicúbica
+(Catmull-Rom) y la pendiente sale de la **derivada analítica** de esa superficie,
+no de restar píxeles vecinos —una malla de 33,5 m derivada por diferencias
+produce escalones de sombra; derivada de verdad, produce laderas—. Las teselas
+salen a 512 px y se siguen dibujando hasta dos niveles por encima del modelo,
+leyendo cada vez el trozo que toca. Entre dos cotas medidas se dibuja la curva
+que las une, que es lo mismo que hace el motor con la temperatura: **suavizar
+entre datos, nunca fabricarlos.** Por eso el margen son dos niveles y no cinco.
+
+La oclusión —una aproximación del factor de vista de cielo, ocho direcciones a
+dos distancias— es lo que hunde la Caldera de Taburiente en vez de dibujarla.
+
+Entra en el mapa por un esquema de URL propio (`relieve://`) registrado en
+MapLibre, así que usa su caché de teselas y se proyecta sobre el terreno en la
+vista 3D como cualquier otro fondo. Si no hay WebGL2, si el shader no compila o
+si faltan teselas del modelo, cada camino devuelve una tesela transparente y lo
+que se ve es el `hillshade` de siempre. Un fondo peor es un problema; un fondo
+negro es una aplicación rota.
+
+### A GRAFCAN se le piden los píxeles que la pantalla va a enseñar
+
+Las dos cartografías canarias se pedían en teselas de 512 px y se dibujaban en
+un cuadro de 512 CSS px, que en cualquier pantalla de las de hoy son 1024
+píxeles físicos: el navegador ampliaba cada tesela al doble antes de enseñarla.
+De ahí la carta topográfica lechosa.
+
+Que el servicio dibuja más fino —y no amplía— está medido. Tesela z16 sobre Los
+Llanos de Aridane, misma bbox, energía media del laplaciano en niveles de 0–255:
+
+| | 512 pedidos | 1024 pedidos | 512 ampliado a 1024 |
+|---|---|---|---|
+| Topográfico MT20 | 49,2 | 37,7 | **17,4** |
+| Ortofoto | 52,2 | 38,6 | **18,1** |
+
+Las dos columnas que se comparan son las dos formas de llenar los mismos 1024
+píxeles: el servidor pone **2,17×** (MT20) y **2,13×** (ortofoto) el detalle fino
+que pone el interpolador del navegador. El coste son 86,7 → 295 kB y 91,9 → 305
+kB por tesela, **con el mismo número de peticiones**, que es lo que le importa a
+un servicio. El tope es la densidad 2: a 2048 la ortofoto todavía trae detalle
+real —el vuelo está a 25 cm— pero la tesela pasa a pesar 1,07 MB, y la licencia
+de GRAFCAN dice «se prohíbe la descarga masiva de información». Quien tenga una
+pantalla de densidad 1 sigue recibiendo 512.
+
+**El enfoque se probó y se tiró.** La idea era pasar cada tesela por una máscara
+de enfoque antes de enseñarla. La pregunta buena no es «¿se ve más nítido?»
+—siempre se ve— sino «¿se parece más a lo que el servicio dibuja cuando se le
+pide de verdad esa escala?». Comparando contra la tesela de 2048 reducida, el
+error cuadrático medio sube con cada punto de enfoque y no tiene mínimo: 41,1 →
+55,2 en la carta y 61,4 → 87,2 en la ortofoto (×1000, enfoque de 0 a 1). Se
+repitió en el caso donde tendría algo que recuperar —una tesela ampliada— y
+también sube. El enfoque añade contraste que la cartografía real no tiene.
+
+**Lo que sí se hace es repartir los tonos que ya están**, con las propiedades
+`raster-*` de MapLibre, que son uniformes de su propio shader y cuestan cero. El
+presupuesto es 0,5 % de píxeles dañados —los que no estaban pegados al 0 o al 1
+y acaban pegados, contados canal a canal—. La carta topográfica **no se toca**:
+su negro está en 0,004 y su blanco en 1,000, ya ocupa todo el recorrido, y su
+problema era la resolución. A la ortofoto se le quita la calima: su negro por
+canal está en 0,039, un velo aditivo del Atlántico, y quitarlo cuesta un 0,35 %
+de daño y devuelve el croma medio de 0,149 a 0,173 sin tocar la saturación.
+Cabía subir más color —con +0,30 el daño seguía por debajo del presupuesto—,
+pero ahí ya no se recupera lo que el velo quitó, se pinta encima.
+
+### Las líneas cambian de color con el fondo, conservando su jerarquía
+
+Los colores de las carreteras, los senderos, las guaguas y los canales se
+eligieron mirando el relieve, que es un fondo oscuro. Sobre la carta topográfica
+—papel de luminancia mediana 0,808— una carretera de `rgba(214,201,183)` al 42 %
+es un gris claro sobre un blanco: existe y no se ve.
+
+La solución no es una segunda paleta escrita a mano. Se mide qué **relación de
+contraste** consigue cada tinta sobre el relieve, con la definición de la WCAG y
+sobre color linealizado, y se busca en cualquier otro fondo el color del mismo
+tono que consigue esa misma relación. Sobre el relieve la cuenta se resuelve
+sola y devuelve los colores de siempre bit a bit —hay un test que lo comprueba—;
+sobre la carta, el gris cálido se vuelve oscuro en vez de desaparecer.
+
+Lo que importa es que la **jerarquía se traslada entera**: el viario de OSM son
+19.770 trazados contra 61 carreteras insulares y tiene que seguir estando por
+debajo. No se sube todo a un mínimo legible; se mueve la escala completa. Hay un
+test que lo exige capa por capa.
+
+Lo que esto **no** arregla: una mediana describe un fondo liso, y la ortofoto no
+lo es —su variación local mediana es 0,0695, cinco veces la del relieve
+(0,0131)—. Sobre un invernadero blanco y un malpaís negro separados por diez
+metros no hay un solo color que funcione en los dos; hace falta que cada línea
+lleve su propio halo debajo, que es una capa más por cada capa de línea. Queda
+pendiente y los números para hacerlo ya están medidos. La capa de viento sí lo
+resuelve, porque es una capa personalizada y puede leer el fondo ya pintado (ver
+más arriba).
+
 ### La vista 3D
 
 Un modo aparte que se enciende en el panel, no una capa más: no añade nada al
@@ -1299,9 +1522,9 @@ el sombreado, así que encenderla **no cuesta ni una descarga**.
 MapLibre proyecta sobre el terreno las capas `background`, `fill`, `line`,
 `raster` y `hillshade`, y eso cubre todo lo que dibuja esta aplicación: la malla
 interpolada es una fuente `image` con capa `raster` y se pega al relieve sola.
-Lo único que se queda fuera es el viento, que es una capa personalizada y cuyas
-partículas se calculan a cota cero; mientras la vista esté inclinada se apaga, y
-el panel dice por qué.
+El viento es la excepción —es una capa personalizada, y esas no se proyectan—,
+así que se resuelve por su cuenta: ver [el viento en tres
+dimensiones](#el-viento-en-tres-dimensiones).
 
 La **exageración vertical** es lo único de esta vista que puede mentir, así que
 por defecto es 1 —la isla como es— y el tope es 1,5×, con el multiplicador
@@ -1514,6 +1737,7 @@ npm run dev
 ```bash
 # Refrescar solo una parte, sin volver a bajarlo todo:
 npm run prepare-data -- --only=viario     # viario de OSM (20 MB de Overpass)
+npm run prepare-data -- --only=tdt        # cobertura TDT (KMZ del Cabildo)
 npm run prepare-data -- --only=layers     # las capas del Cabildo
 ```
 
@@ -1544,6 +1768,9 @@ clave que configurar.
   CC-BY 4.0. Los sitios y la recarga eléctrica salen del catálogo CKAN; los
   miradores y las carreteras, de los servicios ArcGIS del visor del Cabildo:
   <https://www.opendatalapalma.es/search?groupIds=c27000c1d7a84444bf4321b87e8d2223>
+- **Cobertura de TDT** — Cabildo Insular de La Palma, `Simulaciones_Rep_TDT.kmz`
+  (ArcGIS Online, 2018). CC-BY 4.0. Es una simulación de propagación de los 49
+  sectores de repetidor, no una medida ni una garantía de recepción.
 - **Aforos de tráfico y de senderos** — Cabildo Insular de La Palma, vertical
   `count` de la API (`count_locations`, `count_today`, `count_historic`).
   CC-BY 4.0.

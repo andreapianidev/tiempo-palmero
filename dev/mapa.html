@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>mapa — banco de pruebas del relieve</title>
+    <link rel="stylesheet" href="/node_modules/maplibre-gl/dist/maplibre-gl.css" />
+    <style>
+      body { margin: 0; background: #080b10 }
+      #map { position: absolute; inset: 0 }
+      #log { position: absolute; z-index: 9; left: 8px; top: 8px; color: #eee;
+             font: 12px monospace; white-space: pre; background: #000a; padding: 6px }
+    </style>
+  </head>
+  <body>
+    <!--
+      El estilo real del mapa, sin la aplicación alrededor. NO forma parte del
+      sitio: solo lo sirve Vite en desarrollo, en /dev/mapa.html.
+
+      Comprueba lo que `relieve.html` no puede: que el protocolo está registrado,
+      que MapLibre pide las teselas, que el orden de las capas es el que se
+      espera y que el mar deja pasar el fondo. Acepta `?z=` para el zoom y
+      `?fondo=topografico|satelite` para mirar un fondo de GRAFCAN con su realce.
+    -->
+    <div id="log"></div>
+    <div id="map"></div>
+    <script type="module">
+      import maplibregl from 'maplibre-gl'
+      import { buildStyle } from '/src/lib/mapStyle.ts'
+      import { registerRelief } from '/src/lib/relief/protocol.ts'
+      import { RELIEF_SOURCE, reliefLayer, reliefSource } from '/src/lib/relief/source.ts'
+
+      const log = (m) => (document.getElementById('log').textContent += m + '\n')
+      window.addEventListener('error', (e) => log('ERROR ' + e.message))
+
+      const manifest = await fetch('/dem/manifest.json').then((r) => r.json())
+      const map = new maplibregl.Map({
+        container: 'map',
+        style: buildStyle(manifest),
+        center: [-17.86, 28.66],
+        zoom: new URLSearchParams(location.search).get('z') ?? 9.6,
+        attributionControl: false,
+      })
+      map.on('error', (e) => log('ERROR ' + (e.error?.message ?? e.type)))
+
+      // Igual que MapView: el sombreado NO viene en el estilo, se añade aquí.
+      map.on('load', () => {
+        registerRelief(manifest)
+        map.addSource(RELIEF_SOURCE, reliefSource(manifest))
+        map.addLayer(reliefLayer(), 'municipal-boundaries')
+      })
+
+      // Un fondo de GRAFCAN, con su realce, para poder mirarlo sin la
+      // aplicación entera detrás.
+      const fondo = new URLSearchParams(location.search).get('fondo')
+      if (fondo) {
+        const { BASEMAPS } = await import('/src/lib/basemaps.ts')
+        const { BASEMAP_LEVELS } = await import('/src/lib/realce/levels.ts')
+        const b = BASEMAPS[fondo]
+        const r = BASEMAP_LEVELS[fondo]
+        log('pide: ' + b.source.tiles[0].slice(0, 160))
+        map.on('load', () => {
+          map.addSource('fondo', b.source)
+          map.addLayer({
+            id: 'fondo-raster', type: 'raster', source: 'fondo',
+            paint: {
+              'raster-fade-duration': 0,
+              'raster-contrast': r.contrast,
+              'raster-brightness-min': r.brightnessMin,
+              'raster-brightness-max': r.brightnessMax,
+              'raster-saturation': r.saturation,
+              'raster-resampling': 'linear',
+            },
+          }, 'municipal-boundaries')
+        })
+      }
+      map.on('idle', () => {
+        const src = map.getSource('relieve')
+        log('relieve cargado: ' + map.isSourceLoaded('relieve'))
+        log('capas: ' + map.getStyle().layers.map((l) => l.id).join(' '))
+      })
+    </script>
+  </body>
+</html>

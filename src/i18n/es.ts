@@ -36,6 +36,7 @@ export const es = {
     guagua: 'Red de guaguas',
     roads: 'Carreteras insulares',
     osmRoads: 'Viario completo (OSM)',
+    tdt: 'Cobertura TDT (simulada)',
     counters: 'Aforos de tráfico y senderos',
     fire: 'Cámaras de incendios',
     hillshade: 'Relieve sombreado',
@@ -312,6 +313,27 @@ export const es = {
    * tabla publicada» y con la fecha delante. Lo que sí se puede afirmar en
    * presente es la red: qué líneas hay, por dónde van y dónde paran.
    */
+  /**
+   * La cobertura de TDT. Cada cadena de aquí lleva encima la misma obligación:
+   * decir que es una SIMULACIÓN de los repetidores, de 2018, y no un mapa de
+   * dónde se ve la televisión. Es la diferencia entre un dato y una promesa.
+   */
+  tdt: {
+    title: 'Televisión digital terrestre',
+    layer: 'Cobertura TDT (simulada)',
+    simulated: 'Simulación del Cabildo',
+    repeaters: (n: number) =>
+      n >= 3 ? 'la alcanzan 3 repetidores o más' : n === 2 ? 'la alcanzan 2 repetidores' : 'la alcanza 1 repetidor',
+    notHereButNear: 'aquí no, pero sí a menos de 300 m',
+    outside: 'fuera de las 49 simulaciones',
+    note:
+      'Cálculo de propagación de los 49 sectores de repetidor que publica el Cabildo (KMZ de 2018), en celdas de 92 m. No es una medida, no incluye el centro emisor principal y no dice con qué calidad se recibe: quedar fuera no significa que allí no llegue la señal.',
+    loading: 'Cargando la simulación de cobertura…',
+    failed: 'No se ha podido cargar la cobertura TDT. Apaga y vuelve a encender la casilla para reintentar.',
+    legend:
+      'Violeta: donde el cálculo del Cabildo dice que llega algún repetidor de TDT. Cuanto más intenso, más repetidores alcanzan el sitio —de uno a tres o más—. Cubre el 51,6 % de la isla; el resto no es «sin televisión», es sin simulación de repetidor. Recortado a la línea de costa: el cálculo pinta también mar abierto.',
+  },
+
   /**
    * El viario de OSM. Los tres avisos existen porque sin ellos la capa parece
    * rota: tarda en llegar, a zoom de isla enseña poco más de lo que ya había, y
@@ -836,6 +858,20 @@ export const es = {
       'lluvia, porque la red de estaciones no la mide de forma utilizable y esta ' +
       'aplicación no interpola precipitación nunca.',
     trailsAlertsLicense: 'CC-BY 4.0 (trazados)',
+    tdtTitle: 'Cobertura de TDT — simulación del Cabildo',
+    tdtBody:
+      'El Cabildo publica `Simulaciones_Rep_TDT.kmz`: 49 simulaciones de cobertura, una por ' +
+      'sector de repetidor de televisión digital terrestre, cada una como una imagen ' +
+      'georreferenciada. Es lo único de cobertura de televisión que existe publicado de esta ' +
+      'isla —el catálogo CKAN no lo tiene, y la capa de telecomunicaciones del visor solo trae ' +
+      'los 100 emplazamientos de antena, sin geometría de cobertura—. Las 49 imágenes se funden ' +
+      'en tiempo de compilación en un solo mapa de 92 m de celda, recortado a la línea de costa. ' +
+      'Tres advertencias, y ninguna es menor: es un CÁLCULO de propagación, no una medida; es de ' +
+      '2018; y simula los REPETIDORES, no el centro emisor principal, así que quedar fuera de la ' +
+      'mancha no significa que allí no llegue la señal. Cubre el 51,6 % de la superficie de la ' +
+      'isla. Lo que sí se ve en ella son las sombras de radio del relieve, que es lo que manda ' +
+      'aquí: la Caldera de Taburiente sale hueca.',
+    tdtLicense: 'CC-BY 4.0',
     viarioTitle: 'Viario completo — OpenStreetMap',
     viarioBody:
       'Las carreteras del Cabildo son 61 tramos y no pretenden ser otra cosa: las 53 vías ' +

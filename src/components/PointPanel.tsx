@@ -37,6 +37,8 @@ import type { EtoField } from '../lib/agro/eto'
 import { n, n0, t, humanAge } from '../i18n'
 import type { Dem } from '../lib/dem'
 import { PointHistory } from './PointHistory'
+import { TdtPointBlock } from './tdt/TdtPointBlock'
+import type { TdtMask } from '../lib/tdt/mask'
 
 export interface ProbePoint {
   lon: number
@@ -58,6 +60,8 @@ interface Props {
   stops: RgbStop[]
   /** Campo de ETo, si la sección de agricultura está abierta. */
   eto: EtoField | null
+  /** Máscara de cobertura TDT, si ya se ha descargado. */
+  tdt: TdtMask | null
   now: number
   onClose: () => void
 }
@@ -86,6 +90,7 @@ export function PointPanel({
   dem,
   faulty,
   eto,
+  tdt,
   now,
   onClose,
 }: Props) {
@@ -358,6 +363,11 @@ export function PointPanel({
           eto={eto}
         />
       )}
+
+      {/* La televisión va con lo que HAY en el sitio, no con el tiempo que
+          hace: por eso está aquí abajo, al lado de la parcela y de lo que hay
+          cerca, y no entre las variables meteorológicas. */}
+      <TdtPointBlock mask={tdt} lon={point.lon} lat={point.lat} />
 
       <NearbySection lon={point.lon} lat={point.lat} />
     </section>

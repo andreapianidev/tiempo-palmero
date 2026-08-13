@@ -24,7 +24,7 @@ interface Props {
   onToggle: () => void
   exaggeration: Exaggeration
   onExaggeration: (x: Exaggeration) => void
-  /** La capa de viento está encendida: en 3D se apaga y hay que avisar. */
+  /** La capa de viento está encendida: en 3D cambia de sitio, y se dice. */
   windOn: boolean
 }
 
@@ -125,9 +125,11 @@ export function Scene3D({ on, onToggle, exaggeration, onExaggeration, windOn }: 
 
           {windOn && (
             <p className="dim small">
-              El viento se queda apagado mientras la vista esté inclinada: sus
-              partículas se calculan a nivel del mar y sobre el relieve
-              atravesarían la montaña por dentro.
+              El viento va por el suelo: cada partícula lleva la cota del punto
+              por el que pasa —la del mismo modelo de elevación que dibuja el
+              relieve— y las estelas que quedan detrás de una cresta las tapa la
+              cresta. Lo que se estira {exaggerationLabel(exaggeration)} es
+              también su altura, para que sigan pegadas a la ladera.
             </p>
           )}
         </>
