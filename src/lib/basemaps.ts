@@ -144,7 +144,10 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
   satelite: {
     id: 'satelite',
     label: 'Satélite',
-    note: 'Ortofoto territorial 2024-2025. La colada de Tajogaite se ve como lo que es: una cicatriz de cinco kilómetros.',
+    // Sin cifras: la longitud de la colada se repite en muchos sitios con
+    // muchos números distintos y aquí no hay con qué medirla. Lo que sí se ve
+    // en la imagen, y es verdad, es que va del cono al mar.
+    note: 'Ortofoto territorial 2024-2025. La colada de Tajogaite se ve como lo que es: la cicatriz que baja del cono hasta el mar.',
     source: grafcan('Ortofoto', 'ortofoto', `${GRAFCAN_CREDIT} · Ortofoto Territorial 2024-2025`),
     // La ortofoto no rotula nada, así que los topónimos son nuestros a todas
     // las escalas. Y sobre imagen aérea el texto blanco con sombra negra es
