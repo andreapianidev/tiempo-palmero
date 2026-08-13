@@ -74,6 +74,48 @@ const SPECS: ArcgisSpec[] = [
     // aparte de lo que dice la fuente.
     rename: { Name: 'nombre' },
   },
+  {
+    // Los cuatro faros de la isla. La capa publica SOLO el municipio: no trae
+    // nombre, ni alcance, ni característica de la luz. No se inventa ninguno
+    // —«Faro de Fuencaliente» sería adivinar cuál de los dos de la punta es—:
+    // la ficha se titula con el municipio y la aplicación añade la altitud del
+    // modelo de elevación, que es lo que sí sabe.
+    out: 'faros.geojson',
+    service: 'Faros/FeatureServer/0',
+    label: 'Faros (4)',
+    expect: 4,
+    rename: { Municipio: 'municipio' },
+  },
+  {
+    // Antenas de telecomunicaciones, con la TDT dentro.
+    //
+    // Es la capa que el portal enseña como «Localización de antenas y
+    // cobertura de señal TDT». De cobertura no publica ningún polígono: lo que
+    // hay son los 100 emplazamientos, y el visor del Cabildo dibuja la
+    // cobertura como imagen, no como dato. Así que aquí entran las antenas y
+    // la aplicación no dibuja ninguna mancha de cobertura, que sería
+    // inventársela.
+    //
+    // Medido el 13 ago 2026: 33 de telefonía móvil, 32 de televisión, 14 de
+    // enlace, 11 de la red Tetra de emergencias y 10 de radio.
+    out: 'telecomunicaciones.geojson',
+    service: 'Telecomunicaciones/FeatureServer/0',
+    label: 'Antenas de telecomunicaciones (100)',
+    expect: 100,
+    rename: { Ubicacion: 'nombre', Municipio: 'municipio', Tipo: 'tipo' },
+  },
+  {
+    // Sondeo de cobertura móvil. Las 669 medidas son de NOVIEMBRE Y DICIEMBRE
+    // DE 2013 —comprobado fila a fila el 13 ago 2026— y no hay ninguna
+    // posterior. Se guarda con los campos crudos porque la fecha de cada
+    // medida es parte del dato: sin ella, un mapa de cobertura de hace trece
+    // años se lee como el de hoy. Ver `lib/coverage/field.ts`.
+    out: 'cobertura-movil.geojson',
+    service: 'Cobertura_movil/FeatureServer/0',
+    label: 'Sondeo de cobertura móvil de 2013 (669 medidas)',
+    expect: 669,
+    rename: { GSM_down: 'GSM_down', GSM_up: 'GSM_up', UMTS: 'UMTS', Fecha: 'fecha' },
+  },
 ]
 
 interface EsriGeoJson {

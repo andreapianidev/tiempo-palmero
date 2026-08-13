@@ -10,7 +10,13 @@
 
 import { describe, it, expect } from 'vitest'
 import { buildWindField, toComponents, type WindSample } from './field'
-import { degPerSecondPerMs, ParticleSystem, TAIL_LENGTH } from './particles'
+import {
+  degPerSecondPerMs,
+  ParticleSystem,
+  TAIL_INTERVAL_S,
+  TAIL_LENGTH,
+  timeAcceleration,
+} from './particles'
 
 const BOUNDS: [number, number, number, number] = [-18.05, 28.4, -17.7, 28.9]
 const SPAWN = { west: -18.05, south: 28.4, east: -17.7, north: 28.9 }
@@ -74,11 +80,17 @@ describe('sistema de partículas', () => {
     p.reset(SPAWN)
     const before = Float32Array.from(p.lon)
     const f = uniformField(10, 0)
+    // Medio segundo: ninguna alcanza el borde, así que las que cambian de
+    // longitud solo pueden haberlo hecho por haber renacido al cumplir su vida.
     for (let step = 0; step < 30; step++) p.step(f, OPTS)
+    let quietas = 0
     for (let i = 0; i < p.count; i++) {
-      // Solo las que no han renacido en el camino conservan su longitud.
-      if (p.tailFill[i] >= 30) expect(p.lon[i]).toBeCloseTo(before[i], 5)
+      if (Math.abs(p.lon[i] - before[i]) < 1e-6) quietas++
     }
+    // Las vidas están repartidas entre 1,5 y 4 s, así que en medio segundo
+    // renace del orden de una de cada seis. Con la deriva del meridiano sin
+    // corregir no quedaría ninguna quieta.
+    expect(quietas).toBeGreaterThan(p.count * 0.7)
   })
 
   it('van hacia donde sopla el viento, no de donde viene', () => {
@@ -105,10 +117,12 @@ describe('sistema de partículas', () => {
     const p = new ParticleSystem(1, seeded(2))
     p.reset(SPAWN)
     const f = uniformField(8, 45)
+    // Un paso por apunte, para poder comparar posición a posición.
+    const opts = { ...OPTS, dt: TAIL_INTERVAL_S }
     const positions: [number, number][] = []
     for (let step = 0; step < 5; step++) {
       positions.push([p.lon[0], p.lat[0]])
-      p.step(f, OPTS)
+      p.step(f, opts)
     }
     // Tras cinco pasos, la cabeza de la estela es donde estaba justo antes.
     expect(p.tailLon[0]).toBeCloseTo(positions[4][0], 6)
@@ -143,6 +157,59 @@ describe('sistema de partículas', () => {
 })
 
 describe('velocidad en pantalla', () => {
+  /** Un segundo de simulación a la tasa de refresco que se le pida. */
+  function run(speedMs: number, hz: number, seconds = 1) {
+    const p = new ParticleSystem(1, seeded(31))
+    // `respawn` y no `reset`: así la partícula empieza con la edad a cero y no
+    // renace a mitad de la medición.
+    p.respawn(0, SPAWN)
+    const f = uniformField(speedMs, 180) // del sur: sube, sin componente este
+    const opts = { ...OPTS, dt: 1 / hz }
+    const lat0 = p.lat[0]
+    for (let step = 0; step < hz * seconds; step++) p.step(f, opts)
+    return { p, moved: p.lat[0] - lat0 }
+  }
+
+  it('el doble de viento son exactamente el doble de píxeles por segundo', () => {
+    // Es LA propiedad que hace que la animación se pueda leer como una medida.
+    // Con la compresión `v^0.6` que había antes, este cociente daba 1,52 en vez
+    // de 2: dos estelas que corrían igual podían llevar vientos muy distintos.
+    const flojo = run(4, 60)
+    const fuerte = run(8, 60)
+    expect(fuerte.moved / flojo.moved).toBeCloseTo(2, 6)
+  })
+
+  it('la estela mide lo mismo a 60 Hz que a 120 Hz', () => {
+    // La exposición la fija el reloj, no el fotograma: en una pantalla de 120
+    // la misma racha tiene que dejar la misma estela, no la mitad.
+    const span = (r: ReturnType<typeof run>) => {
+      const fill = r.p.tailFill[0]
+      return Math.abs(r.p.tailLat[0] - r.p.tailLat[fill - 1])
+    }
+    const a = run(10, 60)
+    const b = run(10, 120)
+    expect(a.p.tailFill[0]).toBe(TAIL_LENGTH)
+    expect(b.p.tailFill[0]).toBe(TAIL_LENGTH)
+    // Lo que dura la estela: `TAIL_LENGTH - 1` intervalos entre la primera
+    // posición apuntada y la última.
+    const esperado = 10 * degPerSecondPerMs(0.5) * (TAIL_LENGTH - 1) * TAIL_INTERVAL_S
+    // Un 3 % de margen y no una igualdad: el apunte cae donde cae dentro del
+    // fotograma —0,04 s no es múltiplo de 1/60— así que la estela puede quedar
+    // corta o larga por lo que dure un fotograma. Lo que se comprueba es que
+    // ese resto sea el único error, y no un factor dos entre pantallas.
+    expect(Math.abs(span(a) / esperado - 1)).toBeLessThan(0.03)
+    expect(Math.abs(span(b) / esperado - 1)).toBeLessThan(0.03)
+  })
+
+  it('la aceleración del tiempo es la única licencia, y es un número', () => {
+    // A la escala de la isla la animación corre unas 600 veces el reloj; al
+    // acercarse, proporcionalmente menos. Lo que no cambia nunca es que sea la
+    // misma para todas las partículas del fotograma.
+    expect(timeAcceleration(0.55)).toBeGreaterThan(550)
+    expect(timeAcceleration(0.55)).toBeLessThan(650)
+    expect(timeAcceleration(0.05) * 11).toBeCloseTo(timeAcceleration(0.55), 6)
+  })
+
   it('se ata al alto de la vista para que se lea igual a cualquier zoom', () => {
     // Al acercarse, la misma velocidad geográfica cruzaría la pantalla en un
     // parpadeo: la ganancia tiene que bajar en la misma proporción.

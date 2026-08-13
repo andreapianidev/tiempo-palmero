@@ -33,6 +33,9 @@ import {
   type ProfileAnchor,
 } from '../lib/openmeteo'
 import { buildStations, type NetworkCensus, type Station } from '../lib/quality'
+import { summitLayer, summitStation, type SummitLayer } from '../lib/summit'
+import type { RoqueStatus } from '../lib/roque'
+import { useRoque } from './useRoque'
 import { useSensorHealth, type SensorHealth } from './useSensorHealth'
 import { parseLocation, parseTimeinstant, num, type CdaRow } from '../lib/cabildo'
 import {
@@ -113,6 +116,20 @@ export interface IslandData {
   validation: { rmse: number; mae: number; n: number } | null
   /** Anclas de modelo por encima del techo de la red. Nunca son del Cabildo. */
   anchors: ProfileAnchor[]
+
+  /**
+   * El parte crudo de la cumbre (TNG, 2387 m), tal y como llega. Lo consume la
+   * sección del panel, que enseña campos —seeing, polvo— que el motor no usa.
+   */
+  roque: RoqueStatus | null
+  /**
+   * La misma lectura convertida en estación del motor, o `null` si no se
+   * sostiene. Es la que entra en `buildModel` y la que pinta su pin. Ver
+   * `summit.ts`.
+   */
+  summit: Station | null
+  /** La capa medida entre el techo de la red y la cumbre. */
+  summitLayer: SummitLayer | null
 
   air: AirStation[]
   sky: SkyStation[]
@@ -386,6 +403,12 @@ export function useIslandData(): IslandData {
    */
   const health = useSensorHealth(dem, now)
 
+  /**
+   * La cumbre. Se pide siempre, no solo con la sección abierta: desde que entra
+   * en el motor, lo que el mapa pinta por encima de 1561 m depende de ella.
+   */
+  const roque = useRoque()
+
   /** Las que entran en el ajuste. Ver el comentario del campo en `IslandData`. */
   const soundStations = useMemo(
     () => stations.filter((s) => !health.diagnoses.get(s.entityId)?.faulty),
@@ -510,16 +533,46 @@ export function useIslandData(): IslandData {
    */
   const witness = anchors[0]?.profile ?? null
 
+  /**
+   * La cumbre, si el TNG contesta y la lectura se sostiene.
+   *
+   * Cuelga de `fetchedAt` y no del reloj de presentación por lo mismo que el
+   * resto del motor: la frescura de una lectura se juzga contra el momento en
+   * que se pidió, y colgarla del tic de 30 s reharía el modelo y la malla
+   * entera cada medio minuto para que casi nunca cambiara nada.
+   */
+  const summit = useMemo(() => summitStation(roque, fetchedAt), [roque, fetchedAt])
+
+  /** La capa entre el techo de la red y la cumbre, medida. Ver `summit.ts`. */
+  const summitLayerNow = useMemo(
+    () => summitLayer(soundStations, summit),
+    [soundStations, summit],
+  )
+
   const models = useMemo(() => {
     const make = (v: InterpolableVariable) =>
       soundStations.length
-        ? buildModel(soundStations, v, anchors, calibrations[v], witness)
+        ? buildModel(
+            soundStations,
+            v,
+            anchors,
+            calibrations[v],
+            witness,
+            health.offsets,
+            summit,
+          )
         : null
     return {
       temperature: make('temperature'),
       relativehumidity: make('relativehumidity'),
     } as Record<InterpolableVariable, Model | null>
-  }, [soundStations, anchors, calibrations, witness])
+    // `health.offsets` entra en la dependencia: el archivo llega unos segundos
+    // después del mapa, y hasta que llega el rechazo trabaja sin ese testigo.
+    // Sin esta línea el modelo se quedaría con la versión sin indultos.
+    //
+    // `summit` igual: el TNG llega por su cuenta y unos segundos tarde, y hasta
+    // que llega el campo de la cumbre lo sostienen las anclas de modelo.
+  }, [soundStations, anchors, calibrations, witness, health.offsets, summit])
 
   // La validación es cara (n ajustes completos) y solo informa la cabecera, así
   // que se recalcula cuando cambia el conjunto de estaciones, no en cada tick.
@@ -552,6 +605,9 @@ export function useIslandData(): IslandData {
     models,
     validation,
     anchors,
+    roque,
+    summit,
+    summitLayer: summitLayerNow,
     air,
     sky,
     fire,

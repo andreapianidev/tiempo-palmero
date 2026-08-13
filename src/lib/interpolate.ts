@@ -114,12 +114,25 @@ export const MAX_REJECTION_PASSES = 5
 export const ELEVATION_SCALE_M_PER_KM = 100
 
 /**
- * De dónde sale una muestra. `cabildo` es una medida real de la red insular;
- * `openmeteo` es un ancla de modelo por encima del techo de esa red (ver
- * `openmeteo.ts`). La distinción viaja hasta la interfaz: no se enseña un
- * número de modelo sin decir que lo es.
+ * De dónde sale una muestra:
+ *
+ *  - `cabildo` — medida real de la red insular. Es la única que ajusta.
+ *  - `openmeteo` — ancla de modelo por encima del techo de esa red (ver
+ *    `openmeteo.ts`).
+ *  - `roque` — medida real de la estación del TNG en la cumbre, 2387 m (ver
+ *    `summit.ts`). Está por encima del techo, como un ancla, pero NO es un
+ *    número de modelo: es un termómetro.
+ *
+ * La distinción viaja hasta la interfaz: no se enseña un número de modelo sin
+ * decir que lo es, y no se degrada a «modelo» una medida que no lo es.
  */
-export type SampleSource = 'cabildo' | 'openmeteo'
+export type SampleSource = 'cabildo' | 'openmeteo' | 'roque'
+
+/** Las que son medidas reales, vengan de la red que vengan. */
+export const MEASURED_SOURCES: readonly SampleSource[] = ['cabildo', 'roque']
+
+/** true si esta muestra vive por encima del techo de la red y le toca la rampa. */
+const isAboveCeiling = (source: SampleSource) => source === 'openmeteo' || source === 'roque'
 
 export interface Sample {
   entityId: string
@@ -155,6 +168,12 @@ export interface Model {
   elevationRange: [number, number]
   /** Anclas de modelo añadidas al campo de residuos, si las hay. */
   anchors: number
+  /**
+   * true si la medida real de la cumbre (TNG, 2387 m) sostiene el campo por
+   * encima del techo. La interfaz lo dice: no es lo mismo que ahí arriba haya
+   * un termómetro que un modelo, y quien mira el mapa tiene derecho a saberlo.
+   */
+  summit: boolean
   /**
    * Calibración empírica de la banda de incertidumbre. `null` mientras no haya
    * bastantes estaciones para medirla; entonces se cae en la σ del ajuste, que
@@ -288,7 +307,54 @@ export function robustSigma(residuals: readonly number[]): number {
  * Devuelve true cuando otra fuente, que no es esta recta, dice que ese valor a
  * esa altitud es creíble. Ver `corroboratedBy` en este mismo archivo.
  */
-export type Corroborator = (sample: Sample) => boolean
+export type Corroborator = (sample: Sample, residual: number) => boolean
+
+/** Vale con que UNO de los testigos respalde la muestra. */
+export function anyOf(
+  ...corroborators: (Corroborator | undefined)[]
+): Corroborator | undefined {
+  const live = corroborators.filter((c): c is Corroborator => !!c)
+  if (!live.length) return undefined
+  return (sample, residual) => live.some((c) => c(sample, residual))
+}
+
+/**
+ * R² mínimo para que el rechazo altitudinal signifique algo.
+ *
+ * NO ES PRUDENCIA, ES ARITMÉTICA. El rechazo mide cuánto se separa una
+ * estación de la recta `valor = a + b · altitud`. Cuando esa recta explica la
+ * varianza, separarse de ella es sospechoso. Cuando NO la explica, el residuo
+ * de cada estación es prácticamente `valor − media de la isla`, y entonces
+ * «te desvías 3σ del ajuste altitudinal» solo quiere decir «eres la más
+ * cálida». En un día de föhn o de calima la más cálida es justo la que está
+ * midiendo bien el episodio: el filtro se lleva por delante la noticia.
+ *
+ * MEDIDO, no elegido a ojo:
+ *
+ * - Sobre el snapshot de `__fixtures__` —una mañana de agosto ordinaria— el
+ *   ajuste de temperatura da **R² ≈ 0,65**, y ahí el rechazo mejora el RMSE un
+ *   30 % largo. Por encima de este umbral con holgura: sigue funcionando igual.
+ * - Sobre la red EN VIVO del 13 ago 2026, con aire sahariano encima, el mismo
+ *   ajuste da **R² = 0,000 y un gradiente de +0,21 °C/km** —la temperatura
+ *   subiendo con la altura— sobre 35 estaciones de 12 a 1561 m. Y no es una
+ *   familia de sensores: partido por familias sale 0,000 en las CABLPA, 0,013
+ *   en las MTD y 0,001 en el resto.
+ *
+ * QUÉ NO SE PIERDE al suspenderlo. El sensor roto lo caza igual `BOUNDS` si
+ * publica un imposible, y `sensor-health.ts` si su SERIE es imposible —que es
+ * el único juez que no depende de que la recta del día se sostenga—. Lo que se
+ * suspende es solo el argumento «no encajas en la recta», el día que no hay
+ * recta en la que encajar.
+ *
+ * CUÁNTO CAMBIA. Rehaciendo la decisión hora a hora sobre las 48 h anteriores
+ * al 13 ago 2026 (`scripts/checks/qc-replay.ts`), ya con las averiadas fuera:
+ * el ajuste de temperatura NO llegaba al umbral en **29 de 49 horas**, y en
+ * ese archivo la regla vieja excluía **109 veces** en 31 horas distintas. Con
+ * el umbral y el testigo de sitio puestos, **ninguna**. La más acusada era
+ * LasTricias, 28 horas — la misma estación que `sensor-health.ts` pone de
+ * ejemplo de sitio sano y abrigado. En humedad, de 148 exclusiones a 19.
+ */
+export const MIN_R2_FOR_REJECTION = 0.2
 
 export function fitWithRejection(
   samples: readonly Sample[],
@@ -300,6 +366,11 @@ export function fitWithRejection(
   const rejected: RejectedSample[] = []
   let fit = ols(kept)
   let passes = 0
+
+  // Sin recta que explique nada, el residuo no es evidencia sobre el sensor.
+  if (!Number.isFinite(fit.r2) || fit.r2 < MIN_R2_FOR_REJECTION) {
+    return { fit, kept, rejected, passes }
+  }
 
   for (let pass = 0; pass < maxPasses; pass++) {
     if (kept.length <= 4) break
@@ -314,7 +385,7 @@ export function fitWithRejection(
       // Un residuo grande dice que la muestra no encaja en la RECTA, no que la
       // muestra esté mal. Sobre la inversión del alisio la recta es lo que está
       // mal, y ahí un testigo independiente puede indultarla.
-      if (z > sigmas && !corroborate?.(s)) {
+      if (z > sigmas && !corroborate?.(s, residuals[i])) {
         dropped.push({ ...s, residual: residuals[i], sigmas: z })
       } else {
         next.push(s)
@@ -427,6 +498,75 @@ export function corroboratedBy(
 }
 
 // ---------------------------------------------------------------------------
+// Testigo 2: lo que esa estación hace SIEMPRE
+// ---------------------------------------------------------------------------
+
+/**
+ * El desvío habitual de una estación respecto al ajuste de la isla.
+ *
+ * Lo calcula `sensor-health.ts` sobre 48 h de archivo; el tipo vive aquí para
+ * que las dependencias vayan en una sola dirección —salud del sensor depende
+ * del motor, nunca al revés—.
+ */
+export interface SiteOffset {
+  /** Desvío mediano respecto a la recta insular, en unidades de la variable. */
+  median: number
+  /** Dispersión robusta de ese desvío. Pequeña = sitio previsible. */
+  spread: number
+  /** Horas con desvío medido. Pocas horas, ningún veredicto. */
+  hours: number
+}
+
+/** Horas de archivo mínimas para que el desvío de un sitio sea una costumbre. */
+export const SITE_OFFSET_MIN_HOURS = 12
+/** Cuántas dispersiones propias puede separarse de su costumbre. */
+export const SITE_OFFSET_SIGMAS = 3
+/**
+ * Margen mínimo, en unidades de la variable.
+ *
+ * Un sitio muy regular tiene una dispersión diminuta, y sin suelo bastaría
+ * una décima de más para retirarle el indulto. No es lo que se quiere medir:
+ * lo que se quiere medir es «hoy no se parece a sí misma».
+ */
+export const SITE_OFFSET_FLOOR = 1.5
+
+/**
+ * Indulta a la estación que se está comportando COMO SIEMPRE.
+ *
+ * EL PROBLEMA QUE RESUELVE. `sensor-health.ts` ya sabe que hay sitios que
+ * viven lejos de la recta insular y que eso no es una avería: lo dice con
+ * todas las letras —«LasTricias marca +5,7 °C hora tras hora porque es un
+ * sitio abrigado y caliente»— y por eso juzga la DISPERSIÓN del desvío y no su
+ * tamaño. Pero ese conocimiento no salía de allí: el motor volvía a mirar el
+ * mismo +5,7 °C, lo llamaba outlier a 3σ y echaba a LasTricias del ajuste. Dos
+ * partes de la misma aplicación mirando el mismo número y diciendo cosas
+ * contrarias sobre él; la que hablaba en pantalla era la que menos sabía.
+ *
+ * LA REGLA. Se indulta si el desvío de hoy cabe dentro de la costumbre de esa
+ * estación, con la costumbre medida sobre su propia serie. No se indulta si no
+ * hay bastantes horas de archivo, ni —y esto es lo que impide que sea una
+ * amnistía— si la estación se está separando de SU PROPIO desvío habitual:
+ * ahí ya no está midiendo su sitio, y ese es exactamente el caso que hay que
+ * seguir tirando.
+ *
+ * Solo temperatura: es la única variable de la que `sensor-health` guarda
+ * serie. Para la humedad no hay costumbre medida, así que no hay indulto.
+ */
+export function bySiteOffset(
+  offsets: ReadonlyMap<string, SiteOffset> | null,
+  variable: InterpolableVariable,
+): Corroborator | undefined {
+  if (!offsets?.size || variable !== 'temperature') return undefined
+
+  return (sample, residual) => {
+    const offset = offsets.get(sample.entityId)
+    if (!offset || offset.hours < SITE_OFFSET_MIN_HOURS) return false
+    const margin = Math.max(SITE_OFFSET_SIGMAS * offset.spread, SITE_OFFSET_FLOOR)
+    return Math.abs(residual - offset.median) <= margin
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Construcción del modelo
 // ---------------------------------------------------------------------------
 
@@ -491,6 +631,12 @@ function anchorSamples(
  * @param profile Perfil vertical, si lo hay. NO aporta ninguna muestra al
  *   ajuste: solo puede indultar a una estación del Cabildo marcada como anómala
  *   por encima de la inversión. Ver `corroboratedBy`.
+ * @param summit Estación del TNG en el Roque, 2387 m, si está fresca. Es una
+ *   MEDIDA, no un ancla, pero entra por el mismo sitio que las anclas y por la
+ *   misma razón: vive por encima del techo de la red. No ajusta, no rechaza y
+ *   no valida —eso sigue siendo cosa del Cabildo—; solo pone un termómetro real
+ *   donde antes solo había modelo. Ver `summit.ts`. `null` y todo se comporta
+ *   exactamente como antes.
  */
 export function buildModel(
   stations: readonly Station[],
@@ -498,13 +644,17 @@ export function buildModel(
   anchors: readonly Anchor[] = [],
   calibration: Calibration | null = null,
   profile: VerticalProfile | null = null,
+  offsets: ReadonlyMap<string, SiteOffset> | null = null,
+  summit: Station | null = null,
 ): Model {
   const samples = toSamples(stations, variable)
   const { fit, kept, rejected, passes } = fitWithRejection(
     samples,
     OUTLIER_SIGMA,
     MAX_REJECTION_PASSES,
-    corroboratedBy(profile, variable),
+    // Dos testigos independientes, y basta con que hable uno: el perfil
+    // vertical sabe de la inversión y la serie de la estación sabe de su sitio.
+    anyOf(corroboratedBy(profile, variable), bySiteOffset(offsets, variable)),
   )
 
   // 4. DETENDENCIA. Se deja la ordenada dentro del residuo: la retendencia
@@ -522,18 +672,29 @@ export function buildModel(
   // IDW propaga —y lo que se apaga solo al bajar hacia las estaciones reales.
   const anchored = kept.length ? anchorSamples(anchors, variable, elevationRange[1]) : []
 
+  // La cumbre pasa por el mismo filtro de altura que las anclas, y por el mismo
+  // motivo: si algún día el Cabildo pusiera una estación por encima de 2387 m,
+  // la suya mandaría y ésta sobraría. Hoy no la hay —el techo estaba en 1561 m
+  // el 13 ago 2026— así que en la práctica entra siempre que el TNG conteste.
+  const summitSample =
+    kept.length && summit && summit.elevation > elevationRange[1]
+      ? toSamples([summit], variable).map((s) => ({ ...s, source: 'roque' as const }))
+      : []
+
   return {
     variable,
     a: fit.a,
     b: fit.b,
     r2: fit.r2,
     sigma: fit.sigma,
-    used: [...kept.map(detrend), ...anchored.map(detrend)],
+    used: [...kept.map(detrend), ...anchored.map(detrend), ...summitSample.map(detrend)],
     rejected,
     candidates: samples.length,
     passes,
     elevationRange,
     anchors: anchored.length,
+    /** true si la muestra real de la cumbre ha entrado en el campo. */
+    summit: summitSample.length > 0,
     calibration,
   }
 }
@@ -550,7 +711,9 @@ interface Weighted {
 }
 
 /**
- * Cuánto pesa un ancla de modelo según lo alto que esté el punto de destino.
+ * Cuánto pesa una muestra de POR ENCIMA DEL TECHO según lo alto que esté el
+ * punto de destino. Vale para las anclas de modelo y para la medida de la
+ * cumbre, que comparten el problema aunque no compartan la procedencia.
  *
  * Vale 0 en el techo de la red y 1 a `ANCHOR_TAPER_M` por encima. Sin esta
  * rampa el ancla de la cumbre todavía se dejaba notar donde SÍ hay estaciones:
@@ -562,6 +725,12 @@ interface Weighted {
  * Que sea una rampa y no un corte seco es para que el campo no dé un salto
  * justo en la cota del techo, que además se mueve cada vez que una estación
  * alta entra o sale del ajuste.
+ *
+ * LA CUMBRE TAMBIÉN SE APAGA AQUÍ, aunque sea una medida real y no un modelo, y
+ * la razón no es la procedencia sino la altura: a 2387 m está 826 m por encima
+ * del techo, y el residuo de la cumbre no describe lo que pasa a 900 m —los
+ * separa la inversión del alisio, que es justo la capa que rompe la vertical—.
+ * Un termómetro no deja de estar lejos por ser un termómetro.
  */
 export const ANCHOR_TAPER_M = 300
 
@@ -585,9 +754,9 @@ function gather(
     const dz = (s.elevation - elevation) / ELEVATION_SCALE_M_PER_KM
     const effective = Math.max(Math.hypot(d, dz), MIN_DISTANCE_KM)
     let w = 1 / effective ** IDW_POWER
-    if (s.source === 'openmeteo') {
+    if (isAboveCeiling(s.source)) {
       w *= anchorFactor
-      if (w <= 0) continue // por debajo del techo el modelo no existe
+      if (w <= 0) continue // por debajo del techo, lo de arriba no existe
     }
     const item = { s, d, w }
     all.push(item)
@@ -687,14 +856,25 @@ export function estimate(
   // añadido un punto de modelo. La incertidumbre tiene que seguir contando lo
   // lejos que está la estación real; si no hay ninguna dentro del radio, se
   // toma el radio entero, que es el peor caso que esta heurística sabe medir.
-  const cabildoDistances = list.filter((it) => it.s.source === 'cabildo').map((it) => it.d)
-  const nearestKm = cabildoDistances.length
-    ? Math.min(...cabildoDistances)
+  //
+  // La estación del TNG SÍ cuenta, y es el mismo criterio, no una excepción: lo
+  // que esta cuenta mide es a qué distancia está el termómetro más cercano, y
+  // en la cumbre ahora hay uno de verdad. Encoger la banda ahí no es optimismo,
+  // es dejar de fingir que no se está midiendo lo que se está midiendo.
+  const measuredDistances = list
+    .filter((it) => MEASURED_SOURCES.includes(it.s.source))
+    .map((it) => it.d)
+  const nearestKm = measuredDistances.length
+    ? Math.min(...measuredDistances)
     : IDW_CUTOFF_KM
 
-  // Cuánto de esta cifra la sostiene el modelo en lugar de la red. Es el mismo
-  // reparto de pesos que ha decidido el valor, así que la banda cambia de
+  // Cuánto de esta cifra la sostiene el MODELO en lugar de una medida. Es el
+  // mismo reparto de pesos que ha decidido el valor, así que la banda cambia de
   // régimen exactamente al ritmo al que lo hace el número.
+  //
+  // La cumbre no suma aquí aunque esté por encima del techo: `modelBand` es el
+  // error medido de Open-Meteo contra la red, y aplicárselo a un termómetro
+  // sería cobrarle a una medida el error de un modelo.
   let anchorShare = 0
   for (const it of list) if (it.s.source === 'openmeteo') anchorShare += it.w / sw
   const [lo, hi] = model.elevationRange
@@ -816,6 +996,10 @@ export function leaveOneOut(
       candidates: rest.length,
       passes: 0,
       anchors: 0,
+      // El leave-one-out mide la red del Cabildo contra sí misma. Ni anclas ni
+      // cumbre entran aquí: el número que sale tiene que seguir contestando
+      // «cuánto se equivoca el interpolador con las estaciones que hay».
+      summit: false,
       calibration: null,
       elevationRange: [
         Math.min(...kept.map((s) => s.elevation)),
@@ -899,6 +1083,9 @@ export function calibrate(
       passes: 0,
       elevationRange: range,
       anchors: 0,
+      // Igual que en el leave-one-out: la calibración de la banda se mide sobre
+      // la red, sin nada de por encima del techo. Ver el comentario de allí.
+      summit: false,
       calibration: null,
     }
     const est = estimate(probe, target.lon, target.lat, target.elevation)

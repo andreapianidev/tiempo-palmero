@@ -3,3 +3,8 @@ dist
 .vercel
 .env
 .env.local
+
+# Árboles de trabajo que crean los agentes dentro del repo. Son copias
+# completas del proyecto: sin esta línea, un `git add -A` de cualquiera se
+# lleva 19 MB y los tests del árbol ajeno al commit.
+.claude/worktrees

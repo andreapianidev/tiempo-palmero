@@ -9,7 +9,7 @@
  * dentro del rango de altitudes que hay medido.
  */
 
-import type { InterpolableVariable, Model } from '../../lib/interpolate'
+import { MIN_R2_FOR_REJECTION, type InterpolableVariable, type Model } from '../../lib/interpolate'
 import type { NetworkCensus } from '../../lib/quality'
 import { humanAge, n, t } from '../../i18n'
 
@@ -136,6 +136,13 @@ export function ModelStatus(props: Props) {
         </tbody>
       </table>
 
+      {/* Cuando la recta no explica la varianza, decirlo. Es la cifra que ya
+          estaba en la tabla —R²— pero un 0,001 sin contexto no se lee como
+          «hoy la altitud no manda»: se lee como un número más. Y de esa
+          diferencia depende cuánto vale el resto del bloque. */}
+      {model && model.r2 < MIN_R2_FOR_REJECTION && model.used.length > 0 && (
+        <p className="warn small">{t.model.weakFit(model.r2)}</p>
+      )}
       {model && model.rejected.length > 0 && (
         <p className="dim small">{t.model.rejected(model.rejected.length)}</p>
       )}

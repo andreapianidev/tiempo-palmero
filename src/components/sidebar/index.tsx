@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react'
 import type { InterpolableVariable, Model } from '../../lib/interpolate'
 import type { MapVariable } from '../../lib/variables'
 import type { Co2Field } from '../../lib/co2/field'
+import type { CoverageState } from '../../hooks/useCoverage'
 import type { NetworkCensus, Station } from '../../lib/quality'
 import type { SensorHealth } from '../../hooks/useSensorHealth'
 import type { GazetteerEntry } from '../../lib/api'
@@ -35,6 +36,7 @@ import { RoqueStatus } from './RoqueStatus'
 import { TrailAlerts } from './TrailAlerts'
 import { AgroStatus } from './AgroStatus'
 import { Co2Status } from './Co2Status'
+import { CoverageStatus } from './CoverageStatus'
 import { BasemapPicker } from './BasemapPicker'
 import { BASEMAPS, type BasemapId } from '../../lib/basemaps'
 import type { WindState } from '../../hooks/useWindField'
@@ -49,6 +51,8 @@ interface Props {
   onVariable: (v: MapVariable) => void
   /** El campo de CO₂ que sostiene el mapa, o `null` si la red no da para uno. */
   co2Field: Co2Field | null
+  /** El sondeo de cobertura de 2013. Solo se descarga si se elige. */
+  coverage: CoverageState
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   visible: LayerVisibility
@@ -78,10 +82,22 @@ interface Props {
   lastUpdate: number | null
   now: number
   onSources: () => void
+  /**
+   * Desplegado o no, mandado desde fuera.
+   *
+   * En el escritorio no se pasa y el panel se abre solo, con su propio botón:
+   * es una columna fija y «abierto» no significa nada. En el móvil es una hoja
+   * que tapa el mapa entero y quien la abre es un botón redondo que vive en
+   * otro componente, así que el estado tiene que estar por encima de los dos.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 export function Sidebar(props: Props) {
-  const [open, setOpen] = useState(false)
+  const [selfOpen, setSelfOpen] = useState(false)
+  const open = props.open ?? selfOpen
+  const setOpen = (next: boolean) => (props.onOpenChange ?? setSelfOpen)(next)
 
   // El techo de la red se mueve con cada refresco (una estación alta que se
   // cae, una que vuelve), así que el porcentaje se recalcula con él. Recorrer
@@ -109,7 +125,7 @@ export function Sidebar(props: Props) {
     <aside className={`sidebar${open ? ' open' : ''}`}>
       <button
         className="sidebar-toggle"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
         aria-expanded={open}
       >
         {open ? '×' : '≡'}
@@ -147,6 +163,16 @@ export function Sidebar(props: Props) {
             badge={props.co2Field ? `${props.co2Field.nodes.length}` : '—'}
           >
             <Co2Status field={props.co2Field} now={props.now} />
+          </Section>
+        )}
+
+        {props.variable === 'coverage' && (
+          <Section
+            title={t.variables.coverage}
+            defaultOpen
+            badge={props.coverage.field ? `${props.coverage.field.count}` : '…'}
+          >
+            <CoverageStatus state={props.coverage} />
           </Section>
         )}
 

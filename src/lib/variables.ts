@@ -20,6 +20,7 @@
 import type { DisplayVariable } from './interpolate'
 import {
   CO2_BANDS,
+  COVERAGE_BANDS,
   DEWPOINT_STOPS,
   HUMIDITY_STOPS,
   TEMP_STOPS,
@@ -39,7 +40,7 @@ import { n, t } from '../i18n'
  * la interfaz —las dos son «lo que colorea el mapa»— y nada más, y por eso el
  * tipo se abre aquí en vez de ensanchar el del motor.
  */
-export type MapVariable = DisplayVariable | 'co2'
+export type MapVariable = DisplayVariable | 'co2' | 'coverage'
 
 export interface VariableSpec {
   id: MapVariable
@@ -128,6 +129,21 @@ export const VARIABLES: Record<MapVariable, VariableSpec> = {
     local: t.variables.co2Local,
     hint: t.variables.co2Hint,
   },
+  coverage: {
+    id: 'coverage',
+    // El año va DENTRO del nombre, no en una nota al pie. Es un sondeo de hace
+    // trece años y esa es la primera cosa que hay que saber de él: en una
+    // pestaña plegada, en un chip de 12 px y en una captura de pantalla, la
+    // fecha viaja pegada al dato.
+    label: t.variables.coverage,
+    short: 'Cobertura',
+    unit: t.units.dbm,
+    stops: COVERAGE_BANDS.map((b) => [b.from, b.color] as RgbStop),
+    bands: COVERAGE_BANDS,
+    decimals: 0,
+    local: t.variables.coverageLocal,
+    hint: t.variables.coverageHint,
+  },
 }
 
 /**
@@ -146,7 +162,11 @@ export const VARIABLE_ORDER: readonly DisplayVariable[] = [
 ]
 
 /** Lo que enseña el selector: las cuatro de arriba y el CO₂ al final. */
-export const MAP_VARIABLE_ORDER: readonly MapVariable[] = [...VARIABLE_ORDER, 'co2']
+export const MAP_VARIABLE_ORDER: readonly MapVariable[] = [
+  ...VARIABLE_ORDER,
+  'co2',
+  'coverage',
+]
 
 /**
  * Comprueba pertenencia contra `VARIABLE_ORDER`, no contra `VARIABLES`.

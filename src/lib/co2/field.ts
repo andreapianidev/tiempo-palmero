@@ -27,6 +27,10 @@
  * el número de fondo se dice con letras en el panel y ya está.
  */
 
+import { buildMaskedField, sampleMasked, type MaskedField } from '../masked-field'
+import { co2Band } from '../palette'
+import { CO2_CELL_M } from './raster'
+
 /**
  * Lo que este módulo necesita de un sensor. `Co2Point` lo cumple sin
  * adaptador, y la firma estructural evita que `lib/` acabe importando de
@@ -61,6 +65,8 @@ export interface Co2Node {
 }
 
 export interface Co2Field {
+  /** El campo genérico: nodos, marco y máscara. Ver `masked-field.ts`. */
+  field: MaskedField
   nodes: Co2Node[]
   /** [[oeste, sur], [este, norte]] en grados, con el margen de máscara sumado. */
   bounds: [[number, number], [number, number]]
@@ -68,12 +74,6 @@ export interface Co2Field {
   max: number
   /** La más vieja de las lecturas que lo sostienen. */
   oldestAt: number
-}
-
-const M_PER_DEG_LAT = 110_574
-
-function mPerDegLon(lat: number): number {
-  return 111_320 * Math.cos((lat * Math.PI) / 180)
 }
 
 /**
@@ -94,33 +94,20 @@ export function buildCo2Field(obs: readonly Co2Observation[]): Co2Field | null {
   }
   if (!nodes.length) return null
 
-  let west = Infinity
-  let east = -Infinity
-  let south = Infinity
-  let north = -Infinity
+  const field = buildMaskedField(
+    nodes.map((p) => ({ lon: p.lon, lat: p.lat, value: p.ppm })),
+    { radiusM: CO2_NEAR_M, cellM: CO2_CELL_M, colorOf: (ppm) => co2Band(ppm).color },
+  )
+  if (!field) return null
+
   let max = -Infinity
   let oldestAt = Infinity
   for (const p of nodes) {
-    if (p.lon < west) west = p.lon
-    if (p.lon > east) east = p.lon
-    if (p.lat < south) south = p.lat
-    if (p.lat > north) north = p.lat
     if (p.ppm > max) max = p.ppm
     if (p.at < oldestAt) oldestAt = p.at
   }
 
-  const padLat = CO2_NEAR_M / M_PER_DEG_LAT
-  const padLon = CO2_NEAR_M / mPerDegLon((south + north) / 2)
-
-  return {
-    nodes,
-    bounds: [
-      [west - padLon, south - padLat],
-      [east + padLon, north + padLat],
-    ],
-    max,
-    oldestAt,
-  }
+  return { field, nodes, bounds: field.bounds, max, oldestAt }
 }
 
 /**
@@ -131,17 +118,5 @@ export function buildCo2Field(obs: readonly Co2Observation[]): Co2Field | null {
  * vecino más próximo a dos kilómetros.
  */
 export function co2At(field: Co2Field, lon: number, lat: number): number | null {
-  const kx = mPerDegLon(lat)
-  let best = CO2_NEAR_M
-  let ppm: number | null = null
-  for (const p of field.nodes) {
-    const dx = (p.lon - lon) * kx
-    const dy = (p.lat - lat) * M_PER_DEG_LAT
-    const d = Math.hypot(dx, dy)
-    if (d <= best) {
-      best = d
-      ppm = p.ppm
-    }
-  }
-  return ppm
+  return sampleMasked(field.field, lon, lat)
 }

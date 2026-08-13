@@ -2,7 +2,7 @@
  * Mapa. MapLibre GL, estilo propio, sin proveedor externo ni clave de API.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MutableRefObject } from 'react'
 import maplibregl, { type LngLatLike, type Map as MlMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { buildStyle, COLORS } from '../lib/mapStyle'
@@ -16,8 +16,7 @@ import {
 import { isBundleVariable, pinLabel, type MapVariable } from '../lib/variables'
 import { place, pillRank, RANK, type Box, type DeclutterItem } from '../lib/declutter'
 import { renderGrid, rasterToCanvas } from '../lib/grid-canvas'
-import { rasterizeCo2 } from '../lib/co2/raster'
-import type { Co2Field } from '../lib/co2/field'
+import { rasterizeMasked, type MaskedField } from '../lib/masked-field'
 import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette'
 import { freshness, stationReading, type Station } from '../lib/quality'
 import { decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
@@ -56,6 +55,19 @@ import { n0, t } from '../i18n'
 
 export const ISLAND_CENTER: LngLatLike = [-17.86, 28.66]
 
+/**
+ * Lo poco que se puede mandarle al mapa desde fuera.
+ *
+ * A propósito son dos verbos y no el objeto entero de MapLibre: quien tiene
+ * esto puede mover la vista, no cambiar capas por su cuenta. Todo lo que se
+ * pinta sigue decidiéndose con propiedades.
+ */
+export interface MapHandle {
+  flyTo: (lon: number, lat: number, zoom?: number) => void
+  /** Volver a ver la isla entera, que es la vista de llegada. */
+  reset: () => void
+}
+
 export interface LayerVisibility {
   grid: boolean
   stations: boolean
@@ -78,12 +90,23 @@ interface Props {
   /** La rampa de la variable higrotérmica en juego. El CO₂ va por bandas. */
   stops: RgbStop[]
   /**
-   * El campo de CO₂ ya construido. Llega hecho desde fuera porque el panel
-   * lateral cuenta las mismas cifras que el mapa pinta, y con dos
+   * El campo enmascarado de la variable elegida, si es de las que solo existen
+   * donde alguien midió (CO₂, cobertura). Llega hecho desde fuera porque el
+   * panel lateral cuenta las mismas cifras que el mapa pinta, y con dos
    * construcciones separadas podrían acabar contando cosas distintas.
    */
-  co2Field: Co2Field | null
+  maskedField: MaskedField | null
   stations: Station[]
+  /**
+   * La estación de la cumbre (TNG, 2387 m), si está fresca.
+   *
+   * Llega APARTE de `stations` y no dentro, a propósito: `stations` es la red
+   * del Cabildo y hay medio panel contando cuántas son y qué publican. Colarla
+   * en esa lista cambiaría esas cifras sin que nadie lo hubiera pedido. Aquí
+   * solo se dibuja, que es lo que hacía falta: el pin más alto de la isla
+   * estaba faltando en la capa de estaciones meteorológicas.
+   */
+  summit: Station | null
   /** Diagnóstico temporal por `entityId`. Vacío mientras no se haya revisado. */
   health: Map<string, Diagnosis>
   air: AirStation[]
@@ -119,6 +142,19 @@ interface Props {
   basemap: BasemapId
   visible: LayerVisibility
   probe: { lon: number; lat: number } | null
+  /**
+   * Dónde dice el navegador que está quien mira. Solo lo pide el móvil; en el
+   * escritorio llega `null` y no se dibuja nada.
+   */
+  me?: { lon: number; lat: number } | null
+  /**
+   * Mando a distancia del mapa: volar a un punto y volver a ver la isla.
+   *
+   * Existe porque en el móvil hay botones que mueven la vista sin tocar el
+   * mapa, y en una pantalla estrecha «tu ubicación» sin acercarse a ella no
+   * dice nada. En el escritorio no se pasa y no cambia nada.
+   */
+  handleRef?: MutableRefObject<MapHandle | null>
   onPick: (lon: number, lat: number) => void
   onStation: (station: Station) => void
   onAir: (station: AirStation) => void
@@ -202,6 +238,7 @@ export function MapView(props: Props) {
   const firesRef = useRef<{ el: HTMLElement; lon: number; lat: number; alert: boolean }[]>([])
   const placeMarkersRef = useRef<maplibregl.Marker[]>([])
   const probeMarkerRef = useRef<maplibregl.Marker | null>(null)
+  const meMarkerRef = useRef<maplibregl.Marker | null>(null)
   // Los callbacks cambian en cada render; se leen desde una ref para que los
   // manejadores del mapa no haya que recrearlos (y volver a añadir listeners).
   const handlers = useRef(props)
@@ -498,9 +535,9 @@ export function MapView(props: Props) {
     const src = map.getSource('grid') as maplibregl.ImageSource | undefined
     if (!src) return
 
-    const co2Selected = variable === 'co2'
-    const field = props.co2Field
-    if (!visible.grid || (co2Selected ? !field : !models.temperature)) {
+    const masked = !isBundleVariable(variable)
+    const field = props.maskedField
+    if (!visible.grid || (masked ? !field : !models.temperature)) {
       map.setLayoutProperty('grid-raster', 'visibility', 'none')
       return
     }
@@ -508,12 +545,12 @@ export function MapView(props: Props) {
     map.setPaintProperty(
       'grid-raster',
       'raster-resampling',
-      co2Selected ? 'nearest' : 'linear',
+      masked ? 'nearest' : 'linear',
     )
 
-    const grid = co2Selected
+    const grid = masked
       ? (() => {
-          const raster = rasterizeCo2(field!)
+          const raster = rasterizeMasked(field!)
           return {
             bounds: raster.bounds,
             canvas: rasterToCanvas(raster.pixels, raster.cols, raster.rows),
@@ -541,7 +578,7 @@ export function MapView(props: Props) {
         [w, s],
       ],
     })
-  }, [ready, dem, models, variable, stops, visible.grid, props.co2Field])
+  }, [ready, dem, models, variable, stops, visible.grid, props.maskedField])
 
   // --- viento animado ------------------------------------------------------
   //
@@ -815,7 +852,12 @@ export function MapView(props: Props) {
 
     if (visible.stations) {
       const rejected = new Set(model?.rejected.map((r) => r.entityId) ?? [])
-      for (const s of stations) {
+      // La cumbre se dibuja como una estación más porque ES una estación más:
+      // mide temperatura, humedad, viento y presión, y desde `summit.ts` entra
+      // en el motor igual que las demás. Se junta AQUÍ y no en `stations` para
+      // no tocar ninguna de las cifras que la aplicación cuenta sobre la red
+      // del Cabildo. Si el TNG no contesta, no hay pin y no hay hueco.
+      for (const s of props.summit ? [...stations, props.summit] : stations) {
         // El pin enseña lo que la estación sabe de esa variable, que no es lo
         // mismo que las columnas que publica: con T y humedad el rocío está
         // determinado. Lo calculado se marca (subrayado de puntos) para que
@@ -983,6 +1025,10 @@ export function MapView(props: Props) {
   }, [
     ready,
     stations,
+    // La cumbre llega por su cuenta, del TNG, unos segundos después que la red
+    // del Cabildo. Sin esta dependencia su pin no aparecería hasta el refresco
+    // siguiente, que son cinco minutos de mapa sin el punto más alto de la isla.
+    props.summit,
     // El diagnóstico llega en segundo plano, después del primer pintado: sin
     // esta dependencia las averías no se marcarían hasta el refresco siguiente.
     props.health,
@@ -1067,6 +1113,36 @@ export function MapView(props: Props) {
       .setLngLat([probe.lon, probe.lat])
       .addTo(map)
   }, [ready, probe])
+
+  // --- dónde está quien mira ----------------------------------------------
+  // Es un punto y no una pastilla: no lleva ninguna cifra porque la posición
+  // no es una medida. Lo que se mide en ese sitio lo dice la hoja.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    meMarkerRef.current?.remove()
+    meMarkerRef.current = null
+    if (!props.me) return
+    const el = document.createElement('div')
+    el.className = 'mk-me'
+    meMarkerRef.current = new maplibregl.Marker({ element: el })
+      .setLngLat([props.me.lon, props.me.lat])
+      .addTo(map)
+  }, [ready, props.me])
+
+  // --- mando a distancia ---------------------------------------------------
+  useEffect(() => {
+    const ref = props.handleRef
+    if (!ref) return
+    ref.current = {
+      flyTo: (lon, lat, zoom = 12.5) => flyTo(mapRef.current, lon, lat, zoom),
+      reset: () =>
+        mapRef.current?.easeTo({ center: ISLAND_CENTER, zoom: 9.6, duration: 600 }),
+    }
+    return () => {
+      ref.current = null
+    }
+  }, [props.handleRef])
 
   return <div ref={containerRef} className="map" />
 }

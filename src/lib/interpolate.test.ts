@@ -45,6 +45,10 @@ import {
   fitWithRejection,
   toSamples,
   nearestWith,
+  bySiteOffset,
+  MIN_R2_FOR_REJECTION,
+  OUTLIER_SIGMA,
+  MAX_REJECTION_PASSES,
   type Sample,
 } from './interpolate'
 
@@ -292,6 +296,122 @@ describe('rechazo de outliers', () => {
     const { kept } = fitWithRejection(toSamples(stations, 'temperature'))
     const second = fitWithRejection(kept)
     expect(second.rejected.length).toBe(0)
+  })
+})
+
+describe('el rechazo se calla cuando la recta no explica nada', () => {
+  /**
+   * El caso real: 13 ago 2026, aire sahariano encima de La Palma. La isla se
+   * parte en dos masas de aire, el ajuste da R²≈0 con un gradiente POSITIVO
+   * (+0,2 °C/km) y entonces «desviarse 3σ del ajuste altitudinal» solo
+   * significa «eres la estación más cálida» — que ese día es la que mejor está
+   * midiendo el episodio. Con la regla vieja se excluyó 109 veces en 48 h.
+   */
+  const revuelto: Sample[] = Array.from({ length: 24 }, (_, i) => ({
+    entityId: `s${i}`,
+    name: `s${i}`,
+    lon: -17.9 + (i % 2) * 0.2, // dos vertientes
+    lat: 28.6 + i * 0.002,
+    elevation: 100 + (i % 12) * 150,
+    // La vertiente de sotavento, 9 K más cálida a la MISMA cota: la altitud
+    // deja de explicar la varianza y la manda el lado de la isla.
+    value: 20 + (i % 2) * 9 + (i % 3) * 0.4,
+    observedAt: NOW,
+    source: 'cabildo',
+  }))
+
+  it('sobre estos datos la altitud no explica nada, y ese es el supuesto', () => {
+    expect(ols(revuelto).r2).toBeLessThan(MIN_R2_FOR_REJECTION)
+  })
+
+  it('no excluye a nadie: el residuo no es evidencia sobre el sensor', () => {
+    const { rejected, passes } = fitWithRejection(revuelto)
+    expect(rejected).toHaveLength(0)
+    expect(passes).toBe(0)
+  })
+
+  it('pero con una recta que SÍ se sostiene sigue cazando al descalibrado', () => {
+    // Mismo motor, datos con gradiente real: el guardarraíl no es una amnistía.
+    const limpio: Sample[] = Array.from({ length: 24 }, (_, i) => ({
+      ...revuelto[i],
+      value: 25 - 0.0065 * (100 + (i % 12) * 150) + (i % 3) * 0.2,
+    }))
+    expect(ols(limpio).r2).toBeGreaterThan(MIN_R2_FOR_REJECTION)
+    const roto: Sample = { ...limpio[0], entityId: 'ROTO', name: 'Roto', value: 3.1 }
+    const { rejected } = fitWithRejection([...limpio, roto])
+    expect(rejected.map((r) => r.entityId)).toContain('ROTO')
+  })
+})
+
+describe('indulto por costumbre del sitio', () => {
+  /**
+   * LasTricias lleva 48 h marcando +5,7 °C sobre la recta de la isla porque es
+   * un sitio abrigado, y `sensor-health.ts` ya lo sabía y lo daba por sano.
+   * El motor, mientras tanto, la echaba del ajuste por ese mismo +5,7. Dos
+   * partes de la aplicación mirando el mismo número y diciendo lo contrario.
+   */
+  const base: Sample[] = Array.from({ length: 20 }, (_, i) => ({
+    entityId: `s${i}`,
+    name: `s${i}`,
+    lon: -17.9,
+    lat: 28.6 + i * 0.002,
+    elevation: i * 120,
+    value: 26 - 0.0065 * (i * 120),
+    observedAt: NOW,
+    source: 'cabildo' as const,
+  }))
+  const abrigada: Sample = {
+    ...base[3],
+    entityId: 'ABRIGADA',
+    name: 'Sitio abrigado',
+    value: base[3].value + 5.7,
+  }
+  const samples = [...base, abrigada]
+
+  it('sin testigo, la echa', () => {
+    const { rejected } = fitWithRejection(samples)
+    expect(rejected.map((r) => r.entityId)).toContain('ABRIGADA')
+  })
+
+  it('con 48 h diciendo que siempre marca eso, la deja entrar', () => {
+    const offsets = new Map([['ABRIGADA', { median: 5.7, spread: 0.6, hours: 40 }]])
+    const { rejected } = fitWithRejection(
+      samples,
+      OUTLIER_SIGMA,
+      MAX_REJECTION_PASSES,
+      bySiteOffset(offsets, 'temperature'),
+    )
+    expect(rejected.map((r) => r.entityId)).not.toContain('ABRIGADA')
+  })
+
+  it('NO es una amnistía: si hoy no se parece a sí misma, cae igual', () => {
+    // Misma estación, mismo historial, pero hoy marca 20 K por encima de su
+    // propia costumbre. Eso ya no es el sitio: es el aparato.
+    const rota = { ...abrigada, value: base[3].value + 25 }
+    const offsets = new Map([['ABRIGADA', { median: 5.7, spread: 0.6, hours: 40 }]])
+    const { rejected } = fitWithRejection(
+      [...base, rota],
+      OUTLIER_SIGMA,
+      MAX_REJECTION_PASSES,
+      bySiteOffset(offsets, 'temperature'),
+    )
+    expect(rejected.map((r) => r.entityId)).toContain('ABRIGADA')
+  })
+
+  it('sin bastante archivo no indulta: una costumbre de dos horas no es una costumbre', () => {
+    const offsets = new Map([['ABRIGADA', { median: 5.7, spread: 0.6, hours: 2 }]])
+    const { rejected } = fitWithRejection(
+      samples,
+      OUTLIER_SIGMA,
+      MAX_REJECTION_PASSES,
+      bySiteOffset(offsets, 'temperature'),
+    )
+    expect(rejected.map((r) => r.entityId)).toContain('ABRIGADA')
+  })
+
+  it('la humedad no tiene serie guardada, así que no tiene indulto', () => {
+    const offsets = new Map([['ABRIGADA', { median: 5.7, spread: 0.6, hours: 40 }]])
+    expect(bySiteOffset(offsets, 'relativehumidity')).toBeUndefined()
   })
 })
 

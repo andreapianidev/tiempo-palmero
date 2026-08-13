@@ -1,21 +1,25 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { MapView, type LayerVisibility } from './components/MapView'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { MapView, type LayerVisibility, type MapHandle } from './components/MapView'
 import { PointPanel, type ProbePoint } from './components/PointPanel'
 import { DetailPanel, type Selection } from './components/DetailPanel'
 import { Sidebar } from './components/sidebar'
 import { SourcesScreen } from './components/SourcesScreen'
+import { MobileShell } from './components/mobile/MobileShell'
+import { buildStatus } from './components/mobile/status'
+import { useIsMobile } from './hooks/useIsMobile'
+import { useGeolocation, type GeoFix } from './hooks/useGeolocation'
 import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { useWindField } from './hooks/useWindField'
 import { useGuagua } from './hooks/useGuagua'
 import { usePlaces, NO_PLACES, type PlaceVisibility } from './hooks/usePlaces'
 import { useCounters } from './hooks/useCounters'
-import { useRoque } from './hooks/useRoque'
 import { useAgro } from './hooks/useAgro'
 import { useTrailReports } from './hooks/useTrailReports'
 import { summarizeDeck } from './lib/clouds'
 import { elevationAt } from './lib/dem'
 import { VARIABLES, isBundleVariable, type MapVariable } from './lib/variables'
 import { buildCo2Field } from './lib/co2/field'
+import { useCoverage } from './hooks/useCoverage'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
 import type { BasemapId } from './lib/basemaps'
@@ -75,15 +79,39 @@ export default function App() {
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [showSources, setShowSources] = useState(false)
+  /**
+   * La pantalla es estrecha, así que manda la hoja y no la barra lateral.
+   *
+   * Es lo ÚNICO que cambia entre las dos versiones: el mapa, el motor, las
+   * fichas y las capas son exactamente los mismos objetos. Lo que cambia es
+   * dónde se cuelgan.
+   */
+  const isMobile = useIsMobile()
+  /** El panel de capas del móvil, que allí es una hoja y no una columna. */
+  const [layersOpen, setLayersOpen] = useState(false)
+  const mapHandle = useRef<MapHandle | null>(null)
+  /**
+   * El punto lo puso el arranque al preguntar la ubicación, no un dedo.
+   *
+   * Con esto la hoja se queda asomando: quien abre la app ve la isla entera y
+   * una línea abajo con la temperatura de donde está. Un toque en el mapa sí
+   * la sube a media pantalla, porque ahí sí se ha preguntado algo.
+   */
+  const [autoProbe, setAutoProbe] = useState(false)
   // Si el zoom da ya para ver las paradas. Lo dice el mapa al cruzar el umbral,
   // no en cada fotograma: es lo único que hace falta saber del zoom aquí.
   const [stopsZoomReached, setStopsZoomReached] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   /**
-   * Qué secciones accesorias ha abierto el usuario. Ninguna de las tres se
-   * calcula ni se descarga mientras esté plegada: el Roque es un observatorio
-   * ajeno al que no hay que martillear, la ETo es una petición más al modelo y
-   * recorrer 49 senderos cuesta una cuarta parte de lo que cuesta la malla.
+   * Qué secciones accesorias ha abierto el usuario. Las que cuestan no se
+   * calculan ni se descargan mientras estén plegadas: la ETo es una petición
+   * más al modelo y recorrer 49 senderos cuesta una cuarta parte de lo que
+   * cuesta la malla.
+   *
+   * El Roque ya NO está entre ellas. Se pedía solo al abrir la sección para no
+   * martillear a un observatorio ajeno, pero desde que su termómetro entra en
+   * el motor (ver `summit.ts`) esa lectura la necesita el mapa entero, así que
+   * la trae `useIslandData` y aquí solo queda el estado de plegado.
    */
   const [openSections, setOpenSections] = useState({
     roque: false,
@@ -121,6 +149,23 @@ export default function App() {
    */
   const co2Field = useMemo(() => buildCo2Field(data.co2), [data.co2])
 
+  // El sondeo de cobertura son 105 KB de 2013 que no alimentan nada más: solo
+  // se piden si alguien elige esa variable.
+  const coverage = useCoverage(variable === 'coverage')
+
+  /**
+   * Qué campo enmascarado toca pintar. Uno como mucho: son variables, y solo
+   * hay una elegida. Que el mapa reciba «el campo» y no «el campo de CO₂ más
+   * el de cobertura más el siguiente» es lo que evita que añadir el tercero
+   * signifique tocar `MapView` otra vez.
+   */
+  const maskedField =
+    variable === 'co2'
+      ? (co2Field?.field ?? null)
+      : variable === 'coverage'
+        ? (coverage.field?.field ?? null)
+        : null
+
   /**
    * El mar de nubes NO cuesta una petición: sale de los perfiles verticales
    * que el motor ya descarga para anclar las cotas altas. Lo único que hacía
@@ -132,7 +177,10 @@ export default function App() {
     [data.anchors],
   )
 
-  const roque = useRoque(openSections.roque)
+  // La cumbre ya no se pide aquí: desde que entra en el motor la trae
+  // `useIslandData`, y el panel enseña exactamente la misma lectura que el mapa
+  // está usando. Dos peticiones al TNG podrían contestar dos horas distintas.
+  const roque = data.roque
   const agro = useAgro(data.dem, openSections.agro)
   const trailReports = useTrailReports(
     data.trails,
@@ -158,6 +206,7 @@ export default function App() {
   const pick = useCallback(
     (lon: number, lat: number, label?: string) => {
       setSelection(null)
+      setAutoProbe(false)
       setProbe({
         lon,
         lat,
@@ -178,6 +227,63 @@ export default function App() {
     setVisible((v) => ({ ...v, [key]: !v[key] }))
   }, [])
 
+  /**
+   * Qué se hace con la ubicación cuando el navegador la da.
+   *
+   * Del arranque llega `auto: true` y entonces NO se vuela: la vista de llegada
+   * es la isla entera, y acercarse antes de que a nadie le haya dado tiempo a
+   * mirarla es quitarle a la app lo primero que enseña. Con el botón sí, porque
+   * ahí sí se ha pedido ir hasta allí.
+   */
+  const onFix = useCallback(
+    ({ lon, lat, auto }: GeoFix) => {
+      pick(lon, lat, t.mobile.locate)
+      if (auto) setAutoProbe(true)
+      else mapHandle.current?.flyTo(lon, lat)
+    },
+    [pick],
+  )
+
+  // Solo en el móvil, y solo cuando hay DEM y modelo: sin altitud no hay
+  // corrección altimétrica y sin modelo no hay nada que estimar, así que
+  // preguntar antes dejaría una aguja sobre una ficha vacía.
+  const geo = useGeolocation(isMobile, !!data.dem && !!data.models.temperature, onFix)
+
+
+  /**
+   * La ficha de lo que esté elegido, sea un punto del mapa o un pin.
+   *
+   * Es la MISMA en las dos pantallas: en el escritorio flota a la derecha y en
+   * el móvil va dentro de la hoja deslizante. No hay una segunda versión de
+   * ninguna ficha, así que lo que aprenda una lo sabe la otra el mismo día.
+   */
+  const detail = probe ? (
+    <PointPanel
+      point={probe}
+      models={data.models}
+      stations={data.stations}
+      variable={bundleVariable}
+      stops={stops}
+      dem={data.dem}
+      faulty={faultyIds}
+      eto={agro.eto}
+      now={now}
+      onClose={() => setProbe(null)}
+    />
+  ) : selection ? (
+    <DetailPanel
+      selection={selection}
+      model={data.models.temperature}
+      health={data.health.diagnoses}
+      now={now}
+      firePolledAt={data.firePolledAt}
+      co2Down={data.co2Down}
+      guagua={guagua.network}
+      onClose={() => setSelection(null)}
+      onWeather={(lon, lat, label) => pick(lon, lat, label)}
+      onRoute={(routeId) => setSelection({ kind: 'busRoute', value: { routeId } })}
+    />
+  ) : null
 
   // El DEM es bloqueante: sin altitudes no hay corrección altimétrica, y sin
   // ella la estimación no vale nada. Antes de enseñar una interpolación plana,
@@ -210,14 +316,15 @@ export default function App() {
   }
 
   return (
-    <main className="app">
+    <main className={isMobile ? 'app app-mobile' : 'app'}>
       <MapView
         dem={data.dem}
         models={data.models}
         variable={variable}
         stops={stops}
-        co2Field={co2Field}
+        maskedField={maskedField}
         stations={data.stations}
+        summit={data.summit}
         health={data.health.diagnoses}
         air={data.air}
         sky={data.sky}
@@ -242,6 +349,8 @@ export default function App() {
         basemap={basemap}
         visible={visible}
         probe={probe}
+        me={geo.me}
+        handleRef={mapHandle}
         onPick={(lon, lat) => pick(lon, lat)}
         onStation={(s) => {
           setProbe(null)
@@ -327,6 +436,7 @@ export default function App() {
         variable={variable}
         onVariable={setVariable}
         co2Field={co2Field}
+        coverage={coverage}
         basemap={basemap}
         onBasemap={setBasemap}
         visible={visible}
@@ -368,6 +478,11 @@ export default function App() {
         now={now}
         dem={data.dem}
         onSources={() => setShowSources(true)}
+        // En el móvil la barra es una hoja que tapa el mapa y la abre un botón
+        // redondo, así que quien manda es esta pantalla. En el escritorio no se
+        // pasa nada y el panel sigue abriéndose solo.
+        open={isMobile ? layersOpen : undefined}
+        onOpenChange={isMobile ? setLayersOpen : undefined}
       />
 
       {data.upstreamError && (
@@ -386,34 +501,44 @@ export default function App() {
         </div>
       )}
 
-      {probe && (
-        <PointPanel
-          point={probe}
-          models={data.models}
-          stations={data.stations}
-          variable={bundleVariable}
+      {isMobile ? (
+        <MobileShell
+          status={buildStatus({
+            models: data.models,
+            census: data.census,
+            loading: data.loading,
+            upstreamError: data.upstreamError,
+            locating: geo.locating,
+            locationDenied: geo.denied,
+          })}
+          variable={variable}
+          onVariable={setVariable}
+          headVariable={bundleVariable}
           stops={stops}
-          dem={data.dem}
-          faulty={faultyIds}
-          eto={agro.eto}
-          now={now}
-          onClose={() => setProbe(null)}
-        />
-      )}
-
-      {selection && (
-        <DetailPanel
+          gridOn={visible.grid}
+          onToggleGrid={() => toggle('grid')}
+          visible={visible}
+          places={placesOn}
+          locating={geo.locating}
+          onLocate={geo.locate}
+          onReset={() => {
+            setProbe(null)
+            setSelection(null)
+            mapHandle.current?.reset()
+          }}
+          onLayers={() => setLayersOpen(true)}
           selection={selection}
-          model={data.models.temperature}
-          health={data.health.diagnoses}
-          now={now}
-          firePolledAt={data.firePolledAt}
-          co2Down={data.co2Down}
+          probe={probe}
+          models={data.models}
+          uncertainty={data.validation?.rmse ?? null}
           guagua={guagua.network}
-          onClose={() => setSelection(null)}
-          onWeather={(lon, lat, label) => pick(lon, lat, label)}
-          onRoute={(routeId) => setSelection({ kind: 'busRoute', value: { routeId } })}
-        />
+          now={now}
+          autoProbe={autoProbe}
+        >
+          {detail}
+        </MobileShell>
+      ) : (
+        detail
       )}
 
       {showSources && <SourcesScreen onClose={() => setShowSources(false)} />}

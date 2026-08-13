@@ -201,7 +201,7 @@ escrita para fallar en cerrado:
 |---|------|----------|
 | 1 | **Filtro** | Descarta lecturas de más de 2 h, nulas, implausibles o con coordenadas fuera de la isla. Deduplica por `entityid`, nunca por nombre. |
 | 2 | **Ajuste** | Regresión OLS de la variable sobre la altitud. El gradiente se **mide**, no se asume: el 12 ago 2026 salió 4,6 °C/km, no los 6,5 del manual. |
-| 3 | **Rechazo** | Descarta residuos por encima de 2,5 escalas robustas y reajusta, hasta estabilizar. |
+| 3 | **Rechazo** | Descarta residuos por encima de 2,5 escalas robustas y reajusta, hasta estabilizar. **Se suspende cuando la recta no explica nada** (R² < 0,20) y no se aplica a la estación cuyo desvío es el de siempre: ver más abajo. |
 | 4 | **Detendencia** | `residuo = valor − b · altitud` en cada estación. |
 | 5 | **IDW** | Interpola los residuos con peso 1/d², distancia haversine, corte a 15 km. |
 | 6 | **Retendencia** | `valor = residuo interpolado + b · altitud_destino`, con la altitud del DEM por muestreo bilineal. |
@@ -215,6 +215,53 @@ propios outliers* y acaba tapándolos: cazaba 2 de 7. La MAD no se deja arrastra
 y caza las cuatro grandes en una sola pasada. Es el efecto de enmascaramiento de
 manual, y aquí es exactamente la diferencia entre cumplir los criterios y no
 cumplirlos.
+
+**El rechazo se calla cuando la recta no se sostiene, y perdona al sitio
+raro que siempre fue raro.** Es el arreglo más importante de esta tanda y salió
+de una queja concreta: una estación a 676 m marcando 29,6 °C aparecía en la
+aplicación como «excluida por el control de calidad, se desvía 3,1σ del ajuste
+altitudinal», cuando estaba midiendo bien una entrada de aire sahariano.
+
+Al medirlo, el problema era mayor de lo que parecía. El rechazo compara cada
+estación con la recta `valor = a + b · altitud`; cuando esa recta explica la
+varianza, separarse de ella es sospechoso, pero cuando no la explica, el residuo
+es prácticamente «valor − media de la isla» y «3σ del ajuste» solo quiere decir
+«eres la más cálida» — que en un día de calima o de föhn es justo la que mejor
+está midiendo. **Medido sobre la red en vivo el 13 ago 2026: R² = 0,000 y un
+gradiente de +0,21 °C/km** —la temperatura subiendo con la altura— sobre 35
+estaciones de 12 a 1561 m, con 30 °C en el oeste y 20 °C en el este a la misma
+cota. Partido por familias de sensores sale igual de plano: 0,000 en las
+CABLPA, 0,013 en las MTD, 0,001 en el resto. No era una familia estropeada: era
+la isla partida en dos masas de aire.
+
+Rehaciendo la decisión hora a hora sobre las 48 h anteriores
+(`scripts/checks/qc-replay.ts`), ya con las averiadas fuera: el ajuste de
+temperatura **no llegaba al umbral en 29 de 49 horas**, y la regla vieja excluía
+**109 veces** repartidas en 31 horas. La más acusada, 28 horas, era LasTricias
+— la misma estación que `sensor-health.ts` pone como ejemplo de sitio sano.
+Con el arreglo: **ninguna**. En humedad, de 148 exclusiones a 19.
+
+El arreglo son dos piezas:
+
+- **Umbral de R².** Por debajo de 0,20 no se excluye a nadie por el ajuste. No
+  es una amnistía: el valor imposible lo sigue cazando `BOUNDS`, y la serie
+  imposible `sensor-health.ts`, que es el único juez que no depende de que la
+  recta del día se sostenga. Sobre el fixture —una mañana de agosto normal,
+  R² ≈ 0,65— el rechazo sigue funcionando igual y sigue mejorando el RMSE un
+  43,7 %.
+- **Testigo de costumbre.** `sensor-health.ts` ya sabía que hay sitios que viven
+  lejos de la recta sin estar averiados —«LasTricias marca +5,7 °C hora tras
+  hora porque es un sitio abrigado»— y por eso juzga la *dispersión* del desvío
+  y no su tamaño. Ese conocimiento no salía de allí: el motor volvía a mirar el
+  mismo +5,7 y la echaba. Ahora el desvío habitual de cada estación, medido
+  sobre 48 h de archivo, puede indultarla. Tampoco es una amnistía: si hoy no se
+  parece a sí misma, cae igual, y sin bastantes horas de archivo no hay indulto.
+
+Y la ficha cambió de tono. Decía «Excluida por el control de calidad» y daba las
+sigmas como veredicto sobre el sensor; ahora dice «Fuera del ajuste de esta
+pasada» y explica que un sitio abrigado o el borde de una calima se separan de
+la recta midiendo bien. Cuando el R² se cae, el panel del modelo lo dice con
+todas las letras en vez de dejar un «0,001» suelto en una tabla.
 
 **La distancia del IDW cuenta el desnivel.** Después de quitar la tendencia
 altitudinal los residuos no son ruido: conservan la estructura de la capa de
@@ -614,6 +661,40 @@ filas de un día de histórico y en las 52 de `_lastdata`**. Se parsea igualment
 para que aparezca sola el día que exista, y queda escrito aquí para que nadie la
 persiga como si fuera un fallo de la aplicación.
 
+### Faros, antenas de TDT y la cobertura móvil de 2013 (agosto 2026)
+
+Tres capas del catálogo ArcGIS del portal, que es un inventario distinto del
+CKAN y tiene cosas que el otro no:
+
+- **Faros** (4). La fuente publica *solo* el municipio: ni nombre, ni alcance,
+  ni característica de la luz. La ficha se titula por municipio en vez de
+  inventarse «Faro de Fuencaliente», que además serían dos.
+- **Antenas de telecomunicaciones** (100). Es la capa que el portal enseña como
+  «Localización de antenas y cobertura de señal TDT». Medido el 13 ago 2026:
+  33 de telefonía móvil, **32 de televisión**, 14 de enlace, 11 de la red Tetra
+  de emergencias y 10 de radio. De cobertura no publica ningún polígono — el
+  visor del Cabildo la dibuja como imagen, no como dato — así que aquí entran
+  los emplazamientos y **no se dibuja ninguna mancha de cobertura de TDT**,
+  que sería inventarla.
+- **Cobertura móvil**, como variable del mapa y con el año dentro del nombre:
+  «Cobertura móvil (2013)». Son 669 medidas de nivel de señal GSM tomadas
+  recorriendo la isla, y **las 669 son de noviembre o diciembre de 2013**
+  (comprobado fila a fila; una trae el año tecleado al revés, «2103-11»). No
+  hay ninguna posterior. Se enseña porque las sombras que dibuja son de relieve
+  y siguen ahí, pero no dice qué cobertura hay hoy: en 2013 no había 4G
+  desplegado, no existía el 5G y la erupción de 2021 se llevó parte de la red
+  del oeste. El año viaja en la etiqueta de la variable y no en una nota al
+  pie, porque en un chip plegado o en una captura de pantalla la nota al pie no
+  se ve.
+
+Los tres campos que solo existen donde alguien midió —el CO₂ y la cobertura—
+comparten implementación en `src/lib/masked-field.ts`: cada celda toma la
+medida **más cercana** y solo hasta un radio (80 m el CO₂, 600 m la cobertura).
+Nada se promedia. En el CO₂ porque promediar 400 y 69 301 ppm dibuja una pluma
+que no existe y baja un dato de seguridad; en la cobertura porque la señal la
+corta el relieve y una media rellenaría justo las sombras de radio, que son lo
+único que interesa saber.
+
 ### El mar de nubes, la cumbre y los senderos (agosto 2026)
 
 Tres funciones que responden a la pregunta que se hace todo el mundo en esta
@@ -981,14 +1062,35 @@ vale para las medias horarias del histórico, que promedian la dirección como
 vector y descartan el tramo cuando el vector resultante es casi nulo — ahí no
 hay una dirección media que signifique algo.
 
-**La velocidad a la que corren las partículas está exagerada y no es un dato.**
-Un viento real de 5 m/s tarda dos horas y media en cruzar los 45 km de la isla:
-a escala, el mapa parecería congelado. La velocidad de verdad la dicen el color
-y la cifra de cada estación. La exageración se ata al alto de la vista, así que
-el movimiento se lee igual con la isla entera o con un solo barranco a la vista.
+**Las partículas corren a la velocidad medida, con el tiempo acelerado.** Un
+viento real de 5 m/s tarda dos horas y media en cruzar los 45 km de la isla: a
+escala real el mapa parecería congelado. La única licencia es esa aceleración
+—unas **550 veces** con la isla entera en pantalla, proporcionalmente menos al
+acercarse—, y es la misma para todas las partículas del fotograma: **una estela
+que corre el doble lleva el doble de viento**. La estela es la exposición de los
+últimos 0,56 s de trayectoria, apuntada por reloj y no por fotograma, así que
+mide lo mismo en una pantalla de 60 Hz que en una de 120.
+
+Hasta el 13 ago 2026 no era así: el desplazamiento pasaba por una compresión
+`v^0.6` que subía un 90 % el viento flojo para que el interior no se viera
+parado, y con ella dos estelas que corrían igual podían ser 4 y 9 m/s. La
+legibilidad del viento flojo se resuelve ahora donde no cuesta mentir: alargando
+la exposición de la estela (10 px a 2 m/s, 71 px a 14 m/s, en una ventana de
+900 px con la isla a la vista).
+
+**El contraste se decide mirando el fondo, píxel a píxel.** Un trazo claro con
+halo oscuro se lee sobre el relieve sombreado y desaparece sobre la carta
+topográfica de GRAFCAN, que es papel casi blanco; y no basta con distinguir
+fondo claro de fondo oscuro, porque la malla de temperatura pinta encima
+naranjas claros (`#e0854a`, luminancia 0,60) y azules oscuros (`#3b4b8c`, 0,31)
+en la misma pantalla. Antes de dibujar, la capa copia a una textura el mapa ya
+pintado debajo de ella —`copyTexSubImage2D`, cada 80 ms, sin leer nada de vuelta
+a la CPU— y cada fragmento invierte su tinta según la luminancia que tiene
+detrás: sobre lo claro, trazo oscuro con halo blanco; sobre lo oscuro, al revés.
+El tono —que es el que dice la velocidad— no cambia en ningún caso.
 
 Se dibuja como capa personalizada de MapLibre con `gl.LINES` de 1 px y estela
-explícita —las últimas 8 posiciones de cada partícula—, sin framebuffers
+explícita —las últimas 14 posiciones de cada partícula—, sin framebuffers
 propios: la técnica clásica de acumular en una textura que se desvanece obliga
 a cambiar el framebuffer activo en mitad del ciclo de dibujo del mapa y a
 devolverlo exactamente como estaba.

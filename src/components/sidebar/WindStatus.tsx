@@ -12,6 +12,7 @@ import { n0 } from '../../i18n'
 import type { WindState } from '../../hooks/useWindField'
 import { MODEL_SOURCE_LABEL } from '../../lib/openmeteo'
 import { STATION_SCALE_KM } from '../../lib/wind/field'
+import { timeAcceleration } from '../../lib/wind/particles'
 
 interface Props {
   wind: WindState
@@ -34,6 +35,9 @@ export function WindStatus({ wind, usableStations, now }: Props) {
 
   const modelPct = Math.round(field.modelShare * 100)
   const ageMin = modelAt ? Math.round((now - modelAt) / 60_000) : null
+  // Con la isla entera en pantalla. Se calcula sobre el alto del propio campo
+  // en vez de escribir la cifra a mano: si el recuadro cambia, cambia aquí.
+  const speedUp = Math.round(timeAcceleration(field.bounds[3] - field.bounds[1]) / 50) * 50
 
   return (
     <>
@@ -77,9 +81,13 @@ export function WindStatus({ wind, usableStations, now }: Props) {
         su viento ya no valga, y ahí es {MODEL_SOURCE_LABEL} quien contesta.
       </p>
       <p className="dim small">
-        La velocidad a la que corren las partículas está exagerada para que el
-        movimiento se lea. No es la velocidad del viento: esa la dice el color y
-        la cifra de cada estación.
+        Las partículas corren a la velocidad medida, con el tiempo acelerado
+        unas <strong>{n0(speedUp)} veces</strong> con la isla entera en pantalla
+        —a escala real, un alisio de 5 m/s tardaría dos horas y media en
+        cruzarla— y proporcionalmente menos al acercarse. La aceleración es la
+        misma para todas: <strong>una estela que corre el doble lleva el doble
+        de viento</strong>, y su longitud son los últimos 0,6 s de recorrido. La
+        cifra exacta en un punto la da su ficha.
       </p>
     </>
   )

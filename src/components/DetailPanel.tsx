@@ -320,7 +320,14 @@ function StationDetail({
         </tbody>
       </table>
 
-      <StationHistory entityId={s.entityId} now={now} />
+      {/* El archivo horario es del Cabildo y solo cubre a las suyas. Para la
+          cumbre no hay serie que pedir, así que en vez de una gráfica vacía va
+          la explicación de por qué no la hay. */}
+      {s.network === 'tng' ? (
+        <p className="note small">{t.station.tngNetwork}</p>
+      ) : (
+        <StationHistory entityId={s.entityId} now={now} />
+      )}
     </>
   )
 }

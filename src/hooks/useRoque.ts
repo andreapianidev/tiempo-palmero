@@ -1,14 +1,21 @@
 /**
  * El parte de la cumbre, con su propio reloj.
  *
- * Va aparte de `useIslandData` por lo mismo que el viento: es otra fuente, con
- * otro ritmo y otra forma de fallar. El TNG publica cada ~30 s y el proxy
- * cachea 5 minutos, así que pedirlo con más frecuencia sólo gastaría batería
- * para releer lo mismo.
+ * El TNG publica cada ~30 s y el proxy cachea 5 minutos, así que pedirlo con
+ * más frecuencia sólo gastaría batería para releer lo mismo.
  *
- * FALLA EN ABIERTO. Sin respuesta, `status` es `null` y la sección
- * desaparece; nada más de la aplicación se entera. Es un extra, no un dato de
- * seguridad como el CO₂.
+ * SE PIDE SIEMPRE, y antes no. Mientras esto solo alimentaba una sección del
+ * panel, tenía sentido no molestar al observatorio por una sección que nadie
+ * estaba mirando. Ya no: esta lectura es el ÚNICO termómetro real por encima
+ * de 1561 m y entra en el motor (ver `summit.ts`), así que condicionarla a que
+ * alguien despliegue un acordeón haría que el mapa de la cumbre cambiara según
+ * qué tuviera abierto el panel lateral. El coste de haberlo hecho bien es una
+ * petición cada cinco minutos, la misma cadencia que el resto de la aplicación,
+ * contra un proxy que cachea exactamente ese tiempo.
+ *
+ * FALLA EN ABIERTO. Sin respuesta, `status` es `null`, la sección desaparece y
+ * el motor vuelve a anclar la cumbre con modelo, que es lo que hacía antes. La
+ * disponibilidad del TNG nunca tumba nada.
  */
 
 import { useEffect, useState } from 'react'
@@ -17,15 +24,10 @@ import { fetchRoque, type RoqueStatus } from '../lib/roque'
 /** Cada 5 minutos, que es lo que cachea el proxy. Pedir más es tirar red. */
 const REFRESH_MS = 5 * 60 * 1000
 
-export function useRoque(enabled: boolean): RoqueStatus | null {
+export function useRoque(): RoqueStatus | null {
   const [status, setStatus] = useState<RoqueStatus | null>(null)
 
   useEffect(() => {
-    // Sin la sección abierta no se pide nada: el TNG es un observatorio de
-    // investigación y no tiene por qué pagar el tráfico de una sección que
-    // nadie está mirando.
-    if (!enabled) return
-
     const controller = new AbortController()
     let alive = true
 
@@ -44,7 +46,7 @@ export function useRoque(enabled: boolean): RoqueStatus | null {
       controller.abort()
       clearInterval(id)
     }
-  }, [enabled])
+  }, [])
 
   return status
 }

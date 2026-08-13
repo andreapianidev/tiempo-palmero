@@ -22,6 +22,8 @@ export type PlaceKind =
   | 'recreation'
   | 'charging'
   | 'water'
+  | 'lighthouse'
+  | 'antenna'
 
 export interface PlaceSpec {
   kind: PlaceKind
@@ -94,6 +96,33 @@ export const PLACES: PlaceSpec[] = [
     // que estos 433 puntos son.
     glyph: 'M12 6.4c2.6 3 3.9 5 3.9 6.5a3.9 3.9 0 11-7.8 0c0-1.5 1.3-3.5 3.9-6.5z',
     name: (p) => str(p.nombre) ?? str(p.origen),
+  },
+  {
+    // Los cuatro faros. La fuente NO publica el nombre de ninguno, solo el
+    // municipio, así que la ficha se titula por municipio en vez de inventarse
+    // «Faro de Fuencaliente» —que además serían dos, el viejo y el nuevo—.
+    kind: 'lighthouse',
+    file: 'faros.geojson',
+    color: '#e08a8a',
+    // Torre y dos haces. Un faro dibujado con la linterna a rayas se lee como
+    // una boya a este tamaño.
+    glyph: 'M10.4 17.6h3.2l-.7-8h-1.8zM12 6.2v1.4M7 9.4l2.4 1M17 9.4l-2.4 1',
+    name: (p) => (str(p.municipio) ? `Faro · ${str(p.municipio)}` : 'Faro'),
+  },
+  {
+    // Antenas de telecomunicaciones, la TDT incluida. El `tipo` es lo que
+    // distingue una torre de televisión de una de telefonía o de la red Tetra
+    // de emergencias, así que va en el nombre: sin él, cien puntos iguales.
+    kind: 'antenna',
+    file: 'telecomunicaciones.geojson',
+    color: '#b9a2e0',
+    // Mástil y dos arcos de emisión.
+    glyph: 'M12 17.6V9.8M9.6 8.2a4 4 0 014.8 0M7.6 6a7 7 0 018.8 0M12 9.8a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4',
+    name: (p) => {
+      const tipo = str(p.tipo)
+      const sitio = str(p.nombre)
+      return tipo && sitio ? `${tipo} · ${sitio}` : (sitio ?? tipo)
+    },
   },
   {
     kind: 'charging',

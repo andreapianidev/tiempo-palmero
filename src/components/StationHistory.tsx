@@ -46,7 +46,16 @@ interface Props {
 }
 
 export function StationHistory({ entityId, now }: Props) {
-  const [open, setOpen] = useState(false)
+  /**
+   * ABIERTO DE ENTRADA, y no plegado como estaba.
+   *
+   * La serie es lo que decide si una cifra rara es tiempo o es avería —justo
+   * la pregunta que trae a alguien a tocar una estación—, y detrás de un
+   * botón no se hacía. El coste es una petición al archivo por ficha abierta;
+   * el archivo se sirve por día y con caché de CDN, así que la segunda ficha
+   * de la misma sesión ya no baja nada.
+   */
+  const [open, setOpen] = useState(true)
   const [range, setRange] = useState<Range>('24h')
   const [variable, setVariable] = useState<SeriesVariable>('temperature')
   const [days, setDays] = useState<DayPayload[]>([])
@@ -125,7 +134,11 @@ export function StationHistory({ entityId, now }: Props) {
         onClick={() => setOpen((v) => !v)}
       >
         <span>Evolución</span>
-        <span className="dim small">{open ? 'ocultar' : 'ver 24 h / 7 días'}</span>
+        {/* Mientras baja el archivo, el estado se dice AQUÍ además de en el
+            cuerpo: plegado o no, la cabecera es lo que se está mirando. */}
+        <span className="dim small">
+          {loading ? 'cargando…' : open ? 'ocultar' : 'ver 24 h / 7 días'}
+        </span>
       </button>
 
       {open && (
@@ -159,7 +172,11 @@ export function StationHistory({ entityId, now }: Props) {
             </div>
           </div>
 
-          {loading && <p className="dim small">Descargando el archivo…</p>}
+          {loading && (
+            <p className="dim small history-loading">
+              <span className="spinner" aria-hidden /> Descargando el archivo del Cabildo…
+            </p>
+          )}
           {error && <p className="warn small">{error}</p>}
 
           {!loading && !error && (

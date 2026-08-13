@@ -54,8 +54,9 @@ const PARTICLE_COUNT = 4200
  *
  * Las proporciones importan y costaron dos intentos: con el halo a un píxel y
  * el trazo a uno solo, a zoom alto —donde la estela mide cuatro píxeles— las
- * cuatro pasadas oscuras pesaban más que la clara y el viento se veía NEGRO
- * sobre la malla. La regla es que la tinta clara supere siempre a la oscura.
+ * cuatro pasadas del halo pesaban más que la del trazo y el viento se veía como
+ * una mancha del color del halo. La regla es que el trazo supere siempre al
+ * halo; cuál de los dos es el claro lo decide el shader mirando el fondo.
  */
 const CASING_PX = 1.7
 const CORE_PX = 0.5
@@ -84,6 +85,18 @@ const STRONG_WIND_MS = 14
 /** Techo del paso de integración. Sin esto, volver a una pestaña dormida
  *  teletransportaría todas las partículas de golpe. */
 const MAX_DT = 0.05
+
+/**
+ * Cada cuánto se copia el fondo ya dibujado a la textura que decide el
+ * contraste, en milisegundos.
+ *
+ * No hace falta una copia por fotograma: lo que hay debajo solo cambia al
+ * mover el mapa, al cambiar de fondo o al refrescar la malla, y 80 ms de
+ * retraso en la DECISIÓN de contraste —no en el dibujo— no se ve ni arrastrando
+ * el mapa. Copiar a 60 Hz una ventana retina son 6 millones de píxeles por
+ * fotograma compitiendo con el resto del mapa por el mismo bus.
+ */
+const BACKGROUND_REFRESH_MS = 80
 
 /**
  * Mercator normalizado, a mano.
@@ -132,14 +145,29 @@ export class WindLayer implements CustomLayerInterface {
   private uOpacity: WebGLUniformLocation | null = null
   private uOffset: WebGLUniformLocation | null = null
   private uCasing: WebGLUniformLocation | null = null
+  private uBackground: WebGLUniformLocation | null = null
+  private uResolution: WebGLUniformLocation | null = null
+
+  /** Copia del mapa ya dibujado bajo esta capa. Ver `captureBackground`. */
+  private background: WebGLTexture | null = null
+  private backgroundW = 0
+  private backgroundH = 0
+  private backgroundAt = 0
 
   private field: WindField | null = null
   private visible = true
   private lastFrame = 0
 
   private readonly particles = new ParticleSystem(PARTICLE_COUNT)
-  /** `x, y, alpha, speed, station` por vértice; dos vértices por segmento. */
-  private readonly vertices = new Float32Array(PARTICLE_COUNT * (TAIL_LENGTH - 1) * 2 * 5)
+  /**
+   * `x, y, alpha, speed, station` por vértice; dos vértices por segmento.
+   *
+   * `TAIL_LENGTH` segmentos y no `TAIL_LENGTH - 1`: el primero va de la
+   * posición actual —que no está en la estela todavía— a la última apuntada.
+   * Sin él la cabeza se quedaba clavada hasta el siguiente apunte y la estela
+   * crecía a saltos de 40 ms en vez de deslizarse.
+   */
+  private readonly vertices = new Float32Array(PARTICLE_COUNT * TAIL_LENGTH * 2 * 5)
 
   setField(field: WindField | null): void {
     const first = this.field === null
@@ -199,6 +227,21 @@ export class WindLayer implements CustomLayerInterface {
     this.uOpacity = gl.getUniformLocation(program, 'u_opacity')
     this.uOffset = gl.getUniformLocation(program, 'u_offset')
     this.uCasing = gl.getUniformLocation(program, 'u_casing')
+    this.uBackground = gl.getUniformLocation(program, 'u_background')
+    this.uResolution = gl.getUniformLocation(program, 'u_resolution')
+
+    this.background = gl.createTexture()
+    if (this.background) {
+      gl.bindTexture(gl.TEXTURE_2D, this.background)
+      // Sin mipmaps y con los bordes fijados: la textura tiene el tamaño exacto
+      // de la ventana, que casi nunca es potencia de dos, y en WebGL 1 eso solo
+      // se puede muestrear así.
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+      gl.bindTexture(gl.TEXTURE_2D, null)
+    }
 
     this.buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
@@ -210,9 +253,60 @@ export class WindLayer implements CustomLayerInterface {
   onRemove(_map: MlMap, gl: Gl): void {
     if (this.program) gl.deleteProgram(this.program)
     if (this.buffer) gl.deleteBuffer(this.buffer)
+    if (this.background) gl.deleteTexture(this.background)
     this.program = null
     this.buffer = null
+    this.background = null
+    this.backgroundW = 0
+    this.backgroundH = 0
     this.map = null
+  }
+
+  /**
+   * Copia a una textura lo que ya hay dibujado debajo de esta capa.
+   *
+   * ES LA RESPUESTA A «EL VIENTO NO SE VE». Un trazo claro con halo oscuro se
+   * lee sobre el relieve sombreado y desaparece sobre la carta topográfica, que
+   * es papel casi blanco; y ninguna paleta fija sirve para las dos, porque
+   * además la malla de temperatura pinta encima naranjas claros y azules
+   * oscuros en la misma pantalla. En vez de enumerar los casos —fondo claro,
+   * fondo oscuro, con malla, sin malla— la capa MIRA el fondo y decide píxel a
+   * píxel: sobre lo claro, trazo oscuro con halo blanco; sobre lo oscuro, al
+   * revés. El shader hace la cuenta; aquí solo se le pasa la foto.
+   *
+   * Se copia del framebuffer que esté activo, que en mitad del ciclo de dibujo
+   * es justo el que lleva el mapa hasta esta capa. No hay realimentación
+   * posible: MapLibre repinta desde cero cada fotograma, así que las partículas
+   * del fotograma anterior no están ahí.
+   */
+  private captureBackground(gl: Gl, now: number): boolean {
+    if (!this.background) return false
+    const w = gl.drawingBufferWidth
+    const h = gl.drawingBufferHeight
+    if (w === 0 || h === 0) return false
+
+    const resized = w !== this.backgroundW || h !== this.backgroundH
+    if (!resized && now - this.backgroundAt < BACKGROUND_REFRESH_MS) return true
+
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, this.background)
+    if (resized) {
+      // Al cambiar de tamaño hay que reservar de nuevo: `copyTexSubImage2D`
+      // escribe dentro de lo ya reservado y no puede crecer.
+      //
+      // RGB y no RGBA: en WebGL 1 los canales que se piden tienen que estar
+      // TODOS en el framebuffer del que se copia, y no está garantizado que el
+      // del mapa lleve alfa. El shader solo mira el color, así que pedir el
+      // canal que puede faltar sería arriesgar un INVALID_OPERATION —y con él,
+      // la capa entera— a cambio de nada.
+      gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGB, 0, 0, w, h, 0)
+      this.backgroundW = w
+      this.backgroundH = h
+    } else {
+      gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, w, h)
+    }
+    this.backgroundAt = now
+    return true
   }
 
   render(gl: Gl, matrix: ViewMatrix): void {
@@ -241,6 +335,11 @@ export class WindLayer implements CustomLayerInterface {
       return
     }
 
+    // La foto del fondo se toma ANTES de dibujar nada nuestro, que es lo que la
+    // hace fondo. Si la copia no se puede hacer, la textura queda a negro y el
+    // shader se comporta como la versión de siempre: trazo claro, halo oscuro.
+    this.captureBackground(gl, now)
+
     gl.useProgram(this.program)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.subarray(0, vertexCount * 5))
@@ -253,6 +352,15 @@ export class WindLayer implements CustomLayerInterface {
 
     gl.uniformMatrix4fv(this.uMatrix, false, matrix as unknown as Float32List)
     gl.uniform1f(this.uOpacity, 1)
+
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, this.background)
+    gl.uniform1i(this.uBackground, 0)
+    gl.uniform2f(
+      this.uResolution,
+      Math.max(1, gl.drawingBufferWidth),
+      Math.max(1, gl.drawingBufferHeight),
+    )
 
     // Alpha premultiplicado: es lo que espera el compositor de MapLibre, y el
     // shader ya multiplica el color por su alpha.
@@ -303,23 +411,26 @@ export class WindLayer implements CustomLayerInterface {
 
     for (let i = 0; i < p.count; i++) {
       const fill = p.tailFill[i]
-      if (fill < 2) continue
+      if (fill < 1) continue
       const speed = Math.min(1, p.speed[i] / STRONG_WIND_MS)
       const station = p.station[i]
       const base = i * TAIL_LENGTH
-
-      for (let k = 0; k < fill - 1; k++) {
+      for (let k = 0; k < fill; k++) {
+        // El extremo de delante del primer segmento es la posición actual, que
+        // todavía no está apuntada; el de los demás, la estela.
+        const lon0 = k === 0 ? p.lon[i] : p.tailLon[base + k - 1]
+        const lat0 = k === 0 ? p.lat[i] : p.tailLat[base + k - 1]
         // La cabeza de la estela es la más opaca; la cola se apaga.
-        const a0 = 1 - k / TAIL_LENGTH
-        const a1 = 1 - (k + 1) / TAIL_LENGTH
-        out[n++] = mercatorX(p.tailLon[base + k])
-        out[n++] = mercatorY(p.tailLat[base + k])
+        const a0 = 1 - k / (TAIL_LENGTH + 1)
+        const a1 = 1 - (k + 1) / (TAIL_LENGTH + 1)
+        out[n++] = mercatorX(lon0)
+        out[n++] = mercatorY(lat0)
         out[n++] = a0
         out[n++] = speed
         out[n++] = station
 
-        out[n++] = mercatorX(p.tailLon[base + k + 1])
-        out[n++] = mercatorY(p.tailLat[base + k + 1])
+        out[n++] = mercatorX(p.tailLon[base + k])
+        out[n++] = mercatorY(p.tailLat[base + k])
         out[n++] = a1
         out[n++] = speed
         out[n++] = station

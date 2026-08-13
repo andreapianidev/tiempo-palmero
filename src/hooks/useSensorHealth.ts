@@ -15,7 +15,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { daysCovering, fetchDay, type DayPayload } from '../lib/history'
-import { diagnoseNetwork, WINDOW_H, type Diagnosis, type Track } from '../lib/sensor-health'
+import {
+  diagnoseNetwork,
+  siteOffsets,
+  WINDOW_H,
+  type Diagnosis,
+  type SiteOffset,
+  type Track,
+} from '../lib/sensor-health'
 import { elevationAt, type Dem } from '../lib/dem'
 
 /** Se rehace con la misma cadencia que el resto de la aplicación. */
@@ -24,6 +31,12 @@ const REFRESH_MS = 5 * 60 * 1000
 export interface SensorHealth {
   /** Diagnóstico por `entityId`. Vacío mientras no se haya podido mirar. */
   diagnoses: Map<string, Diagnosis>
+  /**
+   * Desvío habitual de cada estación respecto al ajuste insular. No sirve para
+   * marcar averías: sirve para que el rechazo de outliers sepa que un sitio
+   * abrigado lleva 48 h siendo un sitio abrigado. Ver `bySiteOffset`.
+   */
+  offsets: Map<string, SiteOffset>
   /** Cuántas estaciones se han examinado de verdad. */
   examined: number
   loading: boolean
@@ -33,6 +46,7 @@ export interface SensorHealth {
 
 const EMPTY: SensorHealth = {
   diagnoses: new Map(),
+  offsets: new Map(),
   examined: 0,
   loading: true,
   unavailable: false,
@@ -147,6 +161,7 @@ export function useSensorHealth(dem: Dem | null, now: number): SensorHealth {
     if (!tracks.length) return { ...EMPTY, loading: false, unavailable }
     return {
       diagnoses: diagnoseNetwork(tracks),
+      offsets: siteOffsets(tracks),
       examined: tracks.length,
       loading: false,
       unavailable: false,

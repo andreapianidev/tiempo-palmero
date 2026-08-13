@@ -22,8 +22,10 @@
  * separa de la estación sana más extrema del archivo.
  */
 
-import { ols, robustSigma } from './interpolate'
+import { ols, robustSigma, type SiteOffset } from './interpolate'
 import { BOUNDS } from './quality'
+
+export type { SiteOffset }
 
 /**
  * Cuánto pasado se examina.
@@ -214,6 +216,34 @@ export function hourlyResiduals(tracks: readonly Track[]): Map<string, number[]>
  * demás: el desvío de una estación solo existe respecto al ajuste que hacen
  * las otras.
  */
+/**
+ * El desvío HABITUAL de cada estación respecto al ajuste insular.
+ *
+ * Es el mismo cálculo que ya alimentaba la regla de coherencia, pero devuelto
+ * en vez de consumido y tirado. Lo pide el motor: una estación que lleva 48 h
+ * marcando +5,7 °C sobre la recta de la isla no es una anomalía de hoy, es un
+ * sitio abrigado, y el rechazo de outliers tenía que poder enterarse. Ver
+ * `bySiteOffset` en `interpolate.ts`.
+ */
+export function siteOffsets(tracks: readonly Track[]): Map<string, SiteOffset> {
+  const out = new Map<string, SiteOffset>()
+  for (const [entityId, rs] of hourlyResiduals(tracks)) {
+    if (!rs.length) continue
+    out.set(entityId, {
+      median: medianOf(rs),
+      spread: robustSigma(rs),
+      hours: rs.length,
+    })
+  }
+  return out
+}
+
+function medianOf(xs: readonly number[]): number {
+  const s = [...xs].sort((a, b) => a - b)
+  const m = s.length >> 1
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+}
+
 export function diagnoseNetwork(tracks: readonly Track[]): Map<string, Diagnosis> {
   const residuals = hourlyResiduals(tracks)
   const out = new Map<string, Diagnosis>()

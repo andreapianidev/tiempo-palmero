@@ -47,6 +47,17 @@ export const MAX_AGE_H = 2
 export interface Station {
   entityId: string
   name: string
+  /**
+   * Red que la publica. Ausente en las del Cabildo, que son la norma y casi
+   * todas; `'tng'` solo en la del observatorio, en la cumbre (ver `summit.ts`).
+   *
+   * No es decoración: hay dos cosas de la aplicación que NO valen para una
+   * estación que no es del Cabildo —el archivo horario, que el Cabildo no
+   * guarda para ella, y el diagnóstico de avería, que se calcula sobre ese
+   * archivo—. Sin esta marca, la ficha de la cumbre pediría un histórico que
+   * no existe y enseñaría un hueco donde debería decir por qué no lo hay.
+   */
+  network?: 'tng'
   lon: number
   lat: number
   /** Altitud del DEM, no de la API: la API no publica ninguna. */

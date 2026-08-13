@@ -4,6 +4,7 @@
 
 @import './styles/guagua.css';
 @import './styles/counters.css';
+@import './styles/mobile.css';
 
 :root {
   --ink: #0d0c0b;
@@ -612,43 +613,12 @@ table.kv td:first-child { color: var(--fg-dim); }
 
 /* ---------- móvil ---------- */
 
-@media (max-width: 720px) {
-  .sidebar {
-    top: auto;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    width: auto;
-    max-height: 62vh;
-    transform: translateY(calc(100% - 46px));
-    transition: transform 0.24s ease;
-  }
-  .sidebar.open { transform: translateY(0); }
-  .sidebar-scroll { padding-top: 44px; }
-  .sidebar-toggle {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 46px;
-    background: none;
-    border: 0;
-    color: var(--fg-dim);
-    font-size: 19px;
-    cursor: pointer;
-    z-index: 2;
-  }
-  .point-panel,
-  .detail-panel {
-    left: 8px;
-    right: 8px;
-    top: 8px;
-    width: auto;
-    max-height: 68vh;
-  }
-  .banner { top: auto; bottom: 62px; }
-}
+/* Lo que era el móvil aquí —la barra encogida abajo y los paneles arriba— ya
+   no está: en pantalla estrecha la app monta otra disposición entera (cabecera
+   sobre el mapa, chips, botones redondos y una hoja que asoma) y vive en
+   `styles/mobile.css`, colgando de `.app-mobile`. Duplicar aquí el umbral de
+   720 px volvería a abrir la franja de anchos en la que las dos disposiciones
+   se pisaban. */
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
@@ -720,6 +690,22 @@ table.kv td:first-child { color: var(--fg-dim); }
 
 /* --- histórico de estación ------------------------------------------------ */
 .history { margin-top: 18px; border-top: 1px solid var(--line-soft); padding-top: 12px; }
+
+/* La rueda de carga del archivo. Es la única espera de la ficha que puede
+   durar segundos —el día entero de la red son ~370 KB— y sin ella el hueco
+   entre el título y la gráfica se lee como «esta estación no tiene serie». */
+.history-loading { display: flex; align-items: center; gap: 7px; }
+.spinner {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--line);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 /*
  * El desplegable de la gráfica.
  *

@@ -185,10 +185,17 @@ export function humidityAt(profile: VerticalProfile, heightM: number): number | 
 // Diagnóstico de la inversión
 // ---------------------------------------------------------------------------
 
-/** Gradiente por encima del cual un tramo cuenta como estable, en K/100 m. */
-const STABLE_GRADIENT_K_PER_100M = -0.2
+/**
+ * Gradiente por encima del cual un tramo cuenta como estable, en K/100 m.
+ *
+ * Exportado —igual que el umbral de humedad— porque `summit.ts` mide la misma
+ * capa con dos termómetros reales en vez de con el sondeo del modelo, y las dos
+ * respuestas solo son comparables si el criterio es LITERALMENTE el mismo. Ahí
+ * se importa, no se copia: un umbral duplicado es un umbral que se desincroniza.
+ */
+export const STABLE_GRADIENT_K_PER_100M = -0.2
 /** Caída mínima de humedad relativa entre base y cima, en puntos. */
-const MIN_HUMIDITY_DROP_PP = -20
+export const MIN_HUMIDITY_DROP_PP = -20
 /** Ventana de búsqueda. Fuera de ella no es la inversión del alisio. */
 const SEARCH_WINDOW_M: [number, number] = [200, 2500]
 

@@ -9,10 +9,21 @@
  * de error con el ancla de superficie que había antes, 1,34 K con los niveles
  * de presión (ver `profile.ts`).
  *
- * NO ENTRA EN EL MOTOR, y es a propósito. Es un dato de un tercero, sin
- * compromiso de disponibilidad ni de calibración publicada, y meterlo en la
- * interpolación ataría el mapa de toda la isla a que un observatorio siga
- * sirviendo un JSON. Se enseña aparte, como lo que es: el parte de la cumbre.
+ * SÍ ENTRA EN EL MOTOR, desde el 13 ago 2026. Aquí ponía lo contrario —«no
+ * entra, y es a propósito»— con el argumento de que es un dato de un tercero
+ * sin compromiso de disponibilidad, y que meterlo en la interpolación ataría el
+ * mapa de toda la isla a que un observatorio siga sirviendo un JSON. El
+ * argumento era bueno; la conclusión, no. Lo que lo tumba es que la red del
+ * Cabildo se queda en 1561 m y por encima de 1500 m publica UNA estación, así
+ * que lo que la aplicación decía a 2000 m salía entero de un modelo teniendo un
+ * termómetro real encendido ahí arriba.
+ *
+ * La objeción se respeta donde tenía razón: `summit.ts` monta la muestra de
+ * forma que su ausencia no cambie nada más que la cumbre —sin TNG, el motor
+ * vuelve a anclar con modelo, que es lo que hacía antes—, y esa lectura no
+ * ajusta, no rechaza y no valida. La calidad de este fichero no la sostiene una
+ * promesa del observatorio: la sostienen el flag `outdated`, la edad máxima y
+ * los mismos `BOUNDS` que se le exigen a cualquier estación de la red.
  *
  * LO QUE HACE ESPECIAL A ESTA FUENTE es que se autodeclara vieja. Cada campo
  * llega con su `timestamp`, su `outdated` y su `level`, así que se puede decir

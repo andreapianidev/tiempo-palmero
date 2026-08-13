@@ -6,11 +6,21 @@
  * se reciclan en vez de quedarse clavadas, que la estela sigue al punto— se
  * comprueba aquí con números, no mirando la pantalla.
  *
- * LA VELOCIDAD EN PANTALLA ES UNA CONVENCIÓN, NO UNA MEDIDA. Un viento real de
- * 5 m/s tarda dos horas y media en cruzar los 45 km de la isla: dibujado a
- * escala, el mapa parecería congelado. Las partículas van exageradas para que
- * el movimiento se lea, y por eso la velocidad de verdad se comunica por el
- * COLOR y por la cifra del panel, nunca por lo rápido que corre el dibujo.
+ * LA VELOCIDAD EN PANTALLA ES EL VIENTO MEDIDO, ACELERADO. Un viento real de
+ * 5 m/s tarda dos horas y media en cruzar los 45 km de la isla: a escala real
+ * el mapa parecería congelado, así que el tiempo corre más deprisa —cuánto lo
+ * dice `timeAcceleration`— pero corre igual para todas las partículas. Eso es
+ * lo único que hay que respetar para que el dibujo no mienta: **el doble de
+ * viento son el doble de píxeles por segundo y el doble de estela**, en el
+ * mismo fotograma y en cualquier sitio del mapa.
+ *
+ * Hasta el 13 de agosto de 2026 no era así: el desplazamiento pasaba por una
+ * compresión `v^0.6` que subía un 90 % el viento flojo y dejaba quieto el
+ * fuerte, para que la calma del interior no se viera parada. Con eso, dos
+ * estelas que corrían igual podían ser 4 y 9 m/s, y la animación —que es lo
+ * primero que se mira— decía algo que los datos no dicen. La legibilidad del
+ * viento flojo se resuelve ahora donde toca: alargando la EXPOSICIÓN de la
+ * estela (`TAIL_INTERVAL_S`), que no toca la velocidad de nadie.
  */
 
 import { sampleField, speedOf, type WindField } from './field'
@@ -24,6 +34,28 @@ export interface ParticleBounds {
 
 /** Cuántas posiciones antiguas guarda cada partícula para dibujar la estela. */
 export const TAIL_LENGTH = 14
+
+/**
+ * Cada cuánto se apunta una posición en la estela, en segundos. Con
+ * `TAIL_LENGTH` posiciones, la estela es la EXPOSICIÓN de los últimos
+ * `TAIL_LENGTH * TAIL_INTERVAL_S` = 0,56 s de trayectoria.
+ *
+ * Antes se apuntaba una por fotograma, así que la exposición la fijaba la tasa
+ * de refresco: 0,22 s a 60 Hz y 0,11 s en una pantalla de 120, o sea que la
+ * misma racha salía con la mitad de estela en un portátil más nuevo. Ahora la
+ * estela mide lo mismo en todas.
+ *
+ * El 0,04 está medido contra las dos orillas, a la escala de la isla en una
+ * ventana de 900 px de alto, donde cada m/s son 9 px/s:
+ *
+ *   - viento flojo del interior, 2 m/s → 10 px de estela. Con la exposición de
+ *     fotograma y la compresión antigua eran 7,4 px, y de esos el halo se comía
+ *     la mitad: por eso el interior parecía vacío.
+ *   - racha fuerte, 14 m/s → 71 px, frente a los 25 de antes. Es larga, y tiene
+ *     que serlo: son exactamente siete veces la del flojo, que es la proporción
+ *     que miden los anemómetros.
+ */
+export const TAIL_INTERVAL_S = 0.04
 
 /** Por debajo de esto la partícula no se mueve y ocupa sitio sin decir nada.
  *  0,05 y no 0,15: con el umbral alto, las zonas resguardadas del interior se
@@ -61,6 +93,8 @@ export class ParticleSystem {
   private readonly age: Float32Array
   private readonly life: Float32Array
   private readonly random: () => number
+  /** Segundos acumulados desde la última posición apuntada en las estelas. */
+  private sinceTail = 0
 
   constructor(count: number, random: () => number = Math.random) {
     this.count = count
@@ -103,6 +137,13 @@ export class ParticleSystem {
   step(field: WindField, opts: StepOptions): void {
     const { spawn, degPerSecondPerMs, dt } = opts
 
+    // La estela se apunta por reloj, no por fotograma: así mide lo mismo en una
+    // pantalla de 60 Hz que en una de 120. Se resta el intervalo en vez de
+    // poner el acumulador a cero para que la cadencia media no derive.
+    this.sinceTail += dt
+    const record = this.sinceTail >= TAIL_INTERVAL_S
+    if (record) this.sinceTail = Math.max(0, this.sinceTail - TAIL_INTERVAL_S)
+
     for (let i = 0; i < this.count; i++) {
       this.age[i] += dt
       if (this.age[i] > this.life[i]) {
@@ -127,21 +168,25 @@ export class ParticleSystem {
 
       // La estela se desplaza antes de mover el punto: la posición 0 pasa a
       // ser la 1, y la nueva posición entra en la 0.
-      const base = i * TAIL_LENGTH
-      for (let k = TAIL_LENGTH - 1; k > 0; k--) {
-        this.tailLon[base + k] = this.tailLon[base + k - 1]
-        this.tailLat[base + k] = this.tailLat[base + k - 1]
+      if (record) {
+        const base = i * TAIL_LENGTH
+        for (let k = TAIL_LENGTH - 1; k > 0; k--) {
+          this.tailLon[base + k] = this.tailLon[base + k - 1]
+          this.tailLat[base + k] = this.tailLat[base + k - 1]
+        }
+        this.tailLon[base] = this.lon[i]
+        this.tailLat[base] = this.lat[i]
+        if (this.tailFill[i] < TAIL_LENGTH) this.tailFill[i]++
       }
-      this.tailLon[base] = this.lon[i]
-      this.tailLat[base] = this.lat[i]
-      if (this.tailFill[i] < TAIL_LENGTH) this.tailFill[i]++
 
       // Un grado de longitud mide menos que uno de latitud, y cada vez menos
       // según se sube: sin el coseno las partículas derivarían hacia el este.
+      // El desplazamiento es PROPORCIONAL a `reading`, sin retocar: la única
+      // constante que entra aquí es `degPerSecondPerMs`, y es la misma para
+      // todas las partículas del fotograma.
       const cos = Math.max(0.2, Math.cos((this.lat[i] * Math.PI) / 180))
-      const boost = speedBoost(sp)
-      this.lon[i] += (reading.u * boost * degPerSecondPerMs * dt) / cos
-      this.lat[i] += reading.v * boost * degPerSecondPerMs * dt
+      this.lon[i] += (reading.u * degPerSecondPerMs * dt) / cos
+      this.lat[i] += reading.v * degPerSecondPerMs * dt
 
       // El salto puede haberla dejado fuera del campo. Se comprueba AQUÍ y no
       // al principio del paso siguiente: si no, la partícula se queda un
@@ -169,10 +214,10 @@ export class ParticleSystem {
  * partícula de 10 m/s tarda aproximadamente `SECONDS_TO_CROSS` segundos en
  * recorrer la vista, se vea la isla entera o un solo barranco.
  */
-// 10 s y no 14: la estela mide `TAIL_LENGTH` fotogramas de recorrido, así que
-// el tiempo de travesía fija su longitud EN PÍXELES. Con 14 s, a zoom alto y
-// con el viento flojo del interior la estela bajaba de cuatro píxeles y el
-// halo se la comía; con 10 s son unos veinte a 10 m/s y nueve a 2 m/s.
+// 10 s y no 14: la estela mide `TAIL_LENGTH * TAIL_INTERVAL_S` de recorrido,
+// así que el tiempo de travesía fija su longitud EN PÍXELES. Con 14 s, a zoom
+// alto y con el viento flojo del interior la estela bajaba de cuatro píxeles y
+// el halo se la comía; con 10 s son 71 px a 14 m/s y 10 px a 2 m/s.
 const SECONDS_TO_CROSS = 10
 const REFERENCE_SPEED_MS = 10
 
@@ -180,23 +225,20 @@ export function degPerSecondPerMs(viewportHeightDeg: number): number {
   return viewportHeightDeg / SECONDS_TO_CROSS / REFERENCE_SPEED_MS
 }
 
-/**
- * Compresión de la escala de velocidad, solo para el dibujo.
- *
- * Con el desplazamiento proporcional a la velocidad, los 2 m/s del interior de
- * la isla dejaban una estela de dos píxeles: sobre la malla interpolada eso no
- * es una estela, es ruido, y el mapa parecía tener viento solo en el mar. La
- * exageración pasa a ser `v^0.6`, que mantiene el orden —más viento sigue
- * corriendo más— y sube 1,9 veces el flojo sin tocar el fuerte.
- *
- * Se puede hacer porque la velocidad NO se comunica con la animación: la dicen
- * el color del trazo y la cifra del panel. Esto es solo legibilidad.
- */
-const SPEED_EXPONENT = 0.6
+/** Metros que mide un grado de latitud. El mismo que usa `field.ts`. */
+const METERS_PER_DEG_LAT = 110_574
 
-export function speedBoost(speedMs: number): number {
-  if (speedMs <= 0) return 0
-  return (
-    (REFERENCE_SPEED_MS * Math.pow(speedMs / REFERENCE_SPEED_MS, SPEED_EXPONENT)) / speedMs
-  )
+/**
+ * Cuántas veces más deprisa que el reloj corre la animación en una vista de
+ * `viewportHeightDeg` de alto.
+ *
+ * ESTE ES EL NÚMERO QUE HACE HONESTO EL DIBUJO. Las partículas van a la
+ * velocidad medida multiplicada por esta cifra —y solo por esta cifra—, así
+ * que una estela que corre el doble que otra lleva el doble de viento. Como
+ * depende del zoom, se dice en el panel en vez de dejarlo escrito en un
+ * comentario: a la escala de la isla (0,55° de alto) son unas 600 veces, y
+ * acercándose a un barranco (0,05°) unas 55.
+ */
+export function timeAcceleration(viewportHeightDeg: number): number {
+  return degPerSecondPerMs(viewportHeightDeg) * METERS_PER_DEG_LAT
 }

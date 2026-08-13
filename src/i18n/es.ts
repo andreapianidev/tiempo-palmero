@@ -66,6 +66,12 @@ export const es = {
       'La red cubre la zona vigilada del oeste. En el resto de la isla no hay sensores de CO₂ —la red de calidad del aire del Cabildo no mide esta variable— y el único dato disponible es el fondo atmosférico del modelo CAMS, unos 437 ppm iguales para toda la isla.',
     co2NoAverage:
       'Sin promediar: el color de cada punto es la medida de un sensor a menos de 80 m.',
+    coverage: 'Cobertura móvil (2013)',
+    coverageLocal: 'Sondeo de campo de 2013 · no es la cobertura de hoy',
+    coverageHint:
+      'Nivel de señal GSM medido por el Cabildo recorriendo la isla en noviembre y diciembre de 2013. Son las 669 medidas que existen: no hay ninguna posterior. Las sombras que dibuja son de relieve y siguen ahí, pero el despliegue de red ha cambiado por completo desde entonces —en 2013 no había 4G, ni 5G, y la erupción de 2021 se llevó parte de la red del oeste—. No se promedia entre medidas: cada punto toma la más cercana, hasta 600 m.',
+    coverageScope:
+      'El sondeo siguió las carreteras, así que lo que no se recorrió se queda sin color: no es que no haya cobertura, es que allí nadie midió. Las antenas que dan esa señal —incluidas las 32 de televisión digital— se encienden aparte, en «Sitios de interés».',
     wind: 'Viento',
     precipitation: 'Precipitación',
     pressure: 'Presión',
@@ -84,6 +90,7 @@ export const es = {
     metres: 'm',
     km: 'km',
     magArcsec: 'mag/arcsec²',
+    dbm: 'dBm',
   },
 
   point: {
@@ -149,6 +156,8 @@ export const es = {
       history: 'Interés histórico',
       busStop: 'Parada de guagua',
       water: 'Infraestructura hídrica',
+      lighthouse: 'Faro',
+      antenna: 'Antena de telecomunicaciones',
       charging: 'Recarga eléctrica',
     } as Record<string, string>,
     guaguaNoTimetable: (until: string) =>
@@ -172,6 +181,8 @@ export const es = {
       history: 'Interés histórico',
       recreation: 'Zonas recreativas',
       water: 'Agua: balsas, nacientes, pozos y galerías',
+      lighthouse: 'Faros',
+      antenna: 'Antenas: TDT, telefonía, radio y Tetra',
       charging: 'Recarga eléctrica',
     } as Record<string, string>,
     /** Etiquetas de los campos crudos; lo que no esté aquí sale con su nombre. */
@@ -433,9 +444,23 @@ export const es = {
     dead: 'Sin señal',
     pressureReduced:
       'Esta estación publica la presión absoluta de su altitud, no reducida al nivel del mar como el resto de la red. Aquí se muestra ya reducida, para que sea comparable.',
-    excludedByQc: 'Excluida por el control de calidad',
+    // Esta ficha ACUSABA a la estación. Decía «excluida por el control de
+    // calidad» y daba las sigmas como si fueran un veredicto sobre el sensor,
+    // cuando lo único que miden es que la lectura no encaja en una recta —y
+    // esa recta, en 29 de las 49 horas del archivo del 13 ago 2026, no
+    // explicaba nada—. Ahora dice lo que de verdad pasa, que es una cosa del
+    // ajuste y no del aparato.
+    excludedByQc: 'Fuera del ajuste de esta pasada',
     excludedReason: (sigmas: number) =>
-      `Su lectura se desvía ${sigmas.toFixed(1)}σ del ajuste altitudinal. No entra en la interpolación.`,
+      `Su lectura se separa ${sigmas.toFixed(1)}σ de la recta altitudinal de ahora mismo, así que no entra en ella. No es un diagnóstico del sensor: un sitio abrigado o el borde de una entrada de calima se separan de la recta midiendo bien.`,
+    /**
+     * La cumbre no es del Cabildo, y eso tiene consecuencias visibles: no hay
+     * archivo horario que enseñar ni diagnóstico de avería que calcular sobre
+     * él. Se dice en la ficha en vez de dejar un hueco donde siempre hay una
+     * gráfica, que es lo que parecería un fallo de la aplicación.
+     */
+    tngNetwork:
+      'Estación del Telescopio Nazionale Galileo (INAF), no de la red del Cabildo. Es la única medida real por encima de los 1.561 m que publica la red insular, y por eso el mapa la usa para anclar la cumbre. El Cabildo no archiva su serie, así que aquí no hay histórico ni diagnóstico de avería: solo la lectura de ahora.',
   },
 
   /**
@@ -566,6 +591,19 @@ export const es = {
       'un modelo, en vez de prolongar el gradiente a ciegas. Las estaciones del Cabildo ' +
       'mandan siempre por debajo de esa cota, y el gradiente y el RMSE de aquí arriba se ' +
       'siguen calculando solo con ellas.',
+    /**
+     * El ajuste no se sostiene ahora mismo.
+     *
+     * No es un fallo de la aplicación ni de los sensores: hay días —entradas
+     * de calima, föhn del este— en que la isla se parte en dos masas de aire y
+     * una sola recta contra la altitud no puede describir las dos. Medido el
+     * 13 ago 2026: R²=0,000 y un gradiente de +0,2 °C/km sobre 35 estaciones
+     * de 12 a 1561 m, con 30 °C en el oeste y 20 °C en el este a la misma
+     * cota. Se dice, y además se suspende el rechazo de outliers, que contra
+     * una recta así no significa nada.
+     */
+    weakFit: (r2: number) =>
+      `La altitud explica hoy muy poco de la temperatura (R²=${r2.toFixed(3)}). Pasa cuando la isla se parte en dos masas de aire —calima, viento del este— y una sola recta no describe las dos vertientes. Mientras dure, la malla se apoya casi solo en las estaciones cercanas a cada punto y no se excluye a ninguna por separarse del ajuste.`,
     rejected: (n: number) =>
       n === 1 ? '1 sensor descartado por anomalía' : `${n} sensores descartados por anomalía`,
     explainTitle: '¿Cómo se calcula?',
@@ -662,6 +700,12 @@ export const es = {
     darker: 'más alto = más oscuro',
     mostlyDead:
       'La mayor parte de la red de fotómetros lleva más de un mes sin transmitir. Solo se muestran los activos.',
+  },
+
+  coverage: {
+    loading: 'Descargando el sondeo de cobertura…',
+    failed: 'No se pudo descargar el sondeo de cobertura.',
+    age: 'Sondeo de noviembre y diciembre de 2013. No hay medidas posteriores: esto NO es la cobertura de hoy. Desde entonces se desplegó el 4G, llegó el 5G y la erupción de 2021 se llevó parte de la red del oeste.',
   },
 
   freshness: {
@@ -780,6 +824,23 @@ export const es = {
     noTrackingTitle: 'Sin rastreo',
     noTrackingBody:
       'Sin cookies, sin analítica de terceros y sin publicidad. La pantalla de CO₂ no lleva ni llevará publicidad ni muro de pago.',
+  },
+
+  /**
+   * Lo que solo existe en la pantalla estrecha: los botones redondos, la tira
+   * de capas y la hoja que asoma. En el escritorio no aparece ninguna de estas
+   * cadenas, porque allí todo eso es la barra lateral.
+   */
+  mobile: {
+    locate: 'Mi ubicación',
+    locating: 'Buscando tu ubicación…',
+    noLocation: 'ubicación no disponible',
+    island: 'Ver toda la isla',
+    layers: 'Capas y ajustes',
+    grid: 'Malla',
+    expand: 'Ver el detalle',
+    collapse: 'Bajar la hoja',
+    live: 'en directo',
   },
 
   common: {

@@ -139,6 +139,33 @@ export function co2Band(ppm: number): Co2Band {
 }
 
 // ---------------------------------------------------------------------------
+// Cobertura móvil — bandas de dBm
+// ---------------------------------------------------------------------------
+
+/**
+ * Nivel de señal recibida, en dBm. Escala logarítmica y NEGATIVA: −70 es una
+ * señal fuerte y −110 es estar a punto de perder la llamada.
+ *
+ * Los cortes son los umbrales de ingeniería de radio que usa cualquier
+ * medidor de campo (RSSI), no una escala inventada para este mapa. Las
+ * etiquetas describen la MEDIDA y no prometen servicio: que un sitio diera
+ * −65 dBm en 2013 no dice qué cobertura hay hoy ni con qué operador.
+ */
+export const COVERAGE_BANDS: Co2Band[] = [
+  { from: -130, color: '#7a4a4a', label: 'Sin señal utilizable' },
+  { from: -110, color: '#b8622c', label: 'Señal muy débil' },
+  { from: -100, color: '#c8a850', label: 'Señal débil' },
+  { from: -85, color: '#8fae82', label: 'Señal buena' },
+  { from: -70, color: '#4f9fa8', label: 'Señal muy buena' },
+]
+
+export function coverageBand(dbm: number): Co2Band {
+  let band = COVERAGE_BANDS[0]
+  for (const b of COVERAGE_BANDS) if (dbm >= b.from) band = b
+  return band
+}
+
+// ---------------------------------------------------------------------------
 // Frescura de las estaciones
 // ---------------------------------------------------------------------------
 

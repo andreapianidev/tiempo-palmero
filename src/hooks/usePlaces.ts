@@ -21,6 +21,8 @@ export const NO_PLACES: PlaceVisibility = {
   recreation: false,
   charging: false,
   water: false,
+  lighthouse: false,
+  antenna: false,
 }
 
 export interface PlacesData {
