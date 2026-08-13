@@ -1178,6 +1178,57 @@ legibilidad del viento flojo se resuelve ahora donde no cuesta mentir: alargando
 la exposición de la estela (10 px a 2 m/s, 71 px a 14 m/s, en una ventana de
 900 px con la isla a la vista).
 
+#### El viento en tres dimensiones
+
+Con el relieve encendido, el viento estuvo un tiempo APAGADO, y por una razón
+honesta: MapLibre no proyecta las capas personalizadas sobre el terreno, así que
+las partículas —calculadas a cota cero— cruzaban las montañas por dentro. Ya no.
+
+Cada vértice lleva su propia cota, sacada del mismo modelo de elevación que
+sombrea el mapa y que pone las altitudes del motor —ya está en memoria, así que
+esto **no descarga nada**—, convertida a la Z conforme que espera la matriz de
+una capa `renderingMode: '3d'`. La conversión es exactamente la de
+`MercatorCoordinate.fromLngLat`, y hay un test que las compara vértice a vértice
+en cinco altitudes y tres latitudes: si algún día se separaran, las estelas se
+dibujarían a una altura que no es la del terreno y **nadie vería un error**, sólo
+viento flotando.
+
+Tres decisiones que hacen que se vea como se ve:
+
+- **La cota se lee dos veces por partícula y fotograma.** La estela apunta la
+  posición de ANTES de moverse y la cabeza se dibuja en la de DESPUÉS: con una
+  sola lectura, la cabeza iba a la altura del sitio del que venía, y a 600
+  aumentos eso son 100 m de terreno por fotograma —sobre una ladera de Cumbre
+  Nueva, 50 m de error vertical—. Cada punto de la estela guarda la cota de SU
+  sitio, y por eso la estela se pega a la ladera en vez de quedarse horizontal.
+- **La montaña tapa el viento que hay detrás.** La capa comparte el búfer de
+  profundidad con el relieve (`LEQUAL`, que lo pone MapLibre) pero **no escribe**
+  en él: las estelas son translúcidas y se cruzan entre ellas, y si escribieran,
+  la primera que pasa por un píxel taparía a las de detrás aunque fuera casi
+  transparente. Se lee el estado real de GL antes de tocarlo y se devuelve como
+  estaba, porque MapLibre lleva su propia caché de estado y dejársela cambiada
+  le rompe el dibujo a la capa siguiente.
+- **Inclinar la cámara ya no acelera el viento.** La velocidad en pantalla se
+  ataba al rectángulo envolvente de la vista, y con la cámara a 65° ese
+  rectángulo llega hasta el horizonte y mide tres veces más: girar la vista
+  multiplicaba por tres la velocidad de las partículas sin que el viento hubiera
+  cambiado, que es exactamente lo que este mapa no puede hacer. Ahora se mide por
+  el zoom en el centro, que es donde MapLibre define la escala, y no depende de
+  la inclinación.
+
+El margen de dibujo sobre el suelo son **60 m**, y no es una afirmación sobre a
+qué altura sopla el viento —el campo es de superficie y las estaciones miden a un
+par de metros—: es que la malla del terreno que pinta MapLibre es más basta que
+el DEM del que se leen las cotas, y en una arista la superficie dibujada queda
+decenas de metros por encima. Por debajo de 40 m las estelas se hundían en las
+crestas de Cumbre Nueva; por encima de 100 empiezan a despegarse del suelo en los
+barrancos. Se estira con la exageración de la escena, para que a 1,5× sigan
+pegadas.
+
+Medido el 13 ago 2026 en una ventana de 1500×950 a ×2: **60 fps** con el viento
+encendido, en plano y en 3D, con la escena a 1 y a 1,5×. Las 8.400 consultas de
+cota por fotograma no se notan porque el DEM es un `Float32Array` en memoria.
+
 **El contraste se decide mirando el fondo, píxel a píxel.** Un trazo claro con
 halo oscuro se lee sobre el relieve sombreado y desaparece sobre la carta
 topográfica de GRAFCAN, que es papel casi blanco; y no basta con distinguir
@@ -1352,9 +1403,9 @@ el sombreado, así que encenderla **no cuesta ni una descarga**.
 MapLibre proyecta sobre el terreno las capas `background`, `fill`, `line`,
 `raster` y `hillshade`, y eso cubre todo lo que dibuja esta aplicación: la malla
 interpolada es una fuente `image` con capa `raster` y se pega al relieve sola.
-Lo único que se queda fuera es el viento, que es una capa personalizada y cuyas
-partículas se calculan a cota cero; mientras la vista esté inclinada se apaga, y
-el panel dice por qué.
+El viento es la excepción —es una capa personalizada, y esas no se proyectan—,
+así que se resuelve por su cuenta: ver [el viento en tres
+dimensiones](#el-viento-en-tres-dimensiones).
 
 La **exageración vertical** es lo único de esta vista que puede mentir, así que
 por defecto es 1 —la isla como es— y el tope es 1,5×, con el multiplicador

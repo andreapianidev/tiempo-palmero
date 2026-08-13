@@ -673,21 +673,27 @@ export function MapView(props: Props) {
     windLayerRef.current?.setField(props.wind)
   }, [ready, props.wind])
 
+  // El modelo de elevación, para que cada partícula sepa por dónde va el suelo.
+  // Sin él la capa dibuja plano; con él, y con el relieve encendido, las estelas
+  // van sobre el terreno y las tapa la montaña que tienen delante.
+  useEffect(() => {
+    if (!ready) return
+    windLayerRef.current?.setDem(dem)
+  }, [ready, dem])
+
   // Apagarla es dejar de dibujar Y dejar de pedir fotogramas: la animación se
   // sostiene con `triggerRepaint`, así que con la capa oculta el mapa vuelve a
   // quedarse quieto y no consume batería.
   //
-  // Y se apaga entera con la vista 3D encendida. La capa de viento es una capa
-  // PERSONALIZADA, y esas MapLibre no las proyecta sobre el terreno: las
-  // partículas se calculan sobre el elipsoide, a cota cero, así que con la
-  // cámara inclinada se dibujarían atravesando la montaña por dentro. No es un
-  // defecto visual menor —sería viento pintado donde no puede haberlo—, y hasta
-  // que las partículas sepan su cota, la respuesta honesta es no dibujarlas.
-  // El panel lo dice donde se enciende la 3D, no aquí.
+  // Ya NO se apaga con la vista 3D. Se apagaba porque las partículas se
+  // calculaban a cota cero y con la cámara inclinada cruzaban las montañas por
+  // dentro; ahora cada vértice lleva la cota del punto por el que pasa y la
+  // capa comparte el búfer de profundidad con el relieve, así que una estela
+  // detrás de una cresta queda detrás de la cresta. Ver `WindLayer`.
   useEffect(() => {
     if (!ready) return
-    windLayerRef.current?.setVisible(visible.wind && !props.terrain.on)
-  }, [ready, visible.wind, props.terrain.on])
+    windLayerRef.current?.setVisible(visible.wind)
+  }, [ready, visible.wind])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {
