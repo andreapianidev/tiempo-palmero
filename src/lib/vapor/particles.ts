@@ -2,13 +2,12 @@
  * Las partículas de vapor: nacen en el suelo, suben, y mueren al condensar.
  *
  * QUÉ SE SIMULA Y CON QUÉ. Cada partícula lleva longitud, latitud y **altitud
- * en metros**, y esa tercera coordenada es la diferencia con la capa de viento.
- * `WindLayer` se apaga en cuanto se inclina la cámara, y con razón: sus
- * partículas se calculan sobre el elipsoide, a cota cero, así que sobre el
- * relieve atravesarían la montaña por dentro. Estas sí saben a qué altura
- * están, porque el modelo de elevación está en memoria y se les pregunta el
- * suelo a cada paso. Por eso esta capa vive justamente en 3D, que es donde la
- * otra no puede.
+ * en metros**, y se le pregunta el suelo al modelo de elevación en cada paso
+ * para que no quede nunca por debajo de él. Es la misma disciplina que
+ * `lib/wind/altitude.ts` le puso a la capa de viento —que hasta hace poco se
+ * apagaba en 3D precisamente por calcularse a cota cero y atravesar la montaña
+ * por dentro—, aplicada a un fenómeno distinto: el viento acompaña al terreno a
+ * una altura fija sobre él, y esto sube desde el suelo hasta que condensa.
  *
  * DE DÓNDE SALE CADA MOVIMIENTO:
  *

@@ -145,10 +145,10 @@ describe('las partículas de vapor', () => {
   })
 
   /**
-   * LA COMPROBACIÓN QUE JUSTIFICA QUE ESTA CAPA EXISTA EN 3D. La capa de viento
-   * está apagada con la cámara inclinada porque sus partículas, a cota cero,
-   * atravesarían la montaña por dentro. Si estas pudieran quedar por debajo del
-   * suelo, tendrían el mismo defecto y habría que apagarlas por el mismo motivo.
+   * LA COMPROBACIÓN QUE JUSTIFICA QUE ESTA CAPA EXISTA EN 3D. Una partícula por
+   * debajo del suelo es una partícula dibujada dentro de la montaña, que es el
+   * defecto que tuvo la capa de viento hasta que aprendió su cota. Aquí no
+   * puede pasar ni subiendo ni bajando, y esto lo comprueba.
    */
   it('nunca quedan por debajo del terreno, ni espirando', () => {
     for (const flow of [1, -1]) {

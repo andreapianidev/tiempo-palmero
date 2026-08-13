@@ -1,13 +1,14 @@
 /**
  * Capa personalizada de MapLibre: la evaporación que sube del terreno.
  *
- * ESTA ES LA CAPA QUE SÍ PUEDE ESTAR EN 3D, y conviene decir por qué, porque su
- * hermana no puede. `WindLayer` se apaga en cuanto se inclina la cámara: sus
- * partículas se calculan a cota cero y sobre el relieve se dibujarían
- * atravesando la montaña por dentro. Las de aquí llevan **altitud en metros**,
- * se les pregunta el suelo al modelo de elevación en cada paso y no bajan nunca
- * por debajo de él. La misma limitación que apagaba una capa es lo que define a
- * la otra.
+ * CADA PARTÍCULA LLEVA SU ALTITUD, y eso es lo que la deja existir con la
+ * cámara inclinada. Durante un tiempo la capa de viento se apagaba en 3D justo
+ * por no tenerla: sus estelas se calculaban a cota cero y sobre el relieve se
+ * dibujaban atravesando la montaña por dentro. Ya no —`lib/wind/altitude.ts` le
+ * dio la cota y el viento se queda encendido—, así que las dos capas comparten
+ * ahora el mismo criterio: nada se dibuja en el aire sin saber a qué altura
+ * está. La diferencia que queda es de qué van: el viento sigue el terreno a una
+ * altura fija sobre él, y esto ASCIENDE desde el suelo hasta condensar.
  *
  * `renderingMode: '3d'` y no `'2d'`, que es lo que hace la mitad del efecto: en
  * modo 3D MapLibre deja la capa dentro del pase con búfer de profundidad, así
