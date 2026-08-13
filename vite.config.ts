@@ -2,37 +2,29 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { edgeApi } from './dev/edgeApi'
 
+/**
+ * Ya no hay bloque `server.proxy`.
+ *
+ * Lo hubo: en desarrollo `/api/cda` y `/api/co2` se reescribían aquí y se
+ * reenviaban al origen directamente, sin pasar por las funciones de `api/`. Eso
+ * significaba dos cosas malas a la vez —el código que se probaba no era el que
+ * se despliega, y no había ninguna cache delante— y la segunda acabó en un 429
+ * de Open-Meteo en mitad de una sesión de trabajo. Ahora `edgeApi()` ejecuta
+ * las funciones de verdad y respeta su `s-maxage`.
+ */
 export default defineConfig({
   plugins: [react(), edgeApi()],
-  server: {
-    proxy: {
-      // In dev le funzioni serverless di Vercel non girano: inoltriamo
-      // direttamente al Cabildo. In produzione risponde /api/*.
-      '/api/cda': {
-        target: 'https://bi.lapalma.es',
-        changeOrigin: true,
-        rewrite: (p) => {
-          const q = new URLSearchParams(p.split('?')[1] ?? '')
-          const vertical = q.get('vertical') ?? 'environment'
-          const out = new URLSearchParams({
-            path: `/public/sc_lapalma/verticals/sql/${vertical}.cda`,
-            _TRUST_USER_: 'opendata_sc_lapalma',
-            dataAccessId: q.get('dataAccessId') ?? '',
-            outputType: 'json',
-          })
-          for (const k of ['paramstart', 'paramfinish', 'paramname', 'paramcountertype']) {
-            const v = q.get(k)
-            if (v !== null) out.set(k, v)
-          }
-          return `/pentaho/plugin/cda/api/doQuery?${out}`
-        },
-      },
-      '/api/co2': {
-        target: 'https://www.demasesl.com',
-        changeOrigin: true,
-        rewrite: () => '/datos_actuales?token=Y29udHJvbENPMg-Y0NPMjEyMDc',
-      },
-    },
-  },
   build: { target: 'es2022' },
+  test: {
+    /**
+     * Fuera los árboles de trabajo de git.
+     *
+     * `.claude/worktrees/` son copias completas del repositorio, así que vitest
+     * encontraba cada prueba tres veces y la suite tardaba 270 s en vez de 90.
+     * En un repositorio cuya regla es que **cada** cambio pasa por `npm test`
+     * antes de desplegarse, eso son tres minutos de peaje por cada arreglo de
+     * una línea.
+     */
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
+  },
 })

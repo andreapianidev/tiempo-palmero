@@ -61,6 +61,7 @@
  * abajo con Magnus-Tetens, igual que ya se hace en los pines.
  */
 
+import { dataUrl } from './endpoints'
 import { relativeHumidityFrom, clampHumidity } from './psychro'
 
 /**
@@ -256,7 +257,8 @@ export function detectInversion(levels: readonly ProfileLevel[]): Inversion | nu
 // Descarga
 // ---------------------------------------------------------------------------
 
-export const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast'
+/** Por el proxy cacheado, no directo. El porqué está en `openmeteo.ts`. */
+export const OPEN_METEO_URL = () => dataUrl('/api/openmeteo?kind=profile')
 
 interface CurrentBlock {
   time?: string
@@ -372,7 +374,7 @@ export async function fetchProfiles(
     CLOUD_LOW_KEY,
   ]
   const url =
-    `${OPEN_METEO_URL}?latitude=${points.map((p) => p.lat.toFixed(5)).join(',')}` +
+    `${OPEN_METEO_URL()}&latitude=${points.map((p) => p.lat.toFixed(5)).join(',')}` +
     `&longitude=${points.map((p) => p.lon.toFixed(5)).join(',')}` +
     `&current=${fields.join(',')}` +
     `&models=${PROFILE_MODEL}&timezone=UTC`
