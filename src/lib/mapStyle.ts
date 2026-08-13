@@ -19,8 +19,6 @@ import { pixelXToLon, pixelYToLat } from './geo'
 import { SKY } from './terrain'
 import type { DemManifest } from './dem'
 import { roleCss } from './contrast/roles'
-import { registerRelief } from './relief/protocol'
-import { RELIEF_SOURCE, reliefLayer, reliefSource } from './relief/source'
 
 /**
  * Los colores del mapa.
@@ -68,12 +66,18 @@ export const COLORS = {
   canal: roleCss('canal'),
 } as const
 
+/**
+ * ESTE FICHERO LO COMPARTEN LA WEB Y LA APP NATIVA. `mobile/src/map/IslandMap`
+ * llama a `buildStyle()` con el mismo manifiesto, y ahí la librería del mapa es
+ * `@maplibre/maplibre-react-native`, no `maplibre-gl`. De aquí solo pueden
+ * salir tipos e importaciones que no arrastren `maplibre-gl` en tiempo de
+ * ejecución — si una lo hace, el empaquetador de la app nativa no resuelve el
+ * módulo y la app deja de compilar, sin que ninguna prueba de la web se entere.
+ *
+ * Por eso el sombreado propio NO se declara aquí: su fuente y su capa las añade
+ * `MapView` al cargar, como ya hacía con los fondos de GRAFCAN.
+ */
 export function buildStyle(dem: DemManifest): StyleSpecification {
-  // El sombreado propio entra por un esquema de URL registrado en MapLibre, y
-  // este es el primer momento en que se sabe qué modelo hay debajo. Es
-  // idempotente: llamarlo otra vez solo actualiza el manifiesto.
-  registerRelief(dem)
-
   // Límites exactos de la cobertura descargada. Sin esto MapLibre pide las
   // teselas que cubren la ventana, incluidas las de mar abierto que no
   // existen: en producción son 404 y en desarrollo el servidor devuelve el
@@ -106,7 +110,6 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
           'Datos: <a href="https://www.opendatalapalma.es" target="_blank" rel="noreferrer">Cabildo Insular de La Palma</a> (CC-BY) · ' +
           'Topónimos y viario: © OpenStreetMap contributors (ODbL)',
       },
-      [RELIEF_SOURCE]: reliefSource(dem),
       island: { type: 'geojson', data: dataUrl('/layers/limite-insular.geojson') },
       municipios: { type: 'geojson', data: dataUrl('/layers/municipios.geojson') },
     },
@@ -130,9 +133,6 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
           'hillshade-illumination-direction': 315,
         },
       },
-      // El sombreado propio, encima del de la casa y tapándolo cuando funciona.
-      // Ver `relief/source.ts`: el de abajo es la red de seguridad.
-      reliefLayer(),
       {
         id: 'municipal-boundaries',
         type: 'line',

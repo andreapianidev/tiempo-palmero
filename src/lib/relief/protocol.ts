@@ -23,10 +23,8 @@ import { metersPerPixel } from './coverage'
 import { demMosaic, APRON } from './mosaic'
 import { RELIEF_PARAMS, RELIEF_TILE_PX } from './params'
 import { RELIEF_FRAG } from './shader'
+import { RELIEF_SCHEME } from './source'
 import { reliefWindow } from './window'
-
-export const RELIEF_SCHEME = 'relieve'
-export const RELIEF_TILE_URL = `${RELIEF_SCHEME}://{z}/{x}/{y}`
 
 /** Un PNG de 1 × 1 transparente. La respuesta cuando no hay nada que dibujar. */
 const EMPTY_PNG = Uint8Array.from(

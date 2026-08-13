@@ -26,6 +26,8 @@
     <script type="module">
       import maplibregl from 'maplibre-gl'
       import { buildStyle } from '/src/lib/mapStyle.ts'
+      import { registerRelief } from '/src/lib/relief/protocol.ts'
+      import { RELIEF_SOURCE, reliefLayer, reliefSource } from '/src/lib/relief/source.ts'
 
       const log = (m) => (document.getElementById('log').textContent += m + '\n')
       window.addEventListener('error', (e) => log('ERROR ' + e.message))
@@ -39,6 +41,13 @@
         attributionControl: false,
       })
       map.on('error', (e) => log('ERROR ' + (e.error?.message ?? e.type)))
+
+      // Igual que MapView: el sombreado NO viene en el estilo, se añade aquí.
+      map.on('load', () => {
+        registerRelief(manifest)
+        map.addSource(RELIEF_SOURCE, reliefSource(manifest))
+        map.addLayer(reliefLayer(), 'municipal-boundaries')
+      })
 
       // Un fondo de GRAFCAN, con su realce, para poder mirarlo sin la
       // aplicación entera detrás.

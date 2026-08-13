@@ -22,8 +22,19 @@ import type { LayerSpecification, RasterSourceSpecification } from 'maplibre-gl'
 import type { DemManifest } from '../dem'
 import { coverageBounds } from './coverage'
 import { RELIEF_TILE_PX } from './params'
-import { RELIEF_TILE_URL } from './protocol'
 import { OVERZOOM } from './window'
+
+/**
+ * El esquema de URL vive AQUÍ y no en `protocol.ts`, y no es un detalle de
+ * organización: `protocol.ts` importa `maplibre-gl` en tiempo de ejecución para
+ * registrarse, y este fichero lo importa la aplicación móvil por la cadena de
+ * `mapStyle.ts`. Allí la librería del mapa es `@maplibre/maplibre-react-native`
+ * y `maplibre-gl` NO existe: bastaría con que llegara hasta aquí para que el
+ * empaquetador de la app nativa no resolviera el módulo y la app dejara de
+ * compilar. Solo tipos, que se borran al compilar, y constantes.
+ */
+export const RELIEF_SCHEME = 'relieve'
+export const RELIEF_TILE_URL = `${RELIEF_SCHEME}://{z}/{x}/{y}`
 
 export const RELIEF_SOURCE = 'relieve'
 export const RELIEF_LAYER = 'relieve-sombreado'
