@@ -12,6 +12,7 @@ import {
   normalizePressure,
   relativeHumidityFrom,
   seaLevelReference,
+  vapourPressureDeficit,
 } from './psychro'
 
 /** Límites de plausibilidad para La Palma (0–2426 m, subtropical). */
@@ -22,6 +23,13 @@ export const BOUNDS: Record<string, [number, number]> = {
   windspeed: [0, 200],
   uv: [0, 16],
   dewpoint: [-20, 30],
+  // VPD. Es la envolvente FÍSICA, no un filtro de verosimilitud: con el techo
+  // de 45 °C de `temperature` y 0 % de humedad salen 9,6 kPa, así que nada
+  // legítimo puede pasar de ahí. Quien atrapa al sensor de humedad averiado no
+  // es este límite —2,3 kPa con 1 % de humedad a 20 °C tiene aspecto de cifra
+  // buena— sino el punto de rocío implícito, que se comprueba aparte en
+  // `stationReading`.
+  vpd: [0, 10],
   // La sensación térmica se mueve en el mismo rango físico que la temperatura:
   // puede separarse bastante de ella con viento o bochorno, pero no salirse de
   // lo que la isla admite.
@@ -104,8 +112,8 @@ export interface Station {
   raw: CdaRow
 }
 
-/** Las tres variables que la app pinta. Coincide con `DisplayVariable`. */
-export type MeasuredVariable = 'temperature' | 'relativehumidity' | 'dewpoint'
+/** Las variables que la app pinta. Coincide con `DisplayVariable`. */
+export type MeasuredVariable = 'temperature' | 'relativehumidity' | 'dewpoint' | 'vpd'
 
 export interface Reading {
   value: number
@@ -128,7 +136,43 @@ export interface Reading {
  * lo que no sale ni con las dos columnas (6 estaciones, sin humedad ni rocío)
  * devuelve null y se queda sin número, que eso sí es no saberlo.
  */
+/**
+ * Un valor calculado pasa por el MISMO filtro de plausibilidad que uno medido.
+ *
+ * No hacerlo dejaba salir disparates con aspecto de dato: CABLPA BELLIDO
+ * publica 1 % de humedad a 852 m —un sensor muerto, no un desierto—, y de ahí
+ * salía un punto de rocío de −38,4 °C, pintado en el pin como si fuera una
+ * cifra. `bounded()` ya vigila la columna publicada; la derivada se colaba
+ * porque nacía después del filtro. Ese mismo 1 % daría 4,1 kPa de VPD, que el
+ * límite de `BOUNDS.vpd` tumba por la misma razón.
+ */
+function deriveBounded(variable: MeasuredVariable, value: number): Reading | null {
+  const b = BOUNDS[variable]
+  if (!Number.isFinite(value)) return null
+  if (b && (value < b[0] || value > b[1])) return null
+  return { value, derived: true }
+}
+
 export function stationReading(s: Station, variable: MeasuredVariable): Reading | null {
+  // El VPD no lo publica NINGUNA estación de la red: siempre se calcula, nunca
+  // se lee. Por eso sale antes del `s[variable]`, que para esta clave no
+  // existe en `Station`.
+  if (variable === 'vpd') {
+    if (s.temperature === null) return null
+    const rh =
+      s.relativehumidity ??
+      (s.dewpoint !== null
+        ? clampHumidity(relativeHumidityFrom(s.temperature, s.dewpoint))
+        : null)
+    if (rh === null) return null
+    // La verosimilitud del VPD se juzga por el rocío que implica, no por el
+    // propio VPD: su rango físico es tan ancho que un sensor de humedad
+    // averiado cabe dentro. El 1 % de CABLPA BELLIDO a 852 m daría 2,3 kPa,
+    // que parece una cifra buena, y −38,4 °C de rocío, que no lo parece.
+    if (deriveBounded('dewpoint', dewpointFrom(s.temperature, rh)) === null) return null
+    return deriveBounded('vpd', vapourPressureDeficit(s.temperature, rh))
+  }
+
   const measured = s[variable]
   if (measured !== null) return { value: measured, derived: false }
   if (s.temperature === null) return null
@@ -139,12 +183,7 @@ export function stationReading(s: Station, variable: MeasuredVariable): Reading 
   // y de ahí salía un punto de rocío de −38,4 °C, pintado en el pin como si
   // fuera una cifra. `bounded()` ya vigila la columna publicada; la derivada se
   // colaba porque nacía después del filtro.
-  const derive = (value: number): Reading | null => {
-    const b = BOUNDS[variable]
-    if (!Number.isFinite(value)) return null
-    if (b && (value < b[0] || value > b[1])) return null
-    return { value, derived: true }
-  }
+  const derive = (value: number): Reading | null => deriveBounded(variable, value)
 
   if (variable === 'dewpoint' && s.relativehumidity !== null) {
     return derive(dewpointFrom(s.temperature, s.relativehumidity))

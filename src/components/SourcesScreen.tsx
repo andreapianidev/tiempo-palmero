@@ -67,6 +67,27 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'Catálogo de datos abiertos',
   },
   {
+    title: t.sources.roqueTitle,
+    body: t.sources.roqueBody,
+    license: t.sources.roqueLicense,
+    href: 'https://tngweb.tng.iac.es/weather/current/',
+    hrefLabel: 'tngweb.tng.iac.es',
+  },
+  {
+    title: t.sources.agroTitle,
+    body: t.sources.agroBody,
+    license: t.sources.agroLicense,
+    href: 'https://www.opendatalapalma.es',
+    hrefLabel: 'Visor ArcGIS del Cabildo',
+  },
+  {
+    title: t.sources.trailsAlertsTitle,
+    body: t.sources.trailsAlertsBody,
+    license: t.sources.trailsAlertsLicense,
+    href: 'https://www.senderosdelapalma.es/senderos/estado-de-los-senderos/',
+    hrefLabel: 'Estado de los senderos (Cabildo)',
+  },
+  {
     title: t.sources.toponymsTitle,
     body: t.sources.toponymsBody,
     license: t.sources.toponymsLicense,

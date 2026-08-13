@@ -37,6 +37,7 @@ import {
 } from './shared.js'
 import { prepareGuagua } from './prepare-guagua.js'
 import { prepareArcgis } from './prepare-arcgis.js'
+import { prepareAgro } from './prepare-agro.js'
 
 // ---------------------------------------------------------------------------
 // 1. DEM — teselas terrarium
@@ -373,6 +374,11 @@ async function prepareLayers(): Promise<void> {
   // son ficheros de `/layers/` igual que los demás, y de qué catálogo salió
   // cada uno es asunto de este script, no suyo.
   Object.assign(index, await prepareArcgis())
+
+  // Lo agrario va aparte porque no se baja igual: la capa de cultivos son
+  // 217.137 polígonos y de ahí sólo se congela un resumen; el detalle de una
+  // parcela se pide en vivo. Ver la cabecera de `prepare-agro.ts`.
+  Object.assign(index, await prepareAgro())
 
   await writeFile(
     path.join(PUBLIC, 'layers', 'index.json'),

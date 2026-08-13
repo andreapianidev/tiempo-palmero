@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MapView, type LayerVisibility } from './components/MapView'
 import { PointPanel, type ProbePoint } from './components/PointPanel'
 import { DetailPanel, type Selection } from './components/DetailPanel'
@@ -9,18 +9,16 @@ import { useWindField } from './hooks/useWindField'
 import { useGuagua } from './hooks/useGuagua'
 import { usePlaces, NO_PLACES, type PlaceVisibility } from './hooks/usePlaces'
 import { useCounters } from './hooks/useCounters'
+import { useRoque } from './hooks/useRoque'
+import { useAgro } from './hooks/useAgro'
+import { useTrailReports } from './hooks/useTrailReports'
+import { summarizeDeck } from './lib/clouds'
 import { elevationAt } from './lib/dem'
-import { DEWPOINT_STOPS, HUMIDITY_STOPS, TEMP_STOPS, type RgbStop } from './lib/palette'
+import { VARIABLES } from './lib/variables'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
 import { warmNearbyLayers } from './lib/nearby'
 import { t } from './i18n'
-
-const STOPS: Record<DisplayVariable, RgbStop[]> = {
-  temperature: TEMP_STOPS,
-  relativehumidity: HUMIDITY_STOPS,
-  dewpoint: DEWPOINT_STOPS,
-}
 
 const INITIAL_LAYERS: LayerVisibility = {
   grid: true,
@@ -61,6 +59,17 @@ export default function App() {
   // no en cada fotograma: es lo único que hace falta saber del zoom aquí.
   const [stopsZoomReached, setStopsZoomReached] = useState(false)
   const [now, setNow] = useState(() => Date.now())
+  /**
+   * Qué secciones accesorias ha abierto el usuario. Ninguna de las tres se
+   * calcula ni se descarga mientras esté plegada: el Roque es un observatorio
+   * ajeno al que no hay que martillear, la ETo es una petición más al modelo y
+   * recorrer 49 senderos cuesta una cuarta parte de lo que cuesta la malla.
+   */
+  const [openSections, setOpenSections] = useState({
+    roque: false,
+    agro: false,
+    trails: false,
+  })
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000)
@@ -75,7 +84,41 @@ export default function App() {
     return () => clearTimeout(id)
   }, [data.dem])
 
-  const stops = STOPS[variable]
+  const stops = VARIABLES[variable].stops
+
+  /**
+   * El mar de nubes NO cuesta una petición: sale de los perfiles verticales
+   * que el motor ya descarga para anclar las cotas altas. Lo único que hacía
+   * falta era pedirle a la misma llamada la nubosidad baja, que es lo que
+   * separa una inversión con manta de una inversión seca.
+   */
+  const deck = useMemo(
+    () => summarizeDeck(data.anchors.map((a) => a.profile)),
+    [data.anchors],
+  )
+
+  const roque = useRoque(openSections.roque)
+  const agro = useAgro(data.dem, openSections.agro)
+  const trailReports = useTrailReports(
+    data.trails,
+    data.dem,
+    data.models,
+    wind.field,
+    data.municipalities,
+    deck,
+    openSections.trails,
+  )
+
+  /**
+   * Los avisos, indexados por sendero, para que el mapa pinte lo mismo que
+   * dice la lista. Se calcula aquí y no en `MapView` porque el panel y el mapa
+   * tienen que estar mirando exactamente el mismo objeto.
+   */
+  const trailSeverity = useMemo(() => {
+    const out: Record<number, 'warning' | 'notice'> = {}
+    for (const r of trailReports) if (r.worst) out[r.profile.trail.id] = r.worst
+    return out
+  }, [trailReports])
 
   const pick = useCallback(
     (lon: number, lat: number, label?: string) => {
@@ -145,6 +188,7 @@ export default function App() {
         co2={data.co2}
         gazetteer={data.gazetteer}
         trails={data.trails}
+        trailSeverity={trailSeverity}
         trailPois={data.trailPois}
         guaguaLines={guagua.lines}
         guaguaStops={guagua.stops}
@@ -154,6 +198,8 @@ export default function App() {
         guaguaRoute={selection?.kind === 'busRoute' ? selection.value.routeId : null}
         places={places.places}
         roads={places.roads}
+        canals={places.canals}
+        canalsVisible={placesOn.water}
         counters={counters.sites}
         wind={wind.field}
         visible={visible}
@@ -256,6 +302,27 @@ export default function App() {
         wind={wind}
         counters={counters}
         guagua={{ loading: guagua.loading, stopsZoomReached }}
+        deck={deck}
+        roque={roque}
+        agro={agro}
+        trailReports={trailReports}
+        // El punto elegido llega al panel para que el mar de nubes pueda decir
+        // de qué lado cae y la agricultura, cuánta agua pide justo ahí.
+        here={
+          probe && probe.elevation !== null
+            ? {
+                lon: probe.lon,
+                lat: probe.lat,
+                elevationM: probe.elevation,
+                label: probe.label ?? probe.municipality,
+              }
+            : null
+        }
+        onSectionToggle={(key, open) =>
+          setOpenSections((prev) =>
+            prev[key] === open ? prev : { ...prev, [key]: open },
+          )
+        }
         now={now}
         dem={data.dem}
         onSources={() => setShowSources(true)}
@@ -284,6 +351,7 @@ export default function App() {
           stations={data.stations}
           variable={variable}
           stops={stops}
+          eto={agro.eto}
           now={now}
           onClose={() => setProbe(null)}
         />

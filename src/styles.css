@@ -710,3 +710,105 @@ table.kv td:first-child { color: var(--fg-dim); }
 /* Interruptores con icono: la leyenda es la propia lista. */
 .switches-icon label { gap: 7px; }
 .switches-icon img { flex: 0 0 auto; opacity: 0.9; }
+
+/* ---------------------------------------------------------------------------
+   Mar de nubes, Roque, senderos y agricultura
+   --------------------------------------------------------------------------- */
+
+/* La frase que resume el bloque, antes de la tabla. Se lee sola. */
+.deck-headline {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.deck-headline b { color: var(--amber); font-weight: 600; }
+.deck-headline.dim b { color: var(--fg); }
+
+.deck-here {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  border-left: 2px solid var(--amber);
+  background: rgba(226, 180, 92, 0.07);
+  border-radius: 0 6px 6px 0;
+}
+
+/* Un campo que la propia fuente marca como viejo. No se esconde: se apaga. */
+.row-stale th, .row-stale td { opacity: 0.45; }
+
+.chips-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.chips-inline li {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--fg-dim);
+}
+
+/* --- Senderos --- */
+.trail-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.trail-list > li {
+  padding: 8px 0 8px 9px;
+  border-bottom: 1px solid var(--line-soft);
+  border-left: 2px solid transparent;
+}
+/* El color va en el borde izquierdo, no en el fondo: cuarenta y nueve filas
+   con fondo de color son un semáforo roto, y aquí lo que hay que poder hacer
+   es recorrer la lista de arriba abajo. */
+.trail-warning { border-left-color: var(--alert); }
+.trail-notice { border-left-color: var(--amber); }
+.trail-calm { border-left-color: var(--line-soft); }
+
+.trail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.trail-name { font-size: 12px; font-weight: 500; }
+.trail-head .mono { font-size: 10px; white-space: nowrap; }
+
+.trail-alerts { list-style: none; margin: 5px 0 0; padding: 0; }
+.trail-alerts li { font-size: 11px; line-height: 1.55; color: var(--fg-dim); }
+.trail-alerts .sev-warning { color: #ffb3ab; }
+.trail-alerts .sev-notice { color: var(--fg-dim); }
+p.trail-calm { margin: 3px 0 0; border: 0; }
+
+/* --- Agricultura --- */
+.agro-table th { font-size: 10.5px; text-transform: none; letter-spacing: 0; }
+
+/* --- Parcela bajo el punto --- */
+.parcel-block {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.parcel-block h3 {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+  font-weight: 500;
+  margin: 0;
+}
+.parcel-crop { margin: 6px 0 0; font-size: 13px; }
+.parcel-crop b { color: var(--amber); }
+.parcel-flags { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 0; padding: 0; list-style: none; }
+.parcel-flags li {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+}

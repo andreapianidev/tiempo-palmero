@@ -45,6 +45,17 @@ export const es = {
     temperature: 'Temperatura',
     relativehumidity: 'Humedad relativa',
     dewpoint: 'Punto de rocío',
+    vpd: 'Déficit de vapor',
+    vpdBands: {
+      humid: 'Aire cargado',
+      comfortable: 'Cómodo',
+      demanding: 'Exigente',
+      stress: 'Estrés',
+    },
+    vpdBandsHint:
+      'Tramos de manejo de invernadero, no umbrales medidos en La Palma.',
+    vpdHint:
+      'El VPD mide la sed del aire: cuánto vapor le falta para saturarse. Se calcula de la temperatura y la humedad, no se interpola aparte. Dice lo que la humedad relativa esconde — 80 % a 12 °C son 0,28 kPa y 80 % a 28 °C son 0,76, casi el triple de demanda con el mismo número en pantalla.',
     derivedHint:
       'El punto de rocío se calcula a partir de la temperatura y la humedad, no se interpola por separado: solo 10 de las 52 estaciones lo publican con datos frescos. Aquí sale de las estimadas para este punto; en cada pin, de las que mide esa estación. Así las tres cifras nunca se contradicen entre sí.',
     wind: 'Viento',
@@ -58,6 +69,9 @@ export const es = {
     percent: '%',
     kmh: 'km/h',
     hpa: 'hPa',
+    kpa: 'kPa',
+    mm: 'mm',
+    mmDay: 'mm/día',
     ppm: 'ppm',
     metres: 'm',
     km: 'km',
@@ -117,6 +131,7 @@ export const es = {
       culture: 'Interés cultural',
       history: 'Interés histórico',
       busStop: 'Parada de guagua',
+      water: 'Infraestructura hídrica',
       charging: 'Recarga eléctrica',
     } as Record<string, string>,
     guaguaNoTimetable: (until: string) =>
@@ -139,6 +154,7 @@ export const es = {
       culture: 'Interés cultural',
       history: 'Interés histórico',
       recreation: 'Zonas recreativas',
+      water: 'Agua: balsas, nacientes, pozos y galerías',
       charging: 'Recarga eléctrica',
     } as Record<string, string>,
     /** Etiquetas de los campos crudos; lo que no esté aquí sale con su nombre. */
@@ -148,6 +164,14 @@ export const es = {
       municipio: 'Municipio',
       tipo: 'Tipo',
       subtipo: 'Categoría',
+      clase: 'Clase',
+      origen: 'Capa de origen',
+      capacidad: 'Capacidad',
+      altitud_m: 'Altitud',
+      paraje: 'Paraje',
+      estado: 'Estado',
+      comarca: 'Comarca',
+      tipo_red: 'Red',
       categoria_lista: 'Categoría',
       tipo_recurso: 'Tipo de recurso',
       tipo_ingreso: 'Acceso',
@@ -340,6 +364,14 @@ export const es = {
       codigo: 'Código de ficha',
       tipo: 'Tipo',
       subtipo: 'Categoría',
+      clase: 'Clase',
+      origen: 'Capa de origen',
+      capacidad: 'Capacidad',
+      altitud_m: 'Altitud',
+      paraje: 'Paraje',
+      estado: 'Estado',
+      comarca: 'Comarca',
+      tipo_red: 'Red',
       descripcion: 'Descripción',
     } as Record<string, string>,
     /** Claves en minúsculas: la fuente mezcla `Viveres_Tienda` y `Viveres_tienda`. */
@@ -609,6 +641,35 @@ export const es = {
       '133 contadores en 30 emplazamientos, 84 han publicado algo esta semana y 72 hoy; el ' +
       'mapa dibuja los que tienen datos en la ventana, incluidos los que han enmudecido hoy.',
     countersLicense: 'CC-BY 4.0',
+    roqueTitle: 'Estación del Roque de los Muchachos',
+    roqueBody:
+      'Telescopio Nazionale Galileo (INAF), a 2.387 m. Es la única medida real por ' +
+      'encima del techo de la red del Cabildo, y la referencia contra la que se validó ' +
+      'el perfil vertical del modelo. Es un observatorio de investigación, no un servicio ' +
+      'público de datos: cada campo llega con su propia hora y con un aviso de si sigue ' +
+      'al día, y la aplicación lo respeta —lo que la fuente marca como viejo se enseña ' +
+      'apagado y fechado, nunca como si fuera de ahora—. Si no responde, la sección ' +
+      'desaparece y nada más se ve afectado.',
+    roqueLicense: 'Cortesía del TNG · uso no comercial, sin compromiso de disponibilidad',
+    agroTitle: 'Cultivos e infraestructura hídrica',
+    agroBody:
+      'Visor ArcGIS del Cabildo Insular de La Palma, que NO es el mismo inventario que el ' +
+      'catálogo CKAN. El mapa de cultivos lo levantó el Gobierno de Canarias entre 2002 y ' +
+      '2008 —217.137 parcelas, de las que 40.387 y 6.873,6 ha están en cultivo— y no ' +
+      'recoge la erupción de 2021, que sepultó parte de la platanera del Valle de ' +
+      'Aridane: cada ficha lleva el año pegado. De la red hidráulica se descargan 433 ' +
+      'puntos de captación y almacenamiento y 133 trazados de canal. La demanda de agua ' +
+      'la pone Open-Meteo (FAO-56) y los coeficientes de cultivo, la tabla 12 de FAO-56; ' +
+      'es la demanda del cultivo, no una recomendación de riego.',
+    agroLicense: 'CC-BY 4.0',
+    trailsAlertsTitle: 'Avisos de senderos',
+    trailsAlertsBody:
+      'Calculados recorriendo los 49 trazados de la red insular con el mismo modelo que ' +
+      'pinta el mapa, un punto cada 200 m. No es el estado del sendero: los cierres por ' +
+      'derrumbe u obra los publica el Cabildo en senderosdelapalma.es. Y no hay aviso de ' +
+      'lluvia, porque la red de estaciones no la mide de forma utilizable y esta ' +
+      'aplicación no interpola precipitación nunca.',
+    trailsAlertsLicense: 'CC-BY 4.0 (trazados)',
     toponymsTitle: 'Topónimos',
     toponymsBody:
       '© colaboradores de OpenStreetMap. Extraídos una sola vez en tiempo de compilación mediante Overpass; la aplicación no consulta OpenStreetMap en tiempo de ejecución.',

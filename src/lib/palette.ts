@@ -28,6 +28,25 @@ export const HUMIDITY_STOPS: RgbStop[] = [
   [95, '#2f5f96'],
 ]
 
+/**
+ * Déficit de presión de vapor, kPa. Secuencial de húmedo a sediento.
+ *
+ * Los cortes no son estéticos: 0,4 y 1,6 kPa son los bordes de la banda que la
+ * horticultura bajo plástico maneja como cómoda —por debajo el aire no seca y
+ * aparece hongo, por encima la planta empieza a cerrar estomas—. Son rangos de
+ * manejo de invernadero, no umbrales medidos en La Palma, y así se dicen en la
+ * interfaz. El salto de color en 1,6 es deliberado y algo brusco, para que la
+ * frontera se vea en el mapa en vez de disolverse en un degradado.
+ */
+export const VPD_STOPS: RgbStop[] = [
+  [0, '#2f5f96'],
+  [0.4, '#4f9fa8'],
+  [1.0, '#8fc79a'],
+  [1.6, '#e2c56a'],
+  [2.5, '#e0854a'],
+  [4, '#a8332f'],
+]
+
 export const DEWPOINT_STOPS: RgbStop[] = [
   [-5, '#5b5f8c'],
   [4, '#5a8fb0'],

@@ -59,5 +59,5 @@ export interface PlaceSwitch {
 
 /** Los seis catálogos de sitios, con el nombre que les da el Cabildo. */
 export const PLACE_SWITCHES: PlaceSwitch[] = (
-  ['tourism', 'viewpoint', 'culture', 'history', 'recreation', 'charging'] as const
+  ['tourism', 'viewpoint', 'culture', 'history', 'recreation', 'water', 'charging'] as const
 ).map((kind) => ({ kind, label: t.places.kinds[kind] ?? kind }))

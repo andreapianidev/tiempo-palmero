@@ -1,20 +1,18 @@
 /**
  * Selector de variable y escala de color.
  *
- * La marca «ƒ» del punto de rocío no es decorativa: distingue lo que la red
+ * La marca «ƒ» del rocío y del VPD no es decorativa: distingue lo que la red
  * mide de lo que la app calcula, y esa distinción se sostiene en toda la
  * interfaz (pines, panel de punto, tabla de valores crudos).
+ *
+ * La lista de variables NO vive aquí: está en `lib/variables.ts`, que es la
+ * misma tabla que consume la app nativa. Este fichero solo la dibuja.
  */
 
 import type { DisplayVariable } from '../../lib/interpolate'
 import { rampCss, type RgbStop } from '../../lib/palette'
-import { n0, t } from '../../i18n'
-
-const VARIABLES: { id: DisplayVariable; label: string; derived?: boolean }[] = [
-  { id: 'temperature', label: t.variables.temperature },
-  { id: 'relativehumidity', label: t.variables.relativehumidity },
-  { id: 'dewpoint', label: t.variables.dewpoint, derived: true },
-]
+import { VARIABLES, VARIABLE_ORDER } from '../../lib/variables'
+import { n0 } from '../../i18n'
 
 interface Props {
   variable: DisplayVariable
@@ -23,18 +21,19 @@ interface Props {
 }
 
 export function VariablePicker({ variable, onVariable, stops }: Props) {
-  const unit = variable === 'relativehumidity' ? ' %' : ' °C'
+  const spec = VARIABLES[variable]
+  const unit = ` ${spec.unit}`
 
   return (
     <>
       <div className="chips">
-        {VARIABLES.map((v) => (
+        {VARIABLE_ORDER.map((id) => VARIABLES[id]).map((v) => (
           <button
             key={v.id}
             className="chip-btn"
             aria-pressed={variable === v.id}
             onClick={() => onVariable(v.id)}
-            title={v.derived ? t.variables.derivedHint : undefined}
+            title={v.hint}
           >
             {v.label}
             {v.derived && (
