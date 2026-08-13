@@ -1,6 +1,6 @@
 {
-  "generated": "2026-08-12T22:00:04.995Z",
-  "source": "Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island), catálogo CKAN y visor ArcGIS de opendatalapalma.es",
+  "generated": "2026-08-13T12:14:53.639Z",
+  "source": "Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island), catálogo CKAN y visor ArcGIS de opendatalapalma.es. Las capas con `source` propio no vienen de ahí: dice cada una de dónde sale y con qué licencia.",
   "license": "CC-BY 4.0 / ODC-BY (límites administrativos)",
   "layers": {
     "senderos": {
@@ -72,6 +72,13 @@
       "file": "/layers/miradores.geojson",
       "features": 29,
       "label": "Miradores (29)"
+    },
+    "viario": {
+      "file": "/layers/viario-osm.geojson",
+      "features": 19770,
+      "label": "Viario completo de OSM (19.770 trazados, 3.373 km)",
+      "source": "OpenStreetMap vía Overpass API",
+      "license": "ODbL 1.0"
     }
   }
 }

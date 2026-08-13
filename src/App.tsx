@@ -12,6 +12,7 @@ import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { useWindField } from './hooks/useWindField'
 import { useGuagua } from './hooks/useGuagua'
 import { usePlaces, NO_PLACES, type PlaceVisibility } from './hooks/usePlaces'
+import { useOsmRoads } from './hooks/useOsmRoads'
 import { useCounters } from './hooks/useCounters'
 import { useAgro } from './hooks/useAgro'
 import { useTrailReports } from './hooks/useTrailReports'
@@ -35,6 +36,7 @@ const INITIAL_LAYERS: LayerVisibility = {
   trails: false,
   guagua: false,
   roads: false,
+  osmRoads: false,
   counters: false,
   fire: true,
   wind: false,
@@ -69,6 +71,9 @@ export default function App() {
   // que cambia es qué puntos entran en ella.
   const [placesOn, setPlacesOn] = useState<PlaceVisibility>(NO_PLACES)
   const places = usePlaces(placesOn, visible.roads)
+  // El viario de OSM es la capa más pesada de todas —5,2 MB— y por eso es la que
+  // más motivos tiene para no pedirse hasta que alguien la encienda.
+  const viario = useOsmRoads(visible.osmRoads)
   // Igual que las guaguas: tres peticiones al servicio del Cabildo que no se
   // hacen mientras el interruptor esté apagado.
   const counters = useCounters(visible.counters)
@@ -101,6 +106,8 @@ export default function App() {
   // Si el zoom da ya para ver las paradas. Lo dice el mapa al cruzar el umbral,
   // no en cada fotograma: es lo único que hace falta saber del zoom aquí.
   const [stopsZoomReached, setStopsZoomReached] = useState(false)
+  /** Lo mismo para las pistas del viario, que aparecen más cerca todavía. */
+  const [tracksZoomReached, setTracksZoomReached] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   /**
    * Qué secciones accesorias ha abierto el usuario. Las que cuestan no se
@@ -342,6 +349,7 @@ export default function App() {
         guaguaRoute={selection?.kind === 'busRoute' ? selection.value.routeId : null}
         places={places.places}
         roads={places.roads}
+        osmRoads={viario.roads}
         canals={places.canals}
         canalsVisible={placesOn.water}
         counters={counters.sites}
@@ -403,6 +411,7 @@ export default function App() {
           setSelection({ kind: 'road', value: { ...road, lon, lat } })
         }}
         onStopsZoom={setStopsZoomReached}
+        onTracksZoom={setTracksZoomReached}
         onCounter={(site) => {
           setProbe(null)
           setSelection({
@@ -454,6 +463,7 @@ export default function App() {
         wind={wind}
         counters={counters}
         guagua={{ loading: guagua.loading, stopsZoomReached }}
+        viario={{ loading: viario.loading, failed: viario.failed, tracksZoomReached }}
         deck={deck}
         roque={roque}
         summitLayer={data.summitLayer}

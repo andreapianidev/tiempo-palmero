@@ -23,6 +23,9 @@ const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
   { id: 'trails', label: t.layers.trails },
   { id: 'guagua', label: t.layers.guagua },
   { id: 'roads', label: t.layers.roads },
+  // Justo debajo de las insulares, que es donde está en el mapa: son la misma
+  // pregunta —por dónde se llega— con dos respuestas de distinto alcance.
+  { id: 'osmRoads', label: t.layers.osmRoads },
   { id: 'counters', label: t.layers.counters },
   { id: 'fire', label: t.layers.fire },
 ]

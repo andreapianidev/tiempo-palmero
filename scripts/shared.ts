@@ -7,6 +7,7 @@
  * primera— se lleva su fichero, y todos entran por aquí.
  */
 
+import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -27,6 +28,92 @@ export interface CkanResource {
   name: string
   format: string
   url: string
+}
+
+/**
+ * Overpass, con los dos espejos.
+ *
+ * Vive aquí y no en `prepare-data.ts` porque ya son dos los que lo usan: el
+ * gazetteer de topónimos y el viario. Ninguna de las dos consultas se hace en
+ * runtime — la usage policy de Overpass prohíbe el uso sistemático desde una
+ * aplicación, no una ejecución de build puntual y educada—, y por eso el
+ * reintento es lento a propósito: si el primer espejo está saturado, esperar
+ * cuatro segundos es gratis aquí y sería inaceptable en el navegador.
+ */
+export const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+]
+
+export async function overpass<T>(query: string): Promise<T[]> {
+  let last: unknown
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    for (let i = 0; i < 3; i++) {
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { ...UA, 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ data: query }),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const j = (await res.json()) as { elements: T[] }
+        return j.elements ?? []
+      } catch (e) {
+        last = e
+        await new Promise((r) => setTimeout(r, 4000 * (i + 1)))
+      }
+    }
+  }
+  throw last
+}
+
+export interface LayerIndexEntry {
+  file: string
+  features: number
+  label: string
+  /** Solo cuando la capa NO viene del Cabildo: ver la cabecera del índice. */
+  source?: string
+  license?: string
+}
+
+/**
+ * Registra capas en `public/layers/index.json` SIN borrar las que ya estaban.
+ *
+ * Antes el índice se escribía entero de una vez, y eso obligaba a que todo lo
+ * que va en él se descargara en la misma ejecución: pedir solo el viario
+ * borraba del inventario las catorce capas del Cabildo, que seguían en el
+ * directorio. Cada productor registra lo suyo y el índice es lo que hay.
+ */
+export async function mergeLayerIndex(
+  entries: Record<string, LayerIndexEntry>,
+): Promise<void> {
+  const file = path.join(PUBLIC, 'layers', 'index.json')
+  let previous: Record<string, LayerIndexEntry> = {}
+  try {
+    const raw = JSON.parse(await readFile(file, 'utf8')) as {
+      layers?: Record<string, LayerIndexEntry>
+    }
+    previous = raw.layers ?? {}
+  } catch {
+    /* primera ejecución: no hay índice todavía */
+  }
+
+  await writeFile(
+    file,
+    JSON.stringify(
+      {
+        generated: new Date().toISOString(),
+        source:
+          'Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island), ' +
+          'catálogo CKAN y visor ArcGIS de opendatalapalma.es. Las capas con `source` propio ' +
+          'no vienen de ahí: dice cada una de dónde sale y con qué licencia.',
+        license: 'CC-BY 4.0 / ODC-BY (límites administrativos)',
+        layers: { ...previous, ...entries },
+      },
+      null,
+      2,
+    ),
+  )
 }
 
 /**

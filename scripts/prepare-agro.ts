@@ -32,7 +32,7 @@
 
 import { writeFile, readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { PUBLIC, getJson, log, warn, roundCoords } from './shared.js'
+import { PUBLIC, getJson, log, warn, roundCoords, type LayerIndexEntry } from './shared.js'
 import { CROPS } from '../src/lib/agro/crops.js'
 
 const ARCGIS = 'https://services.arcgis.com/hkQNLKNeDVYBjvFE/arcgis/rest/services'
@@ -246,12 +246,6 @@ function renameProps(
     out[to] = v
   }
   return out
-}
-
-export interface LayerIndexEntry {
-  file: string
-  features: number
-  label: string
 }
 
 export async function prepareAgro(): Promise<Record<string, LayerIndexEntry>> {

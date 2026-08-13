@@ -35,6 +35,7 @@ export const es = {
     // el interruptor único no inunda el mapa de puntos.
     guagua: 'Red de guaguas',
     roads: 'Carreteras insulares',
+    osmRoads: 'Viario completo (OSM)',
     counters: 'Aforos de tráfico y senderos',
     fire: 'Cámaras de incendios',
     hillshade: 'Relieve sombreado',
@@ -311,6 +312,20 @@ export const es = {
    * tabla publicada» y con la fecha delante. Lo que sí se puede afirmar en
    * presente es la red: qué líneas hay, por dónde van y dónde paran.
    */
+  /**
+   * El viario de OSM. Los tres avisos existen porque sin ellos la capa parece
+   * rota: tarda en llegar, a zoom de isla enseña poco más de lo que ya había, y
+   * si falla la descarga la casilla se queda marcada sobre un mapa idéntico.
+   */
+  viario: {
+    loading: 'Cargando el viario de la isla (5,2 MB)…',
+    failed: 'No se ha podido cargar el viario. Apaga y vuelve a encender la casilla para reintentar.',
+    zoomForTracks:
+      'Las 14.003 pistas y accesos se dibujan a partir de cierto acercamiento: a esta distancia serían una telaraña. Acércate y aparecen.',
+    legend:
+      'Carreteras, calles y pistas de OpenStreetMap: 19.770 trazados y 3.373 km, frente a los 61 tramos que publica el Cabildo. La línea discontinua es pista de tierra. No se pincha: la ficha de una carretera sale del dato del Cabildo.',
+  },
+
   guagua: {
     zoomForStops:
       'Las 913 paradas se dibujan a partir de cierto acercamiento: a esta distancia serían una mancha. Acércate y aparecen.',
@@ -821,6 +836,19 @@ export const es = {
       'lluvia, porque la red de estaciones no la mide de forma utilizable y esta ' +
       'aplicación no interpola precipitación nunca.',
     trailsAlertsLicense: 'CC-BY 4.0 (trazados)',
+    viarioTitle: 'Viario completo — OpenStreetMap',
+    viarioBody:
+      'Las carreteras del Cabildo son 61 tramos y no pretenden ser otra cosa: las 53 vías ' +
+      'insulares, seis municipales, la del Parque Nacional y la del aeropuerto. Por debajo ' +
+      'de esas 61 la isla salía vacía —en las medianías de Tijarafe o de Puntagorda, las ' +
+      'paradas de guagua flotaban sobre un relieve sin una sola calle— y esa parte la pone ' +
+      'OpenStreetMap: 19.770 trazados y 3.373 km, de los que 2.225 km son pistas agrícolas ' +
+      'y forestales y caminos de servicio. Se extrae una sola vez en tiempo de compilación ' +
+      'mediante Overpass; la aplicación no consulta OpenStreetMap en tiempo de ejecución. No ' +
+      'incluye senderos ni escaleras: los senderos son capa aparte y vienen del Cabildo. Es ' +
+      'cartografía colaborativa y se enseña como tal: sitúa, pero no es un inventario ' +
+      'oficial de vías, y solo el dato del Cabildo lleva ficha con código y titularidad.',
+    viarioLicense: 'ODbL 1.0',
     toponymsTitle: 'Topónimos',
     toponymsBody:
       '© colaboradores de OpenStreetMap. Extraídos una sola vez en tiempo de compilación mediante Overpass; la aplicación no consulta OpenStreetMap en tiempo de ejecución.',

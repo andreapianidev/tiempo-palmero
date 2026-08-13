@@ -88,6 +88,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'Estado de los senderos (Cabildo)',
   },
   {
+    title: t.sources.viarioTitle,
+    body: t.sources.viarioBody,
+    license: t.sources.viarioLicense,
+    href: 'https://www.openstreetmap.org/copyright',
+    hrefLabel: 'openstreetmap.org/copyright',
+  },
+  {
     title: t.sources.toponymsTitle,
     body: t.sources.toponymsBody,
     license: t.sources.toponymsLicense,

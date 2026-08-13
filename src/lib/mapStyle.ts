@@ -37,6 +37,17 @@ export const COLORS = {
   // todo lo que sí es un dato. Sin ellas, una parada de guagua flotaba sobre un
   // relieve sin una sola vía y no había forma de situarla.
   road: 'rgba(214,201,183,0.42)',
+  // El viario de OSM va por DEBAJO de esas carreteras y más apagado: son 19.770
+  // trazados contra 61, y pintados con la misma fuerza convertirían el mapa en
+  // un callejero con el tiempo de fondo. Tres tonos del mismo gris cálido —no
+  // tres colores— porque lo que separa un nivel de otro es la importancia de la
+  // vía, no de qué tipo de cosa se trata.
+  osmRoadMain: 'rgba(208,196,178,0.34)',
+  osmRoadLocal: 'rgba(200,190,175,0.26)',
+  // La pista de tierra, discontinua: en las medianías la diferencia entre una
+  // pista agrícola y un acceso asfaltado decide si se pasa o no se pasa.
+  osmTrack: 'rgba(190,174,150,0.30)',
+  osmService: 'rgba(196,188,176,0.20)',
   // Los canales de riego, discontinuos y en azul frío: infraestructura de
   // fondo, por debajo de los senderos, y sin confundirse con el ámbar de éstos
   // ni con el azul claro de las guaguas.
@@ -70,7 +81,7 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
         attribution:
           'Relieve: Mapzen Terrain Tiles (AWS Open Data) · ' +
           'Datos: <a href="https://www.opendatalapalma.es" target="_blank" rel="noreferrer">Cabildo Insular de La Palma</a> (CC-BY) · ' +
-          'Topónimos: © OpenStreetMap contributors (ODbL)',
+          'Topónimos y viario: © OpenStreetMap contributors (ODbL)',
       },
       island: { type: 'geojson', data: dataUrl('/layers/limite-insular.geojson') },
       municipios: { type: 'geojson', data: dataUrl('/layers/municipios.geojson') },

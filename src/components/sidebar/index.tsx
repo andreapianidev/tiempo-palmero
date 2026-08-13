@@ -31,6 +31,7 @@ import { HiddenStations } from './HiddenStations'
 import { WindStatus } from './WindStatus'
 import { CounterStatus } from './CounterStatus'
 import { GuaguaHint } from './GuaguaHint'
+import { OsmRoadsHint } from './OsmRoadsHint'
 import { CloudSea } from './CloudSea'
 import { RoqueStatus } from './RoqueStatus'
 import { TrailAlerts } from './TrailAlerts'
@@ -73,6 +74,8 @@ interface Props {
   counters: CountersData
   /** Estado de la red de guaguas: descarga en curso y zoom alcanzado. */
   guagua: { loading: boolean; stopsZoomReached: boolean }
+  /** Lo mismo para el viario de OSM, que además puede fallar al descargarse. */
+  viario: { loading: boolean; failed: boolean; tracksZoomReached: boolean }
   deck: CloudDeck | null
   roque: RoqueData | null
   /** La vertical medida entre el techo de la red y la cumbre. Ver `summit.ts`. */
@@ -205,6 +208,12 @@ export function Sidebar(props: Props) {
               loading={props.guagua.loading}
               stopsZoomReached={props.guagua.stopsZoomReached}
               on={props.visible.guagua}
+            />
+            <OsmRoadsHint
+              loading={props.viario.loading}
+              failed={props.viario.failed}
+              tracksZoomReached={props.viario.tracksZoomReached}
+              on={props.visible.osmRoads}
             />
           </Section>
 

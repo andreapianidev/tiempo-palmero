@@ -20,7 +20,7 @@
 
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { PUBLIC, getJson, log, warn, roundCoords } from './shared.js'
+import { PUBLIC, getJson, log, warn, roundCoords, type LayerIndexEntry } from './shared.js'
 
 const ARCGIS = 'https://services.arcgis.com/hkQNLKNeDVYBjvFE/arcgis/rest/services'
 
@@ -163,12 +163,6 @@ export function renameProps(
     out[to] = v
   }
   return out
-}
-
-export interface LayerIndexEntry {
-  file: string
-  features: number
-  label: string
 }
 
 /**

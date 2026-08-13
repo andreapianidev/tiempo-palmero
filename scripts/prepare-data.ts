@@ -31,13 +31,17 @@ import {
   CKAN,
   getJson,
   log,
+  mergeLayerIndex,
+  overpass,
   warn,
   roundCoords,
   type CkanResource,
+  type LayerIndexEntry,
 } from './shared.js'
 import { prepareGuagua } from './prepare-guagua.js'
 import { prepareArcgis } from './prepare-arcgis.js'
 import { prepareAgro } from './prepare-agro.js'
+import { prepareOsmRoads } from './prepare-osm-roads.js'
 
 // ---------------------------------------------------------------------------
 // 1. DEM — teselas terrarium
@@ -296,7 +300,7 @@ function repairText(value: unknown, tally: { count: number }): unknown {
 
 async function prepareLayers(): Promise<void> {
   await mkdir(path.join(PUBLIC, 'layers'), { recursive: true })
-  const index: Record<string, { file: string; features: number; label: string }> = {}
+  const index: Record<string, LayerIndexEntry> = {}
 
   for (const spec of LAYERS) {
     try {
@@ -380,21 +384,11 @@ async function prepareLayers(): Promise<void> {
   // parcela se pide en vivo. Ver la cabecera de `prepare-agro.ts`.
   Object.assign(index, await prepareAgro())
 
-  await writeFile(
-    path.join(PUBLIC, 'layers', 'index.json'),
-    JSON.stringify(
-      {
-        generated: new Date().toISOString(),
-        source:
-          'Cabildo Insular de La Palma — Servicio de Transformación Digital (La Palma Smart Island), ' +
-          'catálogo CKAN y visor ArcGIS de opendatalapalma.es',
-        license: 'CC-BY 4.0 / ODC-BY (límites administrativos)',
-        layers: index,
-      },
-      null,
-      2,
-    ),
-  )
+  // El viario de OSM NO entra aquí: se pide por su cuenta (`--only=viario`)
+  // porque son 20 MB de Overpass y no hay razón para volver a bajarlos cada vez
+  // que se refresca una capa del Cabildo. Por eso el índice se funde en vez de
+  // reescribirse: registrar estas catorce no puede borrar la decimoquinta.
+  await mergeLayerIndex(index)
 }
 
 // ---------------------------------------------------------------------------
@@ -418,38 +412,11 @@ const MUNICIPIOS = [
   'Villa de Mazo',
 ]
 
-const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-]
-
 interface OverpassNode {
   id: number
   lon: number
   lat: number
   tags?: Record<string, string>
-}
-
-async function overpass(query: string): Promise<OverpassNode[]> {
-  let last: unknown
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    for (let i = 0; i < 3; i++) {
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { ...UA, 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ data: query }),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const j = (await res.json()) as { elements: OverpassNode[] }
-        return j.elements ?? []
-      } catch (e) {
-        last = e
-        await new Promise((r) => setTimeout(r, 4000 * (i + 1)))
-      }
-    }
-  }
-  throw last
 }
 
 interface GazetteerEntry {
@@ -473,7 +440,7 @@ async function prepareGazetteer(): Promise<void> {
       `area["name"="${mun}"]["boundary"="administrative"]->.a;` +
       `node["place"](area.a);out;`
     try {
-      const nodes = await overpass(q)
+      const nodes = await overpass<OverpassNode>(q)
       for (const n of nodes) {
         const name = n.tags?.name
         if (!name) continue
@@ -618,6 +585,7 @@ async function main() {
   await mkdir(PUBLIC, { recursive: true })
   if (run('dem')) await prepareDem()
   if (run('layers')) await prepareLayers()
+  if (run('viario')) await mergeLayerIndex(await prepareOsmRoads())
   if (run('gtfs')) await prepareGuagua()
   if (run('gazetteer')) await prepareGazetteer()
   if (run('snapshot')) await prepareSnapshot()

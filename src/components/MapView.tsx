@@ -39,6 +39,12 @@ import {
   PLACES_LAYER,
   ROADS_HIT_LAYER,
 } from './places/PlacesLayer'
+import {
+  addOsmRoadsLayers,
+  setOsmRoadsData,
+  setOsmRoadsVisible,
+  OSM_ROADS_MIN_ZOOM,
+} from './roads/OsmRoadsLayer'
 import { readPlace, type PlaceRecord } from '../lib/places'
 import { addPlaceIcons, addPoiIcons } from './MapIcons'
 import { readRoad, type RoadRecord } from '../lib/roads'
@@ -78,6 +84,8 @@ export interface LayerVisibility {
   /** Trazados y paradas: una sola casilla para toda la red. */
   guagua: boolean
   roads: boolean
+  /** El viario completo de OSM, por debajo de las carreteras del Cabildo. */
+  osmRoads: boolean
   counters: boolean
   fire: boolean
   wind: boolean
@@ -131,6 +139,8 @@ interface Props {
   /** Sitios encendidos, ya fusionados en una colección de puntos. */
   places: GeoJSON.FeatureCollection | null
   roads: GeoJSON.FeatureCollection | null
+  /** Los 19.770 trazados de OSM; llegan solo si se enciende la capa. */
+  osmRoads: GeoJSON.FeatureCollection | null
   /** Trazados de los canales de riego LP-I, LP-II y LP-III. */
   canals: GeoJSON.FeatureCollection | null
   /** La capa de agua está encendida: es un sitio, no una capa del mapa. */
@@ -172,6 +182,8 @@ interface Props {
    * umbral, no en cada fotograma de un gesto: es un booleano, no el zoom.
    */
   onStopsZoom: (reached: boolean) => void
+  /** Lo mismo para las pistas del viario: por debajo de z13 no se dibujan. */
+  onTracksZoom: (reached: boolean) => void
 }
 
 /** Qué topónimos merecen etiqueta a cada zoom. Sin esto la isla es ilegible. */
@@ -324,6 +336,12 @@ export function MapView(props: Props) {
       const windLayer = new WindLayer()
       windLayerRef.current = windLayer
       map.addLayer(windLayer, 'municipal-boundaries')
+
+      // El viario de OSM es lo primero de todo lo que se dibuja encima del
+      // fondo: son 19.770 trazados que sitúan, no que informan, y tienen que
+      // quedar por DEBAJO de las 61 carreteras del Cabildo —que sí se pinchan y
+      // sí tienen ficha— y por debajo de senderos, guaguas y sitios.
+      addOsmRoadsLayers(map)
 
       // Las carreteras y los sitios se crean antes que senderos y guaguas: las
       // vías son el fondo sobre el que se leen las demás capas, y los iconos de
@@ -652,18 +670,27 @@ export function MapView(props: Props) {
     })
   }, [ready, visible.guagua, props.guaguaRoute])
 
-  // Cruzar el umbral de zoom de las paradas se avisa una sola vez por cruce: la
-  // barra lateral necesita saberlo para no dejar una casilla marcada sobre un
-  // mapa donde no puede aparecer nada.
+  // Cruzar un umbral de zoom se avisa una sola vez por cruce: la barra lateral
+  // necesita saberlo para no dejar una casilla marcada sobre un mapa donde no
+  // puede aparecer nada. Son dos umbrales —las paradas de guagua y las pistas
+  // del viario— y un solo listener: el evento `zoom` se dispara en cada
+  // fotograma de un gesto, y dos suscripciones sería recorrerlo dos veces.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
     let last: boolean | null = null
+    let lastTracks: boolean | null = null
     const check = () => {
-      const reached = map.getZoom() >= STOPS_MIN_ZOOM
+      const zoom = map.getZoom()
+      const reached = zoom >= STOPS_MIN_ZOOM
       if (reached !== last) {
         last = reached
         handlers.current.onStopsZoom(reached)
+      }
+      const tracks = zoom >= OSM_ROADS_MIN_ZOOM.minor
+      if (tracks !== lastTracks) {
+        lastTracks = tracks
+        handlers.current.onTracksZoom(tracks)
       }
     }
     check()
@@ -685,6 +712,18 @@ export function MapView(props: Props) {
     if (!map || !ready) return
     setRoadsData(map, props.roads)
   }, [ready, props.roads])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setOsmRoadsData(map, props.osmRoads)
+  }, [ready, props.osmRoads])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setOsmRoadsVisible(map, visible.osmRoads)
+  }, [ready, visible.osmRoads])
 
   useEffect(() => {
     const map = mapRef.current

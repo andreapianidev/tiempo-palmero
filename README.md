@@ -109,6 +109,10 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   cultural e histórico, zonas recreativas y puntos de recarga eléctrica, cada
   capa con su interruptor y su icono, y la **red de carreteras** debajo de todo,
   que también se pincha para ver de dónde a dónde va cada tramo.
+- **Viario completo de OpenStreetMap**: 19.770 trazados y 3.373 km, de los que
+  2.225 km son pistas agrícolas y forestales y caminos de servicio. Es lo que
+  las 61 carreteras del Cabildo no pueden ser —un callejero— y va por debajo de
+  todas ellas (ver [el viario](#el-viario-que-el-cabildo-no-publica)).
 - **Aforos de tráfico y de senderos**: cuánta gente pasa hoy por cada cruce y
   por cada acceso a sendero, separando coches, motos, pesados, bicicletas y
   peatones, con los últimos ocho días en barras y el denominador de la red a la
@@ -638,7 +642,7 @@ nota que lo dice.
 
 El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**, y el visor
 ArcGIS del Cabildo —que no es el mismo inventario— tiene **2.387 elementos**
-más. Esta aplicación usa hoy **quince capas estáticas** —de las dieciséis que
+más. Esta aplicación usa hoy **dieciséis capas estáticas** —de las diecisiete que
 descarga; la única que no se lee en runtime es el inventario de sensores de CO₂,
 que llega en directo de DEMASE— más el resumen de cultivos y el agregado del
 GTFS de guaguas. Lo que queda, ordenado por lo que aportaría de verdad:
@@ -930,6 +934,48 @@ código `LP-n` es una vía insular, y los ocho restantes llevan ahí a su titula
 («Municipal», «Parque Nacional», y «Aerpuerto», sin la o, tal como lo publica la
 fuente).
 
+#### El viario que el Cabildo no publica
+
+Las 61 carreteras son las 61 carreteras, y no pretenden ser otra cosa. Debajo de
+ellas la isla salía **vacía**: en las medianías de Tijarafe, en Puntagorda o en
+cualquier lomo, las paradas de guagua y los sensores flotaban sobre un relieve
+sin una sola calle por la que se llega hasta ellos. A 500 m de la parada de
+Plaza El Jesús, en Tijarafe, el mapa dibujaba **cero vías**; con esta capa
+dibuja **65**.
+
+Esa parte la pone OpenStreetMap, y como todo lo que viene de ahí se extrae **una
+sola vez en tiempo de compilación** (`scripts/prepare-osm-roads.ts`): la usage
+policy de Overpass prohíbe el uso sistemático desde una aplicación, así que en
+runtime esto es un fichero estático más, con su atribución dentro.
+
+| Nivel | Qué es | Trazados | km | Desde |
+|---|---|---:|---:|---|
+| Principal | La red que cruza la isla: LP-1, LP-2, LP-3 y enlaces | 2.303 | 531,6 | z0 |
+| Local | Calles de pueblo, `unclassified`, `tertiary`, peatonales | 3.464 | 615,9 | z11 |
+| Pistas y accesos | `track` (tierra, discontinua) y `service` | 14.003 | 2.225,5 | z13 |
+
+Tres decisiones que no son de gusto:
+
+- **No entran los senderos.** `path`, `footway`, `steps` y `cycleway` son 6.570
+  trazados más que aquí serían ruido y que además duplicarían la capa de
+  senderos, que ya está, viene del Cabildo y trae nombre y avisos.
+- **Las pistas aparecen a partir de z13**, y son 14.003 de los 19.770: a zoom de
+  isla entera pintan una telaraña gris encima del tiempo, que es justo lo
+  contrario de lo que esta aplicación enseña. El panel lo dice mientras no se
+  llega —el mismo aviso que ya tenían las paradas de guagua.
+- **No se pincha.** La ficha de una carretera —código, recorrido, titularidad,
+  las dos longitudes— sale del dato del Cabildo, que es quien la publica. Una
+  capa de toque de 19.770 líneas se comería el clic de las estaciones, las
+  paradas y los puntos de interés.
+
+El fichero son 5,2 MB (837 KB por el cable) y se descarga **solo al encender el
+interruptor**. Sale de 20,4 MB de Overpass: los trazados se adelgazan con
+Douglas-Peucker a **1e-5 grados**, que a esta latitud son **1,11 m como mucho**,
+medio píxel a z16 —el zoom máximo de la aplicación, donde un píxel mide 2,10 m—.
+Eso quita el 32 % de los vértices sin que se vea. El umbral está medido, no
+elegido: a 5e-5 (5,5 m, 2,6 px) las curvas de las medianías empiezan a verse
+recortadas.
+
 ### Los aforos, y el endpoint que no dice lo que parece
 
 La red de aforos cuenta quién pasa por diecisiete cruces, carreteras y accesos a
@@ -1174,8 +1220,10 @@ servido como fichero estático.
 
 - **Nominatim y Overpass no se llaman nunca.** Su política de uso prohíbe el uso
   sistemático desde una aplicación. Los topónimos se extraen una sola vez con
-  `scripts/prepare-data.ts` y se congelan en `public/gazetteer.json`, con su
-  atribución ODbL.
+  `scripts/prepare-data.ts` y se congelan en `public/gazetteer.json`, y el
+  viario con `scripts/prepare-osm-roads.ts` en
+  `public/layers/viario-osm.geojson`; los dos, con su atribución ODbL dentro del
+  propio fichero.
 - **Sin claves de API en el cliente.** El mapa base no usa Mapbox, Google ni
   ningún proveedor de teselas: se dibuja con el relieve sombreado del DEM local
   y los contornos que publica el propio Cabildo.
@@ -1188,6 +1236,7 @@ servido como fichero estático.
 scripts/prepare-data.ts   Compilación. Se ejecuta una vez.
   ├── prepare-guagua.ts   GTFS de TILP → red de líneas, paradas y horarios
   ├── prepare-arcgis.ts   Servicios ArcGIS del visor: miradores y carreteras
+  ├── prepare-osm-roads.ts  Viario completo de OSM vía Overpass (19.770 trazados)
   ├── public/dem/         118 teselas terrarium, z9–z12 (~34 m/px a z12)
   ├── public/layers/      GeoJSON del Cabildo; municipios reproyectado a WGS84
   └── public/gazetteer.json  789 topónimos extraídos de OSM
@@ -1416,8 +1465,14 @@ Documentadas aquí porque cuestan un día entero de depuración cada una:
 
 ```bash
 npm install
-npm run prepare-data     # descarga DEM, capas y topónimos (una vez, ~2 min)
+npm run prepare-data     # descarga DEM, capas, topónimos y viario (una vez, ~2 min)
 npm run dev
+```
+
+```bash
+# Refrescar solo una parte, sin volver a bajarlo todo:
+npm run prepare-data -- --only=viario     # viario de OSM (20 MB de Overpass)
+npm run prepare-data -- --only=layers     # las capas del Cabildo
 ```
 
 ```bash
@@ -1454,7 +1509,10 @@ clave que configurar.
   Cabildo.
 - **Transporte público** — GTFS de Transportes Insulares La Palma (TILP),
   publicado por el Cabildo. CC-BY 4.0. <https://www.tilp.es>
-- **Topónimos** — © colaboradores de OpenStreetMap, ODbL 1.0.
+- **Topónimos y viario completo** — © colaboradores de OpenStreetMap, ODbL 1.0.
+  Los dos se extraen en tiempo de compilación vía Overpass; la aplicación no
+  consulta OpenStreetMap en tiempo de ejecución.
+  <https://www.openstreetmap.org/copyright>
 - **Modelo de elevación y relieve** — Mapzen Terrain Tiles vía AWS Open Data,
   derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM.
 
