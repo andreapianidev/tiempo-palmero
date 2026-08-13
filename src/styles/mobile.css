@@ -397,6 +397,10 @@
 .app-mobile .maplibregl-ctrl-bottom-right {
   z-index: 8;
   bottom: calc(env(safe-area-inset-bottom) + 82px);
+  /* A la izquierda: en la derecha está la columna de botones redondos, y la ⓘ
+     quedaba justo debajo del último, imposible de tocar. */
+  left: 6px;
+  right: auto;
 }
 
 /* Dónde dice el navegador que está quien mira. Es un punto y no una pastilla:

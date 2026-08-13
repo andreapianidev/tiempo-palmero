@@ -58,6 +58,7 @@ import type { Diagnosis } from '../lib/sensor-health'
 import { fallbackReading } from '../lib/station-fallback'
 import type { GazetteerEntry } from '../lib/api'
 import { n0, t } from '../i18n'
+import { MOBILE_QUERY } from '../hooks/useIsMobile'
 
 export const ISLAND_CENTER: LngLatLike = [-17.86, 28.66]
 
@@ -276,6 +277,30 @@ export function MapView(props: Props) {
     mapRef.current = map
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
+    // La atribución compacta nace DESPLEGADA, y desplegada son dos líneas de
+    // ancho completo: en un teléfono, media isla tapada por una licencia que en
+    // ese momento no está leyendo nadie. Se arranca plegada, con su ⓘ, que es
+    // lo que hace cualquier mapa en pantalla estrecha —y lo que MapLibre hace
+    // él solo en cuanto arrastras el mapa.
+    //
+    // Lo que la despliega es la clase, no el atributo `open` del `<details>`:
+    // quitar `open` no cerraba nada. Quitar la clase es exactamente lo que hace
+    // su propio botón. En pantalla ancha la clase no existe y esto no hace nada.
+    //
+    // Y va en el primer `idle`, no aquí mismo: cuando se añade el control
+    // todavía no hay ninguna fuente cargada, así que la atribución está vacía y
+    // ni siquiera se ha puesto compacta. Se despliega DESPUÉS, al llegar la
+    // primera atribución, y una llamada anterior a ese momento no toca nada.
+    //
+    // Y solo en la pantalla estrecha: en el escritorio la atribución cabe
+    // entera en su esquina y ahí se queda como estaba, desplegada.
+    map.once('idle', () => {
+      if (!window.matchMedia(MOBILE_QUERY).matches) return
+      map
+        .getContainer()
+        .querySelector('.maplibregl-ctrl-attrib')
+        ?.classList.remove('maplibregl-compact-show')
+    })
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
     map.addControl(
       new maplibregl.ScaleControl({ maxWidth: 90, unit: 'metric' }),
