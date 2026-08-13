@@ -115,6 +115,11 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   2.225 km son pistas agrícolas y forestales y caminos de servicio. Es lo que
   las 61 carreteras del Cabildo no pueden ser —un callejero— y va por debajo de
   todas ellas (ver [el viario](#el-viario-que-el-cabildo-no-publica)).
+- **Cobertura de TDT simulada**: las 49 simulaciones de propagación de los
+  repetidores que el Cabildo publica en un KMZ, fundidas en un mapa de celdas de
+  92 m. Cubren el 51,6 % de la isla, y la ficha de un punto dice cuántos
+  repetidores lo alcanzan (ver
+  [la cobertura de TDT](#la-cobertura-de-tdt-que-estaba-en-un-kmz)).
 - **Aforos de tráfico y de senderos**: cuánta gente pasa hoy por cada cruce y
   por cada acceso a sendero, separando coches, motos, pesados, bicicletas y
   peatones, con los últimos ocho días en barras y el denominador de la red a la
@@ -644,7 +649,7 @@ nota que lo dice.
 
 El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**, y el visor
 ArcGIS del Cabildo —que no es el mismo inventario— tiene **2.387 elementos**
-más. Esta aplicación usa hoy **diecinueve capas estáticas** —de las veinte que
+más. Esta aplicación usa hoy **veinte capas estáticas** —de las veintiuna que
 descarga; la única que no se lee en runtime es el inventario de sensores de CO₂,
 que llega en directo de DEMASE— más el resumen de cultivos y el agregado del
 GTFS de guaguas. Lo que queda, ordenado por lo que aportaría de verdad:
@@ -978,6 +983,53 @@ Eso quita el 32 % de los vértices sin que se vea. El umbral está medido, no
 elegido: a 5e-5 (5,5 m, 2,6 px) las curvas de las medianías empiezan a verse
 recortadas.
 
+#### La cobertura de TDT que estaba en un KMZ
+
+La pregunta «¿llega la tele aquí?» tiene respuesta publicada, pero no donde se
+la busca. El catálogo CKAN no la tiene. La capa `Telecomunicaciones` del visor
+trae los **100 emplazamientos de antena** —33 de telefonía móvil, 32 de
+televisión, 14 de enlace, 11 de la red Tetra de emergencias y 10 de radio— y
+ninguna geometría de cobertura. Lo que sí existe es un **KMZ**,
+`Simulaciones_Rep_TDT.kmz`, colgado del portal del Cabildo en ArcGIS Online
+desde abril de 2018: dentro hay **49 simulaciones de propagación**, una por
+sector de repetidor, cada una como una imagen georreferenciada.
+
+Se funden en build (`scripts/prepare-osm-roads.ts` tiene un hermano,
+`prepare-tdt.ts`) en un solo PNG de 28 KB con celdas de **92 m** —la resolución
+de la más fina de las 49, subirla no inventaría detalle—, y con el número de
+sectores que alcanzan cada celda guardado en el canal alfa, en tres escalones.
+Por eso la ficha de un punto puede decir «la alcanzan 3 repetidores o más»
+leyendo **el mismo píxel** que el mapa pinta: no hay dos fuentes que puedan
+contradecirse.
+
+| | |
+|---|---:|
+| Superficie de la isla con simulación | **51,6 %** |
+| Celdas de tierra que alcanza 1 repetidor | 33.720 |
+| …2 repetidores | 11.823 |
+| …3 o más | 3.924 |
+| Celdas de mar recortadas | 43.143 |
+
+El recorte a la costa es una decisión, y se dice: la simulación pinta también
+mar abierto, donde no hay a quién dar señal. El límite insular es el mismo
+fichero del Cabildo que dibuja la isla, y la comprobación de que el recorte cae
+donde debe es aritmética: las 95.801 celdas de tierra que salen son **711 km²**,
+y La Palma tiene 708.
+
+**Lo que este dato NO dice**, y la interfaz lo repite en la leyenda, en la ficha
+del punto y en la pantalla de fuentes: no es una medida, es de 2018, y simula
+los repetidores, no el centro emisor principal. Quedar fuera de la mancha **no**
+significa que allí no llegue la señal. Lo que sí se ve en ella son las sombras
+de radio del relieve: la Caldera de Taburiente sale hueca, y en los barrancos
+del noreste el dibujo es un peine.
+
+Un detalle que obligó a escribir más código del previsto: a 92 m, un «no» de una
+sola celda engaña. El casco de **Villa de Mazo** y el puerto de **Tazacorte**
+caen los dos en un agujero de UNA celda con cobertura simulada a tres o cuatro
+celdas de distancia. Así que la ficha mira también alrededor —tres celdas, 276
+m— y distingue «aquí no, pero sí a menos de 300 m» de «fuera de las 49
+simulaciones». Son dos frases distintas porque son dos cosas distintas.
+
 ### Los aforos, y el endpoint que no dice lo que parece
 
 La red de aforos cuenta quién pasa por diecisiete cruces, carreteras y accesos a
@@ -1239,6 +1291,7 @@ scripts/prepare-data.ts   Compilación. Se ejecuta una vez.
   ├── prepare-guagua.ts   GTFS de TILP → red de líneas, paradas y horarios
   ├── prepare-arcgis.ts   Servicios ArcGIS del visor: miradores y carreteras
   ├── prepare-osm-roads.ts  Viario completo de OSM vía Overpass (19.770 trazados)
+  ├── prepare-tdt.ts      Cobertura simulada de TDT: 49 imágenes del KMZ → un PNG
   ├── public/dem/         118 teselas terrarium, z9–z12 (~34 m/px a z12)
   ├── public/layers/      GeoJSON del Cabildo; municipios reproyectado a WGS84
   └── public/gazetteer.json  789 topónimos extraídos de OSM
@@ -1514,6 +1567,7 @@ npm run dev
 ```bash
 # Refrescar solo una parte, sin volver a bajarlo todo:
 npm run prepare-data -- --only=viario     # viario de OSM (20 MB de Overpass)
+npm run prepare-data -- --only=tdt        # cobertura TDT (KMZ del Cabildo)
 npm run prepare-data -- --only=layers     # las capas del Cabildo
 ```
 
@@ -1544,6 +1598,9 @@ clave que configurar.
   CC-BY 4.0. Los sitios y la recarga eléctrica salen del catálogo CKAN; los
   miradores y las carreteras, de los servicios ArcGIS del visor del Cabildo:
   <https://www.opendatalapalma.es/search?groupIds=c27000c1d7a84444bf4321b87e8d2223>
+- **Cobertura de TDT** — Cabildo Insular de La Palma, `Simulaciones_Rep_TDT.kmz`
+  (ArcGIS Online, 2018). CC-BY 4.0. Es una simulación de propagación de los 49
+  sectores de repetidor, no una medida ni una garantía de recepción.
 - **Aforos de tráfico y de senderos** — Cabildo Insular de La Palma, vertical
   `count` de la API (`count_locations`, `count_today`, `count_historic`).
   CC-BY 4.0.

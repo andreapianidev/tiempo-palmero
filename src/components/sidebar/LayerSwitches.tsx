@@ -26,6 +26,9 @@ const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
   // Justo debajo de las insulares, que es donde está en el mapa: son la misma
   // pregunta —por dónde se llega— con dos respuestas de distinto alcance.
   { id: 'osmRoads', label: t.layers.osmRoads },
+  // Debajo del viario: las dos contestan «¿qué llega hasta aquí?», una por
+  // carretera y la otra por el aire.
+  { id: 'tdt', label: t.layers.tdt },
   { id: 'counters', label: t.layers.counters },
   { id: 'fire', label: t.layers.fire },
 ]

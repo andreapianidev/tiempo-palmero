@@ -7,9 +7,15 @@
  * trazo discontinuo. Que las dos se vean parecidas no significa que sean lo
  * mismo, y la interfaz no puede dejar que se confundan.
  *
- * Se carga SOLO al abrirla, igual que la de estación: el archivo de un día son
- * 124 KB y quien abre la ficha de un punto casi siempre quiere el dato de
- * ahora, no la curva.
+ * Nace ABIERTA, igual que la de estación. Estuvo cerrada con el argumento de que
+ * el archivo de un día son 124 KB y que quien pincha un punto quiere el dato de
+ * ahora; pero quien pincha un punto quiere saber si eso que marca es mucho o
+ * poco para la hora que es, y eso solo lo contesta la curva. Cerrada, la
+ * respuesta estaba detrás de un clic que casi nadie daba —y la de estación ya
+ * nacía abierta, así que las dos fichas hermanas se comportaban distinto sin
+ * ninguna razón—. El coste está acotado por el CDN: `/api/history` sirve los
+ * días terminados con `s-maxage` de 30 días y el de hoy con 300 s, así que la
+ * petición casi nunca llega al Cabildo.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -60,7 +66,7 @@ interface Props {
 }
 
 export function PointHistory({ lon, lat, elevation, dem, excluded, now }: Props) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [range, setRange] = useState<Range>('24h')
   const [variable, setVariable] = useState<InterpolableVariable>('temperature')
   const [days, setDays] = useState<DayPayload[]>([])
@@ -155,7 +161,12 @@ export function PointHistory({ lon, lat, elevation, dem, excluded, now }: Props)
         onClick={() => setOpen((v) => !v)}
       >
         <span>{t.pointHistory.title}</span>
-        <span className="dim small">{open ? 'ocultar' : 'ver 24 h / 7 días'}</span>
+        {/* Con la ficha recién abierta el cuerpo tarda un segundo en tener
+            curva, y el rótulo «ocultar» sobre un hueco blanco se lee como que
+            no hay nada. Lo mismo que hace la ficha de estación. */}
+        <span className="dim small">
+          {loading ? 'cargando…' : open ? 'ocultar' : 'ver 24 h / 7 días'}
+        </span>
       </button>
 
       {open && (

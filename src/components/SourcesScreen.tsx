@@ -88,6 +88,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'Estado de los senderos (Cabildo)',
   },
   {
+    title: t.sources.tdtTitle,
+    body: t.sources.tdtBody,
+    license: t.sources.tdtLicense,
+    href: 'https://www.opendatalapalma.es/datasets/television-digital-terrestre-kml',
+    hrefLabel: 'Televisión digital terrestre (visor del Cabildo)',
+  },
+  {
     title: t.sources.viarioTitle,
     body: t.sources.viarioBody,
     license: t.sources.viarioLicense,

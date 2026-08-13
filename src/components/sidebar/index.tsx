@@ -32,6 +32,7 @@ import { WindStatus } from './WindStatus'
 import { CounterStatus } from './CounterStatus'
 import { GuaguaHint } from './GuaguaHint'
 import { OsmRoadsHint } from './OsmRoadsHint'
+import { TdtHint } from './TdtHint'
 import { CloudSea } from './CloudSea'
 import { RoqueStatus } from './RoqueStatus'
 import { TrailAlerts } from './TrailAlerts'
@@ -82,6 +83,8 @@ interface Props {
   guagua: { loading: boolean; stopsZoomReached: boolean }
   /** Lo mismo para el viario de OSM, que además puede fallar al descargarse. */
   viario: { loading: boolean; failed: boolean; tracksZoomReached: boolean }
+  /** Y para la cobertura de TDT, que se descarga y se decodifica a píxeles. */
+  tdt: { loading: boolean; failed: boolean }
   deck: CloudDeck | null
   roque: RoqueData | null
   /** La vertical medida entre el techo de la red y la cumbre. Ver `summit.ts`. */
@@ -220,6 +223,11 @@ export function Sidebar(props: Props) {
               failed={props.viario.failed}
               tracksZoomReached={props.viario.tracksZoomReached}
               on={props.visible.osmRoads}
+            />
+            <TdtHint
+              loading={props.tdt.loading}
+              failed={props.tdt.failed}
+              on={props.visible.tdt}
             />
           </Section>
 

@@ -41,6 +41,7 @@ import {
   PLACES_LAYER,
   ROADS_HIT_LAYER,
 } from './places/PlacesLayer'
+import { addTdtLayer, setTdtVisible } from './tdt/TdtLayer'
 import {
   addOsmRoadsLayers,
   setOsmRoadsData,
@@ -89,6 +90,8 @@ export interface LayerVisibility {
   roads: boolean
   /** El viario completo de OSM, por debajo de las carreteras del Cabildo. */
   osmRoads: boolean
+  /** La mancha de cobertura simulada de los repetidores de TDT. */
+  tdt: boolean
   counters: boolean
   fire: boolean
   wind: boolean
@@ -369,6 +372,12 @@ export function MapView(props: Props) {
         },
         'municipal-boundaries',
       )
+
+      // La cobertura de TDT, justo encima de la malla y por debajo de todo lo
+      // demás: es otro fondo temático, y compite con la malla por el mismo
+      // sitio. Por debajo del viento a propósito —las partículas tienen que
+      // leerse sobre ella— y muy por debajo de senderos, guaguas y viario.
+      addTdtLayer(map, 'municipal-boundaries')
 
       // El viento va POR ENCIMA de la malla interpolada y por debajo de los
       // contornos: se lee sobre el color de fondo sin tapar los límites ni las
@@ -788,6 +797,12 @@ export function MapView(props: Props) {
     if (!map || !ready) return
     setOsmRoadsVisible(map, visible.osmRoads)
   }, [ready, visible.osmRoads])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    setTdtVisible(map, visible.tdt)
+  }, [ready, visible.tdt])
 
   useEffect(() => {
     const map = mapRef.current

@@ -13,6 +13,7 @@ import { useWindField } from './hooks/useWindField'
 import { useGuagua } from './hooks/useGuagua'
 import { usePlaces, NO_PLACES, type PlaceVisibility } from './hooks/usePlaces'
 import { useOsmRoads } from './hooks/useOsmRoads'
+import { useTdt } from './hooks/useTdt'
 import { useCounters } from './hooks/useCounters'
 import { useAgro } from './hooks/useAgro'
 import { useTrailReports } from './hooks/useTrailReports'
@@ -38,6 +39,7 @@ const INITIAL_LAYERS: LayerVisibility = {
   guagua: false,
   roads: false,
   osmRoads: false,
+  tdt: false,
   counters: false,
   fire: true,
   wind: false,
@@ -96,6 +98,14 @@ export default function App() {
     exaggeration: DEFAULT_EXAGGERATION,
   })
   const [probe, setProbe] = useState<ProbePoint | null>(null)
+  /**
+   * La máscara de cobertura TDT: 28 KB que se decodifican a píxeles.
+   *
+   * Se pide con la capa encendida O con una ficha de punto abierta. Lo segundo
+   * es lo que hace que la respuesta esté ahí sin tener que descubrir antes un
+   * interruptor: quien pincha un sitio pregunta por el sitio entero.
+   */
+  const tdt = useTdt(visible.tdt || probe !== null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [showSources, setShowSources] = useState(false)
   /**
@@ -288,6 +298,7 @@ export default function App() {
       dem={data.dem}
       faulty={faultyIds}
       eto={agro.eto}
+      tdt={tdt.mask}
       now={now}
       onClose={() => setProbe(null)}
     />
@@ -482,6 +493,7 @@ export default function App() {
         counters={counters}
         guagua={{ loading: guagua.loading, stopsZoomReached }}
         viario={{ loading: viario.loading, failed: viario.failed, tracksZoomReached }}
+        tdt={{ loading: tdt.loading, failed: tdt.failed }}
         deck={deck}
         roque={roque}
         summitLayer={data.summitLayer}
