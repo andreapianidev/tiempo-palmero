@@ -14,6 +14,7 @@ import {
   type BasemapId,
 } from '../lib/basemaps'
 import { isBundleVariable, pinLabel, type MapVariable } from '../lib/variables'
+import { place, pillRank, RANK, type Box, type DeclutterItem } from '../lib/declutter'
 import { renderGrid, rasterToCanvas } from '../lib/grid-canvas'
 import { rasterizeCo2 } from '../lib/co2/raster'
 import type { Co2Field } from '../lib/co2/field'
@@ -153,6 +154,20 @@ const PLACE_MIN_ZOOM: Record<string, number> = {
   square: 14.5,
 }
 
+/**
+ * El rectángulo que un marcador ocupa en pantalla.
+ *
+ * Se mide SIEMPRE expandido: si se midiera un pin ya encogido, su ancho sería
+ * el del punto y no volvería a abrirse nunca al separarse de sus vecinos. Por
+ * eso deshace el encogido antes de preguntar por el tamaño.
+ */
+function box(map: MlMap, el: HTMLElement, lon: number, lat: number): Box {
+  el.classList.remove('mk-pill-dot')
+  el.style.visibility = 'visible'
+  const pt = map.project([lon, lat])
+  return { x: pt.x, y: pt.y, w: el.offsetWidth || 44, h: el.offsetHeight || 18 }
+}
+
 export function MapView(props: Props) {
   const { dem, models, variable, stops, stations, visible, probe } = props
   const model = models.temperature
@@ -176,6 +191,15 @@ export function MapView(props: Props) {
   const windLayerRef = useRef<WindLayer | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
   const pillsRef = useRef<{ el: HTMLElement; lon: number; lat: number; priority: number }[]>([])
+  /**
+   * Las cámaras de incendio, que también compiten por el sitio.
+   *
+   * No son pastillas y no se colapsan a un punto —un triángulo colapsado no
+   * dice nada—, pero tienen que entrar en el reparto igual que los aforos: se
+   * dibujaban por encima de todo sin avisar a nadie, y un triángulo caído justo
+   * sobre una pastilla se leía como parte de la cifra. Ver `declutterImpl`.
+   */
+  const firesRef = useRef<{ el: HTMLElement; lon: number; lat: number; alert: boolean }[]>([])
   const placeMarkersRef = useRef<maplibregl.Marker[]>([])
   const probeMarkerRef = useRef<maplibregl.Marker | null>(null)
   // Los callbacks cambian en cada render; se leen desde una ref para que los
@@ -689,69 +713,49 @@ export function MapView(props: Props) {
     const map = mapRef.current
     if (!map) return
 
-    const taken: { x: number; y: number; w: number; h: number }[] = []
-    const collides = (x: number, y: number, w: number, h: number) =>
-      taken.some(
-        (r) =>
-          Math.abs(r.x - x) < (r.w + w) / 2 + 3 && Math.abs(r.y - y) < (r.h + h) / 2 + 2,
-      )
+    const els: HTMLElement[] = []
+    const items: DeclutterItem[] = []
 
-    interface Item {
-      el: HTMLElement
-      lon: number
-      lat: number
-      rank: number
-      /** Los pins se colapsan a un punto; las etiquetas se ocultan del todo. */
-      collapsible: boolean
+    /**
+     * Las cámaras de incendio entran en el reparto, que hasta ahora no lo
+     * hacían: se pintaban con `z-index` 50 por encima de todo, y un triángulo
+     * de aviso caído sobre una pastilla se leía como parte de la cifra. La
+     * prioridad de cada clase de marcador está en `lib/declutter`.
+     */
+    for (const f of firesRef.current) {
+      els.push(f.el)
+      items.push({
+        rank: f.alert ? RANK.fireAlert : RANK.fireQuiet,
+        collapsible: false,
+        box: box(map, f.el, f.lon, f.lat),
+      })
     }
-
-    const items: Item[] = []
-
-    // Los topónimos de primer orden van ANTES que los pins. Perder «Santa Cruz
-    // de La Palma» para ganar un grado más en pantalla deja un mapa bonito en
-    // el que nadie sabe dónde está.
     for (const m of placeMarkersRef.current) {
       const el = m.getElement()
       const ll = m.getLngLat()
       const major = el.classList.contains('mk-place-city') || el.classList.contains('mk-place-town')
-      items.push({ el, lon: ll.lng, lat: ll.lat, rank: major ? 0 : 2, collapsible: false })
+      els.push(el)
+      items.push({
+        rank: major ? RANK.placeMajor : RANK.placeMinor,
+        collapsible: false,
+        box: box(map, el, ll.lng, ll.lat),
+      })
     }
-    // Pins, por altitud descendente: en una isla de 2426 m las estaciones altas
-    // son las que cuentan la historia y las que menos vecinas tienen.
     const maxElev = Math.max(1, ...pillsRef.current.map((p) => p.priority))
     for (const p of pillsRef.current) {
+      els.push(p.el)
       items.push({
-        el: p.el,
-        lon: p.lon,
-        lat: p.lat,
-        rank: 1 + (1 - p.priority / maxElev) * 0.9,
+        rank: pillRank(p.priority, maxElev),
         collapsible: true,
+        box: box(map, p.el, p.lon, p.lat),
       })
     }
 
-    items.sort((a, b) => a.rank - b.rank)
-
-    for (const it of items) {
-      const pt = map.project([it.lon, it.lat])
-      // Se mide siempre expandido: si se midiera colapsado, el ancho sería el
-      // del punto y el pin nunca volvería a abrirse al alejar los vecinos.
-      it.el.classList.remove('mk-pill-dot')
-      it.el.style.visibility = 'visible'
-      const w = it.el.offsetWidth || 44
-      const h = it.el.offsetHeight || 18
-
-      if (!collides(pt.x, pt.y, w, h)) {
-        taken.push({ x: pt.x, y: pt.y, w, h })
-        continue
-      }
-      if (it.collapsible) {
-        it.el.classList.add('mk-pill-dot')
-        // Aun colapsado ocupa sitio: dos puntos encima del otro son un punto.
-        if (!collides(pt.x, pt.y, 12, 12)) taken.push({ x: pt.x, y: pt.y, w: 12, h: 12 })
-        else it.el.style.visibility = 'hidden'
-      } else {
-        it.el.style.visibility = 'hidden'
-      }
+    const placement = place(items)
+    for (let i = 0; i < els.length; i++) {
+      const el = els[i]
+      el.classList.toggle('mk-pill-dot', placement[i] === 'dot')
+      el.style.visibility = placement[i] === 'hidden' ? 'hidden' : 'visible'
     }
   }
 
@@ -945,6 +949,8 @@ export function MapView(props: Props) {
       }
     }
 
+    const fires: { el: HTMLElement; lon: number; lat: number; alert: boolean }[] = []
+
     if (visible.fire) {
       for (const f of props.fire) {
         const el = document.createElement('button')
@@ -957,16 +963,22 @@ export function MapView(props: Props) {
           handlers.current.onFire(f)
         })
         add(f.lon, f.lat, el, 50)
+        // El `z-index` sigue haciendo falta —cuando dos cosas caben, la cámara
+        // va delante—, pero ya no es lo único que reparte: entra en el mismo
+        // sorteo que las pastillas para que no lleguen a pisarse.
+        fires.push({ el, lon: f.lon, lat: f.lat, alert: f.hasAlert })
       }
     }
 
     pillsRef.current = pills
+    firesRef.current = fires
     declutter()
 
     return () => {
       for (const m of markersRef.current) m.remove()
       markersRef.current = []
       pillsRef.current = []
+      firesRef.current = []
     }
   }, [
     ready,

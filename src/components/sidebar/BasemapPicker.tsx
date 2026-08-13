@@ -15,9 +15,12 @@ import { BASEMAPS, BASEMAP_ORDER, type BasemapId } from '../../lib/basemaps'
 interface Props {
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
+  /** La malla está encendida — y encendida, tapa cualquier fondo. */
+  gridOn: boolean
+  onToggleGrid: () => void
 }
 
-export function BasemapPicker({ basemap, onBasemap }: Props) {
+export function BasemapPicker({ basemap, onBasemap, gridOn, onToggleGrid }: Props) {
   const current = BASEMAPS[basemap]
 
   return (
@@ -36,6 +39,23 @@ export function BasemapPicker({ basemap, onBasemap }: Props) {
       </div>
 
       <p className="dim small">{current.note}</p>
+
+      {/* Con la malla encendida, del fondo se ve el mar y poco más: la malla
+          cubre la isla entera y es opaca.
+
+          Y opaca se queda. Bajarle la transparencia para que asome la carta
+          sonaba bien hasta que se mira lo que significa: el color de la malla
+          ES la lectura, y un naranja de 28° al 60 % sobre una ortofoto verde
+          ya no es un naranja de 28°. Antes que enseñar una temperatura falsa,
+          se dice lo que pasa y se ofrece apagarla. */}
+      {current.source && gridOn && (
+        <p className="dim small">
+          La malla interpolada va encima y cubre la isla.{' '}
+          <button className="link-btn" onClick={onToggleGrid}>
+            Apagarla para ver el fondo
+          </button>
+        </p>
+      )}
 
       {/* Que un fondo se pida fuera no es un detalle de implementación: es la
           diferencia entre un mapa que funciona con la red caída y uno que no.

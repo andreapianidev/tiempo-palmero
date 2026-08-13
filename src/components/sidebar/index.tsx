@@ -174,7 +174,12 @@ export function Sidebar(props: Props) {
             pestaña dice cuál está puesto: plegada, es la única forma de saber
             si lo que se está viendo es cálculo de casa o carta ajena. */}
         <Section title="Fondo del mapa" badge={BASEMAPS[props.basemap].label}>
-          <BasemapPicker basemap={props.basemap} onBasemap={props.onBasemap} />
+          <BasemapPicker
+            basemap={props.basemap}
+            onBasemap={props.onBasemap}
+            gridOn={props.visible.grid}
+            onToggleGrid={() => props.onToggle('grid')}
+          />
         </Section>
 
         {/* Solo cuando la capa está encendida: si no, describiría con detalle
