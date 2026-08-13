@@ -230,26 +230,31 @@ export function Sidebar(props: Props) {
             <PlaceSwitches visible={props.places} onToggle={props.onTogglePlace} />
           </Section>
 
-          {/* Debajo de las capas porque es lo que hay debajo de las capas. La
-              pestaña dice cuál está puesto: plegada, es la única forma de saber
-              si lo que se está viendo es cálculo de casa o carta ajena. */}
-          <Section title="Fondo del mapa" badge={BASEMAPS[props.basemap].label}>
+          {/* Debajo de las capas porque es lo que hay debajo de las capas.
+              El fondo y la vista 3D comparten pestaña a propósito: son la misma
+              pregunta en dos mitades —de qué está hecha la superficie que se
+              mira, y desde dónde se la mira— y en dos pestañas separadas la 3D
+              quedaba escondida detrás de un título que nadie abría.
+
+              Plegada, la pestaña dice las dos cosas: qué carta se está viendo
+              y si la cámara está inclinada. Es la única forma de saber, sin
+              abrirla, si lo que hay en pantalla es cálculo de casa o carta
+              ajena, y si está en plano o en relieve. */}
+          <Section
+            title="Fondo y vista"
+            badge={
+              BASEMAPS[props.basemap].label +
+              (props.terrain.on
+                ? ` · 3D ${exaggerationLabel(props.terrain.exaggeration)}`
+                : ' · plana')
+            }
+          >
             <BasemapPicker
               basemap={props.basemap}
               onBasemap={props.onBasemap}
               gridOn={props.visible.grid}
               onToggleGrid={() => props.onToggle('grid')}
             />
-          </Section>
-
-          {/* Justo después del fondo, porque es la otra mitad de la misma
-              pregunta: el fondo dice de qué está hecha la superficie y esto,
-              con qué forma se dibuja. Plegada, la pestaña dice si la vista está
-              inclinada y por cuánto va estirada la vertical. */}
-          <Section
-            title="Vista 3D"
-            badge={props.terrain.on ? exaggerationLabel(props.terrain.exaggeration) : 'plana'}
-          >
             <Scene3D
               on={props.terrain.on}
               onToggle={props.onTerrain}

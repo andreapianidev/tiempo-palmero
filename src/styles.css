@@ -204,6 +204,30 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
   letter-spacing: 0.02em;
 }
 
+/* Dos bloques dentro de una misma pestaña plegable. La línea separa el fondo
+   del mapa de la vista 3D: comparten sección porque son la misma pregunta en
+   dos mitades, pero se manejan por separado y tienen que verse por separado. */
+.subblock {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* El cuadro de gestos de la vista 3D. Sin viñeta y con la combinación de
+   teclas destacada delante: se lee como una tabla de atajos, no como prosa. */
+.gestures { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 7px; }
+.gestures li { font-size: 11.5px; color: var(--fg-dim); line-height: 1.45; }
+.gestures kbd {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-btn {
   font: 500 12px/1 var(--sans);

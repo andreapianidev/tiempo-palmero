@@ -1,13 +1,18 @@
 /**
- * Vista en tres dimensiones: el interruptor y lo que hay que saber al usarla.
+ * Vista en tres dimensiones: el interruptor, cómo se vuela y qué se exagera.
  *
- * El catálogo de la escena NO vive aquí —está en `lib/terrain.ts`, junto a las
- * cifras medidas que lo justifican—. Este archivo solo lo dibuja, igual que
- * `BasemapPicker` dibuja los fondos sin saber de dónde salen sus teselas.
+ * Va DENTRO de la misma sección que el fondo del mapa, como un segundo bloque.
+ * Son dos preguntas sobre lo mismo —de qué está hecha la superficie que se
+ * mira, y desde dónde se la mira— y separadas en dos pestañas plegables
+ * quedaba escondido que la 3D existe.
+ *
+ * El catálogo de la escena NO vive aquí: está en `lib/terrain.ts`, junto a las
+ * cifras medidas que lo justifican. Este archivo solo lo dibuja.
  */
 
 import {
   EXAGGERATIONS,
+  MAX_PITCH,
   exaggerationLabel,
   slopeDegrees,
   type Exaggeration,
@@ -25,7 +30,9 @@ interface Props {
 
 export function Scene3D({ on, onToggle, exaggeration, onExaggeration, windOn }: Props) {
   return (
-    <>
+    <div className="subblock">
+      <p className="lbl">Vista 3D</p>
+
       <ul className="switches">
         <li>
           <label>
@@ -45,12 +52,45 @@ export function Scene3D({ on, onToggle, exaggeration, onExaggeration, windOn }: 
 
       {on && (
         <>
-          <p className="dim small">
-            Arrastra con el botón derecho —o con dos dedos— para girar e
-            inclinar. La brújula de abajo a la derecha vuelve al norte y al
-            plano.
-          </p>
+          {/*
+            Los cuatro gestos están COMPROBADOS contra el mapa, no copiados de
+            la documentación. Dos de los que parecían obvios no valen y por eso
+            no están:
 
+              - arrastrar la brújula no hace nada (es de Mapbox, no de
+                MapLibre: probado, la cámara no se mueve ni un grado);
+              - «dos dedos» solo gira en una pantalla táctil. En el trackpad de
+                un portátil, dos dedos son la rueda, y la rueda es el zoom.
+
+            Queda `Ctrl` + arrastrar, que es justo el gesto de Google Earth y
+            el único que funciona igual con ratón y con trackpad.
+          */}
+          <p className="lbl" style={{ marginTop: 14 }}>
+            Cómo moverse
+          </p>
+          <ul className="gestures">
+            <li>
+              <kbd>Ctrl</kbd> + arrastrar — gira los 360° en horizontal e
+              inclina hasta {MAX_PITCH}° en vertical. Con ratón, el botón
+              derecho hace lo mismo.
+            </li>
+            <li>
+              <kbd>Mayús</kbd> + flechas — lo mismo con el teclado, después de
+              hacer clic en el mapa.
+            </li>
+            <li>
+              La brújula de abajo a la derecha vuelve al norte y a la vertical.
+              La vista 3D se queda puesta.
+            </li>
+            <li>
+              Arrastrar y rueda siguen siendo desplazar y acercar, igual que en
+              plano.
+            </li>
+          </ul>
+
+          <p className="lbl" style={{ marginTop: 14 }}>
+            Exageración vertical
+          </p>
           <div className="chips">
             {EXAGGERATIONS.map((x) => (
               <button
@@ -92,6 +132,6 @@ export function Scene3D({ on, onToggle, exaggeration, onExaggeration, windOn }: 
           )}
         </>
       )}
-    </>
+    </div>
   )
 }
