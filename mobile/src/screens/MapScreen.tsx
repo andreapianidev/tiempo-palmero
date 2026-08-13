@@ -15,7 +15,6 @@ import * as Haptics from 'expo-haptics'
 import { useIslandData, municipalityOf } from '@core/hooks/useIslandData'
 import { elevationAt } from '@core/lib/dem'
 import { estimateBundle, type Bundle, type DisplayVariable } from '@core/lib/interpolate'
-import { cssColor } from '@core/lib/palette'
 import { VARIABLES } from '@core/lib/variables'
 import type { Station } from '@core/lib/quality'
 import { routeBounds } from '@core/lib/guagua/display'
@@ -27,12 +26,12 @@ import { LayerChips } from '../components/LayerChips'
 import { LayerSheet } from '../components/LayerSheet'
 import { TopFade } from '../components/TopFade'
 import { Fabs } from '../components/Fabs'
-import { PeekCard } from '../components/PeekCard'
+import { DetailSheet, SNAP } from '../components/sheet/DetailSheet'
 import { IslandMap, type MapHandle } from '../map/IslandMap'
 import { useGridImage } from '../hooks/useGridImage'
 import { useMapIcons } from '../hooks/useMapIcons'
 import { useOverlays } from '../hooks/useOverlays'
-import { SelectionSheet } from '../sheets'
+import { SheetContent, sheetHead } from '../sheets'
 import { IslandSheet } from '../sheets/IslandSheet'
 import { useWindField } from '@core/hooks/useWindField'
 import { useRoque } from '@core/hooks/useRoque'
@@ -40,7 +39,7 @@ import { useAgro } from '@core/hooks/useAgro'
 import { useTrailReports } from '@core/hooks/useTrailReports'
 import { summarizeDeck } from '@core/lib/clouds'
 import type { Selection } from '../sheets/selection'
-import { DetailScreen, type DetailPoint } from './DetailScreen'
+import type { PointPlace } from '../detail/PointDetail'
 
 export function MapScreen() {
   const insets = useSafeAreaInsets()
@@ -53,8 +52,9 @@ export function MapScreen() {
   /** La malla siempre pinta una variable, aunque la capa activa sea el viento. */
   const [variable, setVariable] = useState<DisplayVariable>('temperature')
   const [gridOn, setGridOn] = useState(true)
-  const [probe, setProbe] = useState<DetailPoint | null>(null)
-  const [detail, setDetail] = useState(false)
+  const [probe, setProbe] = useState<PointPlace | null>(null)
+  /** Alto de lo que asoma de la hoja en reposo, para no tapar los FABs. */
+  const [peekHeight, setPeekHeight] = useState(110)
   const [me, setMe] = useState<{ lon: number; lat: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [sheet, setSheet] = useState(false)
@@ -224,12 +224,19 @@ export function MapScreen() {
     )
   }
 
-  const estimate = bundle?.[variable] ?? null
-  // El grado de la tarjeta va sin la C —cabe poco— pero el resto de unidades
-  // sí se enseñan enteras: «1,24» a secas no dice si son kPa o milímetros.
-  const spec = VARIABLES[variable]
-  const unit = spec.unit === t.units.celsius ? '°' : spec.unit
-  const decimals = spec.decimals
+  // Cambia cuando cambia lo elegido, y solo entonces: la hoja lo usa para
+  // devolver la lista a su origen. Sin esto, abrir una parada después de leer
+  // una ficha larga empezaba a media altura de la ficha nueva.
+  const contentKey = selection
+    ? `${selection.kind}:${selectionId(selection)}`
+    : probe
+      ? `punto:${probe.lon.toFixed(5)},${probe.lat.toFixed(5)}`
+      : 'nada'
+
+  // Lo que la hoja necesita saber del punto: dónde está y qué se estima ahí.
+  const pointState = probe
+    ? { place: probe, bundle, variable, stops, uncertainty: island.validation?.rmse ?? null }
+    : null
 
   return (
     <View style={styles.root}>
@@ -284,7 +291,9 @@ export function MapScreen() {
         </View>
       </View>
 
-      <View style={[styles.fabs, { bottom: probe ? 158 : 40 + insets.bottom }]} pointerEvents="box-none">
+      {/* Los FABs se apoyan en la hoja: con la hoja subida quedan debajo de
+          ella —tiene más z— y en reposo se quedan justo encima del asa. */}
+      <View style={[styles.fabs, { bottom: peekHeight + 16 }]} pointerEvents="box-none">
         <Fabs
           locating={locating}
           layerCount={overlays.count}
@@ -300,34 +309,26 @@ export function MapScreen() {
         />
       </View>
 
-      <PeekCard
-        visible={!!probe && !!estimate}
-        value={estimate ? `${n(estimate.value, decimals)}${unit}` : '—'}
-        valueColor={estimate ? cssColor(stops, estimate.value) : color.dim}
-        title={probe?.title ?? ''}
-        meta={
-          probe && estimate
-            ? `${n0(probe.elevation)} m · estimado ± ${n(estimate.uncertainty, decimals)} ${
-                variable === 'relativehumidity' ? '%' : '°C'
-              }`
-            : ''
-        }
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-          setDetail(true)
-        }}
-      />
-
-      <SelectionSheet
-        selection={selection}
-        net={overlays.guagua.network}
-        countersToday={overlays.counters.today}
-        firePolledAt={island.firePolledAt}
-        now={now}
-        onRoute={showRoute}
-        onWeather={weatherAt}
-        onClose={() => setSelection(null)}
-      />
+      <DetailSheet
+        head={sheetHead(selection, pointState, overlays.guagua.network)}
+        contentKey={contentKey}
+        onPeekHeight={setPeekHeight}
+      >
+        <SheetContent
+          selection={selection}
+          point={pointState}
+          net={overlays.guagua.network}
+          countersToday={overlays.counters.today}
+          firePolledAt={island.firePolledAt}
+          stations={island.stations}
+          models={island.models}
+          census={island.census}
+          validation={island.validation}
+          now={now}
+          onRoute={showRoute}
+          onWeather={weatherAt}
+        />
+      </DetailSheet>
 
       <IslandSheet
         open={islandSheet}
@@ -364,21 +365,28 @@ export function MapScreen() {
         onClose={() => setSheet(false)}
       />
 
-      <DetailScreen
-        open={detail}
-        point={probe}
-        bundle={bundle}
-        variable={variable}
-        stops={stops}
-        stations={island.stations}
-        models={island.models}
-        census={island.census}
-        validation={island.validation}
-        now={now}
-        onClose={() => setDetail(false)}
-      />
     </View>
   )
+}
+
+/** Qué distingue una selección de otra de la misma clase. */
+function selectionId(selection: Selection): string {
+  switch (selection.kind) {
+    case 'stop':
+      return selection.stop.stopId
+    case 'route':
+      return selection.routeId
+    case 'place':
+      return `${selection.place.lon},${selection.place.lat}`
+    case 'poi':
+      return `${selection.poi.lon},${selection.poi.lat}`
+    case 'road':
+      return `${selection.road.name}@${selection.lon.toFixed(4)}`
+    case 'counter':
+      return selection.site.id
+    case 'fire':
+      return selection.camera.name
+  }
 }
 
 /** La línea de estado bajo el título. Ámbar lo que hay que mirar primero. */

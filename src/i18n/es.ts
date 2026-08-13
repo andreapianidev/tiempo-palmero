@@ -108,6 +108,15 @@ export const es = {
       'El índice UV depende sobre todo de la nubosidad, que en esta isla cambia de una vertiente a otra. Se da la estación más cercana, sin interpolar.',
     noInterpolation:
       'No se interpola: el viento y la lluvia son locales. Se muestra la estación más cercana, tal cual.',
+    /**
+     * Lo que dice la hoja del móvil cuando todavía no se ha tocado nada.
+     *
+     * Es la única superficie de la app que está en pantalla sin haber pedido
+     * nada, así que tiene que explicar qué se gana tocando el mapa en vez de
+     * quedarse en blanco.
+     */
+    tapPrompt: 'Toca el mapa',
+    tapPromptHint: 'para calcular el tiempo de ese punto',
     extrapolated: 'Sin estaciones dentro de 15 km: valor extrapolado.',
     elevationExtrapolated:
       'La altitud de este punto queda fuera del rango que cubre la red de sensores.',

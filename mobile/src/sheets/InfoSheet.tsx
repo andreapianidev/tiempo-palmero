@@ -1,15 +1,13 @@
 /**
- * El armazón de las fichas de las capas: parada, línea, sitio, carretera,
- * aforo, punto de sendero y cámara.
+ * El armazón de las hojas que se abren desde un botón y se cierran del todo:
+ * hoy, el estado de la isla.
  *
- * No es la ficha del punto. Esa es una pantalla entera —`DetailScreen`— porque
- * lo que enseña es una estimación con su procedencia, sus vecinos y su
- * diagnóstico, y eso ocupa una pantalla. Estas otras son lecturas de un dato ya
- * publicado: media hoja basta, y media hoja deja el mapa visible detrás, que es
- * justo lo que hace falta cuando lo que se está leyendo ES un punto del mapa.
+ * No es la hoja del detalle. Aquella —`components/sheet/DetailSheet`— está
+ * siempre en pantalla y responde a «qué es esto que acabo de tocar», así que no
+ * se cierra nunca. Esta se pide, se lee y se va, igual que la de capas.
  *
- * Se cierra tocando fuera, arrastrando hacia abajo o con el botón. Las tres,
- * porque las tres son gestos que la gente hace sin pensar.
+ * Se cierra tocando fuera o arrastrando hacia abajo. Las dos, porque las dos
+ * son gestos que la gente hace sin pensar.
  */
 
 import type { ReactNode } from 'react'
