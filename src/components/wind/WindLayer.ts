@@ -33,8 +33,9 @@ import {
   type CustomRenderMethod,
   type Map as MlMap,
 } from 'maplibre-gl'
-import { degPerSecondPerMs, ParticleSystem, TAIL_LENGTH } from '../../lib/wind/particles'
-import { mercatorZ, viewportHeightDeg, windAltitudeM } from '../../lib/wind/altitude'
+import { degPerSecondPerMs, ParticleSystem } from '../../lib/wind/particles'
+import { viewportHeightDeg } from '../../lib/wind/altitude'
+import { fillTrailVertices, trailBufferSize, VERTEX_FLOATS } from '../../lib/wind/trails'
 import { elevationAt, type Dem } from '../../lib/dem'
 import type { WindField } from '../../lib/wind/field'
 import { FRAGMENT_SHADER, VERTEX_SHADER } from './shaders'
@@ -55,43 +56,43 @@ type ViewMatrix = Parameters<CustomRenderMethod>[1]
 const PARTICLE_COUNT = 4200
 
 /**
- * Grosor, en píxeles CSS, de las dos pasadas.
+ * Dónde se dibuja cada pasada, en píxeles CSS PERPENDICULARES al segmento y con
+ * signo. El shader calcula la perpendicular; aquí solo se dice a qué distancia.
  *
  * `gl.LINES` dibuja siempre un píxel —`lineWidth` mayor que 1 lo ignoran casi
  * todas las implementaciones de WebGL— así que el grosor se consigue repitiendo
- * el mismo buffer con el vértice desplazado. El trazo se dibuja cinco veces en
- * medio píxel, que a efectos visuales son dos píxeles de línea clara; el halo,
- * cuatro veces a 1,7 px alrededor.
+ * el mismo buffer con el vértice desplazado. El trazo son tres líneas en
+ * −0,5 / 0 / +0,5, o sea una banda de dos píxeles; el halo, dos líneas a ±1,5
+ * que la flanquean sin dejar hueco ni montarse encima.
  *
- * Las proporciones importan y costaron dos intentos: con el halo a un píxel y
- * el trazo a uno solo, a zoom alto —donde la estela mide cuatro píxeles— las
- * cuatro pasadas del halo pesaban más que la del trazo y el viento se veía como
- * una mancha del color del halo. La regla es que el trazo supere siempre al
- * halo; cuál de los dos es el claro lo decide el shader mirando el fondo.
+ * ANTES ERAN NUEVE PASADAS EN CRUZ Y AHORA SON CINCO EN PERPENDICULAR. El halo
+ * iba a 1,7 px en las cuatro direcciones de la pantalla y el trazo a 0,5 px en
+ * las cuatro diagonales; sobre el relieve, donde de la estela solo sobreviven
+ * trozos, esas nueve copias dibujaban una crucecita blanca en vez de una
+ * estela. El porqué está entero en `shaders.ts`. La distancia del halo baja de
+ * 1,7 a 1,5 porque ya no rodea una cruz sino que va pegada a una banda de dos
+ * píxeles: a 1,7 quedaba una rendija de fondo entre el trazo y su contorno.
+ *
+ * Lo que no cambia es la regla, que costó dos intentos: el trazo tiene que
+ * pesar siempre más que el halo, o a zoom alto —donde la estela mide cuatro
+ * píxeles— el viento se ve como una mancha del color del contorno. Cuál de los
+ * dos es el claro lo decide el shader mirando el fondo.
  */
-const CASING_PX = 1.7
-const CORE_PX = 0.5
+const CASING_OFFSETS = [-1.5, 1.5]
+const CORE_OFFSETS = [-0.5, 0, 0.5]
 
-/** Las cuatro direcciones del halo. Con dos —solo vertical— las estelas
- *  horizontales, que en esta isla son casi todas, se quedaban sin contraste. */
-const CASING_OFFSETS: [number, number][] = [
-  [-1, 0],
-  [1, 0],
-  [0, -1],
-  [0, 1],
-]
-
-/** El trazo: el centro y cuatro diagonales a medio píxel. */
-const CORE_OFFSETS: [number, number][] = [
-  [0, 0],
-  [-1, -1],
-  [1, -1],
-  [-1, 1],
-  [1, 1],
-]
-
-/** Escala de color: a partir de aquí una racha se pinta del tono más fuerte. */
-const STRONG_WIND_MS = 14
+/**
+ * Radio, en píxeles CSS, del entorno del fondo que decide si el trazo va claro
+ * u oscuro.
+ *
+ * 6 px: tiene que cubrir de sobra el ancho de lo que se dibuja —la banda del
+ * trazo más su halo son 4 px— para que una estela entera se lleve una sola
+ * polaridad, y quedarse muy por debajo del tamaño de las manchas que de verdad
+ * hay que distinguir: el mar contra la tierra, o una celda de la malla de
+ * color, que a cualquier zoom miden decenas de píxeles. No es un umbral sobre
+ * un dato: es cuánto se desenfoca una decisión de contraste.
+ */
+const LUMA_RADIUS_PX = 6
 
 /** Techo del paso de integración. Sin esto, volver a una pestaña dormida
  *  teletransportaría todas las partículas de golpe. */
@@ -108,26 +109,6 @@ const MAX_DT = 0.05
  * fotograma compitiendo con el resto del mapa por el mismo bus.
  */
 const BACKGROUND_REFRESH_MS = 80
-
-/**
- * Mercator normalizado, a mano.
- *
- * Es exactamente lo que hace `MercatorCoordinate.fromLngLat`, pero sin devolver
- * un objeto: a 4200 partículas con estela de diez son 76 000 objetos por
- * fotograma, y el recolector de basura se notaba en la animación más que el
- * dibujo.
- */
-function mercatorX(lon: number): number {
-  return (180 + lon) / 360
-}
-
-function mercatorY(lat: number): number {
-  return (
-    (180 -
-      (180 / Math.PI) * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360))) /
-    360
-  )
-}
 
 function compile(gl: Gl, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type)
@@ -157,13 +138,16 @@ export class WindLayer implements CustomLayerInterface {
   private program: WebGLProgram | null = null
   private buffer: WebGLBuffer | null = null
   private aPos = -1
+  private aOther = -1
   private aStyle = -1
   private uMatrix: WebGLUniformLocation | null = null
   private uOpacity: WebGLUniformLocation | null = null
   private uOffset: WebGLUniformLocation | null = null
+  private uPxToNdc: WebGLUniformLocation | null = null
   private uCasing: WebGLUniformLocation | null = null
   private uBackground: WebGLUniformLocation | null = null
   private uResolution: WebGLUniformLocation | null = null
+  private uLumaRadius: WebGLUniformLocation | null = null
 
   /** Copia del mapa ya dibujado bajo esta capa. Ver `captureBackground`. */
   private background: WebGLTexture | null = null
@@ -179,14 +163,23 @@ export class WindLayer implements CustomLayerInterface {
 
   private readonly particles = new ParticleSystem(PARTICLE_COUNT)
   /**
-   * `x, y, z, alpha, speed, station` por vértice; dos vértices por segmento.
+   * `x, y, z, otherX, otherY, otherZ, side, alpha, speed, station` por vértice;
+   * dos vértices por segmento.
    *
-   * `TAIL_LENGTH` segmentos y no `TAIL_LENGTH - 1`: el primero va de la
-   * posición actual —que no está en la estela todavía— a la última apuntada.
-   * Sin él la cabeza se quedaba clavada hasta el siguiente apunte y la estela
-   * crecía a saltos de 40 ms en vez de deslizarse.
+   * El otro extremo va REPETIDO en cada vértice, que son cuatro flotantes más
+   * por vértice —4,7 MB en vez de 2,8—, porque es lo que le deja al shader
+   * medir en pantalla hacia dónde va la estela y desplazar el halo
+   * perpendicular a ella. La alternativa, mandar el ángulo ya calculado desde
+   * la CPU, no vale: con la cámara inclinada el mismo rumbo geográfico se
+   * proyecta con ángulos distintos según lo lejos que esté el segmento.
+   *
+   * `side` es +1 en el primer vértice y −1 en el segundo, para que los dos
+   * extremos se desplacen al MISMO lado. Está explicado en `shaders.ts`.
+   *
+   * Quién escribe todo esto y con qué orden es `lib/wind/trails.ts`, que se
+   * puede probar sin ventana ni contexto de dibujo.
    */
-  private readonly vertices = new Float32Array(PARTICLE_COUNT * TAIL_LENGTH * 2 * 6)
+  private readonly vertices = new Float32Array(trailBufferSize(PARTICLE_COUNT))
 
   /**
    * El modelo de elevación. Sin él la capa sigue funcionando: dibuja plano, que
@@ -251,13 +244,16 @@ export class WindLayer implements CustomLayerInterface {
 
     this.program = program
     this.aPos = gl.getAttribLocation(program, 'a_pos')
+    this.aOther = gl.getAttribLocation(program, 'a_other')
     this.aStyle = gl.getAttribLocation(program, 'a_style')
     this.uMatrix = gl.getUniformLocation(program, 'u_matrix')
     this.uOpacity = gl.getUniformLocation(program, 'u_opacity')
     this.uOffset = gl.getUniformLocation(program, 'u_offset')
+    this.uPxToNdc = gl.getUniformLocation(program, 'u_pxToNdc')
     this.uCasing = gl.getUniformLocation(program, 'u_casing')
     this.uBackground = gl.getUniformLocation(program, 'u_background')
     this.uResolution = gl.getUniformLocation(program, 'u_resolution')
+    this.uLumaRadius = gl.getUniformLocation(program, 'u_lumaRadius')
 
     this.background = gl.createTexture()
     if (this.background) {
@@ -375,7 +371,7 @@ export class WindLayer implements CustomLayerInterface {
       elevationAt: dem ? (lon, lat) => elevationAt(dem, lon, lat) ?? 0 : undefined,
     })
 
-    const vertexCount = this.fillVertices(exaggeration)
+    const vertexCount = fillTrailVertices(this.particles, this.vertices, exaggeration)
     if (vertexCount === 0) {
       map.triggerRepaint()
       return
@@ -388,13 +384,15 @@ export class WindLayer implements CustomLayerInterface {
 
     gl.useProgram(this.program)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.subarray(0, vertexCount * 6))
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices.subarray(0, vertexCount * VERTEX_FLOATS))
 
-    const stride = 6 * 4
+    const stride = VERTEX_FLOATS * 4
     gl.enableVertexAttribArray(this.aPos)
     gl.vertexAttribPointer(this.aPos, 3, gl.FLOAT, false, stride, 0)
+    gl.enableVertexAttribArray(this.aOther)
+    gl.vertexAttribPointer(this.aOther, 4, gl.FLOAT, false, stride, 3 * 4)
     gl.enableVertexAttribArray(this.aStyle)
-    gl.vertexAttribPointer(this.aStyle, 3, gl.FLOAT, false, stride, 3 * 4)
+    gl.vertexAttribPointer(this.aStyle, 3, gl.FLOAT, false, stride, 7 * 4)
 
     gl.uniformMatrix4fv(this.uMatrix, false, matrix as unknown as Float32List)
     gl.uniform1f(this.uOpacity, 1)
@@ -402,10 +400,16 @@ export class WindLayer implements CustomLayerInterface {
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, this.background)
     gl.uniform1i(this.uBackground, 0)
+    const bufferW = Math.max(1, gl.drawingBufferWidth)
+    const bufferH = Math.max(1, gl.drawingBufferHeight)
+    gl.uniform2f(this.uResolution, bufferW, bufferH)
+    // El radio va en píxeles CSS y la textura en píxeles de dibujo: en una
+    // pantalla de retina son el doble, y sin convertir el desenfoque mediría la
+    // mitad justo donde el sombreado tiene más detalle.
     gl.uniform2f(
-      this.uResolution,
-      Math.max(1, gl.drawingBufferWidth),
-      Math.max(1, gl.drawingBufferHeight),
+      this.uLumaRadius,
+      (LUMA_RADIUS_PX * ratio) / bufferW,
+      (LUMA_RADIUS_PX * ratio) / bufferH,
     )
 
     // Alpha premultiplicado: es lo que espera el compositor de MapLibre, y el
@@ -434,27 +438,30 @@ export class WindLayer implements CustomLayerInterface {
       gl.disable(gl.DEPTH_TEST)
     }
 
-    // Primero el halo, en cuatro desplazamientos de un píxel, y encima el
-    // trazo. Es el mismo buffer cinco veces: no cuesta un vértice más de CPU,
-    // que es donde esta capa tiene el límite.
+    // Primero el halo, a un lado y a otro de la estela, y encima el trazo. Es
+    // el mismo buffer cinco veces: no cuesta un vértice más de CPU, que es
+    // donde esta capa tiene el límite.
     //
     // De píxeles CSS a espacio de recorte: la ventana mide 2 unidades de ancho.
-    const ux = 2 / Math.max(1, canvas.width / ratio)
-    const uy = 2 / heightCss
+    // El shader necesita la equivalencia en los dos sentidos —para medir el
+    // rumbo del segmento en píxeles y para devolver el desplazamiento a
+    // recorte—, así que va de uniforme en vez de aplicarse aquí.
+    gl.uniform2f(this.uPxToNdc, 2 / Math.max(1, canvas.width / ratio), 2 / heightCss)
 
     gl.uniform1f(this.uCasing, 1)
-    for (const [ox, oy] of CASING_OFFSETS) {
-      gl.uniform2f(this.uOffset, ox * CASING_PX * ux, oy * CASING_PX * uy)
+    for (const offset of CASING_OFFSETS) {
+      gl.uniform1f(this.uOffset, offset)
       gl.drawArrays(gl.LINES, 0, vertexCount)
     }
 
     gl.uniform1f(this.uCasing, 0)
-    for (const [ox, oy] of CORE_OFFSETS) {
-      gl.uniform2f(this.uOffset, ox * CORE_PX * ux, oy * CORE_PX * uy)
+    for (const offset of CORE_OFFSETS) {
+      gl.uniform1f(this.uOffset, offset)
       gl.drawArrays(gl.LINES, 0, vertexCount)
     }
 
     gl.disableVertexAttribArray(this.aPos)
+    gl.disableVertexAttribArray(this.aOther)
     gl.disableVertexAttribArray(this.aStyle)
 
     // Se devuelve el estado de profundidad exactamente como estaba.
@@ -464,58 +471,5 @@ export class WindLayer implements CustomLayerInterface {
     // La animación no la mueve un `requestAnimationFrame` propio: se pide otro
     // fotograma al mapa, que así conserva el control del ciclo de dibujo.
     map.triggerRepaint()
-  }
-
-  /**
-   * Vuelca las estelas al buffer y devuelve cuántos vértices se han escrito.
-   *
-   * La conversión a coordenadas Mercator se hace aquí, en CPU, porque el
-   * `u_matrix` de MapLibre espera Mercator normalizado, no grados. Son tres
-   * operaciones por vértice y ocurre una vez por fotograma.
-   *
-   * `exaggeration` a cero significa mapa plano: la Z se escribe a cero y ni
-   * siquiera se mira la cota. Es el mismo camino de código de siempre.
-   */
-  private fillVertices(exaggeration: number): number {
-    const p = this.particles
-    const out = this.vertices
-    const flat = exaggeration <= 0
-    let n = 0
-
-    for (let i = 0; i < p.count; i++) {
-      const fill = p.tailFill[i]
-      if (fill < 1) continue
-      const speed = Math.min(1, p.speed[i] / STRONG_WIND_MS)
-      const station = p.station[i]
-      const base = i * TAIL_LENGTH
-      for (let k = 0; k < fill; k++) {
-        // El extremo de delante del primer segmento es la posición actual, que
-        // todavía no está apuntada; el de los demás, la estela.
-        const lon0 = k === 0 ? p.lon[i] : p.tailLon[base + k - 1]
-        const lat0 = k === 0 ? p.lat[i] : p.tailLat[base + k - 1]
-        const ground0 = k === 0 ? p.elevation[i] : p.tailElevation[base + k - 1]
-        const lon1 = p.tailLon[base + k]
-        const lat1 = p.tailLat[base + k]
-        const ground1 = p.tailElevation[base + k]
-        // La cabeza de la estela es la más opaca; la cola se apaga.
-        const a0 = 1 - k / (TAIL_LENGTH + 1)
-        const a1 = 1 - (k + 1) / (TAIL_LENGTH + 1)
-
-        out[n++] = mercatorX(lon0)
-        out[n++] = mercatorY(lat0)
-        out[n++] = flat ? 0 : mercatorZ(windAltitudeM(ground0, exaggeration), lat0)
-        out[n++] = a0
-        out[n++] = speed
-        out[n++] = station
-
-        out[n++] = mercatorX(lon1)
-        out[n++] = mercatorY(lat1)
-        out[n++] = flat ? 0 : mercatorZ(windAltitudeM(ground1, exaggeration), lat1)
-        out[n++] = a1
-        out[n++] = speed
-        out[n++] = station
-      }
-    }
-    return n / 6
   }
 }
