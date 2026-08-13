@@ -50,6 +50,12 @@ export function ModelStatus(props: Props) {
     ...(['temperature', 'relativehumidity'] as const).map((v) => models[v]?.anchors ?? 0),
   )
   const anchored = anchorCount > 0
+  // La cumbre entra en cuanto CUALQUIERA de los dos ajustes la tenga: el TNG
+  // publica temperatura y humedad, pero un campo puede caerse solo —obsoleto o
+  // fuera de rango— y el otro seguir siendo bueno.
+  const summitActive = (['temperature', 'relativehumidity'] as const).some(
+    (v) => models[v]?.summit,
+  )
   // Ambas cifras describen el ajuste de temperatura, igual que el resto del
   // bloque, así que la unidad es siempre la suya.
   const calibration = model?.calibration ?? null
@@ -101,6 +107,15 @@ export function ModelStatus(props: Props) {
             <tr>
               <td>{t.model.anchorTag}</td>
               <td>{t.model.anchorsActive(anchorCount)}</td>
+            </tr>
+          )}
+          {/* Va JUSTO detrás de las anclas porque ocupa el mismo hueco del
+              mapa, y con etiqueta propia porque no es la misma clase de dato:
+              ahí arriba hay un termómetro, no una pasada de modelo. */}
+          {summitActive && (
+            <tr title={t.model.summitHint}>
+              <td>{t.model.summitTag}</td>
+              <td>{t.model.summitActive}</td>
             </tr>
           )}
           {calibration?.modelBias !== null && calibration?.modelBias !== undefined && (

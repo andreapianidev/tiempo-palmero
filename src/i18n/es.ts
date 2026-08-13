@@ -570,6 +570,16 @@ export const es = {
       n === 1
         ? '1 ancla de Open-Meteo sobre el techo de la red'
         : `${n} anclas de Open-Meteo sobre el techo de la red`,
+    /**
+     * La cumbre. Se dice aparte de las anclas y con otra etiqueta a propósito:
+     * lo que sostiene el mapa ahí arriba deja de ser un modelo y pasa a ser un
+     * termómetro, y esa diferencia es exactamente la que el resto del panel se
+     * esfuerza en no borrar.
+     */
+    summitTag: 'Roque de los Muchachos',
+    summitActive: 'medida real a 2.387 m sobre el techo de la red',
+    summitHint:
+      'La estación del Telescopio Nazionale Galileo mide de verdad a 2.387 m, y es la única que lo hace: la red del Cabildo se queda en 1.561 m y por encima de 1.500 m publica una sola estación. Su lectura ancla la cumbre en lugar del modelo. No entra en el ajuste —el gradiente, el rechazo y el RMSE siguen siendo solo del Cabildo— y por debajo del techo de la red no pesa nada. Si el observatorio no contesta, ahí arriba vuelve a mandar Open-Meteo.',
     anchorsSourceTitle: 'Open-Meteo (anclas de altitud)',
     /**
      * La advertencia que faltaba. La red del Cabildo no llega a la cumbre: por

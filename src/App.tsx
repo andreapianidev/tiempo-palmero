@@ -456,6 +456,7 @@ export default function App() {
         guagua={{ loading: guagua.loading, stopsZoomReached }}
         deck={deck}
         roque={roque}
+        summitLayer={data.summitLayer}
         agro={agro}
         trailReports={trailReports}
         // El punto elegido llega al panel para que el mar de nubes pueda decir

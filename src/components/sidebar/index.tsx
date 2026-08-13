@@ -43,6 +43,7 @@ import type { WindState } from '../../hooks/useWindField'
 import type { CountersData } from '../../hooks/useCounters'
 import type { AgroState } from '../../hooks/useAgro'
 import type { RoqueStatus as RoqueData } from '../../lib/roque'
+import type { SummitLayer } from '../../lib/summit'
 import type { TrailReport } from '../../lib/trails/alerts'
 import { zoneAt, type CloudDeck } from '../../lib/clouds'
 
@@ -74,6 +75,8 @@ interface Props {
   guagua: { loading: boolean; stopsZoomReached: boolean }
   deck: CloudDeck | null
   roque: RoqueData | null
+  /** La vertical medida entre el techo de la red y la cumbre. Ver `summit.ts`. */
+  summitLayer: SummitLayer | null
   agro: AgroState
   trailReports: TrailReport[]
   /** Punto elegido en el mapa. Lo usan el mar de nubes y la agricultura. */
@@ -259,6 +262,7 @@ export function Sidebar(props: Props) {
             aboveDeck={
               props.deck ? zoneAt(props.deck, 2387) === 'above' : null
             }
+            layer={props.summitLayer}
             now={props.now}
           />
         </Section>
