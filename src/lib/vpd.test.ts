@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { saturationVapourPressure, vapourPressureDeficit } from './psychro'
-import { VARIABLES, VARIABLE_ORDER, vpdBand } from './variables'
+import { VARIABLES, VARIABLE_ORDER, pinLabel, vpdBand } from './variables'
 import { BOUNDS, stationReading, type Station } from './quality'
 
 describe('vapourPressureDeficit', () => {
@@ -131,6 +131,26 @@ describe('catálogo de variables', () => {
     for (const id of VARIABLE_ORDER) {
       const spec = VARIABLES[id]
       if (spec.derived) expect(spec.hint).toBeTruthy()
+    }
+  })
+
+  it('el pin de cada variable lleva SU unidad, no un grado por defecto', () => {
+    // Regresión. La regla estaba escrita a mano en el mapa de la web y en el
+    // del móvil como «si es humedad, %; si no, grado», y al entrar el VPD los
+    // pines empezaron a enseñar «0,9°» sobre una malla medida en kilopascales.
+    expect(pinLabel('temperature', 18.24)).toBe('18,2°')
+    expect(pinLabel('dewpoint', 12.5)).toBe('12,5°')
+    expect(pinLabel('relativehumidity', 63.7)).toBe('64%')
+    expect(pinLabel('vpd', 0.9347)).toBe('0,93 kPa')
+  })
+
+  it('ninguna variable no térmica se cuela con el signo de grado', () => {
+    for (const id of VARIABLE_ORDER) {
+      const label = pinLabel(id, 1.234)
+      if (VARIABLES[id].unit !== '°C' && id !== 'relativehumidity') {
+        expect(label, id).toContain(VARIABLES[id].unit)
+        expect(label, id).not.toContain('°')
+      }
     }
   })
 

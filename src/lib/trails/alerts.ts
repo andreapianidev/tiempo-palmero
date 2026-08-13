@@ -109,16 +109,26 @@ export function trailAlerts(profile: TrailProfile, deck: CloudDeck | null): Trai
   const alerts: TrailAlert[] = []
   const n = profile.points.length
 
+  /**
+   * `worse` dice en qué DIRECCIÓN empeora cada variable, y no es un detalle.
+   *
+   * La primera versión se quedaba con el valor de mayor valor absoluto, y eso
+   * elegía justo al revés en el aviso leve de frío: con un tramo a 4 °C y otro
+   * a 1 °C, `|4| > |1|` señalaba los 4 °C —el punto más templado— como si fuera
+   * lo peor de la ruta. Con el aviso grave no se veía, porque ahí todos los
+   * puntos están bajo cero y el signo hacía coincidir las dos reglas.
+   */
   const push = (
     kind: AlertKind,
     severity: Severity,
     hits: TrailPoint[],
     pick: (p: TrailPoint) => number,
     minShare: number,
+    worse: (a: number, b: number) => boolean = (a, b) => a > b,
   ) => {
     const share = hits.length / n
     if (!hits.length || share < minShare) return
-    const worst = hits.reduce((a, b) => (Math.abs(pick(b)) > Math.abs(pick(a)) ? b : a))
+    const worst = hits.reduce((a, b) => (worse(pick(b), pick(a)) ? b : a))
     alerts.push({
       kind,
       severity,
@@ -152,10 +162,11 @@ export function trailAlerts(profile: TrailProfile, deck: CloudDeck | null): Trai
   const chilly = profile.points.filter(
     (p) => p.temperature !== null && p.temperature <= THRESHOLDS.coldNoticeC,
   )
+  const colder = (a: number, b: number) => a < b
   if (freezing.length / n >= THRESHOLDS.minShare) {
-    push('cold', 'warning', freezing, (p) => p.temperature!, THRESHOLDS.minShare)
+    push('cold', 'warning', freezing, (p) => p.temperature!, THRESHOLDS.minShare, colder)
   } else {
-    push('cold', 'notice', chilly, (p) => p.temperature!, THRESHOLDS.minShare)
+    push('cold', 'notice', chilly, (p) => p.temperature!, THRESHOLDS.minShare, colder)
   }
 
   // Calor.

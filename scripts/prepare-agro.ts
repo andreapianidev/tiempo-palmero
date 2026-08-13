@@ -33,25 +33,27 @@
 import { writeFile, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { PUBLIC, getJson, log, warn, roundCoords } from './shared.js'
+import { CROPS } from '../src/lib/agro/crops.js'
 
 const ARCGIS = 'https://services.arcgis.com/hkQNLKNeDVYBjvFE/arcgis/rest/services'
 const PAGE = 1000
 
-/** Los códigos con Kc de `lib/agro/crops.ts`. Lo demás no está en cultivo. */
-const CROPPED_CODES = [
-  '21', '20', '4', '13', '3', '7', '83', '11', '12',
-  '105', '120', '1', '19', '102', '121', '14', '71',
-]
-
-/** Familias, en el mismo reparto que `lib/agro/crops.ts`. */
-const FAMILY_OF: Record<string, string> = {
-  '21': 'platanera', '20': 'platanera',
-  '4': 'frutal', '3': 'frutal', '7': 'frutal', '83': 'frutal',
-  '13': 'viña', '102': 'viña',
-  '11': 'huerta', '12': 'huerta', '105': 'huerta', '120': 'huerta',
-  '1': 'huerta', '19': 'huerta', '121': 'huerta',
-  '14': 'pasto', '71': 'pasto',
-}
+/**
+ * Qué cuenta como «en cultivo» y a qué familia va cada código sale del MISMO
+ * catálogo que usa la aplicación, `src/lib/agro/crops.ts`, no de una copia.
+ *
+ * La versión anterior repetía aquí las dos tablas. Era exactamente el fallo que
+ * este repositorio acaba de corregir con `lib/variables.ts`: dos listas que
+ * nadie obliga a coincidir acaban divergiendo, y el síntoma habría sido un
+ * resumen por municipio que suma hectáreas de un cultivo que la ficha de
+ * parcela ya no reconoce. `prepare-data.ts` y `prepare-guagua.ts` ya importan
+ * de `../src`, así que no hay nada nuevo que montar.
+ */
+const CROPPED = CROPS.filter((c) => c.kcMid !== null)
+const CROPPED_CODES = CROPPED.map((c) => c.code)
+const FAMILY_OF: Record<string, string> = Object.fromEntries(
+  CROPPED.map((c) => [c.code, c.family]),
+)
 
 interface EsriStatsRow {
   attributes: Record<string, string | number | null>

@@ -59,6 +59,11 @@ export interface TrailProfile {
   trail: TrailFeature
   label: string
   points: TrailPoint[]
+  /**
+   * Cuántos puntos aporta cada sarta, en el orden de `points`. Hace falta para
+   * no sumar desnivel a través del hueco entre dos sartas disjuntas.
+   */
+  partSizes: number[]
   minElevationM: number
   maxElevationM: number
   /** Desnivel acumulado de subida, m. Lo que de verdad cansa. */
@@ -163,8 +168,10 @@ export function sampleTrail(
   stepM = STEP_M,
 ): TrailProfile | null {
   const points: TrailPoint[] = []
+  const partSizes: number[] = []
 
   for (const part of trail.parts) {
+    const before = points.length
     for (const [lon, lat] of densify(part, stepM)) {
       const elevationM = elevationAt(dem, lon, lat)
       if (elevationM === null) continue
@@ -183,15 +190,28 @@ export function sampleTrail(
         windStationShare: w ? w.station : null,
       })
     }
+    partSizes.push(points.length - before)
   }
 
   if (!points.length) return null
 
   const elevations = points.map((p) => p.elevationM)
+
+  /**
+   * El desnivel se acumula DENTRO de cada sarta, nunca a través del hueco entre
+   * dos. El dato es `MultiLineString` y dos de los 49 senderos vienen partidos:
+   * GR 130.3 tiene sus dos trozos a **13,51 km** el uno del otro y PR LP 10 a
+   * 2,00 km —medido sobre el propio fichero—. Sumando de corrido, ese salto se
+   * contaba como una subida imaginaria de varios cientos de metros.
+   */
   let ascentM = 0
-  for (let i = 1; i < points.length; i++) {
-    const rise = points[i].elevationM - points[i - 1].elevationM
-    if (rise > 0) ascentM += rise
+  let cursor = 0
+  for (const size of partSizes) {
+    for (let i = cursor + 1; i < cursor + size; i++) {
+      const rise = points[i].elevationM - points[i - 1].elevationM
+      if (rise > 0) ascentM += rise
+    }
+    cursor += size
   }
 
   const first = points[0]
@@ -205,6 +225,7 @@ export function sampleTrail(
       areaContaining(last.lon, last.lat, municipalities),
     ),
     points,
+    partSizes,
     minElevationM: Math.min(...elevations),
     maxElevationM: Math.max(...elevations),
     ascentM: Math.round(ascentM),

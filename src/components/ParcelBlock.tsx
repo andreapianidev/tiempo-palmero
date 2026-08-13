@@ -65,10 +65,11 @@ export function ParcelBlock({ lon, lat, elevationM, eto }: Props) {
       </p>
 
       <ul className="parcel-flags">
+        {/* `INVERNADER` sí está poblado: 2.564 parcelas de 217.137 lo llevan.
+            `JABLE`, en cambio, está vacío en las 217.137 —comprobado contra el
+            servicio— así que esa etiqueta no se pinta nunca hoy. Se deja
+            preparada por si el Cabildo llega a rellenarla. */}
         {parcel.greenhouse && <li>Invernadero</li>}
-        {/* El jable es arena volcánica extendida sobre la tierra para conservar
-            la humedad: cambia por completo cuánto riego pide una parcela, y por
-            eso se marca aunque el cálculo de abajo no lo tenga en cuenta. */}
         {parcel.jable && <li>Jable</li>}
         {parcel.elevationM !== null && <li>{n0(parcel.elevationM)} m (Cabildo)</li>}
       </ul>

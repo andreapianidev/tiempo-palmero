@@ -29,9 +29,16 @@ export interface Parcel {
   /** Bajo plástico. El servicio lo marca con una `I`. */
   greenhouse: boolean
   /**
-   * Suelo de jable: arena volcánica extendida sobre la tierra, que es una
-   * técnica de conservación de humedad propia de Canarias y cambia por
-   * completo cuánto riego pide una parcela. El servicio lo marca con `S`.
+   * Suelo de jable: arena volcánica extendida sobre la tierra para conservar
+   * humedad, técnica canaria que cambia por completo cuánto riego pide una
+   * parcela.
+   *
+   * ⚠️ **La columna está VACÍA.** Comprobado el 13 ago 2026 con una consulta de
+   * estadística agrupada sobre el servicio: `JABLE` vale el espacio en blanco
+   * en las **217.137 filas**, sin una sola excepción. Se sigue parseando para
+   * que aparezca sola el día que el Cabildo la rellene —igual que se hace con
+   * la columna `visibility` de las estaciones—, pero hoy este campo es SIEMPRE
+   * `false` y la interfaz no debe prometer que distingue el jable.
    */
   jable: boolean
   /** Cota que el Cabildo dio a la parcela, m. No es la del DEM de la app. */

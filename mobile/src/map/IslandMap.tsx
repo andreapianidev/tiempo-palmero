@@ -28,11 +28,11 @@ import { buildStyle } from '@core/lib/mapStyle'
 import { cssColor, co2Band, type RgbStop } from '@core/lib/palette'
 import { stationReading, type Station } from '@core/lib/quality'
 import { STOPS_MIN_ZOOM } from '@core/lib/guagua/display'
-import { n } from '@core/i18n'
 import type { Dem } from '@core/lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '@core/hooks/useIslandData'
 import type { CounterSite } from '@core/lib/counters/model'
 import { ISLAND_CENTER, ISLAND_ZOOM, MAX_ZOOM, MIN_ZOOM } from '../config'
+import { pinLabel } from '@core/lib/variables'
 import { isVariable, type LayerId } from '../layers'
 import type { OverlayVisibility } from '../overlays'
 import { color } from '../theme'
@@ -175,12 +175,7 @@ export function IslandMap({
     return stations.map((s) => {
       const reading = stationReading(s, layer)
       const dead = reading === null || rejected.has(s.entityId)
-      const label =
-        reading === null
-          ? '·'
-          : layer === 'relativehumidity'
-            ? `${Math.round(reading.value)}%`
-            : `${n(reading.value, 1)}°`
+      const label = reading === null ? '·' : pinLabel(layer, reading.value)
       return {
         station: s,
         label,

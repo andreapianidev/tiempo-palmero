@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl, { type LngLatLike, type Map as MlMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { buildStyle, COLORS } from '../lib/mapStyle'
+import { pinLabel } from '../lib/variables'
 import { renderGrid } from '../lib/grid-canvas'
 import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette'
 import { freshness, stationReading, type Station } from '../lib/quality'
@@ -39,7 +40,7 @@ import { estimateBundle, type Model, type InterpolableVariable, type DisplayVari
 import type { Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { GazetteerEntry } from '../lib/api'
-import { n, n0, t } from '../i18n'
+import { n0, t } from '../i18n'
 
 export const ISLAND_CENTER: LngLatLike = [-17.86, 28.66]
 
@@ -721,12 +722,7 @@ export function MapView(props: Props) {
         // siga distinguiéndose de lo medido.
         const reading = stationReading(s, variable)
         const isRejected = rejected.has(s.entityId)
-        const label =
-          reading === null
-            ? '·'
-            : variable === 'relativehumidity'
-              ? `${Math.round(reading.value)}%`
-              : `${n(reading.value, 1)}°`
+        const label = reading === null ? '·' : pinLabel(variable, reading.value)
         const el = pill(
           label,
           reading === null || isRejected ? '#4a453f' : cssColor(stops, reading.value),

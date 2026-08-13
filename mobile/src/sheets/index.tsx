@@ -12,6 +12,7 @@
  */
 
 import { cssColor, type RgbStop } from '@core/lib/palette'
+import { VARIABLES } from '@core/lib/variables'
 import type { Bundle, DisplayVariable, InterpolableVariable, Model } from '@core/lib/interpolate'
 import type { GuaguaNetwork } from '@core/lib/guagua/network'
 import type { NetworkCensus, Station } from '@core/lib/quality'
@@ -149,16 +150,18 @@ export function SheetContent(props: Props) {
 
 function headOfPoint({ place, bundle, variable, stops, uncertainty }: PointState): HeadContent {
   const estimate = bundle?.[variable] ?? null
-  const decimals = variable === 'relativehumidity' ? 0 : 1
-  const unit = variable === 'relativehumidity' ? '%' : '°'
+  const spec = VARIABLES[variable]
+  // El grado de la cabecera va sin la C —cabe poco— pero el resto de unidades
+  // se enseñan enteras: «1,24» a secas no dice si son kPa o milímetros.
+  const lead = spec.unit === t.units.celsius ? '°' : spec.unit
   const margin = estimate?.uncertainty ?? uncertainty
   return {
-    lead: estimate ? `${n(estimate.value, decimals)}${unit}` : '—',
+    lead: estimate ? `${n(estimate.value, spec.decimals)}${lead}` : '—',
     leadColor: estimate ? cssColor(stops, estimate.value) : color.dim,
     title: place.title,
     meta:
       `${n0(place.elevation)} m · ${place.municipality}` +
-      (margin !== null ? ` · ± ${n(margin, decimals)} ${unit === '%' ? '%' : '°C'}` : ''),
+      (margin !== null ? ` · ± ${n(margin, spec.decimals)} ${spec.unit}` : ''),
   }
 }
 

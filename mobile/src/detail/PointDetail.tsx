@@ -13,6 +13,7 @@ import type { Bundle, InterpolableVariable, Model } from '@core/lib/interpolate'
 import type { DisplayVariable } from '@core/lib/interpolate'
 import type { NetworkCensus, Station } from '@core/lib/quality'
 import type { RgbStop } from '@core/lib/palette'
+import { VARIABLES, VARIABLE_ORDER } from '@core/lib/variables'
 import { n, t } from '@core/i18n'
 import { Hero } from './Hero'
 import { Contributors } from './Contributors'
@@ -21,18 +22,6 @@ import { Nearby } from './Nearby'
 import { Diagnostics } from './Diagnostics'
 import { Row } from './Row'
 import { Section } from './Section'
-
-const UNITS: Record<DisplayVariable, string> = {
-  temperature: t.units.celsius,
-  relativehumidity: t.units.percent,
-  dewpoint: t.units.celsius,
-}
-
-const LABELS: Record<DisplayVariable, string> = {
-  temperature: t.variables.temperature,
-  relativehumidity: t.variables.relativehumidity,
-  dewpoint: t.variables.dewpoint,
-}
 
 export interface PointPlace {
   lon: number
@@ -68,17 +57,18 @@ export function PointDetail({
   const estimate = bundle?.[variable] ?? null
   if (!estimate) return <Section title={t.point.title} note={t.errors.noStations} first />
 
-  const secondary = (['temperature', 'relativehumidity', 'dewpoint'] as const)
-    .filter((v) => v !== variable && bundle?.[v])
-    .map((v) => ({ variable: v, est: bundle![v]! }))
+  const secondary = VARIABLE_ORDER.filter((v) => v !== variable && bundle?.[v]).map((v) => ({
+    variable: v,
+    est: bundle![v]!,
+  }))
 
   return (
     <>
       <Hero
         estimate={estimate}
-        unit={UNITS[variable]}
-        decimals={variable === 'relativehumidity' ? 0 : 1}
-        derived={variable === 'dewpoint'}
+        unit={VARIABLES[variable].unit}
+        decimals={VARIABLES[variable].decimals}
+        derived={VARIABLES[variable].derived === true}
         stops={stops}
         lon={point.lon}
         lat={point.lat}
@@ -88,14 +78,14 @@ export function PointDetail({
       />
 
       {secondary.length > 0 && (
-        <Section title="Las otras dos variables">
+        <Section title="Las otras variables">
           <View style={{ marginTop: 10 }}>
             {secondary.map(({ variable: v, est }, i) => (
               <Row
                 key={v}
-                label={LABELS[v]}
-                value={`${n(est.value, v === 'relativehumidity' ? 0 : 1)} ${UNITS[v]}`}
-                valueSub={`± ${n(est.uncertainty, 1)}`}
+                label={VARIABLES[v].label}
+                value={`${n(est.value, VARIABLES[v].decimals)} ${VARIABLES[v].unit}`}
+                valueSub={`± ${n(est.uncertainty, VARIABLES[v].decimals)}`}
                 last={i === secondary.length - 1}
               />
             ))}
@@ -103,7 +93,9 @@ export function PointDetail({
         </Section>
       )}
 
-      {variable === 'dewpoint' && <Section title="Cómo se calcula" note={t.variables.derivedHint} />}
+      {VARIABLES[variable].hint && (
+        <Section title="Cómo se calcula" note={VARIABLES[variable].hint} />
+      )}
 
       <Contributors
         estimate={estimate}

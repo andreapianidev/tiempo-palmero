@@ -129,9 +129,16 @@ export function zoneAt(deck: CloudDeck, elevationM: number): DeckZone {
  * sostiene entera, no el centro de una probabilidad. Un número redondo también
  * comunica mejor que es una estimación — «por encima de 1.700 m» se lee como
  * lo que es, y «por encima de 1.683 m» promete una precisión que no existe.
+ *
+ * El `+ 1` no es un ajuste cosmético. `zoneAt` considera «dentro» el borde
+ * exacto de la banda, así que cuando `top + resolutionM` cae justo en un
+ * múltiplo de 50 —techo 1500 con margen 250, por ejemplo— el redondeo devolvía
+ * ese mismo número y la cota «con sol» seguía estando dentro de la banda de
+ * incertidumbre. La aplicación se contradecía a sí misma en un caso redondo, y
+ * los casos redondos son los que más salen.
  */
 export function sunlightAbove(deck: CloudDeck): number {
-  return Math.ceil((deck.top + deck.resolutionM) / 50) * 50
+  return Math.ceil((deck.top + deck.resolutionM + 1) / 50) * 50
 }
 
 function median(values: number[]): number {

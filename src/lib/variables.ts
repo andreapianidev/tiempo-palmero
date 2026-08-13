@@ -25,7 +25,7 @@ import {
   VPD_STOPS,
   type RgbStop,
 } from './palette'
-import { t } from '../i18n'
+import { n, t } from '../i18n'
 
 export interface VariableSpec {
   id: DisplayVariable
@@ -95,6 +95,29 @@ export const VARIABLE_ORDER: readonly DisplayVariable[] = [
 
 export function isDisplayVariable(id: string): id is DisplayVariable {
   return id in VARIABLES
+}
+
+/**
+ * La cifra que va DENTRO del pin de una estación, con su unidad pegada.
+ *
+ * Vive aquí porque estaba escrita dos veces —`MapView.tsx` en la web y
+ * `IslandMap.tsx` en el móvil— con la misma forma: «si es humedad, el símbolo
+ * de porcentaje; si no, un grado». Esa regla dejó de ser cierta al entrar el
+ * VPD, que se mide en kilopascales: los pines pasaron a enseñar «0,9°» sobre
+ * una malla en kPa, con la unidad equivocada y con un decimal en vez de dos.
+ *
+ * Se deja el grado a secas, sin la C, porque en un pin de 34 px no cabe y el
+ * contexto lo da la propia escala de color que está al lado.
+ */
+export function pinLabel(variable: DisplayVariable, value: number): string {
+  const spec = VARIABLES[variable]
+  const cifra = n(value, spec.decimals)
+  // El porcentaje y el grado van pegados a la cifra porque así se escriben; el
+  // resto de unidades, separadas. Ni la unidad ni los decimales se deciden
+  // aquí: los dos salen del catálogo, que es de lo que iba este arreglo.
+  if (spec.unit === t.units.percent) return `${cifra}%`
+  if (spec.unit === t.units.celsius) return `${cifra}°`
+  return `${cifra} ${spec.unit}`
 }
 
 // ---------------------------------------------------------------------------

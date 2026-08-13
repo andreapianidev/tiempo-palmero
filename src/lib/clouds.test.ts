@@ -156,13 +156,27 @@ describe('zoneAt', () => {
 
 describe('sunlightAbove', () => {
   it('promete sol desde el techo MÁS el margen, redondeado hacia arriba', () => {
-    expect(sunlightAbove(DECK)).toBe(1750)
+    // 1500 + 250 = 1750, que es múltiplo exacto de 50: la cota tiene que
+    // saltar al siguiente escalón, porque 1750 clavado sigue estando DENTRO
+    // de la banda según `zoneAt`.
+    expect(sunlightAbove(DECK)).toBe(1800)
+    expect(zoneAt(DECK, 1750)).toBe('within')
   })
 
   it('nunca devuelve una cota que siga estando dentro de la banda', () => {
-    for (const top of [1080, 1234, 1573, 1601]) {
-      const deck = { ...DECK, top, resolutionM: 246 }
-      expect(zoneAt(deck, sunlightAbove(deck))).toBe('above')
+    // Se barren todos los techos de metro en metro sobre el rango en que la
+    // inversión del alisio vive: los múltiplos exactos de 50 son justo los que
+    // fallaban, y una lista de cuatro casos elegidos a mano no los tocaba.
+    for (let top = 700; top <= 2000; top++) {
+      for (const resolutionM of [116, 246, 250]) {
+        // La base se deriva del techo: una banda con `top` por debajo de `base`
+        // no es un diagnóstico que `summarizeDeck` pueda producir, y barrerla
+        // sólo probaría cómo se comporta el código ante datos imposibles.
+        const deck = { ...DECK, base: top - 400, top, resolutionM }
+        expect(zoneAt(deck, sunlightAbove(deck)), `techo ${top} ± ${resolutionM}`).toBe(
+          'above',
+        )
+      }
     }
   })
 })

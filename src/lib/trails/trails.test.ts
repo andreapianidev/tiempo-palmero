@@ -149,6 +149,7 @@ function profileOf(points: TrailPoint[]): TrailProfile {
     },
     label: 'GR 130.1',
     points,
+    partSizes: [points.length],
     minElevationM: Math.min(...points.map((p) => p.elevationM)),
     maxElevationM: Math.max(...points.map((p) => p.elevationM)),
     ascentM: 0,
@@ -211,6 +212,31 @@ describe('trailAlerts', () => {
     const cold = trailAlerts(profileOf(points), null).alerts.find((a) => a.kind === 'cold')!
     expect(cold.severity).toBe('warning')
     expect(cold.atElevationM).toBe(2300)
+  })
+
+  it('el aviso LEVE de frío señala el punto más frío, no el más templado', () => {
+    // Regresión. La primera versión elegía el peor punto por valor absoluto, y
+    // con todo por encima de cero eso invertía el criterio: entre un tramo a
+    // 4 °C y otro a 1 °C señalaba los 4 °C. No se veía en el aviso grave
+    // porque allí todo está bajo cero y el signo hacía coincidir las dos reglas.
+    const points = [
+      ...Array.from({ length: 10 }, () => point({ temperature: 4, elevationM: 1800 })),
+      ...Array.from({ length: 10 }, () => point({ temperature: 1, elevationM: 2400 })),
+    ]
+    const cold = trailAlerts(profileOf(points), null).alerts.find((a) => a.kind === 'cold')!
+    expect(cold.severity).toBe('notice')
+    expect(cold.value).toBe(1)
+    expect(cold.atElevationM).toBe(2400)
+  })
+
+  it('el aviso GRAVE de frío también señala el más frío', () => {
+    const points = [
+      ...Array.from({ length: 10 }, () => point({ temperature: -1, elevationM: 2000 })),
+      ...Array.from({ length: 10 }, () => point({ temperature: -6, elevationM: 2400 })),
+    ]
+    const cold = trailAlerts(profileOf(points), null).alerts.find((a) => a.kind === 'cold')!
+    expect(cold.severity).toBe('warning')
+    expect(cold.value).toBe(-6)
   })
 
   it('el calor de la costa también avisa', () => {
