@@ -1211,22 +1211,41 @@ Tres decisiones que hacen que se vea como se ve:
   transparente. Se lee el estado real de GL antes de tocarlo y se devuelve como
   estaba, porque MapLibre lleva su propia caché de estado y dejársela cambiada
   le rompe el dibujo a la capa siguiente.
-- **Inclinar la cámara ya no acelera el viento.** La velocidad en pantalla se
-  ataba al rectángulo envolvente de la vista, y con la cámara a 65° ese
-  rectángulo llega hasta el horizonte y mide tres veces más: girar la vista
-  multiplicaba por tres la velocidad de las partículas sin que el viento hubiera
-  cambiado, que es exactamente lo que este mapa no puede hacer. Ahora se mide por
-  el zoom en el centro, que es donde MapLibre define la escala, y no depende de
-  la inclinación.
+- **La velocidad se mide por el zoom, no por el rectángulo de la vista.** Se
+  cambió temiendo que `getBounds()` creciera con la inclinación y disparase la
+  velocidad de las partículas al girar la cámara. **Medido: eso no pasa.**
+  `getBounds()` de MapLibre 4.7 devuelve lo mismo a 0°, 45°, 65° y 70°, y la
+  cuenta nueva da 0,99× de la vieja a todos los zooms probados. El cambio se
+  queda porque no depende de un comportamiento que la documentación no fija —una
+  vista inclinada ve más terreno del que ese rectángulo declara— pero **no
+  arregló ningún defecto visible**, y queda escrito para que nadie lo cite como
+  si lo hubiera hecho.
 
 El margen de dibujo sobre el suelo son **60 m**, y no es una afirmación sobre a
 qué altura sopla el viento —el campo es de superficie y las estaciones miden a un
-par de metros—: es que la malla del terreno que pinta MapLibre es más basta que
-el DEM del que se leen las cotas, y en una arista la superficie dibujada queda
-decenas de metros por encima. Por debajo de 40 m las estelas se hundían en las
-crestas de Cumbre Nueva; por encima de 100 empiezan a despegarse del suelo en los
-barrancos. Se estira con la exageración de la escena, para que a 1,5× sigan
-pegadas.
+par de metros—: es que **la malla del terreno que pinta MapLibre no es el DEM del
+que se leen las cotas**. Medido en 1.761 puntos de tierra (malla menos DEM, en
+metros; positivo = la superficie dibujada queda por encima de la cota leída):
+
+| mín | p10 | mediana | p90 | p99 | máx |
+|---:|---:|---:|---:|---:|---:|
+| −255,9 | −67,9 | **+4,4** | **+61,2** | +137,6 | +190 |
+
+No depende del zoom —repetido a 9,6, 11, 12,5 y 13,5, idéntico—: es el suavizado
+de la malla sobre las aristas de esta isla. De ahí el 60: es el p90 del lado
+positivo, o sea que en nueve de cada diez puntos la estela queda por encima de la
+superficie dibujada, y en el décimo se hunde y la esconde la prueba de
+profundidad —en crestas, que es donde el relieve ya tapa de todas formas—.
+Subirlo a 140 taparía el p99, pero en la mitad de la isla, donde la malla queda
+por DEBAJO del DEM hasta 256 m, la estela volaría separada del suelo: el error
+contrario, y se ve mucho más. Se estira con la exageración, para que a 1,5×
+sigan pegadas.
+
+La alternativa exacta —preguntarle a MapLibre la cota **dibujada** de cada
+vértice— se descartó con el cronómetro: `queryTerrainElevation` cuesta 1,01 µs
+por llamada, y 8.400 por fotograma son **8,5 ms de los 16** que hay. Medio
+presupuesto de fotograma para ganar unos metros que a la escala de esta isla son
+uno o dos píxeles.
 
 Medido el 13 ago 2026 en una ventana de 1500×950 a ×2: **60 fps** con el viento
 encendido, en plano y en 3D, con la escena a 1 y a 1,5×. Las 8.400 consultas de

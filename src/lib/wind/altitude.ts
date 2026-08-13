@@ -58,17 +58,35 @@ export function mercatorZ(altitudeM: number, lat: number): number {
  *
  * NO es una afirmación sobre a qué altura sopla el viento: las estaciones miden
  * a un par de metros del suelo y el campo es de superficie. Es un margen de
- * DIBUJO, y existe porque la malla del terreno que pinta MapLibre es más basta
- * que el modelo de elevación del que se leen las cotas —a zoom de isla, una
- * tesela de terreno resume 256 píxeles de DEM en unos pocos vértices—, así que
- * en una arista la superficie dibujada puede quedar decenas de metros por
- * encima de la cota que dice el DEM. Sin margen, las estelas se hunden dentro de
- * las cumbres justo donde más viento hay.
+ * DIBUJO, y existe porque LA MALLA DEL TERRENO QUE PINTA MAPLIBRE NO ES EL DEM
+ * DEL QUE SE LEEN LAS COTAS. MapLibre teselada y suaviza; el motor lee el
+ * terrarium a 34 m/px.
  *
- * 60 m: por debajo de 40 se veían tramos tragados por las crestas de la Cumbre
- * Nueva a zoom de isla; por encima de ~100 la estela empieza a despegarse
- * visiblemente del suelo en los barrancos, y entonces parece que el viento va
- * por el aire en vez de por la ladera.
+ * MEDIDO el 13 ago 2026, comparando `map.queryTerrainElevation` contra el mismo
+ * muestreo bilineal que usa la aplicación, en 1.761 puntos de tierra repartidos
+ * por la isla (malla menos DEM, en metros; positivo = la superficie dibujada
+ * queda por ENCIMA de la cota leída):
+ *
+ *   mediana  +4,4     p90  +61,2     p99  +137,6     máx  +190
+ *   p10     −67,9     mín −255,9
+ *
+ * No depende del zoom —se repitió a 9,6, 11, 12,5 y 13,5 y salió idéntico—, así
+ * que no hay ninguna vista en la que el desajuste desaparezca: es el suavizado
+ * de la malla sobre las aristas de esta isla.
+ *
+ * De ahí 60 y no otra cosa: es el p90 del lado positivo, o sea que en nueve de
+ * cada diez puntos la estela queda por encima de la superficie dibujada. En el
+ * décimo se hunde y la prueba de profundidad la esconde —cosa que pasa en
+ * crestas, que es donde el propio relieve ya tapa—. Subirlo a 140 taparía el
+ * p99, pero entonces en la mitad de la isla —donde la malla queda POR DEBAJO
+ * del DEM, hasta 256 m— la estela volaría visiblemente separada del suelo, que
+ * es el error contrario y se ve mucho más.
+ *
+ * La alternativa exacta existe y se descartó con el cronómetro delante:
+ * preguntarle a MapLibre la cota dibujada de cada vértice cuesta 1,01 µs por
+ * llamada —8.400 por fotograma son 8,5 ms de los 16 que hay—, así que se
+ * llevaría medio presupuesto de fotograma para ganar unos metros que a la
+ * escala de esta isla son uno o dos píxeles.
  */
 export const WIND_AGL_M = 60
 
@@ -83,10 +101,18 @@ export function windAltitudeM(groundM: number, exaggeration: number): number {
 /**
  * Grados de latitud que caben en el alto de la ventana, a partir del zoom.
  *
- * Independiente de la inclinación de la cámara a propósito: es la escala en el
- * centro del mapa, que es donde MapLibre define el zoom. Con `getBounds()` la
- * misma vista inclinada 65° medía tres veces más y las partículas salían
- * disparadas al girar la cámara.
+ * Sustituye a `map.getBounds()`, y CONVIENE SABER QUÉ CAMBIÓ Y QUÉ NO. Se
+ * sustituyó temiendo que el rectángulo envolvente creciera con la inclinación
+ * —hasta el horizonte— y disparara la velocidad de las partículas al girar la
+ * cámara. Medido el 13 ago 2026 contra el mapa real: eso NO pasa. `getBounds()`
+ * de MapLibre 4.7 devuelve lo mismo a 0°, 45°, 65° y 70° de inclinación, y esta
+ * cuenta da 0,99× de lo que daba aquél a todos los zooms probados (9,6 a 13,4).
+ *
+ * O sea que el cambio no arregló ningún defecto visible: lo que hace es no
+ * depender de un comportamiento de `getBounds()` que la documentación no fija
+ * —la vista inclinada VE más terreno del que ese rectángulo declara— y medir la
+ * escala donde MapLibre la define, que es el centro. Se queda por eso, no por
+ * la razón con la que se escribió.
  */
 export function viewportHeightDeg(zoom: number, lat: number, heightPx: number): number {
   const metersPerPixel = circumferenceAtLatitude(lat) / (TILE_SIZE_PX * 2 ** zoom)
