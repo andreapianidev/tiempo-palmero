@@ -4,13 +4,22 @@
 # hay que repetir lo evidente: si se quita `node_modules` de esta lista, se
 # suben 20.000 ficheros y el despliegue se rechaza por tamaño.
 #
-# `mobile/` es la aplicación de iOS y Android. Comparte el motor con la web
+# `/mobile` es la aplicación de iOS y Android. Comparte el motor con la web
 # —importa `../src`— pero no forma parte del sitio: sus dependencias nativas y
 # los directorios que genera `expo prebuild` son decenas de miles de ficheros
 # que Vercel no necesita ver.
+#
+# LA BARRA DE `/mobile` NO ES DECORATIVA. Estos patrones se comportan como los
+# de `.gitignore`: sin barra inicial, `mobile` casa con un directorio llamado
+# así A CUALQUIER PROFUNDIDAD. El día que la web estrenó su propia carcasa de
+# móvil en `src/components/mobile/`, esta regla se la llevó por delante —ese
+# directorio no llegaba a subir— y el despliegue moría con «Cannot find module
+# './components/mobile/MobileShell'». No se reproducía en local, porque en
+# local el directorio está: solo fallaba en Vercel, que es donde importa.
+# Anclada a la raíz, excluye la app nativa y solo la app nativa.
 
 node_modules
 dist
-mobile
+/mobile
 .expo
 .git
