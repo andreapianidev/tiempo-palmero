@@ -275,6 +275,14 @@
   visibility: hidden;
 }
 
+.msheet-empty {
+  margin: 0;
+  padding: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+}
+
 /* La ficha de dentro es LA MISMA del escritorio: aquí solo se le quita el
    flotar. Si mañana el panel del punto aprende algo nuevo, aparece en los dos
    sitios sin tocar nada de esto. */
@@ -320,6 +328,31 @@
 .app-mobile .sidebar-scroll {
   padding: 46px 16px calc(28px + env(safe-area-inset-bottom));
 }
+/* El título ya está en pantalla, detrás de la hoja: repetirlo aquí gasta la
+   primera pantalla de una lista que es larga. */
+.app-mobile .sidebar .brand {
+  display: none;
+}
+
+/* El velo: cubre la pantalla entera y queda justo por debajo de la hoja de
+   capas, así que solo se toca donde la hoja no llega —que es justo donde hay
+   que tocar para cerrarla— y de paso apaga el mapa mientras está abierta. */
+.app-mobile .sidebar-scrim {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  border: 0;
+  padding: 0;
+  background: rgba(6, 6, 5, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.app-mobile .sidebar-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
 .app-mobile .sidebar-toggle {
   display: block;
   position: absolute;
@@ -357,8 +390,13 @@
 .app-mobile .maplibregl-ctrl-scale {
   display: none;
 }
+/* La atribución sube justo por encima del asa. Los 82 px son el alto de lo que
+   asoma de la hoja medido en un iPhone 14 Pro —15 del asa, 54 de la fila, 6 de
+   margen— más 7 de aire; el indicador de inicio lo pone `env()` aparte. Si
+   cambian los rellenos de `.msheet-handle`, este número cambia con ellos. */
 .app-mobile .maplibregl-ctrl-bottom-right {
   z-index: 8;
+  bottom: calc(env(safe-area-inset-bottom) + 82px);
 }
 
 /* Dónde dice el navegador que está quien mira. Es un punto y no una pastilla:

@@ -23,13 +23,19 @@ export interface HeadContent {
 interface Props extends HeadContent {
   /** Qué pasa al tocarla: subir un escalón (o volver abajo desde arriba). */
   onCycle: () => void
-  onPointerDown: (e: ReactPointerEvent) => void
+  /** Los manejadores del arrastre, que los pone la hoja. */
+  drag: {
+    onPointerDown: (e: ReactPointerEvent) => void
+    onPointerMove: (e: ReactPointerEvent) => void
+    onPointerUp: (e: ReactPointerEvent) => void
+    onPointerCancel: () => void
+  }
   label: string
 }
 
-export function SheetHead({ lead, leadColor, title, meta, onCycle, onPointerDown, label }: Props) {
+export function SheetHead({ lead, leadColor, title, meta, onCycle, drag, label }: Props) {
   return (
-    <div className="msheet-handle" onPointerDown={onPointerDown}>
+    <div className="msheet-handle" {...drag}>
       <div className="msheet-grab" aria-hidden />
       <button className="msheet-head" onClick={onCycle} aria-label={label}>
         <span className="msheet-lead mono" style={{ color: leadColor }}>

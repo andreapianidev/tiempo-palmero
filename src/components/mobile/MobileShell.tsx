@@ -31,6 +31,7 @@ import { Sheet } from './Sheet'
 import { sheetHead, selectionKey } from './head'
 import { SNAP } from './snaps'
 import type { StatusPart } from './status'
+import { t } from '../../i18n'
 
 interface Props {
   status: StatusPart[]
@@ -133,7 +134,9 @@ export function MobileShell(props: Props) {
         openTo={!props.autoProbe && (selection || probe) ? SNAP.half : undefined}
         onPeekHeight={setPeekHeight}
       >
-        {props.children}
+        {/* Subir la hoja sin haber elegido nada deja media pantalla en negro.
+            Antes de eso, la hoja dice qué se gana tocando el mapa. */}
+        {props.children ?? <p className="msheet-empty">{t.point.tapHint}.</p>}
       </Sheet>
     </>
   )

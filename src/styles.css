@@ -141,6 +141,9 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 }
 .sidebar-scroll { overflow-y: auto; padding: 14px 15px 16px; }
 .sidebar-toggle { display: none; }
+/* El velo de detrás de la hoja de capas. Aquí no existe: en el escritorio el
+   panel es una columna fija y no hay nada que velar. Ver `mobile.css`. */
+.sidebar-scrim { display: none; }
 
 .brand h1 { font-size: 18px; }
 .brand p { margin: 3px 0 0; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; }

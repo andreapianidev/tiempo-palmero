@@ -131,8 +131,18 @@ export function Sheet({ head, contentKey, openTo, onPeekHeight, children }: Prop
    */
   const moved = useRef(false)
 
-  const start = useCallback(
-    (e: ReactPointerEvent, fromBody: boolean) => {
+  /**
+   * Los tres manejadores del gesto, para colgarlos igual del asa y del cuerpo.
+   *
+   * Van en los propios elementos y con CAPTURA del puntero, no en la ventana.
+   * Con listeners puestos desde un efecto se perdía el principio del gesto —el
+   * efecto no corre hasta que React pinta— y un lanzamiento rápido se quedaba
+   * sin `pointerup`: la hoja no se movía y el arrastre quedaba abierto. La
+   * captura, además, es lo que hace que el dedo pueda salirse de la hoja sin
+   * que el arrastre se pierda.
+   */
+  const dragProps = (fromBody: boolean) => ({
+    onPointerDown: (e: ReactPointerEvent) => {
       // Dentro del cuerpo solo se arrastra desde arriba del todo: si no, lo que
       // el dedo quiere es leer.
       if (fromBody && (bodyRef.current?.scrollTop ?? 0) > 0) return
@@ -143,13 +153,11 @@ export function Sheet({ head, contentKey, openTo, onPeekHeight, children }: Prop
         base: offsets[snap],
         fromBody,
       }
+      e.currentTarget.setPointerCapture(e.pointerId)
       setDragging(true)
     },
-    [offsets, snap],
-  )
 
-  const move = useCallback(
-    (e: PointerEvent) => {
+    onPointerMove: (e: ReactPointerEvent) => {
       const d = drag.current
       if (!d || e.pointerId !== d.id) return
       const dy = e.clientY - d.y0
@@ -158,16 +166,14 @@ export function Sheet({ head, contentKey, openTo, onPeekHeight, children }: Prop
       if (d.fromBody && dy < 0 && snap === SNAP.full) {
         drag.current = null
         setDragging(false)
+        e.currentTarget.releasePointerCapture(e.pointerId)
         applyY(offsets[snap])
         return
       }
       applyY(clampDrag(offsets, d.base + dy))
     },
-    [offsets, snap, applyY],
-  )
 
-  const end = useCallback(
-    (e: PointerEvent) => {
+    onPointerUp: (e: ReactPointerEvent) => {
       const d = drag.current
       if (!d || e.pointerId !== d.id) return
       drag.current = null
@@ -181,23 +187,16 @@ export function Sheet({ head, contentKey, openTo, onPeekHeight, children }: Prop
       applyY(offsets[next])
       setSnap(next)
     },
-    [offsets, snap, applyY],
-  )
 
-  // Los manejadores van en la ventana y no en la hoja: el dedo se sale de ella
-  // constantemente al arrastrar, y sin `pointercancel` la hoja se quedaba
-  // pegada al dedo después de soltar.
-  useEffect(() => {
-    if (!dragging) return
-    window.addEventListener('pointermove', move, { passive: true })
-    window.addEventListener('pointerup', end)
-    window.addEventListener('pointercancel', end)
-    return () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', end)
-      window.removeEventListener('pointercancel', end)
-    }
-  }, [dragging, move, end])
+    // El navegador se lleva el puntero cuando decide que el gesto era un
+    // desplazamiento suyo. La hoja vuelve a su escalón y no se queda a medias.
+    onPointerCancel: () => {
+      if (!drag.current) return
+      drag.current = null
+      setDragging(false)
+      applyY(offsets[snap])
+    },
+  })
 
   return (
     <section
@@ -218,10 +217,10 @@ export function Sheet({ head, contentKey, openTo, onPeekHeight, children }: Prop
           }
           setSnap((s) => nextSnap(s))
         }}
-        onPointerDown={(e) => start(e, false)}
+        drag={dragProps(false)}
       />
 
-      <div ref={bodyRef} className="msheet-body" onPointerDown={(e) => start(e, true)}>
+      <div ref={bodyRef} className="msheet-body" {...dragProps(true)}>
         {children}
       </div>
     </section>

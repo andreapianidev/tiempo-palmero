@@ -125,201 +125,218 @@ export function Sidebar(props: Props) {
   )
 
   return (
-    <aside className={`sidebar${open ? ' open' : ''}`}>
+    <>
+      {/* Lo que queda fuera de la hoja se toca para cerrarla. Solo se ve en el
+          móvil —en el escritorio el panel es una columna y no tapa nada—, y sin
+          él la única salida era acertar en la × de la esquina.
+
+          Va FUERA del panel a propósito: dentro, su `position: fixed` se mide
+          contra el panel (que está desplazado con `transform`) en vez de contra
+          la pantalla, y el velo se quedaba justo debajo de la hoja, que es el
+          único sitio donde no hace falta. */}
       <button
-        className="sidebar-toggle"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-      >
-        {open ? '×' : '≡'}
-      </button>
+        className={`sidebar-scrim${open ? ' open' : ''}`}
+        tabIndex={-1}
+        aria-hidden
+        onClick={() => setOpen(false)}
+      />
 
-      <div className="sidebar-scroll">
-        <header className="brand">
-          <h1>{t.app.name}</h1>
-          <p className="mono dim">{t.app.subtitle}</p>
-        </header>
-
-        <PlaceSearch
-          gazetteer={props.gazetteer}
-          onSelect={(entry) => {
-            props.onSearch(entry)
-            setOpen(false)
-          }}
-        />
-
-        <Section title={t.variables.title} defaultOpen>
-          <VariablePicker
-            variable={props.variable}
-            onVariable={props.onVariable}
-            gridOn={props.visible.grid}
-            onToggleGrid={() => props.onToggle('grid')}
-          />
-        </Section>
-
-        {/* Solo con el CO₂ elegido: es el único sitio donde hace falta contar
-            de qué red sale el color y hasta dónde llega. */}
-        {props.variable === 'co2' && (
-          <Section
-            title={t.variables.co2}
-            defaultOpen
-            badge={props.co2Field ? `${props.co2Field.nodes.length}` : '—'}
-          >
-            <Co2Status field={props.co2Field} now={props.now} />
-          </Section>
-        )}
-
-        {props.variable === 'coverage' && (
-          <Section
-            title={t.variables.coverage}
-            defaultOpen
-            badge={props.coverage.field ? `${props.coverage.field.count}` : '…'}
-          >
-            <CoverageStatus state={props.coverage} />
-          </Section>
-        )}
-
-        <Section
-          title={t.layers.title}
-          defaultOpen
-          badge={`${activeLayerCount(props.visible)}/${LAYER_COUNT}`}
+      <aside className={`sidebar${open ? ' open' : ''}`}>
+        <button
+          className="sidebar-toggle"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
         >
-          <LayerSwitches visible={props.visible} onToggle={props.onToggle} />
-          <GuaguaHint
-            loading={props.guagua.loading}
-            stopsZoomReached={props.guagua.stopsZoomReached}
-            on={props.visible.guagua}
+          {open ? '×' : '≡'}
+        </button>
+
+        <div className="sidebar-scroll">
+          <header className="brand">
+            <h1>{t.app.name}</h1>
+            <p className="mono dim">{t.app.subtitle}</p>
+          </header>
+
+          <PlaceSearch
+            gazetteer={props.gazetteer}
+            onSelect={(entry) => {
+              props.onSearch(entry)
+              setOpen(false)
+            }}
           />
-        </Section>
 
-        <Section
-          title={t.places.title}
-          badge={`${activePlaceCount(props.places)}/${PLACE_COUNT}`}
-        >
-          <PlaceSwitches visible={props.places} onToggle={props.onTogglePlace} />
-        </Section>
+          <Section title={t.variables.title} defaultOpen>
+            <VariablePicker
+              variable={props.variable}
+              onVariable={props.onVariable}
+              gridOn={props.visible.grid}
+              onToggleGrid={() => props.onToggle('grid')}
+            />
+          </Section>
 
-        {/* Debajo de las capas porque es lo que hay debajo de las capas. La
-            pestaña dice cuál está puesto: plegada, es la única forma de saber
-            si lo que se está viendo es cálculo de casa o carta ajena. */}
-        <Section title="Fondo del mapa" badge={BASEMAPS[props.basemap].label}>
-          <BasemapPicker
-            basemap={props.basemap}
-            onBasemap={props.onBasemap}
-            gridOn={props.visible.grid}
-            onToggleGrid={() => props.onToggle('grid')}
-          />
-        </Section>
+          {/* Solo con el CO₂ elegido: es el único sitio donde hace falta contar
+              de qué red sale el color y hasta dónde llega. */}
+          {props.variable === 'co2' && (
+            <Section
+              title={t.variables.co2}
+              defaultOpen
+              badge={props.co2Field ? `${props.co2Field.nodes.length}` : '—'}
+            >
+              <Co2Status field={props.co2Field} now={props.now} />
+            </Section>
+          )}
 
-        {/* Solo cuando la capa está encendida: si no, describiría con detalle
-            algo que no se está viendo. */}
-        {props.visible.wind && (
-          <Section title="Viento" defaultOpen badge={`${props.wind.measuring}`}>
-            <WindStatus
-              wind={props.wind}
-              usableStations={props.census?.usable ?? null}
+          {props.variable === 'coverage' && (
+            <Section
+              title={t.variables.coverage}
+              defaultOpen
+              badge={props.coverage.field ? `${props.coverage.field.count}` : '…'}
+            >
+              <CoverageStatus state={props.coverage} />
+            </Section>
+          )}
+
+          <Section
+            title={t.layers.title}
+            defaultOpen
+            badge={`${activeLayerCount(props.visible)}/${LAYER_COUNT}`}
+          >
+            <LayerSwitches visible={props.visible} onToggle={props.onToggle} />
+            <GuaguaHint
+              loading={props.guagua.loading}
+              stopsZoomReached={props.guagua.stopsZoomReached}
+              on={props.visible.guagua}
+            />
+          </Section>
+
+          <Section
+            title={t.places.title}
+            badge={`${activePlaceCount(props.places)}/${PLACE_COUNT}`}
+          >
+            <PlaceSwitches visible={props.places} onToggle={props.onTogglePlace} />
+          </Section>
+
+          {/* Debajo de las capas porque es lo que hay debajo de las capas. La
+              pestaña dice cuál está puesto: plegada, es la única forma de saber
+              si lo que se está viendo es cálculo de casa o carta ajena. */}
+          <Section title="Fondo del mapa" badge={BASEMAPS[props.basemap].label}>
+            <BasemapPicker
+              basemap={props.basemap}
+              onBasemap={props.onBasemap}
+              gridOn={props.visible.grid}
+              onToggleGrid={() => props.onToggle('grid')}
+            />
+          </Section>
+
+          {/* Solo cuando la capa está encendida: si no, describiría con detalle
+              algo que no se está viendo. */}
+          {props.visible.wind && (
+            <Section title="Viento" defaultOpen badge={`${props.wind.measuring}`}>
+              <WindStatus
+                wind={props.wind}
+                usableStations={props.census?.usable ?? null}
+                now={props.now}
+              />
+            </Section>
+          )}
+
+          {props.visible.counters && (
+            <Section
+              title={t.layers.counters}
+              defaultOpen
+              badge={props.counters.census ? `${props.counters.census.liveSites}` : '…'}
+            >
+              <CounterStatus
+                census={props.counters.census}
+                loading={props.counters.loading}
+                error={props.counters.error}
+              />
+            </Section>
+          )}
+
+          {/* El mar de nubes va justo detrás del viento porque es la otra cosa
+              que decide si merece la pena subir hoy. No cuesta ninguna petición:
+              sale de los perfiles que el motor ya descarga. */}
+          <Section
+            title="Mar de nubes"
+            badge={props.deck?.present ? `${Math.round(props.deck.base)} m` : undefined}
+          >
+            <CloudSea
+              deck={props.deck}
+              hereM={props.here?.elevationM ?? null}
+              hereLabel={props.here?.label ?? null}
               now={props.now}
             />
           </Section>
-        )}
 
-        {props.visible.counters && (
           <Section
-            title={t.layers.counters}
-            defaultOpen
-            badge={props.counters.census ? `${props.counters.census.liveSites}` : '…'}
+            title="Roque de los Muchachos"
+            badge="2.387 m"
+            onOpenChange={(open) => props.onSectionToggle('roque', open)}
           >
-            <CounterStatus
-              census={props.counters.census}
-              loading={props.counters.loading}
-              error={props.counters.error}
+            <RoqueStatus
+              status={props.roque}
+              aboveDeck={
+                props.deck ? zoneAt(props.deck, 2387) === 'above' : null
+              }
+              layer={props.summitLayer}
+              now={props.now}
             />
           </Section>
-        )}
 
-        {/* El mar de nubes va justo detrás del viento porque es la otra cosa
-            que decide si merece la pena subir hoy. No cuesta ninguna petición:
-            sale de los perfiles que el motor ya descarga. */}
-        <Section
-          title="Mar de nubes"
-          badge={props.deck?.present ? `${Math.round(props.deck.base)} m` : undefined}
-        >
-          <CloudSea
-            deck={props.deck}
-            hereM={props.here?.elevationM ?? null}
-            hereLabel={props.here?.label ?? null}
-            now={props.now}
-          />
-        </Section>
-
-        <Section
-          title="Roque de los Muchachos"
-          badge="2.387 m"
-          onOpenChange={(open) => props.onSectionToggle('roque', open)}
-        >
-          <RoqueStatus
-            status={props.roque}
-            aboveDeck={
-              props.deck ? zoneAt(props.deck, 2387) === 'above' : null
+          <Section
+            title="Senderos"
+            badge={
+              props.trailReports.length
+                ? `${props.trailReports.filter((r) => r.worst).length}/${props.trailReports.length}`
+                : undefined
             }
-            layer={props.summitLayer}
-            now={props.now}
-          />
-        </Section>
-
-        <Section
-          title="Senderos"
-          badge={
-            props.trailReports.length
-              ? `${props.trailReports.filter((r) => r.worst).length}/${props.trailReports.length}`
-              : undefined
-          }
-          onOpenChange={(open) => props.onSectionToggle('trails', open)}
-        >
-          <TrailAlerts reports={props.trailReports} />
-        </Section>
-
-        <Section
-          title="Agricultura"
-          onOpenChange={(open) => props.onSectionToggle('agro', open)}
-        >
-          <AgroStatus agro={props.agro} here={props.here} />
-        </Section>
-
-        <Section title={t.model.title} defaultOpen>
-          <ModelStatus
-            models={props.models}
-            census={props.census}
-            validation={props.validation}
-            shareAboveCeiling={shareAboveCeiling}
-            lastUpdate={props.lastUpdate}
-            now={props.now}
-          />
-        </Section>
-
-        {/* Se abre solo si hay algo que contar. Un bloque de averías abierto
-            para decir que no hay ninguna es ruido en el sitio de un aviso. */}
-        <Section
-          title={t.health.title}
-          defaultOpen={faultyCount > 0}
-          badge={faultyCount > 0 ? `⚠ ${faultyCount}` : '✓'}
-        >
-          <NetworkHealth health={props.health} stations={props.stations} />
-        </Section>
-
-        {props.census && props.census.dropped.length > 0 && (
-          <Section title={t.hidden.title} badge={`${props.census.dropped.length}`}>
-            <HiddenStations census={props.census} />
+            onOpenChange={(open) => props.onSectionToggle('trails', open)}
+          >
+            <TrailAlerts reports={props.trailReports} />
           </Section>
-        )}
 
-        <footer className="side-footer">
-          <button className="link-btn" onClick={props.onSources}>
-            {t.sources.open} →
-          </button>
-          <p className="dim small">{t.point.tapHint}</p>
-        </footer>
-      </div>
-    </aside>
+          <Section
+            title="Agricultura"
+            onOpenChange={(open) => props.onSectionToggle('agro', open)}
+          >
+            <AgroStatus agro={props.agro} here={props.here} />
+          </Section>
+
+          <Section title={t.model.title} defaultOpen>
+            <ModelStatus
+              models={props.models}
+              census={props.census}
+              validation={props.validation}
+              shareAboveCeiling={shareAboveCeiling}
+              lastUpdate={props.lastUpdate}
+              now={props.now}
+            />
+          </Section>
+
+          {/* Se abre solo si hay algo que contar. Un bloque de averías abierto
+              para decir que no hay ninguna es ruido en el sitio de un aviso. */}
+          <Section
+            title={t.health.title}
+            defaultOpen={faultyCount > 0}
+            badge={faultyCount > 0 ? `⚠ ${faultyCount}` : '✓'}
+          >
+            <NetworkHealth health={props.health} stations={props.stations} />
+          </Section>
+
+          {props.census && props.census.dropped.length > 0 && (
+            <Section title={t.hidden.title} badge={`${props.census.dropped.length}`}>
+              <HiddenStations census={props.census} />
+            </Section>
+          )}
+
+          <footer className="side-footer">
+            <button className="link-btn" onClick={props.onSources}>
+              {t.sources.open} →
+            </button>
+            <p className="dim small">{t.point.tapHint}</p>
+          </footer>
+        </div>
+      </aside>
+    </>
   )
 }

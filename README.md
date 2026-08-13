@@ -1223,6 +1223,39 @@ del motor y la fuente `raster-dem` del sombreado de MapLibre. Descargar dos
 modelos de elevación distintos para la misma isla sería tirar ancho de banda y
 arriesgarse a que el relieve que se ve y el que se calcula no coincidan.
 
+### La misma web, en un teléfono
+
+Por debajo de 720 px de ancho la web deja de montar la barra lateral y el panel
+flotante, y monta lo mismo que la app nativa: cabecera sobre el mapa, una tira
+de variables que se desplaza, tres botones redondos y **una hoja que asoma por
+abajo y nunca se cierra**. Vive en `src/components/mobile/` y el escritorio no
+cambia en nada.
+
+Lo que **no** se duplica es la ficha. Dentro de la hoja van el mismo
+`PointPanel` y el mismo `DetailPanel` que flotan a la derecha en una pantalla
+ancha, pasados como hijos: si el panel del punto aprende algo, lo aprende en las
+dos disposiciones el mismo día. Lo único propio del móvil es el armazón —la
+hoja, sus tres alturas y la cabecera que asoma— y la tabla que decide qué dice
+esa cabecera para cada cosa que se puede tocar (`head.ts`).
+
+Las tres alturas están en `snaps.ts`, aparte y con pruebas: reposo (solo la
+cabecera), media pantalla y pegada al borde de arriba. La de reposo es la de
+arranque y la hoja no baja de ahí, porque la cifra del punto que se está mirando
+tiene que seguir en pantalla mientras se mueve el mapa.
+
+**Al abrir se pregunta la ubicación una vez**, en cuanto hay DEM y modelo —antes
+no: sin altitud no hay corrección altimétrica y sin modelo no hay nada que
+estimar— y lo que se hace con ella es dejarla escrita en esa cabecera. No se
+vuela hacia ella y la hoja no sube: quien abre la app ve la isla entera y, en
+una línea, qué temperatura hace donde está. Con el botón sí se vuela, porque ahí
+sí se ha pedido. Sin ubicación no se pierde nada: se dice en la línea de estado
+y la app sigue igual.
+
+El umbral de 720 px está escrito **una sola vez**, en `useIsMobile()`. La hoja
+de estilos no lo repite: cuelga de la clase `.app-mobile` que pone ese hook, y
+así no hay ninguna franja de anchos en la que JavaScript monte una disposición
+y el CSS pinte la otra.
+
 ---
 
 ## La aplicación de iOS y Android
