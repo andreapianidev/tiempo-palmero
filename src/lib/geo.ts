@@ -8,6 +8,20 @@ export type LonLat = [number, number] // SIEMPRE [lon, lat], como GeoJSON
 /** Bounding box de La Palma, con margen. Fuente: bbox insular + holgura. */
 export const ISLAND_BBOX = { west: -18.05, east: -17.7, south: 28.4, north: 28.9 } as const
 
+/**
+ * Hasta dónde se puede arrastrar la vista: el rectángulo que limita el mapa.
+ *
+ * Está aquí y no escrito a mano en `MapView` porque hay dos cosas que tienen que
+ * usar EXACTAMENTE el mismo rectángulo: el `maxBounds` del mapa y la batimetría
+ * que se descarga en build. Si el mar simulado cubriera menos que lo que se
+ * puede arrastrar, al llegar al borde aparecería el vacío; si cubriera más,
+ * serían kilobytes de fondo oceánico que nadie va a ver nunca.
+ *
+ * Son 92,5 × 111 km alrededor de una isla de 27,7 × 45: sitio para alejarse
+ * hasta verla entera con horizonte por los cuatro lados, y ni un grado más.
+ */
+export const MAP_BBOX = { west: -18.35, east: -17.4, south: 28.15, north: 29.15 } as const
+
 export function inIslandBbox(lon: number, lat: number): boolean {
   return (
     lon > ISLAND_BBOX.west &&

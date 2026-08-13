@@ -43,6 +43,7 @@ import { prepareArcgis } from './prepare-arcgis.js'
 import { prepareAgro } from './prepare-agro.js'
 import { prepareOsmRoads } from './prepare-osm-roads.js'
 import { prepareTdt } from './prepare-tdt.js'
+import { prepareOcean } from './prepare-ocean.js'
 
 // ---------------------------------------------------------------------------
 // 1. DEM — teselas terrarium
@@ -640,6 +641,9 @@ async function main() {
 
   await mkdir(PUBLIC, { recursive: true })
   if (run('dem')) await prepareDem()
+  // La batimetría es la otra mitad del relieve: la que `prepareDem` aplana a
+  // cero al guardar las teselas. Ver la cabecera de `prepare-ocean.ts`.
+  if (run('ocean')) await prepareOcean()
   if (run('layers')) await prepareLayers()
   if (run('viario')) await mergeLayerIndex(await prepareOsmRoads())
   // La cobertura de TDT necesita `limite-insular.geojson` para recortar el mar,

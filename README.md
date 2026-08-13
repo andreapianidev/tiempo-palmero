@@ -54,7 +54,8 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
   [El histórico](#el-histórico-y-por-qué-no-hay-base-de-datos) — 2 MB por día en
   origen, 124 KB en el navegador, cero almacenamiento propio ·
   [La vista 3D](#la-vista-3d) — sin una descarga más, y por qué no exagera el
-  relieve
+  relieve · [El océano](#el-océano) — dos trenes de olas sobre batimetría real,
+  y [de dónde venía el frenazo](#el-frenazo-de-la-vista-3d-y-de-dónde-venía)
 - [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — qué se
   llama de verdad, y con qué permiso
 - [Arquitectura](#arquitectura)
@@ -1237,9 +1238,29 @@ que una completa, y la forma no puede ser el único aviso.
 
 La procedencia de cada byte importa, así que aquí está escrita.
 
-En tiempo de ejecución se llama a **dos** servicios: la API del Cabildo y
-Open-Meteo. Todo lo demás está **precalculado en tiempo de compilación** y
-servido como fichero estático.
+En tiempo de ejecución se llama a la API del Cabildo, a Open-Meteo y —solo si se
+encienden— a los servicios de cartografía que alimentan un fondo o una carta.
+Todo lo demás está **precalculado en tiempo de compilación** y servido como
+fichero estático.
+
+Este apartado decía «se llama a **dos** servicios» y ya no era cierto desde que
+existen los fondos de GRAFCAN; queda corregido aquí en vez de dejar la
+afirmación en pie. La lista completa de lo que se pide fuera, y cuándo:
+
+| Servicio | Cuándo se pide | Licencia |
+|---|---|---|
+| API del Cabildo (`bi.lapalma.es`) | siempre | CC-BY |
+| Open-Meteo *forecast* | siempre: anclas de cumbre y fondo del viento | CC-BY, API gratuita no comercial |
+| Open-Meteo *marine* | con el océano encendido, una petición por refresco | ídem |
+| GRAFCAN (IDECanarias) | con el fondo topográfico o la ortofoto | libre y gratuita, sin descarga masiva |
+| EMODnet Bathymetry (WMS) | con la carta náutica encendida | CC-BY 4.0 |
+| OpenSeaMap | con la carta náutica encendida | ODbL 1.0 |
+
+Las tres últimas **no tienen recorte de recuadro** en el caso de la carta
+náutica, y es deliberado: el mar abierto es justamente su contenido. Los fondos
+de GRAFCAN sí lo llevan, porque son cartografía de las islas y pedirles océano
+sería pedir teselas vacías a un servicio cuya licencia prohíbe la descarga
+masiva.
 
 - **Open-Meteo sí se llama en runtime**, en dos sitios: las anclas por encima
   del techo de la red y el fondo del mapa de viento. Este apartado llegó a
@@ -1366,6 +1387,108 @@ no la hay. Por eso 2× no está en el selector.
 En plano la cámara queda bloqueada a `pitch` 0. MapLibre trae el arrastre con el
 botón derecho activado de fábrica y hasta ahora eso permitía inclinar la vista
 sin querer y sin relieve debajo, que no es una vista: es un accidente.
+
+### El océano
+
+Un mar que se comporta como el de fuera: dos trenes de olas superpuestos sobre
+la batimetría real, con la marea a su altura y el sol donde de verdad está. Se
+enciende en el panel, está apagado al llegar —lo primero que esta aplicación
+tiene que enseñar es el dato— y funciona igual sobre los tres fondos.
+
+**No es una animación decorativa: es un modelo con fuentes.**
+
+| Qué | De dónde | Qué es |
+|---|---|---|
+| Mar de fondo y mar de viento (altura, período, dirección) | Open-Meteo Marine (MFWAM/ECMWF), 8 puntos en anillo | modelo |
+| Marea, temperatura del agua, corriente | la misma pasada | modelo |
+| Viento que riza la superficie | estaciones del Cabildo, modelo donde no llegan | **medido** donde hay estación |
+| Profundidad | EMODnet Bathymetry, 1/16′ (102 × 116 m) | **medido**, congelado en build |
+| Línea de costa | límite insular del Cabildo, 73.605 vértices a 2,2 m de paso | **el mismo fichero que dibuja el contorno** |
+| Luz del sol y de la luna | geometría (NOAA / Meeus) | calculado |
+| Cuánta luz llega de verdad | radiación solar de las estaciones | **medido** |
+| Cuánto difunde el cielo | PM10 de las estaciones de calidad del aire | **medido** |
+
+**Ocho puntos y no uno.** La isla mide 2.426 m y hace sombra al oleaje igual que
+se la hace al viento. Leído del servicio el 13 de agosto de 2026 a las 17:00
+UTC, con el mismo mar de fondo del nordeste para todos: mar de viento de 0,96 m
+por el norte, 0,22 m por el nordeste, **0,02 m al suroeste**. Dos órdenes de
+magnitud entre barlovento y sotavento, en el mismo instante y a 40 km. Un
+océano dibujado con un solo número contradiría al mapa de viento que tiene al
+lado.
+
+**La rejilla no tiene niveles de detalle porque no le hacen falta.** Es una
+*projected grid* (Johanson, 2004): una malla regular **en la pantalla**, de la
+que cada vértice lanza un rayo hasta el plano del agua. Los triángulos salen
+pequeños donde el mar está cerca y kilométricos donde está lejos, exactamente
+en la proporción en que se ven, y los búferes no se tocan nunca: entre
+fotogramas solo cambian dos matrices. Esas matrices se invierten en **doble**
+precisión, porque en Mercator normalizado la isla entera ocupa 0,0026 unidades y
+un píxel al máximo acercamiento son 1,5·10⁻⁸.
+
+**La física está medida, no elegida** (`lib/ocean/sea-state.ts`, con sus
+pruebas):
+
+- dispersión con la aproximación explícita de Guo (2002), comprobada contra los
+  dos casos exactos: error nulo en aguas profundas y 0,9 % en someras;
+- asomeramiento por conservación del flujo de energía — una mar de fondo de 8 s
+  crece un 13 % a 3 m de agua y un 44 % a 1 m, y pasa por el mínimo teórico de
+  0,913 que predice la teoría lineal;
+- rotura en H/d = 0,78 (McCowan): con el estado real de aquel día, 1,3 m y
+  5,5 s, la rompiente cae a **1,8 m de fondo**;
+- borreguillos con W = 3,84·10⁻⁶·U^3,41 (Monahan y O'Muircheartaigh, 1980):
+  0,09 % del mar a 5 m/s, 1,84 % a 12 y 10,5 % a 20. El exponente 3,41 es lo que
+  hace que el mar cambie de carácter de golpe;
+- ninguna ola pasa del límite de Stokes (H/L = 1/7), venga lo que venga del
+  modelo.
+
+**Lo que no se ve pero decide cómo se ve.** El brillo del sol va multiplicado por
+Fresnel, como cualquier otro reflejo, y no sumado por encima: sumado —que es lo
+habitual en los sombreadores de videojuego— el mar visto desde arriba salía con
+una mancha blanca reventada de varios kilómetros, medida en pantalla a 2,3 veces
+el blanco. Y el plano del agua va **dos metros por encima del cero**: con la
+vista 3D, MapLibre dibuja una malla de terreno que cubre toda la pantalla con el
+fondo marino aplanado a cero, así que a marea baja el mar quedaba por debajo y
+la prueba de profundidad lo descartaba entero.
+
+**Rendimiento.** Tres niveles de calidad que apagan lo que cuesta y no se echa
+de menos, en este orden: la refracción del fondo (una copia de pantalla por
+fotograma), las escalas de rizado (lecturas de textura por píxel) y la densidad
+de la rejilla. Se elige solo mirando cuántos píxeles hay que pintar. Los
+sombreadores se validan sin navegador con el compilador de referencia de Khronos
+(`npx tsx scripts/checks/glsl.ts`), porque un error de GLSL no lo caza ni
+TypeScript ni vitest: lo único que pasa es que el mar no aparece.
+
+### El frenazo de la vista 3D, y de dónde venía
+
+Con el terreno encendido, **cada marcador preguntaba a la tarjeta gráfica si
+estaba detrás de una montaña**, y lo preguntaba leyendo un píxel del búfer de
+profundidad (`Marker._updateOpacity` → `terrain.depthAtPoint` → `gl.readPixels`).
+Un `readPixels` es una barrera completa entre CPU y GPU: cuesta bastante más que
+dibujar el marcador.
+
+Medido instrumentando `readPixels` en el propio navegador y repitiendo la misma
+secuencia de arrastres en 3D, con la misma cantidad de marcadores en pantalla:
+
+| | lecturas del búfer | marcadores | duración de la misma secuencia |
+|---|---|---|---|
+| Marcador de MapLibre | **2.461** | 40 | 206 s |
+| Oclusión propia | **490** | 41 | 84 s |
+
+Un 80 % menos de barreras y menos de la mitad de tiempo para hacer lo mismo (la
+prueba corre con renderizado por software, así que lo que compara son las
+paradas, no los fotogramas por segundo). Las 490 que quedan **no son de los
+marcadores**: son de MapLibre, que con el terreno encendido también lee el búfer
+para convertir un punto de la pantalla en coordenadas mientras se arrastra. Y la
+cifra de la primera fila crece con los marcadores: esta aplicación llega a 130
+entre pines, topónimos, aforos y cámaras.
+
+La sustitución no quita la función, la cambia de sitio: el modelo de elevación
+**ya está en memoria** —es el mismo con el que se interpola la temperatura— así
+que recorrer la línea entre la cámara y cada marcador cuesta cuarenta y siete
+consultas a un `Float32Array`, sin GPU y sin esperas, y se recalcula ocho veces
+por segundo en vez de en cada fotograma (`lib/occlusion.ts`, con sus pruebas).
+La respuesta es además más estable, porque no depende de qué teselas de relieve
+hayan terminado de cargar.
 
 ### La misma web, en un teléfono
 

@@ -109,6 +109,27 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'openstreetmap.org/copyright',
   },
   {
+    title: t.sources.oceanTitle,
+    body: t.sources.oceanBody,
+    license: t.sources.oceanLicense,
+    href: 'https://open-meteo.com/en/docs/marine-weather-api',
+    hrefLabel: 'open-meteo.com · Marine Weather API',
+  },
+  {
+    title: t.sources.bathymetryTitle,
+    body: t.sources.bathymetryBody,
+    license: t.sources.bathymetryLicense,
+    href: 'https://emodnet.ec.europa.eu/en/bathymetry',
+    hrefLabel: 'emodnet.ec.europa.eu/bathymetry',
+  },
+  {
+    title: t.sources.seamarksTitle,
+    body: t.sources.seamarksBody,
+    license: t.sources.seamarksLicense,
+    href: 'https://www.openseamap.org',
+    hrefLabel: 'openseamap.org',
+  },
+  {
     title: t.sources.demTitle,
     body: t.sources.demBody,
     license: t.sources.demLicense,

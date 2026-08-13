@@ -10,6 +10,7 @@ import { useIsMobile } from './hooks/useIsMobile'
 import { useGeolocation, type GeoFix } from './hooks/useGeolocation'
 import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { useWindField } from './hooks/useWindField'
+import { useOcean } from './hooks/useOcean'
 import { useGuagua } from './hooks/useGuagua'
 import { usePlaces, NO_PLACES, type PlaceVisibility } from './hooks/usePlaces'
 import { useOsmRoads } from './hooks/useOsmRoads'
@@ -26,6 +27,7 @@ import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
 import type { BasemapId } from './lib/basemaps'
 import { DEFAULT_EXAGGERATION, type Exaggeration } from './lib/terrain'
+import { autoQuality, type OceanQuality } from './lib/ocean/quality'
 import { warmNearbyLayers } from './lib/nearby'
 import { t } from './i18n'
 
@@ -97,6 +99,43 @@ export default function App() {
     on: false,
     exaggeration: DEFAULT_EXAGGERATION,
   })
+  /**
+   * El océano. Apagado al llegar, y por el mismo motivo que la vista 3D: lo
+   * primero que esta aplicación tiene que enseñar es el dato, y un mar animado
+   * con oleaje real es lo más llamativo de la pantalla —tanto, que se lleva la
+   * mirada por delante de la isla, que es de lo que va esto—. Quien lo quiera,
+   * lo enciende, y entonces sí manda.
+   *
+   * La calidad se decide sola mirando cuántos píxeles hay que pintar y qué
+   * equipo hay debajo, y se puede cambiar a mano. Ver `lib/ocean/quality.ts`.
+   */
+  const [ocean, setOcean] = useState<{
+    on: boolean
+    charts: boolean
+    quality: OceanQuality
+  }>(() => ({
+    on: false,
+    charts: false,
+    quality: autoQuality(
+      window.innerWidth * window.innerHeight * (window.devicePixelRatio || 1) ** 2,
+      navigator.hardwareConcurrency ?? 4,
+      window.matchMedia('(pointer: coarse)').matches,
+    ),
+  }))
+  /**
+   * Y sus datos. Igual que las guaguas o el viario: no se pide ni un byte
+   * mientras el interruptor esté apagado. El campo de viento que le entra es el
+   * MISMO objeto que dibuja la capa de viento, así que el mar y las partículas
+   * no pueden contradecirse.
+   */
+  const oceanData = useOcean(
+    ocean.on,
+    data.dem,
+    wind.field,
+    data.stations,
+    data.air,
+    data.lastUpdate,
+  )
   const [probe, setProbe] = useState<ProbePoint | null>(null)
   /**
    * La máscara de cobertura TDT: 28 KB que se decodifican a píxeles.
@@ -380,6 +419,8 @@ export default function App() {
         counters={counters.sites}
         wind={wind.field}
         terrain={terrain}
+        ocean={ocean}
+        oceanData={oceanData}
         basemap={basemap}
         visible={visible}
         probe={probe}
@@ -477,6 +518,11 @@ export default function App() {
         terrain={terrain}
         onTerrain={() => setTerrain((s) => ({ ...s, on: !s.on }))}
         onExaggeration={(exaggeration) => setTerrain((s) => ({ ...s, exaggeration }))}
+        ocean={ocean}
+        oceanData={oceanData}
+        onOcean={() => setOcean((s) => ({ ...s, on: !s.on }))}
+        onOceanCharts={() => setOcean((s) => ({ ...s, charts: !s.charts }))}
+        onOceanQuality={(quality) => setOcean((s) => ({ ...s, quality }))}
         visible={visible}
         onToggle={toggle}
         places={placesOn}

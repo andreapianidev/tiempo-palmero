@@ -1,0 +1,21 @@
+{
+  "bbox": {
+    "west": -18.35,
+    "east": -17.4,
+    "south": 28.15,
+    "north": 29.15
+  },
+  "size": 1024,
+  "maxDepthM": 4100,
+  "encoding": "sqrt-depth-8bit",
+  "projection": "web-mercator",
+  "nativeResolution": "1/16 arc minute (~102 × 116 m a 28,6° N)",
+  "measured": {
+    "deepestM": 4045.4,
+    "highestM": 2401.2,
+    "seaShare": 93
+  },
+  "attribution": "Batimetría: EMODnet Bathymetry Consortium — EMODnet Digital Bathymetry (DTM), servicio WCS de ows.emodnet-bathymetry.eu. CC-BY 4.0.",
+  "license": "CC-BY 4.0",
+  "generated": "2026-08-13T17:03:55.532Z"
+}

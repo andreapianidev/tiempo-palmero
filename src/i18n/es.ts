@@ -889,6 +889,30 @@ export const es = {
     toponymsBody:
       '© colaboradores de OpenStreetMap. Extraídos una sola vez en tiempo de compilación mediante Overpass; la aplicación no consulta OpenStreetMap en tiempo de ejecución.',
     toponymsLicense: 'ODbL 1.0',
+    oceanTitle: 'Estado del mar',
+    oceanBody:
+      'Open-Meteo Marine, que sirve la pasada del modelo de oleaje MFWAM/ECMWF. Se le piden ocho ' +
+      'puntos en un anillo a 33 km del centro de la isla, uno por rumbo, porque el oleaje no es el ' +
+      'mismo por los cuatro costados: el 13 de agosto de 2026 el mar de viento medía 0,96 m por el ' +
+      'norte y 0,02 m a sotavento, en el mismo instante. Es un MODELO, no una medida: no hay boya ' +
+      'publicando oleaje en abierto alrededor de La Palma con la que contrastarlo, y la aplicación ' +
+      'lo dice donde enseña la cifra. La marea, la temperatura del agua y la corriente vienen de la ' +
+      'misma fuente. El viento que riza la superficie, en cambio, sale de las estaciones del ' +
+      'Cabildo donde llegan.',
+    oceanLicense: 'CC-BY 4.0 · uso no comercial de la API gratuita',
+    bathymetryTitle: 'Batimetría',
+    bathymetryBody:
+      'EMODnet Bathymetry (DTM), del consorcio europeo, con celda de 1/16 de minuto —unos 102 × 116 m ' +
+      'a esta latitud—. Se descarga una sola vez en tiempo de compilación y se sirve como una imagen ' +
+      'de 155 KB. Es la que decide de qué color es el agua, dónde crece la ola y dónde rompe: sobre ' +
+      'el recuadro del mapa llega a 4.045 m de fondo, y el 93 % de ese recuadro es mar.',
+    bathymetryLicense: 'CC-BY 4.0',
+    seamarksTitle: 'Balizamiento náutico',
+    seamarksBody:
+      'OpenSeaMap: faros con su característica, boyas cardinales y laterales, puertos y zonas ' +
+      'restringidas, cartografiadas por navegantes sobre OpenStreetMap. Se piden mientras se miran, ' +
+      'solo con la carta náutica encendida.',
+    seamarksLicense: 'ODbL 1.0',
     demTitle: 'Modelo de elevación y relieve',
     demBody:
       'Mapzen Terrain Tiles (formato terrarium), servidas por AWS Open Data. Derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM. Las mismas teselas generan el sombreado del relieve y las altitudes del cálculo.',

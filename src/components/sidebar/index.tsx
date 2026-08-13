@@ -41,6 +41,10 @@ import { Co2Status } from './Co2Status'
 import { CoverageStatus } from './CoverageStatus'
 import { BasemapPicker } from './BasemapPicker'
 import { Scene3D } from './Scene3D'
+import { Ocean } from './Ocean'
+import { OceanStatus } from './OceanStatus'
+import type { OceanQuality } from '../../lib/ocean/quality'
+import type { OceanData } from '../../hooks/useOcean'
 import { BASEMAPS, type BasemapId } from '../../lib/basemaps'
 import { exaggerationLabel, type Exaggeration } from '../../lib/terrain'
 import type { WindState } from '../../hooks/useWindField'
@@ -64,6 +68,12 @@ interface Props {
   terrain: { on: boolean; exaggeration: Exaggeration }
   onTerrain: () => void
   onExaggeration: (x: Exaggeration) => void
+  /** El mar. Tampoco es una capa: ver `MapView`. */
+  ocean: { on: boolean; charts: boolean; quality: OceanQuality }
+  oceanData: OceanData
+  onOcean: () => void
+  onOceanCharts: () => void
+  onOceanQuality: (q: OceanQuality) => void
   visible: LayerVisibility
   onToggle: (key: keyof LayerVisibility) => void
   places: PlaceVisibility
@@ -270,6 +280,47 @@ export function Sidebar(props: Props) {
               onExaggeration={props.onExaggeration}
               windOn={props.visible.wind}
             />
+          </Section>
+
+          {/* El mar va justo detrás del fondo y la vista, porque es la tercera
+              mitad de la misma pregunta: de qué está hecha la superficie que se
+              mira. Los otros dos dicen cómo se dibuja la tierra; este, cómo se
+              dibuja el agua, que en una isla es casi toda la pantalla.
+
+              Plegada, la pestaña dice la altura de ola de ahora mismo: es lo
+              único de esta sección que hace falta saber sin abrirla. */}
+          <Section
+            title="Océano"
+            badge={
+              props.ocean.on
+                ? props.oceanData.marine.length
+                  ? `${props.oceanData.marine[0].significantHeightM.toFixed(1).replace('.', ',')} m`
+                  : '…'
+                : undefined
+            }
+          >
+            <Ocean
+              on={props.ocean.on}
+              onToggle={props.onOcean}
+              charts={props.ocean.charts}
+              onCharts={props.onOceanCharts}
+              quality={props.ocean.quality}
+              onQuality={props.onOceanQuality}
+              ready={!!props.oceanData.field && !!props.oceanData.bathymetry}
+              loading={props.oceanData.loading}
+              failed={props.oceanData.failed}
+            />
+            {props.ocean.on && props.oceanData.marine.length > 0 && (
+              <OceanStatus
+                ocean={props.oceanData}
+                here={
+                  props.here
+                    ? { lon: props.here.lon, lat: props.here.lat, label: props.here.label }
+                    : null
+                }
+                now={props.now}
+              />
+            )}
           </Section>
 
           {/* Solo cuando la capa está encendida: si no, describiría con detalle

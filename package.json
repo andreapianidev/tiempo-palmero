@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare-data": "tsx scripts/prepare-data.ts",
-    "prepare-data:snapshot": "tsx scripts/prepare-data.ts --only=snapshot"
+    "prepare-data:snapshot": "tsx scripts/prepare-data.ts --only=snapshot",
+    "prepare-ocean": "tsx scripts/prepare-ocean.ts"
   },
   "dependencies": {
     "maplibre-gl": "^4.7.1",

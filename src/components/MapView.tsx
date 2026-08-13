@@ -21,6 +21,16 @@ import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette
 import { freshness, stationReading, type Station } from '../lib/quality'
 import { decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
 import { WindLayer } from './wind/WindLayer'
+import { OceanLayer } from './ocean/OceanLayer'
+import {
+  CHART_LAYERS,
+  CHART_SOURCES,
+  DEPTH_OPACITY,
+  DEPTH_SOURCE,
+  SEAMARK_SOURCE,
+} from '../lib/ocean/charts'
+import type { OceanQuality } from '../lib/ocean/quality'
+import type { OceanData } from '../hooks/useOcean'
 import { Terrain3D } from './terrain/Terrain3D'
 import { FLAT_MAX_PITCH, type Exaggeration } from '../lib/terrain'
 import {
@@ -51,11 +61,13 @@ import {
 import { readPlace, type PlaceRecord } from '../lib/places'
 import { addPlaceIcons, addPoiIcons } from './MapIcons'
 import { readRoad, type RoadRecord } from '../lib/roads'
+import { TerrainMarker } from './terrain/TerrainMarker'
+import { isOccluded } from '../lib/occlusion'
 import { counterMarkerElement } from './counters/CounterMarker'
 import type { CounterSite } from '../lib/counters/model'
 import type { WindField } from '../lib/wind/field'
 import { estimateBundle, type Model, type InterpolableVariable } from '../lib/interpolate'
-import type { Dem } from '../lib/dem'
+import { elevationAt, type Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { Diagnosis } from '../lib/sensor-health'
 import { fallbackReading } from '../lib/station-fallback'
@@ -159,6 +171,14 @@ interface Props {
    * capa más: cambia la cámara, no lo que se dibuja. Ver `lib/terrain.ts`.
    */
   terrain: { on: boolean; exaggeration: Exaggeration }
+  /**
+   * El océano. Tampoco es una capa de datos: es el mar, que está ahí siempre y
+   * al que se le puede pedir que se comporte como el de fuera. Va aparte de
+   * `visible` por lo mismo que la vista 3D —no cuenta como capa encendida— y
+   * porque lleva su propio ajuste de calidad, que no lo tiene ninguna otra.
+   */
+  ocean: { on: boolean; charts: boolean; quality: OceanQuality }
+  oceanData: OceanData
   /** Fondo elegido. Los tres están declarados; solo uno tiene capa visible. */
   basemap: BasemapId
   visible: LayerVisibility
@@ -248,6 +268,8 @@ export function MapView(props: Props) {
   /** La capa de viento es un objeto WebGL con estado propio: vive en una ref y
    *  se le pasan los datos, en vez de recrearla en cada render. */
   const windLayerRef = useRef<WindLayer | null>(null)
+  /** El mar, por lo mismo: es un objeto WebGL con texturas y estado propio. */
+  const oceanLayerRef = useRef<OceanLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
   const terrainRef = useRef<Terrain3D | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
@@ -262,6 +284,19 @@ export function MapView(props: Props) {
    */
   const firesRef = useRef<{ el: HTMLElement; lon: number; lat: number; alert: boolean }[]>([])
   const placeMarkersRef = useRef<maplibregl.Marker[]>([])
+  /**
+   * Qué marcadores están detrás de la montaña, y de cuándo es esa respuesta.
+   *
+   * Se recalcula como mucho ocho veces por segundo, no en cada fotograma: la
+   * cuenta recorre el modelo de elevación cuarenta y siete veces por marcador y
+   * a 60 Hz con 130 marcadores serían 370.000 consultas por segundo para una
+   * respuesta que, arrastrando el mapa, cambia despacio. Es la misma cadencia
+   * que usaba MapLibre para lo mismo —10 Hz— pero sin tocar la GPU.
+   */
+  const occlusionRef = useRef<{ at: number; hidden: Set<HTMLElement> }>({
+    at: 0,
+    hidden: new Set(),
+  })
   const probeMarkerRef = useRef<maplibregl.Marker | null>(null)
   const meMarkerRef = useRef<maplibregl.Marker | null>(null)
   // Los callbacks cambian en cada render; se leen desde una ref para que los
@@ -348,6 +383,44 @@ export function MapView(props: Props) {
           'municipal-boundaries',
         )
       }
+
+      // EL MAR VA AQUÍ: encima de los tres fondos y del sombreado, debajo de
+      // todo lo que es un dato. Es lo que hace que el océano se vea igual con el
+      // relieve de casa, con la carta topográfica y con la ortofoto —en las tres
+      // el agua es lo mismo, y en las tres tiene que fundirse con la misma
+      // costa—, y que no tape ni la malla de temperatura ni los marcadores.
+      //
+      // Y va ANTES de crear la malla en el código, no después: el orden de
+      // inserción con el mismo `beforeId` es el orden de dibujo.
+      const oceanLayer = new OceanLayer()
+      oceanLayerRef.current = oceanLayer
+      map.addLayer(oceanLayer, 'municipal-boundaries')
+
+      // Las cartas náuticas, encima del agua: son información que se lee, y
+      // debajo del oleaje no se leería. Declaradas y apagadas; MapLibre no pide
+      // una sola tesela de una fuente sin capa visible.
+      map.addSource(CHART_SOURCES.depth, DEPTH_SOURCE)
+      map.addLayer(
+        {
+          id: CHART_LAYERS.depth,
+          type: 'raster',
+          source: CHART_SOURCES.depth,
+          layout: { visibility: 'none' },
+          paint: { 'raster-opacity': DEPTH_OPACITY, 'raster-fade-duration': 0 },
+        },
+        'municipal-boundaries',
+      )
+      map.addSource(CHART_SOURCES.seamarks, SEAMARK_SOURCE)
+      map.addLayer(
+        {
+          id: CHART_LAYERS.seamarks,
+          type: 'raster',
+          source: CHART_SOURCES.seamarks,
+          layout: { visibility: 'none' },
+          paint: { 'raster-opacity': 1, 'raster-fade-duration': 0 },
+        },
+        'municipal-boundaries',
+      )
 
       // Fuente de la malla interpolada. Se crea con un píxel transparente y se
       // reemplaza la imagen en cada recálculo: recrear la fuente entera hace
@@ -581,6 +654,65 @@ export function MapView(props: Props) {
     terrainRef.current?.setExaggeration(props.terrain.exaggeration)
     terrainRef.current?.setEnabled(props.terrain.on)
   }, [ready, props.terrain.on, props.terrain.exaggeration])
+
+  // --- océano --------------------------------------------------------------
+  //
+  // Los datos van por método y no por props, igual que en la capa de viento:
+  // el mar es un objeto WebGL con seis texturas, y volver a añadirlo al mapa en
+  // cada cambio recompilaría los sombreadores y reiniciaría la animación.
+  useEffect(() => {
+    if (!ready) return
+    oceanLayerRef.current?.setVisible(props.ocean.on)
+  }, [ready, props.ocean.on])
+
+  useEffect(() => {
+    if (!ready) return
+    oceanLayerRef.current?.setQuality(props.ocean.quality)
+  }, [ready, props.ocean.quality])
+
+  useEffect(() => {
+    if (!ready) return
+    oceanLayerRef.current?.setField(props.oceanData.field)
+  }, [ready, props.oceanData.field])
+
+  useEffect(() => {
+    if (!ready) return
+    oceanLayerRef.current?.setShoreline(props.oceanData.shoreline)
+  }, [ready, props.oceanData.shoreline])
+
+  useEffect(() => {
+    if (!ready || !props.oceanData.bathymetry) return
+    oceanLayerRef.current?.setBathymetry(
+      props.oceanData.bathymetry.image,
+      props.oceanData.bathymetry.maxDepthM,
+    )
+  }, [ready, props.oceanData.bathymetry])
+
+  useEffect(() => {
+    if (!ready) return
+    oceanLayerRef.current?.setInputs({
+      tideM: props.oceanData.tideM ?? 0,
+      windMs: props.oceanData.windMs,
+      light: { pm10: props.oceanData.pm10, solarWm2: props.oceanData.solarWm2 },
+    })
+  }, [
+    ready,
+    props.oceanData.tideM,
+    props.oceanData.windMs,
+    props.oceanData.pm10,
+    props.oceanData.solarWm2,
+  ])
+
+  // Las cartas náuticas solo se piden si están encendidas Y hay mar que anotar:
+  // una carta sobre un mapa sin océano sería una capa suelta de isóbatas.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    const on = props.ocean.on && props.ocean.charts
+    for (const id of [CHART_LAYERS.depth, CHART_LAYERS.seamarks]) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
+    }
+  }, [ready, props.ocean.on, props.ocean.charts])
 
   // --- fondo de mapa -------------------------------------------------------
   //
@@ -852,6 +984,52 @@ export function MapView(props: Props) {
   }, [ready, props.guaguaRoute, props.guaguaLines])
 
   /**
+   * Los marcadores que la isla tapa, con la vista 3D encendida.
+   *
+   * En plano no hay nada que tapar y devuelve un conjunto vacío sin mirar. En
+   * 3D se pregunta a `lib/occlusion.ts`, que recorre el modelo de elevación que
+   * ya está en memoria. La posición de la cámara sale de `transform`, que es la
+   * única forma de saber desde dónde se está mirando: `getCameraPosition()`
+   * está en los tipos públicos de MapLibre y lleva su documentación, aunque
+   * cuelgue de un objeto que la librería no promete estabilizar.
+   */
+  const occludedSet = (map: MlMap): Set<HTMLElement> => {
+    const cache = occlusionRef.current
+    const now = performance.now()
+    if (!handlers.current.terrain.on || !dem) {
+      if (cache.hidden.size) cache.hidden = new Set()
+      return cache.hidden
+    }
+    if (now - cache.at < 120) return cache.hidden
+    cache.at = now
+
+    const eye = map.transform.getCameraPosition()
+    const camera = {
+      lon: eye.lngLat.lng,
+      lat: eye.lngLat.lat,
+      altitudeM: eye.altitude,
+    }
+    const exaggeration = handlers.current.terrain.exaggeration
+    const sample = (lon: number, lat: number) => elevationAt(dem, lon, lat)
+
+    const hidden = new Set<HTMLElement>()
+    const test = (el: HTMLElement, lon: number, lat: number) => {
+      const ground = elevationAt(dem, lon, lat) ?? 0
+      if (isOccluded(camera, { lon, lat, elevationM: ground }, sample, exaggeration)) {
+        hidden.add(el)
+      }
+    }
+    for (const p of pillsRef.current) test(p.el, p.lon, p.lat)
+    for (const f of firesRef.current) test(f.el, f.lon, f.lat)
+    for (const m of placeMarkersRef.current) {
+      const ll = m.getLngLat()
+      test(m.getElement(), ll.lng, ll.lat)
+    }
+    cache.hidden = hidden
+    return hidden
+  }
+
+  /**
    * Resuelve solapamientos entre pins de estación y topónimos.
    *
    * Con 36 estaciones sobre una isla de 42 km, a zoom bajo los pins se pisan
@@ -870,6 +1048,7 @@ export function MapView(props: Props) {
 
     const els: HTMLElement[] = []
     const items: DeclutterItem[] = []
+    const hidden = occludedSet(map)
 
     /**
      * Las cámaras de incendio entran en el reparto, que hasta ahora no lo
@@ -910,7 +1089,11 @@ export function MapView(props: Props) {
     for (let i = 0; i < els.length; i++) {
       const el = els[i]
       el.classList.toggle('mk-pill-dot', placement[i] === 'dot')
-      el.style.visibility = placement[i] === 'hidden' ? 'hidden' : 'visible'
+      // Detrás de la montaña se esconde entero, no se atenúa: un pin medio
+      // transparente sobre una ladera sigue leyéndose como un dato de ESA
+      // ladera, que es justo lo que no es.
+      el.style.visibility =
+        placement[i] === 'hidden' || hidden.has(el) ? 'hidden' : 'visible'
     }
   }
 
@@ -952,7 +1135,7 @@ export function MapView(props: Props) {
 
     const add = (lon: number, lat: number, el: HTMLElement, zIndex = 1) => {
       el.style.zIndex = String(zIndex)
-      const marker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map)
+      const marker = new TerrainMarker({ element: el }).setLngLat([lon, lat]).addTo(map)
       markersRef.current.push(marker)
     }
 
@@ -1195,7 +1378,7 @@ export function MapView(props: Props) {
         el.className = `mk-place mk-place-${p.kind}`
         el.textContent = p.name
         placeMarkersRef.current.push(
-          new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(map),
+          new TerrainMarker({ element: el }).setLngLat([p.lon, p.lat]).addTo(map),
         )
       }
       declutter()
@@ -1227,7 +1410,7 @@ export function MapView(props: Props) {
     if (!probe) return
     const el = document.createElement('div')
     el.className = 'mk-probe'
-    probeMarkerRef.current = new maplibregl.Marker({ element: el })
+    probeMarkerRef.current = new TerrainMarker({ element: el })
       .setLngLat([probe.lon, probe.lat])
       .addTo(map)
   }, [ready, probe])
@@ -1243,7 +1426,7 @@ export function MapView(props: Props) {
     if (!props.me) return
     const el = document.createElement('div')
     el.className = 'mk-me'
-    meMarkerRef.current = new maplibregl.Marker({ element: el })
+    meMarkerRef.current = new TerrainMarker({ element: el })
       .setLngLat([props.me.lon, props.me.lat])
       .addTo(map)
   }, [ready, props.me])
