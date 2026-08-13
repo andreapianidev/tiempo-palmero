@@ -28,12 +28,23 @@ interface Props {
   locating: boolean
   /** Cuántas capas superpuestas hay encendidas. 0 = sin distintivo. */
   layerCount: number
+  /** Senderos con algún aviso ahora mismo. 0 = sin distintivo. */
+  alertCount: number
   onLayers: () => void
+  onIsland: () => void
   onLocate: () => void
   onReset: () => void
 }
 
-export function Fabs({ locating, layerCount, onLayers, onLocate, onReset }: Props) {
+export function Fabs({
+  locating,
+  layerCount,
+  alertCount,
+  onLayers,
+  onIsland,
+  onLocate,
+  onReset,
+}: Props) {
   const pulse = useSharedValue(1)
 
   useEffect(() => {
@@ -66,6 +77,37 @@ export function Fabs({ locating, layerCount, onLayers, onLocate, onReset }: Prop
             strokeWidth={1.7}
             strokeLinecap="round"
             strokeLinejoin="round"
+          />
+        </Svg>
+      </Fab>
+
+      {/* Estado de la isla: mar de nubes, cumbre, senderos y agricultura. El
+          contador son los senderos con aviso, que es lo único de ahí dentro
+          que puede cambiar mientras nadie mira. */}
+      <Fab
+        label="Estado de la isla"
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          onIsland()
+        }}
+        badge={alertCount}
+      >
+        {/* Dos cumbres cruzadas por la manta de nubes: las dos cosas que esta
+            hoja contesta de un vistazo. */}
+        <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M3.2 18.5l5.4-8.2 3 3.9M11 18.5l4.6-6.6 4.6 6.6z"
+            stroke={alertCount > 0 ? color.amber : color.fg}
+            strokeWidth={1.7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M2.6 13.2h7.2M14.6 13.2h6.8"
+            stroke={alertCount > 0 ? color.amber : color.fg}
+            strokeWidth={1.4}
+            strokeLinecap="round"
+            opacity={0.6}
           />
         </Svg>
       </Fab>

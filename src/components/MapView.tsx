@@ -40,6 +40,7 @@ import type { Dem } from '../lib/dem'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { Diagnosis } from '../lib/sensor-health'
 import { fallbackReading } from '../lib/station-fallback'
+import { VARIABLES } from '../lib/variables'
 import type { GazetteerEntry } from '../lib/api'
 import { n, n0, t } from '../i18n'
 
@@ -74,6 +75,13 @@ interface Props {
   co2: Co2Point[]
   gazetteer: GazetteerEntry[]
   trails: unknown | null
+  /**
+   * Severidad del aviso de cada sendero, por `id_sendero`. Colorea el trazado
+   * en el mapa con lo mismo que dice la lista del panel, para que las dos
+   * cosas no puedan contradecirse. Vacío mientras la sección esté plegada: el
+   * trazado sale entonces con su color de siempre.
+   */
+  trailSeverity: Record<number, 'warning' | 'notice'>
   trailPois: unknown | null
   /** Trazados y paradas de guagua; llegan solo si se enciende la capa. */
   guaguaLines: GeoJSON.FeatureCollection | null
@@ -83,6 +91,10 @@ interface Props {
   /** Sitios encendidos, ya fusionados en una colección de puntos. */
   places: GeoJSON.FeatureCollection | null
   roads: GeoJSON.FeatureCollection | null
+  /** Trazados de los canales de riego LP-I, LP-II y LP-III. */
+  canals: GeoJSON.FeatureCollection | null
+  /** La capa de agua está encendida: es un sitio, no una capa del mapa. */
+  canalsVisible: boolean
   /** Aforos con datos en la ventana; llegan solo si se enciende la capa. */
   counters: CounterSite[]
   wind: WindField | null
@@ -213,6 +225,22 @@ export function MapView(props: Props) {
         onPlace: (props, lon, lat) => handlers.current.onPlace(readPlace(props, lon, lat)),
       })
 
+      // Los canales van DEBAJO de los senderos: son infraestructura de fondo,
+      // como las carreteras, y un trazado de riego tapando un GR sería decir
+      // que importa más de lo que importa.
+      map.addSource('canals', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      map.addLayer({
+        id: 'canals-line',
+        type: 'line',
+        source: 'canals',
+        layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
+        paint: {
+          'line-color': COLORS.canal,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.6, 15, 2],
+          'line-dasharray': [3, 2],
+        },
+      })
+
       map.addSource('trails', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       map.addLayer({
         id: 'trails-line',
@@ -220,8 +248,23 @@ export function MapView(props: Props) {
         source: 'trails',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': COLORS.trail,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.7, 15, 2.2],
+          // El color lo pone la propiedad `sev`, que inyecta este componente a
+          // partir de los avisos. Sin aviso —o con la sección plegada— cae en
+          // el color de siempre.
+          'line-color': [
+            'match',
+            ['coalesce', ['get', 'sev'], ''],
+            'warning', COLORS.trailWarning,
+            'notice', COLORS.trailNotice,
+            COLORS.trail,
+          ],
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            10, ['case', ['has', 'sev'], 1.4, 0.7],
+            15, ['case', ['has', 'sev'], 3.2, 2.2],
+          ],
         },
       })
 
@@ -407,16 +450,26 @@ export function MapView(props: Props) {
     const map = mapRef.current
     if (!map || !ready) return
     if (props.trails) {
-      ;(map.getSource('trails') as maplibregl.GeoJSONSource | undefined)?.setData(
-        props.trails as GeoJSON.FeatureCollection,
-      )
+      const fc = props.trails as GeoJSON.FeatureCollection
+      // La severidad se inyecta en una copia, no en el GeoJSON descargado: ese
+      // objeto lo comparten el mapa y el muestreo de senderos, y mutarlo aquí
+      // haría que el segundo leyera propiedades que él no puso.
+      const painted: GeoJSON.FeatureCollection = {
+        ...fc,
+        features: fc.features.map((f) => {
+          const id = f.properties?.id_sendero as number | undefined
+          const sev = id !== undefined ? props.trailSeverity[id] : undefined
+          return sev ? { ...f, properties: { ...f.properties, sev } } : f
+        }),
+      }
+      ;(map.getSource('trails') as maplibregl.GeoJSONSource | undefined)?.setData(painted)
     }
     if (props.trailPois) {
       ;(map.getSource('trail-pois') as maplibregl.GeoJSONSource | undefined)?.setData(
         decoratePoiCollection(props.trailPois as GeoJSON.FeatureCollection),
       )
     }
-  }, [ready, props.trails, props.trailPois])
+  }, [ready, props.trails, props.trailPois, props.trailSeverity])
 
   useEffect(() => {
     const map = mapRef.current
@@ -479,6 +532,21 @@ export function MapView(props: Props) {
     if (!map || !ready) return
     setRoadsData(map, props.roads)
   }, [ready, props.roads])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    if (props.canals) {
+      ;(map.getSource('canals') as maplibregl.GeoJSONSource | undefined)?.setData(props.canals)
+    }
+    if (map.getLayer('canals-line')) {
+      map.setLayoutProperty(
+        'canals-line',
+        'visibility',
+        props.canalsVisible ? 'visible' : 'none',
+      )
+    }
+  }, [ready, props.canals, props.canalsVisible])
 
   useEffect(() => {
     const map = mapRef.current
@@ -667,8 +735,15 @@ export function MapView(props: Props) {
         const isRejected = rejected.has(s.entityId)
 
         const shown = reading ?? fallback
+        // Del catálogo compartido, no de un ternario aquí: el VPD se enseña en
+        // kPa con dos decimales y con la regla vieja habría salido «2,9°».
+        const meta = VARIABLES[variable]
         const fmt = (v: number) =>
-          variable === 'relativehumidity' ? `${Math.round(v)}%` : `${n(v, 1)}°`
+          variable === 'relativehumidity'
+            ? `${Math.round(v)}%`
+            : variable === 'temperature' || variable === 'dewpoint'
+              ? `${n(v, meta.decimals)}°`
+              : `${n(v, meta.decimals)} ${meta.unit}`
         const label = shown === null ? (faulty ? '⚠' : '·') : `${fallback ? '~' : ''}${fmt(shown.value)}`
 
         const muted = shown === null || isRejected || faulty

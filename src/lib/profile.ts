@@ -124,6 +124,18 @@ export interface VerticalProfile {
   /** Instante de la pasada del modelo (epoch ms, UTC). */
   observedAt: number
   inversion: Inversion | null
+  /**
+   * Nubosidad baja del modelo, en %. `null` si la respuesta no la trae.
+   *
+   * NO sirve para localizar la inversión —eso lo hace `detectInversion` con el
+   * gradiente y la humedad— sino para saber si esa inversión tiene encima una
+   * capa de nubes o está seca. La diferencia es la que separa «hay mar de
+   * nubes» de «hay una capa estable y un cielo despejado», y sin ella la
+   * aplicación anunciaría niebla en Tijarafe un día raso. Comprobado el 13 ago
+   * 2026: inversión de libro entre 1081 y 1573 m (T de 19,8 a 21,2 °C, humedad
+   * del 71 al 21 %) con `cloud_cover_low` a 0.
+   */
+  cloudCoverLow: number | null
 }
 
 // ---------------------------------------------------------------------------
@@ -262,6 +274,15 @@ export function parseModelTime(time: string | undefined): number {
 const levelKey = (variable: string, hPa: number) => `${variable}_${hPa}hPa`
 
 /**
+ * Nubosidad baja: la capa del modelo que corresponde al estrato del alisio.
+ *
+ * Viaja con el perfil porque es la MISMA petición y el mismo instante. Pedirla
+ * aparte costaría otra llamada y, peor, podría contestar de otra pasada: dos
+ * horas distintas contando la misma tarde.
+ */
+const CLOUD_LOW_KEY = 'cloud_cover_low'
+
+/**
  * Convierte un bloque `current` en un perfil, descartando lo que no se sostiene.
  *
  * Un nivel se cae si le falta cualquiera de los tres valores. Un nivel a medias
@@ -300,7 +321,15 @@ export function decodeProfile(
   levels.sort((a, b) => a.height - b.height)
   if (levels.length < 2) return null
 
-  return { lon, lat, levels, observedAt, inversion: detectInversion(levels) }
+  const cloud = current[CLOUD_LOW_KEY]
+  return {
+    lon,
+    lat,
+    levels,
+    observedAt,
+    inversion: detectInversion(levels),
+    cloudCoverLow: typeof cloud === 'number' && Number.isFinite(cloud) ? cloud : null,
+  }
 }
 
 /**
@@ -327,11 +356,14 @@ export async function fetchProfiles(
 ): Promise<VerticalProfile[]> {
   if (!points.length) return []
 
-  const fields = PRESSURE_LEVELS.flatMap((hPa) => [
-    levelKey('temperature', hPa),
-    levelKey('dew_point', hPa),
-    levelKey('geopotential_height', hPa),
-  ])
+  const fields = [
+    ...PRESSURE_LEVELS.flatMap((hPa) => [
+      levelKey('temperature', hPa),
+      levelKey('dew_point', hPa),
+      levelKey('geopotential_height', hPa),
+    ]),
+    CLOUD_LOW_KEY,
+  ]
   const url =
     `${OPEN_METEO_URL}?latitude=${points.map((p) => p.lat.toFixed(5)).join(',')}` +
     `&longitude=${points.map((p) => p.lon.toFixed(5)).join(',')}` +

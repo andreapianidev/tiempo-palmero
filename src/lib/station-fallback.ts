@@ -48,18 +48,12 @@ export function fallbackReading(
   station: Station,
   variable: DisplayVariable,
 ): FallbackReading | null {
-  // El VPD no se estima aquí: no lo interpola ningún modelo, se deriva de T y
-  // HR, y esa derivación vive en `estimateBundle`. Si algún día entra en este
-  // camino, entra por ahí y no con una rama nueva.
+  // Ni el rocío ni el VPD se estiman aparte: los dos se derivan de T y HR
+  // dentro de `estimateBundle`, que es lo que impide que las cifras se
+  // contradigan entre sí. Aquí solo se elige cuál de las cuatro se pinta, así
+  // que una variable derivada nueva aparece sola sin tocar este archivo.
   const bundle = estimateBundle(models, station.lon, station.lat, station.elevation)
-  const picked: Estimate | null =
-    variable === 'temperature'
-      ? bundle.temperature
-      : variable === 'relativehumidity'
-        ? bundle.relativehumidity
-        : variable === 'dewpoint'
-          ? bundle.dewpoint
-          : null
+  const picked: Estimate | null = bundle[variable] ?? null
   if (!picked) return null
   return {
     value: picked.value,

@@ -19,12 +19,23 @@ interface Props {
   badge?: ReactNode
   /** Los bloques centrales abren; los accesorios se piden. */
   defaultOpen?: boolean
+  /**
+   * Se avisa al abrir y al cerrar. Lo usan las secciones que cuestan dinero:
+   * el Roque es un observatorio ajeno al que no conviene martillear, la ETo es
+   * otra petición al modelo y recorrer los 49 senderos cuesta cómputo. Nada de
+   * eso se hace mientras el bloque esté plegado.
+   */
+  onOpenChange?: (open: boolean) => void
   children: ReactNode
 }
 
-export function Section({ title, badge, defaultOpen = false, children }: Props) {
+export function Section({ title, badge, defaultOpen = false, onOpenChange, children }: Props) {
   return (
-    <details className="block section" open={defaultOpen}>
+    <details
+      className="block section"
+      open={defaultOpen}
+      onToggle={(e) => onOpenChange?.((e.currentTarget as HTMLDetailsElement).open)}
+    >
       <summary className="lbl section-summary">
         <span>{title}</span>
         {badge != null && <span className="section-badge mono">{badge}</span>}

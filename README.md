@@ -571,11 +571,12 @@ nota que lo dice.
 
 ## Qué más publica el Cabildo, y qué falta por aprovechar
 
-El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**. Esta
-aplicación usa hoy **doce capas estáticas** —de las trece que descarga; la única
-que no se lee en runtime es el inventario de sensores de CO₂, que llega en
-directo de DEMASE— más el agregado del GTFS de guaguas. Lo que queda, ordenado
-por lo que aportaría de verdad:
+El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**, y el visor
+ArcGIS del Cabildo —que no es el mismo inventario— tiene **2.387 elementos**
+más. Esta aplicación usa hoy **quince capas estáticas** —de las dieciséis que
+descarga; la única que no se lee en runtime es el inventario de sensores de CO₂,
+que llega en directo de DEMASE— más el resumen de cultivos y el agregado del
+GTFS de guaguas. Lo que queda, ordenado por lo que aportaría de verdad:
 
 ### Ya integrado (agosto 2026)
 
@@ -594,6 +595,133 @@ mientras el Cabildo no la rellene: es de tipo texto y está **vacía en las 4939
 filas de un día de histórico y en las 52 de `_lastdata`**. Se parsea igualmente
 para que aparezca sola el día que exista, y queda escrito aquí para que nadie la
 persiga como si fuera un fallo de la aplicación.
+
+### El mar de nubes, la cumbre y los senderos (agosto 2026)
+
+Tres funciones que responden a la pregunta que se hace todo el mundo en esta
+isla antes de salir de casa: **¿dónde acaba la nube?**
+
+**El mar de nubes ya se cuenta, y no cuesta ni una petición.** La inversión del
+alisio la localizaba el motor desde hace tiempo —criterio de Torres, Cuevas,
+Guerra y Carreño (2002); ver [la sección de la
+inversión](#la-inversión-del-alisio-se-diagnostica-no-se-supone)— pero sólo la
+usaba por dentro para no extrapolar a través de ella. Ahora se publica en el
+panel, con dos guardas que no son opcionales:
+
+- **Una inversión no es un mar de nubes.** Se le exige además `cloud_cover_low`
+  del mismo sondeo y la misma pasada. El 13 ago 2026 el modelo daba una
+  inversión de manual sobre el centro de la isla —de 1081 a 1573 m, la
+  temperatura SUBE de 19,8 a 21,2 °C y la humedad cae del 71 al 21 %— con la
+  nubosidad baja **a cero**. Sin esa guarda, la aplicación habría anunciado
+  niebla en Tijarafe bajo un cielo raso.
+- **La cota es una banda, no una línea.** Los niveles de presión que encierran
+  el tramo crítico (900 y 850 hPa) están a ~493 m entre sí, más que el espesor
+  del propio fenómeno. Todo lo que se enseña lleva su `± resolución` al lado, y
+  la cota de sol se redondea **hacia arriba** desde el techo más el margen: es
+  la primera altitud en la que la afirmación se sostiene entera.
+
+**La cumbre tiene por fin una medida de verdad.** La red del Cabildo se acaba
+entre 1200 y 1700 m según qué estaciones estén vivas, y todo lo que la
+aplicación decía por encima lo ponía un modelo. El **TNG** publica en
+`tngweb.tng.iac.es/api/meteo/weather` la meteorología de su estación a **2387
+m**: 18 campos con `value`, `timestamp`, `level` y —esto es lo valioso— un flag
+`outdated` por campo. Se pasa por un proxy porque el origen no manda ninguna
+cabecera CORS (comprobado el 13 ago 2026), se cachea 5 minutos y **se respeta
+el flag a rajatabla**: el 12 ago 2026 el `seeing` llevaba cuatro días parado y
+los otros ocho campos eran de hace un minuto, así que el seeing sale apagado y
+con su fecha. Hay además dos lecturas que no da ninguna otra fuente de la isla:
+el **seeing** en segundos de arco —la turbulencia que decide si la noche sirve
+para observar— y un contador de **polvo** en cinco canales, que es el mejor
+detector de calima disponible. El fondo limpio del Roque estaba en 0,16 µg/m³.
+
+Es un observatorio de investigación, no un servicio público de datos: si calla,
+la sección desaparece y nada más se entera.
+
+**Los 49 senderos llevan aviso, y ninguna fuente nueva.** Los 640,7 km de
+trazado ya estaban descargados; lo que se hace ahora es recorrerlos con el
+mismo campo que pinta el mapa, un punto cada 200 m (~3.200 puntos, una cuarta
+parte de lo que ya cuesta la malla), y comparar con una tabla de umbrales. Tres
+cosas que esta función dice en voz alta porque callarlas la haría peligrosa:
+
+- **No es el estado del sendero.** Los cierres por derrumbe u obra los publica
+  el Cabildo, y la sección enlaza allí.
+- **No hay aviso de lluvia.** Las 37 estaciones frescas publican
+  `dailyprecipitation` y **las 37 publican cero**; además la lluvia es de las
+  variables que esta aplicación no interpola nunca. Un sendero sin avisos puede
+  estar empapado.
+- **El viento se declara mestizo.** Sólo 24 de 37 estaciones lo publican y 21
+  dan algo distinto de cero, así que en una cresta el aviso lo pone casi todo el
+  modelo — y el porcentaje se enseña al lado de la cifra.
+
+El dataset **no trae nombres**: ni el GeoJSON de CKAN ni el Feature Service de
+ArcGIS tienen columna de nombre. Así que no se inventa ninguno. Se reconstruye
+la nomenclatura de las señales desde el código (`GR1301` → `GR 130.1`,
+`PRLP0600` → `PR LP 6`) y se completa con los municipios de los dos extremos,
+sacados de la geometría contra los límites municipales que la app ya carga. Y
+se clava en `id_sendero`, nunca en `codigo`: el inventario tiene dos `PRLP1310`
+y dos `PRLP1700`, y un mapa por código perdería dos senderos sin avisar.
+
+### El déficit de presión de vapor
+
+Cuarta variable del mapa, derivada como el punto de rocío y por la misma razón:
+se calcula de la temperatura y la humedad, así que no puede contradecirlas.
+
+Existe porque **la humedad relativa esconde lo que la planta siente**: 80 % a
+12 °C son 0,28 kPa de déficit y 80 % a 28 °C son 0,76 —casi el triple de
+demanda con el mismo número en pantalla—, y sobre una isla que a la misma hora
+tiene 26 °C en la costa y 12 °C en la cumbre eso no es un matiz. Los cortes de
+la paleta (0,4 y 1,6 kPa) son práctica de horticultura protegida, no umbrales
+medidos en La Palma, y la interfaz lo dice donde los usa.
+
+Al añadirla salió a la luz que la misma tabla de variables estaba escrita en
+cinco sitios —paleta en `App.tsx`, otra vez en `MapScreen.tsx` del móvil,
+unidades en `PointPanel.tsx`, etiquetas cortas en `layers.ts` y la lista de
+chips en `VariablePicker.tsx`—, así que ahora vive una sola vez en
+`lib/variables.ts` y el compilador exige completarla. Una prueba comprueba que
+el orden cubre todas las claves del catálogo: si alguien añade una variable y se
+olvida, la web la pintaría y el móvil no.
+
+### Agricultura: la sed del día y el mapa de 2008
+
+**La ETo no puede salir de las estaciones del Cabildo.** Medido el 12 ago 2026
+sobre las 37 frescas: `dailyevapotranspiration` llega en 37 pero **sólo 16
+traen algo distinto de cero**, con valores de 0,09–0,20 que son pasos
+instantáneos y no totales del día; y `solarradiation` la publican **5
+estaciones**, así que no hay Penman-Monteith que reconstruir. Sale por tanto de
+`et0_fao_evapotranspiration` de Open-Meteo, pedida en los **mismos 54 puntos**
+que ya usa el campo de viento y con la cota real del DEM en cada uno —6,99 mm a
+50 m, 5,43 a 870 y 4,97 a 2114, medidos el 13 ago 2026—. El muestreo corrige por
+altitud igual que el resto del motor: sin eso, un punto de cumbre se llevaría la
+ETo de la costa que tiene debajo, un 40 % más alta.
+
+Con el cultivo de la parcela sale `ETc = ETo × Kc` y, restando la lluvia, lo que
+falta por reponer. **Hasta ahí llega y ahí se para**: la eficiencia del sistema
+de riego, el agua guardada en el suelo y la fracción de lavado dependen de la
+finca y no están en ningún dato publicado. Los Kc son los de media estación de
+la tabla 12 de FAO-56 —una sola cifra por cultivo, porque la fase la marca la
+fecha de plantación de cada parcela y eso no lo publica nadie—.
+
+**El mapa de cultivos existe, y es de 2008.** No está en CKAN: vive en el
+Feature Service `Agricultura/FeatureServer/0` del visor ArcGIS, con **217.137
+parcelas** y 71 códigos de cultivo. Su propia descripción dice que lo levantó el
+Gobierno de Canarias «entre el año 2002 y … 2008», y en medio está el Tajogaite.
+Medido contra la API el 13 ago 2026: **40.387 parcelas y 6.873,6 ha en cultivo**,
+de 70.666 ha catalogadas —el resto es monte (32.374 ha), erial (15.329) y huerta
+abandonada (11.679)—. Los Llanos de Aridane encabeza con 1.061,5 ha, de las que
+810 son platanera; Tazacorte tiene 732,7 ha y **728,8 son platanera**.
+
+Servir esos polígonos es imposible: 35 MB en crudo, 10 MB simplificados a ~11 m,
+las dos cifras medidas. Así que el trato es el mismo que ya se le da a «cerca de
+aquí»: **un resumen por municipio congelado en el build (4,2 KB)** y **la
+parcela concreta pedida en vivo** al pinchar el mapa (0,8 s medidos). Cada ficha
+lleva el año pegado.
+
+De la red hidráulica sí se descarga todo, porque cabe: **433 puntos** de
+captación y almacenamiento —12 balsas con su capacidad, 150 nacientes, 84 pozos
+y 187 galerías, con cota, paraje y estado— y **133 trazados** de los canales
+LP-I, LP-II y LP-III. `MASAS_AGUA_SUBTERRANEA` se deja fuera a propósito:
+publica un esquema de 29 columnas y **cero filas**, y una capa vacía en el
+conmutador es una promesa incumplida cada vez que alguien la enciende.
 
 ### La red de guaguas, y los sitios que ahora se pueden encender
 

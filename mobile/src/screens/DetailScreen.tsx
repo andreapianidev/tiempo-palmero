@@ -37,6 +37,7 @@ import { n, t } from '@core/i18n'
 import { color, duration, easing, font } from '../theme'
 import { Glass } from '../components/Glass'
 import { Hero } from '../detail/Hero'
+import { VARIABLES, VARIABLE_ORDER } from '@core/lib/variables'
 import { Contributors } from '../detail/Contributors'
 import { Measured } from '../detail/Measured'
 import { Nearby } from '../detail/Nearby'
@@ -45,18 +46,6 @@ import { Row } from '../detail/Row'
 import { Section } from '../detail/Section'
 
 const CURVE = Easing.bezier(easing[0], easing[1], easing[2], easing[3])
-
-const UNITS: Record<DisplayVariable, string> = {
-  temperature: t.units.celsius,
-  relativehumidity: t.units.percent,
-  dewpoint: t.units.celsius,
-}
-
-const LABELS: Record<DisplayVariable, string> = {
-  temperature: t.variables.temperature,
-  relativehumidity: t.variables.relativehumidity,
-  dewpoint: t.variables.dewpoint,
-}
 
 export interface DetailPoint {
   lon: number
@@ -121,7 +110,7 @@ export function DetailScreen(props: Props) {
   const estimate = bundle && point ? bundle[variable] : null
   const secondary =
     bundle && point
-      ? (['temperature', 'relativehumidity', 'dewpoint'] as const)
+      ? VARIABLE_ORDER
           .filter((v) => v !== variable && bundle[v])
           .map((v) => ({ variable: v, est: bundle[v]! }))
       : []
@@ -167,9 +156,9 @@ export function DetailScreen(props: Props) {
             <>
               <Hero
                 estimate={estimate}
-                unit={UNITS[variable]}
-                decimals={variable === 'relativehumidity' ? 0 : 1}
-                derived={variable === 'dewpoint'}
+                unit={VARIABLES[variable].unit}
+                decimals={VARIABLES[variable].decimals}
+                derived={VARIABLES[variable].derived === true}
                 stops={stops}
                 lon={point.lon}
                 lat={point.lat}
@@ -179,14 +168,14 @@ export function DetailScreen(props: Props) {
               />
 
               {secondary.length > 0 && (
-                <Section title="Las otras dos variables">
+                <Section title="Las otras variables">
                   <View style={{ marginTop: 10 }}>
                     {secondary.map(({ variable: v, est }, i) => (
                       <Row
                         key={v}
-                        label={LABELS[v]}
-                        value={`${n(est.value, v === 'relativehumidity' ? 0 : 1)} ${UNITS[v]}`}
-                        valueSub={`± ${n(est.uncertainty, 1)}`}
+                        label={VARIABLES[v].label}
+                        value={`${n(est.value, VARIABLES[v].decimals)} ${VARIABLES[v].unit}`}
+                        valueSub={`± ${n(est.uncertainty, VARIABLES[v].decimals)}`}
                         last={i === secondary.length - 1}
                       />
                     ))}
@@ -194,8 +183,8 @@ export function DetailScreen(props: Props) {
                 </Section>
               )}
 
-              {variable === 'dewpoint' && (
-                <Section title="Cómo se calcula" note={t.variables.derivedHint} />
+              {VARIABLES[variable].hint && (
+                <Section title="Cómo se calcula" note={VARIABLES[variable].hint} />
               )}
 
               <Contributors

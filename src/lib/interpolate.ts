@@ -22,7 +22,7 @@
 
 import { haversineKm, type LonLat } from './geo'
 import type { Station } from './quality'
-import { clampHumidity, dewpointFrom } from './psychro'
+import { clampHumidity, dewpointFrom, vapourPressureDeficit } from './psychro'
 import { MODEL_SOURCE_LABEL, type Anchor } from './openmeteo'
 import { humidityAt, sampleProfile, type VerticalProfile } from './profile'
 import {
@@ -47,7 +47,7 @@ export type InterpolableVariable = 'temperature' | 'relativehumidity'
  * diez. Se calcula a partir de las otras dos (ver `psychro.ts`), lo que además
  * garantiza que las tres nunca se contradigan entre sí.
  */
-export type DisplayVariable = 'temperature' | 'relativehumidity' | 'dewpoint'
+export type DisplayVariable = 'temperature' | 'relativehumidity' | 'dewpoint' | 'vpd'
 
 /**
  * Variables que NO se interpolan nunca, y por qué:
@@ -933,6 +933,47 @@ export interface Bundle {
   temperature: Estimate | null
   relativehumidity: Estimate | null
   dewpoint: Estimate | null
+  /** Déficit de presión de vapor, kPa. Derivado como el rocío. */
+  vpd: Estimate | null
+}
+
+/**
+ * Deriva una variable de la temperatura y la humedad, propagando la banda.
+ *
+ * La incertidumbre se propaga NUMÉRICAMENTE: se recalcula la función en las
+ * cuatro esquinas de las bandas de T y RH y se toma la mayor desviación. Es
+ * grosero, pero es honesto y respeta la no linealidad —Magnus es exponencial,
+ * y el VPD lo es todavía más—, cosa que sumar las bandas en cuadratura no
+ * haría. Con una banda de ±1,3 K a 25 °C la asimetría del VPD entre los dos
+ * extremos ronda el 8 %: quedarse con el peor lado es la lectura prudente.
+ */
+function derive2(
+  temperature: Estimate,
+  relativehumidity: Estimate,
+  fn: (tempC: number, rh: number) => number,
+): Estimate {
+  const value = fn(temperature.value, relativehumidity.value)
+  let spread = 0
+  for (const dt of [-temperature.uncertainty, temperature.uncertainty]) {
+    for (const dh of [-relativehumidity.uncertainty, relativehumidity.uncertainty]) {
+      const alt = fn(temperature.value + dt, clampHumidity(relativehumidity.value + dh))
+      spread = Math.max(spread, Math.abs(alt - value))
+    }
+  }
+  return {
+    value,
+    uncertainty: spread,
+    contributors: temperature.contributors,
+    extrapolated: temperature.extrapolated || relativehumidity.extrapolated,
+    elevationExtrapolated:
+      temperature.elevationExtrapolated || relativehumidity.elevationExtrapolated,
+    // Un valor derivado no es más fresco que el más viejo de sus ingredientes.
+    observedAt: Math.min(temperature.observedAt, relativehumidity.observedAt),
+    oldestObservedAt: Math.min(
+      temperature.oldestObservedAt,
+      relativehumidity.oldestObservedAt,
+    ),
+  }
 }
 
 /**
@@ -964,38 +1005,14 @@ export function estimateBundle(
     ? { ...rawHumidity, value: clampHumidity(rawHumidity.value) }
     : null
 
-  let dewpoint: Estimate | null = null
-  if (temperature && relativehumidity) {
-    const value = dewpointFrom(temperature.value, relativehumidity.value)
-    // La incertidumbre se propaga numéricamente: se recalcula el rocío en los
-    // extremos de las bandas de T y RH y se toma la mayor desviación. Es
-    // grosero, pero es honesto y respeta la no linealidad de Magnus, cosa que
-    // sumar las bandas en cuadratura no haría.
-    let spread = 0
-    for (const dt of [-temperature.uncertainty, temperature.uncertainty]) {
-      for (const dh of [-relativehumidity.uncertainty, relativehumidity.uncertainty]) {
-        const alt = dewpointFrom(
-          temperature.value + dt,
-          clampHumidity(relativehumidity.value + dh),
-        )
-        spread = Math.max(spread, Math.abs(alt - value))
-      }
-    }
-    dewpoint = {
-      value,
-      uncertainty: spread,
-      contributors: temperature.contributors,
-      extrapolated: temperature.extrapolated || relativehumidity.extrapolated,
-      elevationExtrapolated:
-        temperature.elevationExtrapolated || relativehumidity.elevationExtrapolated,
-      // Un valor derivado no es más fresco que el más viejo de sus ingredientes.
-      observedAt: Math.min(temperature.observedAt, relativehumidity.observedAt),
-      oldestObservedAt: Math.min(
-        temperature.oldestObservedAt,
-        relativehumidity.oldestObservedAt,
-      ),
-    }
-  }
+  const pair = temperature && relativehumidity ? { temperature, relativehumidity } : null
 
-  return { temperature, relativehumidity, dewpoint }
+  return {
+    temperature,
+    relativehumidity,
+    dewpoint: pair ? derive2(pair.temperature, pair.relativehumidity, dewpointFrom) : null,
+    vpd: pair
+      ? derive2(pair.temperature, pair.relativehumidity, vapourPressureDeficit)
+      : null,
+  }
 }

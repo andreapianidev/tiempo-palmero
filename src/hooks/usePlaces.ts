@@ -20,18 +20,26 @@ export const NO_PLACES: PlaceVisibility = {
   history: false,
   recreation: false,
   charging: false,
+  water: false,
 }
 
 export interface PlacesData {
   /** Todos los sitios encendidos, ya como puntos y con su icono. */
   places: GeoJSON.FeatureCollection
   roads: GeoJSON.FeatureCollection | null
+  /**
+   * Los canales de riego: trazados, no puntos, así que van por su cuenta y no
+   * por el catálogo de sitios. Se descargan con el mismo interruptor que las
+   * captaciones —en el mapa son la misma pregunta, por dónde va el agua—.
+   */
+  canals: GeoJSON.FeatureCollection | null
   loading: boolean
 }
 
 export function usePlaces(visible: PlaceVisibility, roadsOn: boolean): PlacesData {
   const [loaded, setLoaded] = useState<Record<string, GeoJSON.Feature[]>>({})
   const [roads, setRoads] = useState<GeoJSON.FeatureCollection | null>(null)
+  const [canals, setCanals] = useState<GeoJSON.FeatureCollection | null>(null)
   const [loading, setLoading] = useState(false)
   /** Qué se ha pedido ya. En una ref: marcarlo no debe provocar otro render. */
   const asked = useRef(new Set<string>())
@@ -76,6 +84,20 @@ export function usePlaces(visible: PlaceVisibility, roadsOn: boolean): PlacesDat
     }
   }, [roadsOn])
 
+  useEffect(() => {
+    if (!visible.water || asked.current.has('canals')) return
+    asked.current.add('canals')
+    let cancelled = false
+    fetchLayer<GeoJSON.FeatureCollection>('hidrico-canales.geojson')
+      .then((fc) => {
+        if (!cancelled) setCanals(fc)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [visible.water])
+
   // Solo lo encendido entra en la fuente: apagar una capa es quitar sus puntos,
   // no añadir un filtro más al estilo.
   const places = useMemo<GeoJSON.FeatureCollection>(
@@ -86,5 +108,5 @@ export function usePlaces(visible: PlaceVisibility, roadsOn: boolean): PlacesDat
     [visible, loaded],
   )
 
-  return { places, roads, loading }
+  return { places, roads, canals, loading }
 }

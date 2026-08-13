@@ -16,6 +16,31 @@ export function saturationVapourPressure(tempC: number): number {
   return 6.112 * Math.exp((A * tempC) / (tempC + B))
 }
 
+/**
+ * Déficit de presión de vapor (kPa): cuánta sed tiene el aire.
+ *
+ * `VPD = es(T) − ea`, y como `ea = es(T)·RH/100`, sale `es(T)·(1 − RH/100)`.
+ * Se devuelve en kilopascales porque es la unidad en la que están escritos
+ * todos los umbrales agronómicos, incluido FAO-56; `saturationVapourPressure`
+ * trabaja en hectopascales, de ahí el factor 10.
+ *
+ * POR QUÉ ESTA VARIABLE Y NO LA HUMEDAD RELATIVA. La humedad relativa no dice
+ * lo que la planta siente, porque es una razón contra un denominador que se
+ * mueve: 80 % a 12 °C y 80 % a 28 °C son 0,28 y 0,76 kPa de déficit, casi el
+ * triple de demanda con el mismo número en pantalla. Sobre una isla que en la
+ * misma hora tiene 26 °C en la costa y 12 °C en la cumbre, esa diferencia no
+ * es un matiz. El VPD sí es lo que gobierna la transpiración y el cierre
+ * estomático, y es además lo que usa la industria del invernadero para decidir
+ * si ventila o si humidifica.
+ *
+ * Es una variable DERIVADA, como el rocío: se calcula a partir de las dos que
+ * la red mide con cobertura suficiente, así que no puede contradecirlas.
+ */
+export function vapourPressureDeficit(tempC: number, relativeHumidity: number): number {
+  const rh = clampHumidity(relativeHumidity)
+  return (saturationVapourPressure(tempC) * (1 - rh / 100)) / 10
+}
+
 /** Humedad relativa (%) a partir de temperatura y punto de rocío. */
 export function relativeHumidityFrom(tempC: number, dewpointC: number): number {
   return 100 * (saturationVapourPressure(dewpointC) / saturationVapourPressure(tempC))

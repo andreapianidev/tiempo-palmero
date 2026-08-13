@@ -10,6 +10,7 @@
 
 import { t } from '@core/i18n'
 import type { DisplayVariable } from '@core/lib/interpolate'
+import { VARIABLES, VARIABLE_ORDER, isDisplayVariable } from '@core/lib/variables'
 
 export type LayerId = DisplayVariable | 'wind' | 'air' | 'co2' | 'sky'
 
@@ -18,19 +19,19 @@ export interface LayerChip {
   label: string
 }
 
-/** Etiquetas cortas: en 393 px de ancho no cabe «Calidad del aire» entero. */
+/**
+ * Las variables salen del catálogo compartido con su etiqueta corta, así que
+ * añadir una en `lib/variables.ts` la hace aparecer aquí sin tocar nada. Las
+ * redes puntuales van detrás y sí se listan a mano: no son variables.
+ */
 export const LAYERS: LayerChip[] = [
-  { id: 'temperature', label: t.variables.temperature },
-  { id: 'relativehumidity', label: 'Humedad' },
-  { id: 'dewpoint', label: 'Rocío' },
+  ...VARIABLE_ORDER.map((id) => ({ id: id as LayerId, label: VARIABLES[id].short })),
   { id: 'wind', label: t.variables.wind },
   { id: 'air', label: 'Aire' },
   { id: 'co2', label: 'CO₂' },
   { id: 'sky', label: 'Cielo' },
 ]
 
-const VARIABLES: readonly LayerId[] = ['temperature', 'relativehumidity', 'dewpoint']
-
 export function isVariable(layer: LayerId): layer is DisplayVariable {
-  return VARIABLES.includes(layer)
+  return isDisplayVariable(layer)
 }

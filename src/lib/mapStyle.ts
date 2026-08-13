@@ -24,6 +24,11 @@ export const COLORS = {
   outline: '#4a443d',
   boundary: 'rgba(255,255,255,0.11)',
   trail: 'rgba(226,197,106,0.5)',
+  // Un sendero con aviso se pinta con el mismo color que su fila en el panel.
+  // Opacos y más gruesos que `trail`: si el aviso se viera igual de tenue que
+  // el trazado normal, no sería un aviso.
+  trailNotice: '#e2b45c',
+  trailWarning: '#d1483f',
   // Frío, para que la red de guaguas no se confunda con el ámbar de los
   // senderos: en esta isla las dos redes se cruzan constantemente.
   guagua: 'rgba(127,178,217,0.45)',
@@ -32,6 +37,10 @@ export const COLORS = {
   // todo lo que sí es un dato. Sin ellas, una parada de guagua flotaba sobre un
   // relieve sin una sola vía y no había forma de situarla.
   road: 'rgba(214,201,183,0.42)',
+  // Los canales de riego, discontinuos y en azul frío: infraestructura de
+  // fondo, por debajo de los senderos, y sin confundirse con el ámbar de éstos
+  // ni con el azul claro de las guaguas.
+  canal: 'rgba(111,176,216,0.55)',
 } as const
 
 export function buildStyle(dem: DemManifest): StyleSpecification {

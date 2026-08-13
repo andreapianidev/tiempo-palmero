@@ -31,6 +31,9 @@ import {
   loadGuaguaNetwork,
   type GuaguaNetwork,
 } from '../lib/guagua/network'
+import { VARIABLES, VARIABLE_ORDER } from '../lib/variables'
+import { ParcelBlock } from './ParcelBlock'
+import type { EtoField } from '../lib/agro/eto'
 import { n, n0, t, humanAge } from '../i18n'
 import type { Dem } from '../lib/dem'
 import { PointHistory } from './PointHistory'
@@ -53,6 +56,8 @@ interface Props {
   stations: Station[]
   variable: DisplayVariable
   stops: RgbStop[]
+  /** Campo de ETo, si la sección de agricultura está abierta. */
+  eto: EtoField | null
   now: number
   onClose: () => void
 }
@@ -72,18 +77,6 @@ const KIND_ICON: Record<NearbyKind, string> = {
   charging: '⚡',
 }
 
-const VARIABLE_UNITS: Record<DisplayVariable, string> = {
-  temperature: t.units.celsius,
-  relativehumidity: t.units.percent,
-  dewpoint: t.units.celsius,
-}
-
-const VARIABLE_LABELS: Record<DisplayVariable, string> = {
-  temperature: t.variables.temperature,
-  relativehumidity: t.variables.relativehumidity,
-  dewpoint: t.variables.dewpoint,
-}
-
 export function PointPanel({
   point,
   models,
@@ -92,19 +85,20 @@ export function PointPanel({
   stops,
   dem,
   faulty,
+  eto,
   now,
   onClose,
 }: Props) {
   const elevation = point.elevation
 
-  // Un solo cálculo para las tres variables. Interpolarlas por separado dejaba
+  // Un solo cálculo para todas las variables. Interpolarlas por separado dejaba
   // que se contradijeran entre sí: se llegó a ver 99 % de humedad junto a un
   // punto de rocío de −7,9 °C a la misma altitud, que no es impreciso sino
   // imposible.
   const bundle: Bundle = useMemo(
     () =>
       elevation === null
-        ? { temperature: null, relativehumidity: null, dewpoint: null }
+        ? { temperature: null, relativehumidity: null, dewpoint: null, vpd: null }
         : estimateBundle(models, point.lon, point.lat, elevation),
     [models, point.lon, point.lat, elevation],
   )
@@ -113,8 +107,7 @@ export function PointPanel({
 
   const secondary = useMemo(
     () =>
-      (['temperature', 'relativehumidity', 'dewpoint'] as const)
-        .filter((v) => v !== variable)
+      VARIABLE_ORDER.filter((v) => v !== variable)
         .map((v) => (bundle[v] ? { variable: v, est: bundle[v]! } : null))
         .filter((x): x is NonNullable<typeof x> => x !== null),
     [bundle, variable],
@@ -144,8 +137,9 @@ export function PointPanel({
     [stations, point.lon, point.lat, elevation],
   )
 
-  const unit = VARIABLE_UNITS[variable]
-  const decimals = variable === 'relativehumidity' ? 0 : 1
+  const spec = VARIABLES[variable]
+  const unit = spec.unit
+  const decimals = spec.decimals
 
   return (
     <section className="panel point-panel" aria-label={t.point.title}>
@@ -173,7 +167,7 @@ export function PointPanel({
             </b>
             <span className="reading-unit">
               {unit}
-              <em>{variable === 'dewpoint' ? t.point.derived : t.point.estimated}</em>
+              <em>{spec.derived ? t.point.derived : t.point.estimated}</em>
             </span>
           </div>
 
@@ -208,9 +202,7 @@ export function PointPanel({
             <p className="warn">{t.point.staleWarning}</p>
           )}
 
-          {variable === 'dewpoint' && (
-            <p className="note small">{t.variables.derivedHint}</p>
-          )}
+          {spec.hint && <p className="note small">{spec.hint}</p>}
 
           {main.extrapolated && <p className="warn">{t.point.extrapolated}</p>}
           {main.elevationExtrapolated && (
@@ -221,10 +213,10 @@ export function PointPanel({
             <ul className="secondary-readings">
               {secondary.map(({ variable: v, est }) => (
                 <li key={v}>
-                  <span className="dim">{VARIABLE_LABELS[v]}</span>
+                  <span className="dim">{VARIABLES[v].label}</span>
                   <span className="mono">
-                    {n(est.value, v === 'relativehumidity' ? 0 : 1)} {VARIABLE_UNITS[v]}
-                    <em className="dim"> ± {n(est.uncertainty, 1)}</em>
+                    {n(est.value, VARIABLES[v].decimals)} {VARIABLES[v].unit}
+                    <em className="dim"> ± {n(est.uncertainty, VARIABLES[v].decimals)}</em>
                   </span>
                 </li>
               ))}
@@ -352,6 +344,18 @@ export function PointPanel({
           dem={dem}
           excluded={faulty}
           now={now}
+        />
+      )}
+
+      {/* Qué se cultiva aquí. Sólo si el punto tiene cota: sin ella no hay
+          demanda de agua que calcular, y sin la demanda el bloque diría la
+          mitad. */}
+      {elevation !== null && (
+        <ParcelBlock
+          lon={point.lon}
+          lat={point.lat}
+          elevationM={elevation}
+          eto={eto}
         />
       )}
 

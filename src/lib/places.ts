@@ -21,6 +21,7 @@ export type PlaceKind =
   | 'history'
   | 'recreation'
   | 'charging'
+  | 'water'
 
 export interface PlaceSpec {
   kind: PlaceKind
@@ -80,6 +81,19 @@ export const PLACES: PlaceSpec[] = [
     color: '#8fc79a',
     glyph: 'M5.6 10.8h12.8M7.8 10.8L6.4 17.2M16.2 10.8l1.4 6.4M7.4 14.2h9.2',
     name: (p) => str(p.nombre),
+  },
+  {
+    // Captación y almacenamiento de agua: balsas, nacientes, pozos y galerías.
+    // En una isla sin ríos, esto ES la red hidráulica, y la agricultura de La
+    // Palma cuelga entera de ella. Los canales van aparte porque son trazados,
+    // no puntos.
+    kind: 'water',
+    file: 'hidrico.geojson',
+    color: '#6fb0d8',
+    // Una gota sobre una lámina de agua: captación y almacenamiento, que es lo
+    // que estos 433 puntos son.
+    glyph: 'M12 6.4c2.6 3 3.9 5 3.9 6.5a3.9 3.9 0 11-7.8 0c0-1.5 1.3-3.5 3.9-6.5z',
+    name: (p) => str(p.nombre) ?? str(p.origen),
   },
   {
     kind: 'charging',

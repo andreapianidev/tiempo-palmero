@@ -15,13 +15,8 @@ import * as Haptics from 'expo-haptics'
 import { useIslandData, municipalityOf } from '@core/hooks/useIslandData'
 import { elevationAt } from '@core/lib/dem'
 import { estimateBundle, type Bundle, type DisplayVariable } from '@core/lib/interpolate'
-import {
-  DEWPOINT_STOPS,
-  HUMIDITY_STOPS,
-  TEMP_STOPS,
-  cssColor,
-  type RgbStop,
-} from '@core/lib/palette'
+import { cssColor } from '@core/lib/palette'
+import { VARIABLES } from '@core/lib/variables'
 import type { Station } from '@core/lib/quality'
 import { routeBounds } from '@core/lib/guagua/display'
 import { n, n0, t } from '@core/i18n'
@@ -38,14 +33,14 @@ import { useGridImage } from '../hooks/useGridImage'
 import { useMapIcons } from '../hooks/useMapIcons'
 import { useOverlays } from '../hooks/useOverlays'
 import { SelectionSheet } from '../sheets'
+import { IslandSheet } from '../sheets/IslandSheet'
+import { useWindField } from '@core/hooks/useWindField'
+import { useRoque } from '@core/hooks/useRoque'
+import { useAgro } from '@core/hooks/useAgro'
+import { useTrailReports } from '@core/hooks/useTrailReports'
+import { summarizeDeck } from '@core/lib/clouds'
 import type { Selection } from '../sheets/selection'
 import { DetailScreen, type DetailPoint } from './DetailScreen'
-
-const STOPS: Record<DisplayVariable, RgbStop[]> = {
-  temperature: TEMP_STOPS,
-  relativehumidity: HUMIDITY_STOPS,
-  dewpoint: DEWPOINT_STOPS,
-}
 
 export function MapScreen() {
   const insets = useSafeAreaInsets()
@@ -66,6 +61,12 @@ export function MapScreen() {
   /** Lo elegido en una capa superpuesta: parada, línea, sitio, aforo… */
   const [selection, setSelection] = useState<Selection | null>(null)
   const [stopsZoomReached, setStopsZoomReached] = useState(false)
+  /**
+   * La hoja del estado de la isla. Mientras esté cerrada NO se pide nada: el
+   * TNG es un observatorio ajeno, la ETo es otra llamada al modelo y recorrer
+   * los 49 senderos cuesta cómputo. En un teléfono eso es batería.
+   */
+  const [islandSheet, setIslandSheet] = useState(false)
 
   // Reloj de presentación: sin él, «hace 4 min» sigue diciendo 4 media hora
   // después. No alimenta el modelo, solo lo que se lee en pantalla.
@@ -75,7 +76,37 @@ export function MapScreen() {
     return () => clearInterval(id)
   }, [])
 
-  const stops = STOPS[variable]
+  const stops = VARIABLES[variable].stops
+
+  /**
+   * El mar de nubes sale de los perfiles verticales que el motor ya descarga:
+   * no cuesta ninguna petición más. Por eso se calcula siempre y no detrás de
+   * la hoja — el contador del botón lo necesita.
+   */
+  const deck = useMemo(
+    () => summarizeDeck(island.anchors.map((a) => a.profile)),
+    [island.anchors],
+  )
+
+  /**
+   * El campo de viento híbrido, el mismo que la web. Aquí NO se dibuja —el
+   * mapa nativo enseña agujas de estación, no partículas— pero los avisos de
+   * sendero lo necesitan: sin él, una cresta con temporal saldría sin aviso de
+   * viento y eso sería peor que no tener la sección.
+   */
+  const wind = useWindField(island.dem, island.stations, island.lastUpdate)
+
+  const roque = useRoque(islandSheet)
+  const agro = useAgro(island.dem, islandSheet)
+  const trailReports = useTrailReports(
+    island.trails,
+    island.dem,
+    island.models,
+    wind.field,
+    island.municipalities,
+    deck,
+    islandSheet,
+  )
   const { image: grid, computing } = useGridImage(
     island.dem,
     island.models,
@@ -194,8 +225,11 @@ export function MapScreen() {
   }
 
   const estimate = bundle?.[variable] ?? null
-  const unit = variable === 'relativehumidity' ? '%' : '°'
-  const decimals = variable === 'relativehumidity' ? 0 : 1
+  // El grado de la tarjeta va sin la C —cabe poco— pero el resto de unidades
+  // sí se enseñan enteras: «1,24» a secas no dice si son kPa o milímetros.
+  const spec = VARIABLES[variable]
+  const unit = spec.unit === t.units.celsius ? '°' : spec.unit
+  const decimals = spec.decimals
 
   return (
     <View style={styles.root}>
@@ -254,7 +288,9 @@ export function MapScreen() {
         <Fabs
           locating={locating}
           layerCount={overlays.count}
+          alertCount={trailReports.filter((r) => r.worst !== null).length}
           onLayers={() => setSheet(true)}
+          onIsland={() => setIslandSheet(true)}
           onLocate={locate}
           onReset={() => {
             setProbe(null)
@@ -291,6 +327,28 @@ export function MapScreen() {
         onRoute={showRoute}
         onWeather={weatherAt}
         onClose={() => setSelection(null)}
+      />
+
+      <IslandSheet
+        open={islandSheet}
+        onClose={() => setIslandSheet(false)}
+        deck={deck}
+        roque={roque}
+        trailReports={trailReports}
+        eto={agro.eto}
+        etoFailed={agro.etoFailed}
+        crops={agro.crops}
+        here={
+          probe
+            ? {
+                lon: probe.lon,
+                lat: probe.lat,
+                elevationM: probe.elevation,
+                label: probe.title,
+              }
+            : null
+        }
+        now={now}
       />
 
       <LayerSheet

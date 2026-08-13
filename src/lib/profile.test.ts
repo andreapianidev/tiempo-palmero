@@ -47,6 +47,7 @@ const profileOf = (levels: ProfileLevel[]): VerticalProfile => ({
   levels,
   observedAt: 0,
   inversion: detectInversion(levels),
+  cloudCoverLow: null,
 })
 
 describe('parseModelTime', () => {
