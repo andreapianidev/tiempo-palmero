@@ -223,8 +223,17 @@ void main() {
   // exactamente 0 m, y con una rampa centrada en cero —de −2 a +2— el mar
   // entero salía a media opacidad: un rectángulo gris claro alrededor de la
   // isla, del tamaño de la cobertura del modelo. Se vio en dev/mapa.html.
-  // Los 2,5 m de arriba son el mismo nivel del mar que usa el motor (1,5 m)
-  // con margen para que la costa no salga dentada a 33 m de muestra.
-  float a = smoothstep(0.0, 2.5, h);
+  //
+  // Y la cota que decide dónde acaba la tierra se promedia sobre kilómetro y
+  // medio de muestra, no se lee en el punto. El contorno del mar es una curva
+  // de nivel, y una curva de nivel sacada de una malla de 33,5 m va a saltos de
+  // 33,5 m: con la isla entera en pantalla eso son escalones de tres píxeles
+  // recortando la costa. Promediando, el escalón se parte por la mitad y la
+  // costa oficial la sigue marcando el contorno del Cabildo, que va encima.
+  float coast = 0.2 * (
+      hs +
+      elevLinear(p + vec2( 0.75, 0.0)) + elevLinear(p + vec2(-0.75, 0.0)) +
+      elevLinear(p + vec2( 0.0, 0.75)) + elevLinear(p + vec2( 0.0, -0.75)));
+  float a = smoothstep(0.0, 2.5, coast);
   fragColor = vec4(col * a, a);
 }`
