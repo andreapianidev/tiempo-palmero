@@ -1423,7 +1423,7 @@ cuatro y se puntúa sobre el que no vio. Medido con el mismo modelo:
 | protocolo | AUC |
 |---|---:|
 | repartiendo celdas al azar | **0,903** ← la cifra que no se publica |
-| escondiendo un incendio entero | **0,833** |
+| escondiendo un incendio entero | **0,834** |
 | el peor pliegue, Garafía 2020 | **0,653** |
 
 Esas siete centésimas de diferencia son el tamaño del autoengaño. Y el peor

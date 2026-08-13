@@ -13,10 +13,8 @@
  */
 
 import { t } from '../../i18n'
-import { FIRE_BANDS } from '../../lib/palette'
 import type { FireRiskState } from '../../hooks/useFireRisk'
 import { fuelLabel } from '../../lib/fire/fuel'
-import { BandScale } from './BandScale'
 
 interface Props {
   fire: FireRiskState
@@ -50,8 +48,12 @@ export function FireRisk({ fire, active, onActivate }: Props) {
       {fire.failed && <p className="warn small">{t.fireRisk.failed}</p>}
       {active && fire.droughtFailed && <p className="warn small">{t.fireRisk.noDrought}</p>}
 
-      {active && spec && <BandScale bands={FIRE_BANDS} unit="" />}
-
+      {/*
+        Aquí NO va la escala de colores. Cuando la capa está encendida —que es
+        la única vez que tendría sentido— el selector de variable ya la dibuja
+        arriba, con las mismas FIRE_BANDS, y salían las dos idénticas en el
+        mismo panel: en el móvil, a media pantalla de distancia una de otra.
+      */}
       <p className="dim small">{t.fireRisk.whatBody}</p>
 
       {spec && (
