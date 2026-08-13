@@ -46,6 +46,21 @@ ambiente, agricultura, aforos y energía. Cada bloque nuevo es **un archivo
 nuevo dentro de `src/components/sidebar/` y una `<Section>` plegable**, nunca
 cien líneas más en `index.tsx`.
 
+## Un umbral se mide, no se elige
+
+Todo número que decida si un dato se enseña o se descarta —los de `BOUNDS`, los
+de `sensor-health.ts`, el σ del rechazo de outliers— sale de **medirlo contra un
+fixture real**, y el comentario que tiene al lado dice qué separa: cuánto marca
+el caso patológico y cuánto el caso sano más extremo del archivo. Un umbral sin
+esa cifra al lado es una corazonada.
+
+Y la prueba que importa nunca es «¿caza el fallo?», sino **«¿caza el fallo sin
+borrar un dato bueno?»**. Los dos lados pesan igual en el test. La invasión de
+aire sahariano del 13 de agosto de 2026 hizo saltar a una estación 6 °C en
+quince minutos: cualquier detector que la marque como averiada está mal, por
+mucho que también cace la avería de verdad. Cuando se toque un umbral, se vuelve
+a medir la distancia a las dos orillas.
+
 ## Los números que aparecen en texto se verifican
 
 El README, los comentarios y las cadenas de la interfaz están llenos de cifras

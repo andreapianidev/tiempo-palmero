@@ -430,6 +430,79 @@ export const es = {
       `Su lectura se desvía ${sigmas.toFixed(1)}σ del ajuste altitudinal. No entra en la interpolación.`,
   },
 
+  /**
+   * Averías de sensor. Una avería SIEMPRE se explica con la cifra que la
+   * delata: «salta 16,2 °C» se puede comprobar en la gráfica, «sensor
+   * defectuoso» hay que creérselo.
+   */
+  health: {
+    title: 'Salud de la red',
+    faulty: 'Sensor averiado',
+    faultyShort: 'averiado',
+    checking: 'Revisando el archivo de las últimas 48 h…',
+    unavailable:
+      'El archivo del Cabildo no responde, así que esta vez no se ha podido revisar el pasado de los sensores. No se marca ninguna avería porque no se ha podido mirar, no porque no las haya.',
+    allSound: (n: number) => `Las ${n} estaciones revisadas se comportan bien.`,
+    summary: (faulty: number, examined: number) =>
+      `${faulty} de ${examined} estaciones revisadas dan series imposibles`,
+    windowNote: (hours: number) =>
+      `Cada estación se juzga por sus últimas ${hours} h, no por su última lectura: una avería intermitente se esconde en una ventana corta.`,
+    excludedFromModel:
+      'No entra en la interpolación. En su sitio, el mapa enseña lo que estiman las estaciones sanas de alrededor.',
+    fallbackTag: 'Estimación del modelo',
+    fallbackNote:
+      'Este número NO lo ha medido esta estación: es lo que el modelo calcula en su punto con las estaciones sanas vecinas. Por eso lleva tilde y banda de error.',
+    fault: {
+      jump: (c: number) => `Salta ${c.toFixed(1)} °C entre dos lecturas seguidas`,
+      stuck: (n: number) => `Lleva ${n} lecturas clavada en el mismo valor`,
+      incoherent: (c: number) =>
+        `Su desvío respecto al resto de la isla se mueve ±${c.toFixed(1)} °C`,
+      impossible: (c: number) => `Ha publicado ${c.toFixed(1)} °C, fuera de lo posible`,
+    },
+    faultWhy: {
+      jump: 'El aire de la isla puede cambiar deprisa —la entrada de calima del 13 de agosto movió 6 °C en quince minutos— pero no así. El umbral está en 12 °C, por encima del mayor salto real medido en el archivo.',
+      stuck: 'Un sensor que repite el mismo valor durante horas no está midiendo: está atascado.',
+      incoherent:
+        'Lo normal es que una estación esté siempre un poco más caliente o más fría que el gradiente de la isla, porque su sitio es así. Lo que no puede es cambiar de desvío: eso significa que no describe ningún sitio.',
+      impossible: 'La cifra se sale de lo que la isla admite físicamente.',
+    },
+  },
+
+  /**
+   * La curva de un punto sin sensor. Todo lo que se dice aquí insiste en lo
+   * mismo: es una estimación, no una medida. La gráfica de una estación y ésta
+   * se parecen demasiado como para dejarlo implícito.
+   */
+  pointHistory: {
+    title: 'Evolución estimada',
+    rebuilding: 'Rehaciendo el modelo hora a hora…',
+    unavailable: 'El archivo del Cabildo no responde ahora mismo.',
+    max: 'Máxima estimada',
+    min: 'Mínima estimada',
+    band: 'Banda media',
+    bandHint:
+      'Media de la incertidumbre de todos los instantes reconstruidos, y el peor de ellos.',
+    rebuilt: 'Reconstrucción',
+    fits: (n: number) => `${n} ajustes completos`,
+    note: 'Aquí no hay ningún sensor: cada punto de esta curva es un ajuste del gradiente de la isla rehecho con las estaciones que publicaban en ese instante. Validado dejando fuera una estación y reconstruyendo su sitio, el error típico es de 1,6 °C a lo largo de 24 h.',
+    aboveCeiling:
+      'Parte del intervalo queda por encima de la altitud más alta que medía la red en ese momento: ahí la curva es una extrapolación, no una interpolación.',
+    tooFewStations:
+      'En este intervalo no hubo bastantes estaciones publicando a la vez como para ajustar el gradiente de la isla.',
+  },
+
+  /** Estaciones que existen pero no llegan al mapa, y por qué. */
+  hidden: {
+    title: 'Fuera del mapa',
+    summary: (n: number) => `${n} estaciones no se dibujan`,
+    stale: (n: number, hours: number) =>
+      `${n} llevan más de ${hours} h sin transmitir`,
+    noMetric: (n: number) => `${n} transmiten pero sin temperatura`,
+    offIsland: (n: number) => `${n} dan coordenadas fuera de la isla`,
+    implausible: (n: number) => `${n} publican una temperatura imposible`,
+    note: 'Siguen contando en el denominador de «X de Y estaciones activas»: el mapa enseña las que puede, no las que hay.',
+  },
+
   model: {
     title: 'Modelo',
     stationsUsed: (used: number, total: number) => `${used} de ${total} estaciones activas`,

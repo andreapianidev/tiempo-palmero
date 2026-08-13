@@ -33,6 +33,7 @@ import {
   type ProfileAnchor,
 } from '../lib/openmeteo'
 import { buildStations, type NetworkCensus, type Station } from '../lib/quality'
+import { useSensorHealth, type SensorHealth } from './useSensorHealth'
 import { parseLocation, parseTimeinstant, num, type CdaRow } from '../lib/cabildo'
 import {
   buildModel,
@@ -96,6 +97,17 @@ export interface IslandData {
   demError: string | null
 
   stations: Station[]
+  /**
+   * Las que sostienen el modelo: `stations` menos las diagnosticadas averiadas.
+   *
+   * Existen las dos listas a propósito. Una estación averiada NO desaparece del
+   * mapa —hace falta seguir diciendo que está y por qué no se la cree— pero no
+   * puede entrar en el ajuste: si entra, el gradiente y el RMSE describen un
+   * modelo ajustado en parte sobre datos falsos, y el panel del modelo mentiría
+   * sin saberlo.
+   */
+  soundStations: Station[]
+  health: SensorHealth
   census: NetworkCensus | null
   models: Record<InterpolableVariable, Model | null>
   validation: { rmse: number; mae: number; n: number } | null
@@ -368,6 +380,20 @@ export function useIslandData(): IslandData {
   const stationKey = stations.map((s) => s.entityId).join(',')
 
   /**
+   * Diagnóstico temporal de la red. Llega en segundo plano y unos segundos
+   * tarde: mientras no esté, `faulty` es falso para todas y el modelo se
+   * comporta exactamente como antes de esta función.
+   */
+  const health = useSensorHealth(dem, now)
+
+  /** Las que entran en el ajuste. Ver el comentario del campo en `IslandData`. */
+  const soundStations = useMemo(
+    () => stations.filter((s) => !health.diagnoses.get(s.entityId)?.faulty),
+    [stations, health.diagnoses],
+  )
+  const soundKey = soundStations.map((s) => s.entityId).join(',')
+
+  /**
    * Open-Meteo en el punto de cada estación.
    *
    * No se usa para pintar nada: sirve para MEDIR cuánto se desvía el modelo de
@@ -439,7 +465,7 @@ export function useIslandData(): IslandData {
    * contra el modelo, no del reloj de presentación.
    */
   const calibrations = useMemo(() => {
-    if (stations.length < 8) {
+    if (soundStations.length < 8) {
       return { temperature: null, relativehumidity: null } as Record<
         InterpolableVariable,
         Calibration | null
@@ -452,7 +478,7 @@ export function useIslandData(): IslandData {
     const key = (lon: number, lat: number) => `${lon.toFixed(5)},${lat.toFixed(5)}`
     const byPoint = new Map(modelAtStations.map((m) => [key(m.lon, m.lat), m]))
     const pairs = (v: InterpolableVariable) =>
-      stations.map((s) => {
+      soundStations.map((s) => {
         const m = byPoint.get(key(s.lon, s.lat))
         return {
           model: m ? (v === 'temperature' ? m.temperature : m.relativehumidity) : null,
@@ -460,11 +486,15 @@ export function useIslandData(): IslandData {
         }
       })
     return {
-      temperature: calibrate(stations, 'temperature', pairs('temperature')),
-      relativehumidity: calibrate(stations, 'relativehumidity', pairs('relativehumidity')),
+      temperature: calibrate(soundStations, 'temperature', pairs('temperature')),
+      relativehumidity: calibrate(
+        soundStations,
+        'relativehumidity',
+        pairs('relativehumidity'),
+      ),
     } as Record<InterpolableVariable, Calibration | null>
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stationKey, modelAtStations])
+  }, [soundKey, modelAtStations])
 
   /**
    * Perfil vertical que hace de testigo en el rechazo de anomalías.
@@ -482,21 +512,23 @@ export function useIslandData(): IslandData {
 
   const models = useMemo(() => {
     const make = (v: InterpolableVariable) =>
-      stations.length ? buildModel(stations, v, anchors, calibrations[v], witness) : null
+      soundStations.length
+        ? buildModel(soundStations, v, anchors, calibrations[v], witness)
+        : null
     return {
       temperature: make('temperature'),
       relativehumidity: make('relativehumidity'),
     } as Record<InterpolableVariable, Model | null>
-  }, [stations, anchors, calibrations, witness])
+  }, [soundStations, anchors, calibrations, witness])
 
   // La validación es cara (n ajustes completos) y solo informa la cabecera, así
   // que se recalcula cuando cambia el conjunto de estaciones, no en cada tick.
   const validation = useMemo(() => {
-    if (stations.length < 8) return null
-    const loo = leaveOneOut(stations, 'temperature')
+    if (soundStations.length < 8) return null
+    const loo = leaveOneOut(soundStations, 'temperature')
     return Number.isFinite(loo.rmse) ? { rmse: loo.rmse, mae: loo.mae, n: loo.n } : null
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stationKey])
+  }, [soundKey])
 
   const co2 = useMemo<Co2Point[]>(() => {
     const byId = new Map(co2Readings.map((r) => [r.id, r]))
@@ -514,6 +546,8 @@ export function useIslandData(): IslandData {
     demProgress,
     demError,
     stations,
+    soundStations,
+    health,
     census,
     models,
     validation,

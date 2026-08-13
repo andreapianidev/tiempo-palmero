@@ -258,6 +258,23 @@ export function dedupeByEntityId(rows: CdaRow[]): CdaRow[] {
   return [...best.values()]
 }
 
+export type DropReason = 'stale' | 'implausible' | 'offIsland' | 'noMetric'
+
+/**
+ * Una estación que existe en la API pero no llega al mapa.
+ *
+ * Se guarda con NOMBRE, no solo como número, porque un contador no se puede
+ * comprobar. «17 estaciones fuera del mapa» obliga a creérselo; «LAGUNA DE
+ * BARLOVENTO lleva 3480 h sin transmitir» se puede ir a mirar.
+ */
+export interface DroppedStation {
+  entityId: string
+  name: string
+  reason: DropReason
+  /** Horas desde la última lectura. null si el timestamp no era legible. */
+  ageHours: number | null
+}
+
 export interface NetworkCensus {
   total: number
   usable: number
@@ -265,6 +282,8 @@ export interface NetworkCensus {
   droppedImplausible: number
   droppedOffIsland: number
   droppedNoMetric: number
+  /** Las descartadas, con nombre y motivo. */
+  dropped: DroppedStation[]
 }
 
 /**
@@ -285,38 +304,55 @@ export function buildStations(
     droppedImplausible: 0,
     droppedOffIsland: 0,
     droppedNoMetric: 0,
+    dropped: [],
   }
   const stations: Station[] = []
 
   for (const row of deduped) {
     const t = parseTimeinstant(row.timeinstant)
+    const age = t === null ? null : (now - t) / 3_600_000
+    const drop = (reason: DropReason) => {
+      census.dropped.push({
+        entityId: String(row.entityid ?? ''),
+        name: String(row.name ?? 'Estación').replace(/_/g, ' '),
+        reason,
+        ageHours: age,
+      })
+    }
+
     if (t === null) {
       census.droppedStale++
+      drop('stale')
       continue
     }
-    const ageHours = (now - t) / 3_600_000
+    const ageHours = age as number
     if (ageHours > maxAgeH || t - now > 30 * 60_000) {
       census.droppedStale++
+      drop('stale')
       continue
     }
     const loc = parseLocation(row.location)
     if (!loc || !inIslandBbox(loc[0], loc[1])) {
       census.droppedOffIsland++
+      drop('offIsland')
       continue
     }
     const temperature = num(row.temperature)
     if (temperature === null) {
       census.droppedNoMetric++
+      drop('noMetric')
       continue
     }
     const [lo, hi] = BOUNDS.temperature
     if (temperature < lo || temperature > hi) {
       census.droppedImplausible++
+      drop('implausible')
       continue
     }
     const elevation = elevationAt(loc[0], loc[1])
     if (elevation === null) {
       census.droppedOffIsland++
+      drop('offIsland')
       continue
     }
 

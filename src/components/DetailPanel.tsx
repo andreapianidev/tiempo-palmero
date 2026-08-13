@@ -13,6 +13,8 @@ import { freshness, stationReading, type Station } from '../lib/quality'
 import { FAMILY_COLOR, isDataProp, poiIconDataUrl, type PoiRecord } from '../lib/poi'
 import type { AirStation, Co2Point, FireCamera, SkyStation } from '../hooks/useIslandData'
 import type { Model } from '../lib/interpolate'
+import { WINDOW_H, type Diagnosis } from '../lib/sensor-health'
+import { faultLine } from './sidebar/NetworkHealth'
 import { StationHistory } from './StationHistory'
 import { StopDetail, type GuaguaStopSelection } from './guagua/StopDetail'
 import { RouteDetail } from './guagua/RouteDetail'
@@ -44,6 +46,8 @@ export type Selection =
 interface Props {
   selection: Selection
   model: Model | null
+  /** Diagnóstico temporal por `entityId`, para explicar una avería en su ficha. */
+  health: Map<string, Diagnosis>
   now: number
   firePolledAt: number | null
   co2Down: boolean
@@ -98,6 +102,7 @@ const ZERO_DECIMALS = new Set<keyof Station>([
 export function DetailPanel({
   selection,
   model,
+  health,
   now,
   firePolledAt,
   co2Down,
@@ -112,7 +117,14 @@ export function DetailPanel({
         ×
       </button>
       {selection.kind === 'poi' && <PoiDetail p={selection.value} onWeather={onWeather} />}
-      {selection.kind === 'station' && <StationDetail s={selection.value} model={model} now={now} />}
+      {selection.kind === 'station' && (
+        <StationDetail
+          s={selection.value}
+          model={model}
+          now={now}
+          diagnosis={health.get(selection.value.entityId)}
+        />
+      )}
       {selection.kind === 'air' && <AirDetail a={selection.value} now={now} />}
       {selection.kind === 'co2' && <Co2Detail c={selection.value} down={co2Down} />}
       {selection.kind === 'fire' && <FireDetail f={selection.value} polledAt={firePolledAt} now={now} />}
@@ -203,7 +215,17 @@ function PoiDetail({
   )
 }
 
-function StationDetail({ s, model, now }: { s: Station; model: Model | null; now: number }) {
+function StationDetail({
+  s,
+  model,
+  now,
+  diagnosis,
+}: {
+  s: Station
+  model: Model | null
+  now: number
+  diagnosis: Diagnosis | undefined
+}) {
   const state = freshness(s.ageHours)
   const rejected = model?.rejected.find((r) => r.entityId === s.entityId)
   return (
@@ -221,6 +243,24 @@ function StationDetail({ s, model, now }: { s: Station; model: Model | null; now
         </p>
       </header>
 
+      {/* La avería va ANTES que la tabla de valores, no después: si se pone
+          debajo, quien abre la ficha ya se ha creído las cifras. */}
+      {diagnosis?.faulty && (
+        <div className="warn">
+          <p>
+            <strong>{t.health.faulty}.</strong> {t.health.excludedFromModel}
+          </p>
+          <ul className="fault-why">
+            {diagnosis.faults.map((fault) => (
+              <li key={fault.kind} className="mono small">
+                {faultLine(fault)}
+              </li>
+            ))}
+          </ul>
+          <p className="small">{t.health.windowNote(WINDOW_H)}</p>
+        </div>
+      )}
+
       {rejected && (
         <p className="warn">
           <strong>{t.station.excludedByQc}.</strong>{' '}
@@ -229,6 +269,7 @@ function StationDetail({ s, model, now }: { s: Station; model: Model | null; now
       )}
 
       <h3>{t.station.allValues}</h3>
+      {diagnosis?.faulty && <p className="note small">{t.health.fallbackNote}</p>}
       {s.pressureWasReduced && (
         <p className="note small">{t.station.pressureReduced}</p>
       )}

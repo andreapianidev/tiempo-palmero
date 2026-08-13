@@ -148,6 +148,15 @@ Las reglas que la aplicación no se salta:
 - **Lo que viene de un modelo va etiquetado como modelo.** Por encima del techo
   de la red del Cabildo se usan anclas de Open-Meteo, y aparecen siempre con su
   nombre. Ver «El techo de la red» más abajo.
+- **Un sensor se juzga por su serie, no por su última lectura.** Un número
+  plausible dentro de una serie imposible sigue siendo falso, y hasta agosto de
+  2026 se pintaba como cualquier otro. Ver «El diagnóstico temporal» más abajo.
+- **Las estaciones que no llegan al mapa se dicen por su nombre.** El
+  denominador honesto era ya mejor que presumir del total, pero dejaba sin
+  contestar la pregunta siguiente. El bloque «Fuera del mapa» del panel lateral
+  lista las que faltan y desde cuándo: el 13 de agosto de 2026 eran 17 de 52
+  —14 sin transmitir hace más de dos horas, una de ellas parada desde mayo de
+  2023, y 3 transmitiendo sin temperatura.
 
 ### La capa de CO₂
 
@@ -476,6 +485,87 @@ interpolador — y el pipeline que rechaza outliers tampoco afirma poder
 predecirlos: los marca como no fiables, que es su trabajo. La comparación con
 `rejectOutliers: false` enfrenta dos pipelines completos, cada uno respondiendo
 por lo que dice cubrir.
+
+### El diagnóstico temporal
+
+El rechazo de outliers de arriba mira **un instante**: compara cada estación con
+el gradiente que marcan las demás ahora mismo. Eso atrapa al sensor que publica
+70 °C, y no atrapa al que publica 24,83 °C —una cifra impecable— diez horas
+después de haber pasado la noche a 3 °C a 1560 m en agosto. `sensor-health.ts`
+mira la serie.
+
+**Lo difícil no es cazar la avería, es cazarla sin borrar el tiempo real.** La
+madrugada del 13 de agosto de 2026 entró aire sahariano en La Palma y la
+estación 0401 saltó de 19,6 °C y 82 % a 25,5 °C y 34 % en quince minutos, con
+El Paso, LasTricias y WSAQPM_5 confirmándolo a la misma hora con hardware
+distinto. Un umbral mal puesto habría borrado del mapa justo el episodio que la
+gente abre la aplicación para mirar.
+
+Cuatro reglas, con los umbrales medidos sobre las 37 estaciones del 11 al 13 de
+agosto de 2026 (`__fixtures__/sensor-health-window.json`):
+
+| Regla | Umbral | La averiada | La sana más extrema |
+|---|---|---|---|
+| Salto entre lecturas seguidas | 12 °C | **16,2 °C** (0408) | 8,1 °C (0381, borde del frente) |
+| Lecturas idénticas seguidas | 24 | **203** (Ecofinca Nogales) | 10 (WSAQPM_3, redondea) |
+| Dispersión del desvío insular | 4 °C | **4,77 °C** (0408) | 3,18 °C (Cumbre Nueva) |
+| Fuera de la envolvente física | `BOUNDS` | **70 °C** | — |
+
+La tercera merece explicación: el desvío de una estación respecto al gradiente
+de la isla es una característica **del sitio** y tiene que ser estable.
+LasTricias marca +5,7 °C hora tras hora, el desvío más grande del archivo, y
+está perfectamente sana — es un sitio abrigado. Lo que no puede pasar es que ese
+desvío se mueva. Por eso se mide su dispersión y no su mediana.
+
+**La ventana son 48 horas por una medida, no por prudencia.** La avería de la
+0408 es intermitente: en las últimas 24 h su salto máximo es de 9,8 °C contra
+los 8,1 °C de una sana, y su dispersión 1,36 contra 3,15 — indistinguibles. A 36
+h tampoco llega. A 48 h separa con holgura. Bajar esa ventana es volver a no ver
+la avería.
+
+Sobre las 37 estaciones del archivo el diagnóstico marca **exactamente dos**, y
+un test lo fija: cualquier cambio que condene a una tercera falla.
+
+Una estación diagnosticada **sale del ajuste** —del gradiente, de la banda y del
+RMSE, que si no describirían un modelo hecho en parte con datos falsos— pero no
+sale del mapa. Su pin enseña la estimación del modelo en su punto, con tilde
+delante (`~24,6°`), borde discontinuo y la explicación en el panel lateral.
+
+**Por qué no una media histórica.** Era la otra opción evidente y es la
+equivocada. Una climatología acierta los días normales, que son justo los días
+en que no hace falta. El 13 de agosto la cumbre de Garafía estaba a unos 25 °C
+por la invasión sahariana; la media de agosto en ese punto ronda los 18. El
+«respaldo» habría separado la cifra de la realidad casi ocho grados, y
+precisamente durante el episodio extremo.
+
+### Gráficas en cualquier punto, no solo donde hay sensor
+
+El motor no depende de que el instante sea «ahora»: dándole las lecturas de las
+03:00 de ayer devuelve la estimación de las 03:00 de ayer. `history-field.ts`
+rehace el modelo **entero** en cada instante de la ventana —48 ajustes completos
+para 24 h a paso de 30 min, unos 30 ms— y de ahí sale la curva de un punto donde
+no hay ni ha habido nunca una estación.
+
+Se rehace el ajuste en cada instante a propósito: el gradiente de La Palma no es
+una constante, se mueve con la inversión a lo largo del día y con el episodio a
+lo largo de la semana. Reutilizar un solo ajuste sería más barato y estaría mal
+justo en las horas interesantes.
+
+Validado como se valida el presente, dejando fuera una estación y reconstruyendo
+su sitio a lo largo de 24 h, sobre las 34 sanas del 12 de agosto de 2026:
+
+| | RMSE |
+|---|---|
+| Mediana de las 34 | **1,61 °C** |
+| Mejor (WSAQPM_9, 422 m) | 0,39 °C |
+| Peor (LasTricias, 1177 m) | 7,32 °C |
+
+El peor caso dice algo verdadero y conviene no esconderlo: LasTricias es el
+sitio con +5,7 °C de desvío propio, y al excluirla el modelo no tiene forma de
+saber que ese microclima existe. La curva de un punto sin sensor acierta el
+régimen de la isla, no las particularidades que solo un sensor allí puede
+medir — y por eso se dibuja con trazo discontinuo, banda de incertidumbre y una
+nota que lo dice.
 
 ---
 

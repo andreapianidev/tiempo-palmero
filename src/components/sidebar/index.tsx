@@ -9,7 +9,8 @@
 
 import { useMemo, useState } from 'react'
 import type { DisplayVariable, InterpolableVariable, Model } from '../../lib/interpolate'
-import type { NetworkCensus } from '../../lib/quality'
+import type { NetworkCensus, Station } from '../../lib/quality'
+import type { SensorHealth } from '../../hooks/useSensorHealth'
 import type { GazetteerEntry } from '../../lib/api'
 import type { LayerVisibility } from '../MapView'
 import type { RgbStop } from '../../lib/palette'
@@ -23,6 +24,8 @@ import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
 import { PlaceSwitches, PLACE_COUNT, activePlaceCount } from './PlaceSwitches'
 import type { PlaceVisibility } from '../../hooks/usePlaces'
 import { ModelStatus } from './ModelStatus'
+import { NetworkHealth, faultyOf } from './NetworkHealth'
+import { HiddenStations } from './HiddenStations'
 import { WindStatus } from './WindStatus'
 import { CounterStatus } from './CounterStatus'
 import { GuaguaHint } from './GuaguaHint'
@@ -46,6 +49,9 @@ interface Props {
   onTogglePlace: (kind: keyof PlaceVisibility) => void
   models: Record<InterpolableVariable, Model | null>
   census: NetworkCensus | null
+  health: SensorHealth
+  /** Todas las del mapa, averiadas incluidas: el bloque de salud las nombra. */
+  stations: Station[]
   validation: { rmse: number; mae: number; n: number } | null
   stops: RgbStop[]
   gazetteer: GazetteerEntry[]
@@ -81,6 +87,11 @@ export function Sidebar(props: Props) {
       .map((m) => m.elevationRange[1])
     return tops.length ? Math.round(Math.min(...tops)) : null
   }, [props.models])
+
+  const faultyCount = useMemo(
+    () => faultyOf(props.health, props.stations).length,
+    [props.health, props.stations],
+  )
 
   const shareAboveCeiling = useMemo(
     () => (props.dem && ceiling !== null ? landShareAbove(props.dem, ceiling) : null),
@@ -223,6 +234,22 @@ export function Sidebar(props: Props) {
             now={props.now}
           />
         </Section>
+
+        {/* Se abre solo si hay algo que contar. Un bloque de averías abierto
+            para decir que no hay ninguna es ruido en el sitio de un aviso. */}
+        <Section
+          title={t.health.title}
+          defaultOpen={faultyCount > 0}
+          badge={faultyCount > 0 ? `⚠ ${faultyCount}` : '✓'}
+        >
+          <NetworkHealth health={props.health} stations={props.stations} />
+        </Section>
+
+        {props.census && props.census.dropped.length > 0 && (
+          <Section title={t.hidden.title} badge={`${props.census.dropped.length}`}>
+            <HiddenStations census={props.census} />
+          </Section>
+        )}
 
         <footer className="side-footer">
           <button className="link-btn" onClick={props.onSources}>
