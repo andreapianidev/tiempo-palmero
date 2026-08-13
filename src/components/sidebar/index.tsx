@@ -40,6 +40,9 @@ import { Co2Status } from './Co2Status'
 import { CoverageStatus } from './CoverageStatus'
 import { BasemapPicker } from './BasemapPicker'
 import { Scene3D } from './Scene3D'
+import { VaporControls } from './VaporControls'
+import type { VaporField } from '../../lib/vapor/field'
+import type { Breath } from '../../lib/vapor/breath'
 import { BASEMAPS, type BasemapId } from '../../lib/basemaps'
 import { exaggerationLabel, type Exaggeration } from '../../lib/terrain'
 import type { WindState } from '../../hooks/useWindField'
@@ -83,6 +86,15 @@ interface Props {
   /** Lo mismo para el viario de OSM, que además puede fallar al descargarse. */
   viario: { loading: boolean; failed: boolean; tracksZoomReached: boolean }
   deck: CloudDeck | null
+  /** La respiración de la isla: el campo, la fase y el reloj acelerado. */
+  vapor: {
+    field: VaporField | null
+    breath: Breath
+    playing: boolean
+    onPlay: () => void
+    clock: Date
+    progress: number
+  }
   roque: RoqueData | null
   /** La vertical medida entre el techo de la red y la cumbre. Ver `summit.ts`. */
   summitLayer: SummitLayer | null
@@ -302,6 +314,26 @@ export function Sidebar(props: Props) {
               hereM={props.here?.elevationM ?? null}
               hereLabel={props.here?.label ?? null}
               now={props.now}
+            />
+          </Section>
+
+          {/* Va pegada al mar de nubes a propósito: son el mismo fenómeno por
+              sus dos extremos. Lo que sube de las laderas es lo que acaba
+              siendo la manta, y el techo de esta capa es la base de aquella. */}
+          <Section
+            title="La isla respira"
+            badge={props.vapor.breath.phase === 'up' ? 'inspira' : 'espira'}
+          >
+            <VaporControls
+              on={props.visible.vapor}
+              onToggle={() => props.onToggle('vapor')}
+              terrainOn={props.terrain.on}
+              field={props.vapor.field}
+              breath={props.vapor.breath}
+              playing={props.vapor.playing}
+              onPlay={props.vapor.onPlay}
+              clock={props.vapor.clock}
+              progress={props.vapor.progress}
             />
           </Section>
 

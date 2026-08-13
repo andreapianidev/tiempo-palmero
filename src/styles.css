@@ -946,3 +946,25 @@ p.trail-calm { margin: 3px 0 0; border: 0; }
   border: 1px solid var(--line);
   color: var(--fg-dim);
 }
+
+/**
+ * La barra del día acelerado.
+ *
+ * Sin transición a propósito: la anima un requestAnimationFrame que ya la
+ * mueve sesenta veces por segundo, y una transición CSS encima la dejaría
+ * siempre un poco por detrás de la hora que dice el texto de al lado.
+ */
+.cycle-bar {
+  margin: 8px 0 6px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.cycle-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #3a4152, #cfe0ff);
+}

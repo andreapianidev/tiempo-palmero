@@ -21,6 +21,8 @@ import { cssColor, co2Band, FRESHNESS_COLOR, type RgbStop } from '../lib/palette
 import { freshness, stationReading, type Station } from '../lib/quality'
 import { decoratePoiCollection, readPoi, type PoiRecord } from '../lib/poi'
 import { WindLayer } from './wind/WindLayer'
+import { VaporLayer } from './vapor/VaporLayer'
+import type { VaporField } from '../lib/vapor/field'
 import { Terrain3D } from './terrain/Terrain3D'
 import { markerSize } from './markers/size'
 import { silenceDepthProbe } from './markers/depthProbe'
@@ -96,6 +98,11 @@ export interface LayerVisibility {
   counters: boolean
   fire: boolean
   wind: boolean
+  /**
+   * La evaporación que sube del terreno. Es una capa y no un modo como la 3D:
+   * añade algo que se dibuja, no cambia la cámara. Ver `lib/vapor/`.
+   */
+  vapor: boolean
 }
 
 interface Props {
@@ -155,6 +162,14 @@ interface Props {
   /** Aforos con datos en la ventana; llegan solo si se enciende la capa. */
   counters: CounterSite[]
   wind: WindField | null
+  /**
+   * De dónde sale vapor, cuánto, y hasta dónde sube. Se construye fuera —el
+   * panel enseña el mismo techo de condensación que el mapa dibuja— y llega
+   * hecho, igual que el campo enmascarado.
+   */
+  vapor: VaporField | null
+  /** La hora que se está dibujando y a qué velocidad corre su sol. */
+  vaporClock: { at: Date; timeScale: number }
   /**
    * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
    * capa más: cambia la cámara, no lo que se dibuja. Ver `lib/terrain.ts`.
@@ -250,6 +265,8 @@ export function MapView(props: Props) {
   /** La capa de viento es un objeto WebGL con estado propio: vive en una ref y
    *  se le pasan los datos, en vez de recrearla en cada render. */
   const windLayerRef = useRef<WindLayer | null>(null)
+  /** La de vapor, por lo mismo: objeto WebGL con partículas que sobreviven. */
+  const vaporLayerRef = useRef<VaporLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
   const terrainRef = useRef<Terrain3D | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
@@ -391,6 +408,15 @@ export function MapView(props: Props) {
       const windLayer = new WindLayer()
       windLayerRef.current = windLayer
       map.addLayer(windLayer, 'municipal-boundaries')
+
+      // El vapor va POR ENCIMA de todo lo que se dibuja sobre el terreno, y no
+      // es una preferencia estética: es una capa con profundidad, y lo que la
+      // hace legible es que el relieve la tape cuando queda detrás. Puesta
+      // debajo de los contornos, MapLibre la drapearía junto con ellos y
+      // perdería justamente la altura que la distingue de una mancha.
+      const vaporLayer = new VaporLayer()
+      vaporLayerRef.current = vaporLayer
+      map.addLayer(vaporLayer)
 
       // El relieve no añade ninguna capa: reutiliza la fuente `terrain` del
       // estilo, que ya está cargada porque la usa el sombreado.
@@ -694,6 +720,32 @@ export function MapView(props: Props) {
     if (!ready) return
     windLayerRef.current?.setVisible(visible.wind && !props.terrain.on)
   }, [ready, visible.wind, props.terrain.on])
+
+  // --- evaporación del terreno --------------------------------------------
+  //
+  // Igual que el viento: los datos se le pasan por método, no reconstruyendo la
+  // capa. Volver a añadirla al mapa en cada refresco recompilaría los shaders y
+  // reiniciaría las partículas, y el vapor se vería parpadear cada cinco
+  // minutos justo cuando llega el modelo nuevo.
+  useEffect(() => {
+    if (!ready) return
+    vaporLayerRef.current?.setSources(dem, props.vapor, props.wind)
+  }, [ready, dem, props.vapor, props.wind])
+
+  useEffect(() => {
+    if (!ready) return
+    vaporLayerRef.current?.setVisible(visible.vapor)
+  }, [ready, visible.vapor])
+
+  useEffect(() => {
+    if (!ready) return
+    vaporLayerRef.current?.setExaggeration(props.terrain.exaggeration)
+  }, [ready, props.terrain.exaggeration])
+
+  useEffect(() => {
+    if (!ready) return
+    vaporLayerRef.current?.setClock(props.vaporClock.at, props.vaporClock.timeScale)
+  }, [ready, props.vaporClock.at, props.vaporClock.timeScale])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {
