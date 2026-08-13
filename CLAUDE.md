@@ -34,10 +34,17 @@ Señales de que toca partir, en orden de importancia:
    tres archivos, y así está ahora: `sidebar/` es un directorio con
    `Section`, `PlaceSearch`, `VariablePicker`, `LayerSwitches` y `ModelStatus`,
    más un `index.tsx` que solo es el armazón.
-2. **Pasa de ~250 líneas.** No es una prohibición: `interpolate.ts` tiene 677 y
-   se queda como está, porque es un único dominio —el motor— y partirlo
+2. **Pasa de ~250 líneas.** No es una prohibición: `interpolate.ts` tiene 1.205
+   y se queda como está, porque es un único dominio —el motor— y partirlo
    separaría pasos que solo se entienden juntos. Pero pasar de 250 obliga a
-   justificar por qué sigue siendo una sola cosa.
+   justificar por qué sigue siendo una sola cosa, y hoy hay 27 ficheros que lo
+   pasan. El que peor lo justifica es `MapView.tsx`: 1.510 líneas, 31
+   `useEffect`, y catorce secciones que el propio fichero se marca con una
+   raya —inicialización, vista 3D, fondo, malla, viento, evaporación, capas
+   GeoJSON, guaguas, sitios y carreteras, marcadores, topónimos, punto
+   consultado, ubicación, mando a distancia—. Catorce rayas que uno mismo se
+   dibuja para no perderse dentro de un fichero son la señal del punto 1
+   escrita a mano. Es el siguiente que toca partir.
 3. **Para tocar una parte hay que leer el resto.** Si cambiar el buscador
    obliga a desplazarse por la tabla del modelo, ya está mal repartido.
 

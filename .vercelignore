@@ -17,9 +17,21 @@
 # './components/mobile/MobileShell'». No se reproducía en local, porque en
 # local el directorio está: solo fallaba en Vercel, que es donde importa.
 # Anclada a la raíz, excluye la app nativa y solo la app nativa.
+#
+# El entrenamiento offline del modelo de incendios cae en la misma trampa que
+# avisa el párrafo primero: está en `.gitignore`, y `.gitignore` aquí no cuenta.
+# Medido el 13 de agosto de 2026: el contenedor de compilación se descargaba
+# 6.622 ficheros cuando los que el sitio necesita son 436. La diferencia era el
+# entorno de Python de `.venv-ml` —217 MB, 7.087 ficheros— y los 48 MB de
+# cartografía descargada de `scripts/ml/cache/`. Ninguna de las dos cosas la
+# mira la compilación, que solo lee el PNG y el JSON ya exportados a
+# `public/fire/`.
 
 node_modules
 dist
 /mobile
 .expo
 .git
+/.venv-ml
+/scripts/ml/cache
+__pycache__
