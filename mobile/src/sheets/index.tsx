@@ -1,20 +1,24 @@
 /**
- * Qué ficha le toca a lo que hay elegido.
+ * Qué enseña la hoja: la cabecera y el cuerpo de lo que esté elegido.
  *
- * Solo reparte: el título, la clase de cosa que es y el contenido. Toda la
- * lógica de cada ficha vive en su propio archivo, y este no crece cuando se
- * añade una capa —crece en una rama del `switch` y en un import.
+ * Una sola hoja para todo. Antes había dos —la del punto, que era una pantalla
+ * entera, y una modal para las paradas, los sitios y los aforos—, y eran dos
+ * respuestas distintas a la misma pregunta: «¿qué es esto que acabo de tocar?».
+ * Ahora la pregunta tiene un solo sitio donde contestarse, y ese sitio nunca
+ * desaparece.
  *
- * La hoja se monta SIEMPRE, con o sin selección, para que la animación de
- * salida tenga algo que animar: desmontarla al cerrar la haría desaparecer de
- * golpe. Cuando no hay nada elegido se queda con el último contenido mientras
- * baja, que es lo que se ve en cualquier hoja de iOS.
+ * Este fichero solo reparte. La lógica de cada ficha vive en la suya, y esto no
+ * crece cuando se añade una capa: crece en una rama del `switch` y un import.
  */
 
-import { t } from '@core/i18n'
+import { cssColor, type RgbStop } from '@core/lib/palette'
+import type { Bundle, DisplayVariable, InterpolableVariable, Model } from '@core/lib/interpolate'
 import type { GuaguaNetwork } from '@core/lib/guagua/network'
-import { PLACE_BY_KIND } from '@core/lib/places'
-import { InfoSheet } from './InfoSheet'
+import type { NetworkCensus, Station } from '@core/lib/quality'
+import { n, n0, t } from '@core/i18n'
+import { color } from '../theme'
+import type { HeadContent } from '../components/sheet/SheetHead'
+import { PointDetail, type PointPlace } from '../detail/PointDetail'
 import { CounterSheet } from './CounterSheet'
 import { FireSheet } from './FireSheet'
 import { PlaceSheet } from './PlaceSheet'
@@ -24,97 +28,195 @@ import { RouteSheet } from './RouteSheet'
 import { StopSheet } from './StopSheet'
 import type { Selection } from './selection'
 
+/**
+ * Un glifo por clase de cosa, los mismos que «cerca de aquí».
+ *
+ * Donde hay una temperatura va la temperatura; donde no la hay —una parada, una
+ * carretera— va el dibujo, porque la cabecera necesita algo a la izquierda que
+ * diga de un vistazo qué se está mirando.
+ */
+const GLYPH: Record<Selection['kind'], string> = {
+  stop: '⬤',
+  route: '◍',
+  place: '★',
+  poi: '◆',
+  road: '⌁',
+  counter: '⇅',
+  fire: '▲',
+}
+
+interface PointState {
+  place: PointPlace
+  bundle: Bundle | null
+  variable: DisplayVariable
+  stops: RgbStop[]
+  /** Margen del modelo, para la línea de contexto de la cabecera. */
+  uncertainty: number | null
+}
+
 interface Props {
   selection: Selection | null
+  point: PointState | null
   net: GuaguaNetwork | null
-  /** Día de la isla con el que se sumaron los aforos. */
   countersToday: string | null
   firePolledAt: number | null
+  stations: Station[]
+  models: Record<InterpolableVariable, Model | null>
+  census: NetworkCensus | null
+  validation: { rmse: number; mae: number; n: number } | null
   now: number
   onRoute: (routeId: string) => void
   onWeather: (lon: number, lat: number, label: string) => void
-  onClose: () => void
 }
 
-export function SelectionSheet(props: Props) {
-  const { selection, net } = props
-  const head = selection ? headOf(selection, net) : { title: '', kind: '' }
+/** La cabecera que asoma siempre. Lo elegido en una capa manda sobre el punto. */
+export function sheetHead(
+  selection: Selection | null,
+  point: PointState | null,
+  net: GuaguaNetwork | null,
+): HeadContent {
+  if (selection) return headOfSelection(selection, net)
+  if (point) return headOfPoint(point)
+  return {
+    lead: '—',
+    leadColor: color.dim,
+    title: t.point.tapPrompt,
+    meta: t.point.tapPromptHint,
+  }
+}
+
+export function SheetContent(props: Props) {
+  const { selection, point } = props
+
+  if (selection) {
+    switch (selection.kind) {
+      case 'stop':
+        return (
+          <StopSheet
+            stop={selection.stop}
+            net={props.net}
+            onRoute={props.onRoute}
+            onWeather={props.onWeather}
+          />
+        )
+      case 'route':
+        return <RouteSheet routeId={selection.routeId} net={props.net} />
+      case 'place':
+        return <PlaceSheet place={selection.place} onWeather={props.onWeather} />
+      case 'poi':
+        return <PoiSheet poi={selection.poi} onWeather={props.onWeather} />
+      case 'road':
+        return (
+          <RoadSheet
+            road={selection.road}
+            lon={selection.lon}
+            lat={selection.lat}
+            onWeather={props.onWeather}
+          />
+        )
+      case 'counter':
+        return props.countersToday ? (
+          <CounterSheet
+            site={selection.site}
+            today={props.countersToday}
+            now={props.now}
+            onWeather={props.onWeather}
+          />
+        ) : null
+      case 'fire':
+        return (
+          <FireSheet camera={selection.camera} polledAt={props.firePolledAt} now={props.now} />
+        )
+    }
+  }
+
+  if (!point) return null
 
   return (
-    <InfoSheet
-      open={!!selection}
-      title={head.title}
-      kind={head.kind}
-      onClose={props.onClose}
-    >
-      {selection?.kind === 'stop' && (
-        <StopSheet
-          stop={selection.stop}
-          net={net}
-          onRoute={props.onRoute}
-          onWeather={props.onWeather}
-        />
-      )}
-      {selection?.kind === 'route' && <RouteSheet routeId={selection.routeId} net={net} />}
-      {selection?.kind === 'place' && (
-        <PlaceSheet place={selection.place} onWeather={props.onWeather} />
-      )}
-      {selection?.kind === 'poi' && <PoiSheet poi={selection.poi} onWeather={props.onWeather} />}
-      {selection?.kind === 'road' && (
-        <RoadSheet
-          road={selection.road}
-          lon={selection.lon}
-          lat={selection.lat}
-          onWeather={props.onWeather}
-        />
-      )}
-      {selection?.kind === 'counter' && props.countersToday && (
-        <CounterSheet
-          site={selection.site}
-          today={props.countersToday}
-          now={props.now}
-          onWeather={props.onWeather}
-        />
-      )}
-      {selection?.kind === 'fire' && (
-        <FireSheet camera={selection.camera} polledAt={props.firePolledAt} now={props.now} />
-      )}
-    </InfoSheet>
+    <PointDetail
+      point={point.place}
+      bundle={point.bundle}
+      variable={point.variable}
+      stops={point.stops}
+      stations={props.stations}
+      models={props.models}
+      census={props.census}
+      validation={props.validation}
+      now={props.now}
+    />
   )
 }
 
-/** El título de la hoja y la línea que dice qué clase de cosa se está mirando. */
-function headOf(
-  selection: Selection,
-  net: GuaguaNetwork | null,
-): { title: string; kind: string } {
+function headOfPoint({ place, bundle, variable, stops, uncertainty }: PointState): HeadContent {
+  const estimate = bundle?.[variable] ?? null
+  const decimals = variable === 'relativehumidity' ? 0 : 1
+  const unit = variable === 'relativehumidity' ? '%' : '°'
+  const margin = estimate?.uncertainty ?? uncertainty
+  return {
+    lead: estimate ? `${n(estimate.value, decimals)}${unit}` : '—',
+    leadColor: estimate ? cssColor(stops, estimate.value) : color.dim,
+    title: place.title,
+    meta:
+      `${n0(place.elevation)} m · ${place.municipality}` +
+      (margin !== null ? ` · ± ${n(margin, decimals)} ${unit === '%' ? '%' : '°C'}` : ''),
+  }
+}
+
+function headOfSelection(selection: Selection, net: GuaguaNetwork | null): HeadContent {
+  const lead = GLYPH[selection.kind]
   switch (selection.kind) {
     case 'stop':
-      return { title: selection.stop.name, kind: t.guagua.stopTitle }
+      return {
+        lead,
+        leadColor: color.amber,
+        title: selection.stop.name,
+        meta: selection.stop.code
+          ? `${t.guagua.stopTitle} · ${t.guagua.stopCode} ${selection.stop.code}`
+          : t.guagua.stopTitle,
+      }
     case 'route': {
       const route = net?.routes[selection.routeId]
       return {
+        lead: route?.name ?? lead,
+        leadColor: color.amber,
         title: route ? `${t.guagua.routeTitle} ${route.name}` : selection.routeId,
-        kind: route?.longName ?? t.guagua.operator,
+        meta: route?.longName ?? t.guagua.operator,
       }
     }
     case 'place':
       return {
+        lead,
+        leadColor: color.amber,
         title: selection.place.name,
-        kind: PLACE_BY_KIND[selection.place.kind]
-          ? (t.places.kinds[selection.place.kind] ?? t.places.title)
-          : t.places.title,
+        meta: t.places.kinds[selection.place.kind] ?? t.places.title,
       }
     case 'poi':
-      return { title: selection.poi.name, kind: t.poi.families[selection.poi.family] ?? t.poi.source }
+      return {
+        lead,
+        leadColor: color.amber,
+        title: selection.poi.name,
+        meta: t.poi.families[selection.poi.family] ?? t.poi.source,
+      }
     case 'road':
-      return { title: selection.road.name, kind: selection.road.code ?? t.layers.roads }
+      return {
+        lead,
+        leadColor: color.amber,
+        title: selection.road.name,
+        meta: selection.road.code ?? t.layers.roads,
+      }
     case 'counter':
       return {
+        lead,
+        leadColor: color.amber,
         title: selection.site.name,
-        kind: t.counters.kinds[selection.site.kind] ?? t.counters.title,
+        meta: t.counters.kinds[selection.site.kind] ?? t.counters.title,
       }
     case 'fire':
-      return { title: selection.camera.name, kind: t.fire.title }
+      return {
+        lead,
+        leadColor: selection.camera.hasAlert ? color.bad : color.dim,
+        title: selection.camera.name,
+        meta: selection.camera.hasAlert ? t.fire.alert : t.fire.noAlert,
+      }
   }
 }
