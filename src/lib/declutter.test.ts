@@ -62,6 +62,18 @@ describe('reparto del sitio en el mapa', () => {
     expect(nombre).toBe('hidden')
   })
 
+  /**
+   * Ningún rango puede estar empatado con otro de distinta clase: con un empate
+   * el desempate lo decide el orden en que quien llama metió los elementos, y
+   * entonces la prioridad deja de estar en esta tabla y vuelve a estar
+   * repartida por el código. Es el fallo que este módulo vino a quitar.
+   */
+  it('las clases no empatan entre sí', () => {
+    const rangos = [RANK.fireAlert, RANK.placeMajor, pillRank(2426, 2426), pillRank(0, 2426), RANK.placeMinor, RANK.fireQuiet]
+    expect(new Set(rangos).size).toBe(rangos.length)
+    expect([...rangos].sort((a, b) => a - b)).toEqual(rangos)
+  })
+
   it('el dato manda sobre el topónimo menor, y el mayor sobre el dato', () => {
     const [menor, pastilla] = place([placeLabel(300, 300, false), pill(300, 300)])
     expect(pastilla).toBe('full')

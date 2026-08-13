@@ -57,7 +57,10 @@ export const DOT = 12
  * una tabla y no repartida por el código:
  *
  * - `fireAlert` — lo único que avisa de algo que está ocurriendo AHORA. Gana a
- *   todo, incluido el nombre de la capital.
+ *   todo, incluido el nombre de la capital. Va en −1 y no en 0 A PROPÓSITO:
+ *   empatado con `placeMajor` el desempate lo decidía el orden en que quien
+ *   llama hubiera metido los elementos en la lista, que es justo la clase de
+ *   dependencia oculta que este módulo existe para quitar de en medio.
  * - `placeMajor` — sin «Santa Cruz de La Palma» ni «Los Llanos» el mapa es
  *   bonito y nadie sabe dónde está.
  * - `pill` — el dato es el contenido. Entre pastillas manda la altitud: en una
@@ -69,7 +72,7 @@ export const DOT = 12
  *   vale que un triángulo hueco tape una temperatura.
  */
 export const RANK = {
-  fireAlert: 0,
+  fireAlert: -1,
   placeMajor: 0,
   placeMinor: 2,
   fireQuiet: 2.5,
