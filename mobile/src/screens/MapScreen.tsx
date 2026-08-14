@@ -62,9 +62,10 @@ export function MapScreen() {
   const [selection, setSelection] = useState<Selection | null>(null)
   const [stopsZoomReached, setStopsZoomReached] = useState(false)
   /**
-   * La hoja del estado de la isla. Mientras esté cerrada NO se pide nada: el
-   * TNG es un observatorio ajeno, la ETo es otra llamada al modelo y recorrer
-   * los 49 senderos cuesta cómputo. En un teléfono eso es batería.
+   * La hoja del estado de la isla. Mientras esté cerrada no se calcula lo que
+   * solo ella enseña: la ETo es otra llamada al modelo y recorrer los 49
+   * senderos cuesta cómputo, y en un teléfono eso es batería. El parte del
+   * TNG ya no está en esa lista —ver abajo—.
    */
   const [islandSheet, setIslandSheet] = useState(false)
 
@@ -96,7 +97,13 @@ export function MapScreen() {
    */
   const wind = useWindField(island.dem, island.stations, island.lastUpdate)
 
-  const roque = useRoque(islandSheet)
+  /**
+   * El parte de la cumbre SE PIDE SIEMPRE, no solo con la hoja abierta. Es el
+   * único termómetro real por encima de 1561 m y entra en el motor: atarlo a un
+   * acordeón haría que el mapa de la cumbre cambiara según qué tuviera abierto
+   * el usuario. El hook lo decidió así en `@core`; aquí solo se le deja.
+   */
+  const roque = useRoque()
   const agro = useAgro(island.dem, islandSheet)
   const trailReports = useTrailReports(
     island.trails,

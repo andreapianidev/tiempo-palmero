@@ -11,6 +11,7 @@ El orden:
 
 ```bash
 npm test && npm run build      # los umbrales del motor NO se relajan
+(cd mobile && npm run typecheck)   # el móvil compila contra el mismo `src/`
 git add -A && git commit
 git push origin main           # main es la rama de producción
 vercel --prod                  # despliegue, proyecto tiempo-palmero
@@ -19,6 +20,14 @@ vercel --prod                  # despliegue, proyecto tiempo-palmero
 Después, comprobar que el despliegue está `Ready` y que la URL de producción
 responde. Si el trabajo se hizo en una rama, se mergea a `main` antes de
 desplegar; no se deja nada colgando en una rama.
+
+**El móvil entra en la puerta, y no es opcional.** `mobile/` importa `../src`
+con el alias `@core/*`: cambiar la firma de un hook o de una función de `lib/`
+rompe la app aunque la web compile y los tests pasen. Ya ocurrió —`useRoque()`
+perdió su parámetro, la web se actualizó y `MapScreen.tsx` se quedó llamándolo
+con uno—, y como TypeScript era lo único que se quejaba y nadie lo ejecutaba,
+la deriva vivió varios commits sin que nada la delatara. Cuando haya
+actualizaciones por aire, esa misma deriva llegaría a los teléfonos en minutos.
 
 ## Nada de archivos monolíticos
 
