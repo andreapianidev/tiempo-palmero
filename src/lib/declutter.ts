@@ -70,12 +70,21 @@ export const DOT = 12
  * - `placeMinor` — contexto.
  * - `fireQuiet` — una cámara SIN aviso también es contexto, y va la última: no
  *   vale que un triángulo hueco tape una temperatura.
+ * - `webcam` — y detrás de todo va la webcam, por el mismo motivo y con un
+ *   agravante. El triángulo de incendio es una silueta y deja ver lo que hay
+ *   debajo; el pin de una webcam es un cuadrado macizo de quince píxeles, así
+ *   que cuando cae sobre una pastilla no la estorba: la tacha. Se vio en
+ *   Tirimaga el 14 de agosto de 2026, con el pin justo en medio de una lectura
+ *   de 24 °C que en pantalla se leía **«2◉4°»** — el mismo accidente que las
+ *   cámaras de incendio, calcado, un día después de arreglar aquél. Una foto
+ *   del paisaje nunca vale más que la temperatura que tapa.
  */
 export const RANK = {
   fireAlert: -1,
   placeMajor: 0,
   placeMinor: 2,
   fireQuiet: 2.5,
+  webcam: 2.6,
 } as const
 
 /**

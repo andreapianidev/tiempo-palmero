@@ -1211,16 +1211,27 @@ export function MapView(props: Props) {
       })
     }
 
-    /**
-     * Las webcams se saltan el REPARTO pero no la OCLUSIÓN. Son dos cosas
-     * distintas y solo una es opcional: amontonarse es cuestión de legibilidad
-     * —siete de ellas están dentro del recinto del observatorio y esconderlas
-     * por vecinas dejaría el Roque con un icono—, pero dibujar uno delante de
-     * la montaña que lo tapa es dibujarlo en el sitio equivocado.
+    /*
+     * Las webcams SÍ entran en el reparto, y no lo hacían.
+     *
+     * El razonamiento para dejarlas fuera era que amontonarse es cuestión de
+     * legibilidad y que siete de ellas caen dentro del recinto del
+     * observatorio, así que repartirlas dejaría el Roque con un icono. Estaba
+     * mal: lo que se amontona no son ellas entre sí, es cada una contra las
+     * pastillas de las estaciones, y el pin es un cuadrado macizo que no estorba
+     * la cifra sino que la tacha. Salió «2◉4°» en Tirimaga. En el Roque se
+     * apilan a zoom bajo y se separan al acercarse, que es lo que hacen todas.
+     *
+     * No son plegables: una webcam encogida a un punto se leería como un sensor
+     * más, y un punto no enseña ninguna foto.
      */
     for (const w of webcamsRef.current) {
-      if (covered(w.lon, w.lat)) behind.push(w.el)
-      else w.el.style.visibility = 'visible'
+      if (covered(w.lon, w.lat)) {
+        behind.push(w.el)
+        continue
+      }
+      els.push(w.el)
+      items.push({ rank: RANK.webcam, collapsible: false, box: box(map, w.el, w.lon, w.lat) })
     }
 
     const placement = place(items)

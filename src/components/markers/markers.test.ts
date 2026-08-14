@@ -26,6 +26,8 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
+const MAPVIEW = join(__dirname, '../MapView.tsx')
+
 const STYLES = join(__dirname, '../../styles')
 const ROOT = join(__dirname, '../../styles.css')
 
@@ -75,5 +77,47 @@ describe('CSS de los marcadores', () => {
       }
     }
     expect(offenders).toEqual([])
+  })
+})
+
+/**
+ * Todo marcador tiene que pasar por el reparto.
+ *
+ * ES LA SEGUNDA VEZ QUE ESTO FALLA, y las dos igual. Las cámaras de incendio se
+ * dibujaban con `z-index` 50 sin entrar en `declutter`, y un triángulo cayó
+ * sobre una pastilla: en pantalla se leía «29▲1°», con el aviso camuflado de
+ * coma decimal. Se arregló, se escribió el porqué en la cabecera de
+ * `lib/declutter.ts`… y al día siguiente las webcams entraron con el mismo
+ * defecto: el pin cayó sobre una lectura de 24 °C y salió «2◉4°».
+ *
+ * Un test de `place()` no puede cazarlo, porque `place()` no se entera de lo
+ * que no le llega. Lo que se comprueba aquí es lo otro: que toda colección de
+ * marcadores que `MapView` guarda en una ref aparezca DENTRO de `declutterImpl`.
+ * Es una comprobación sobre el texto del fichero, y es tosca, pero cubre
+ * exactamente el descuido que ya ha ocurrido dos veces — añadir una capa de
+ * marcadores y olvidarse de meterla en el reparto.
+ */
+describe('marcadores y reparto', () => {
+  const source = readFileSync(MAPVIEW, 'utf8')
+
+  /** Refs que guardan elementos del DOM colocados sobre el mapa. */
+  const markerRefs = [...source.matchAll(/const (\w+Ref) = useRef<[^>]*\{ el: HTMLElement/g)].map(
+    (m) => m[1],
+  )
+
+  it('encuentra las colecciones de marcadores que tiene que vigilar', () => {
+    // Si un refactor cambiara la forma de declararlas, esto quedaría en cero y
+    // el test de abajo pasaría sin comprobar nada.
+    expect(markerRefs.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('mete todas en el reparto', () => {
+    const from = source.indexOf('const declutterImpl = ')
+    const to = source.indexOf('const declutterRef = ')
+    expect(from).toBeGreaterThan(0)
+    expect(to).toBeGreaterThan(from)
+    const body = source.slice(from, to)
+    const forgotten = markerRefs.filter((ref) => !body.includes(ref))
+    expect(forgotten).toEqual([])
   })
 })

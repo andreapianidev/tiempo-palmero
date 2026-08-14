@@ -15,6 +15,13 @@ const fire = (x: number, y: number, alert: boolean): DeclutterItem => ({
   box: { x, y, w: 18, h: 18 },
 })
 
+/** El pin de una webcam: un cuadrado macizo de 15 px, y nunca encogible. */
+const webcam = (x: number, y: number): DeclutterItem => ({
+  rank: RANK.webcam,
+  collapsible: false,
+  box: { x, y, w: 15, h: 15 },
+})
+
 const placeLabel = (x: number, y: number, major: boolean): DeclutterItem => ({
   rank: major ? RANK.placeMajor : RANK.placeMinor,
   collapsible: false,
@@ -48,6 +55,35 @@ describe('reparto del sitio en el mapa', () => {
     const [pastilla, aviso] = place([pill(300, 300), fire(300, 300, true)])
     expect(aviso).toBe('full')
     expect(pastilla).not.toBe('full')
+  })
+
+  it('una webcam no tacha una temperatura: se aparta ella', () => {
+    // El accidente del 14 de agosto de 2026: el pin de Tirimaga cayó en medio
+    // de una pastilla de 24 °C y en pantalla se leía «2◉4°». El pin es macizo,
+    // así que no estorba la cifra — la borra. Manda siempre la cifra.
+    const r = place([webcam(100, 100), pill(100, 100)])
+    expect(r).toEqual(['hidden', 'full'])
+  })
+
+  it('una webcam tapada desaparece, no se encoge a un punto', () => {
+    // Encogida se leería como un sensor más, y un punto no enseña ninguna foto.
+    const r = place([pill(200, 200), webcam(200, 200)])
+    expect(r[1]).toBe('hidden')
+    expect(r[1]).not.toBe('dot')
+  })
+
+  it('la webcam es lo último de la tabla, por detrás incluso del incendio quieto', () => {
+    // Las dos son contexto, pero el triángulo es una silueta y deja ver debajo.
+    expect(RANK.webcam).toBeGreaterThan(RANK.fireQuiet)
+    const r = place([webcam(300, 300), fire(300, 300, false)])
+    expect(r).toEqual(['hidden', 'full'])
+  })
+
+  it('dos webcams lejos no se estorban: solo se apartan cuando se pisan', () => {
+    // En el recinto del observatorio hay siete a pocos metros: a zoom bajo se
+    // quedará una, y al acercarse se separan y salen todas.
+    expect(place([webcam(0, 0), webcam(400, 400)])).toEqual(['full', 'full'])
+    expect(place([webcam(0, 0), webcam(8, 0)])).toEqual(['full', 'hidden'])
   })
 
   it('una cámara SIN aviso no le quita el sitio a una temperatura', () => {
