@@ -67,6 +67,18 @@ export interface WebcamSite {
    * `Last-Modified`— y la ficha lo dice en vez de fingir que lo sabe.
    */
   stampedClock: boolean
+  /**
+   * Cada cuántos minutos publica, MEDIDO, y solo cuando es lo bastante lenta
+   * como para que haya que decirlo. La mayoría renueva en menos de cinco
+   * minutos y anotarlo sería ruido; las que están aquí enseñan una foto que
+   * puede tener horas, y quien la mira tiene derecho a saberlo antes de sacar
+   * conclusiones sobre el tiempo que hace.
+   *
+   * Va en el catálogo y no se detecta en marcha porque no se puede: estas son
+   * justamente las del Cabildo, que no mandan `Last-Modified`. Con las que sí
+   * lo mandan no hace falta —`lib/webcams/freshness.ts` avisa solo—.
+   */
+  slowMinutes?: number
   views: WebcamView[]
 }
 
@@ -95,17 +107,23 @@ const CABILDO_SITES: WebcamSite[] = [
     owner: CABILDO,
     operator: 'cabildo',
     stampedClock: true,
+    slowMinutes: 120,
+    /*
+     * AQUÍ HABÍA UN SEGUNDO ÁNGULO, `99876586`, Y ESTÁ MUERTO.
+     *
+     * Respondía `200 image/jpeg` con puntualidad, que es justo lo que engaña:
+     * devolvió los MISMOS bytes en las nueve lecturas repartidas entre las
+     * 13:37 y las 16:06 UTC del 14 ago 2026, y su reloj impreso se quedó en las
+     * 09:59:30. Dos horas y media de sondeo sin moverse, con una foto de la
+     * mañana. No es lentitud: la panorámica de esta misma torre publica cada
+     * dos horas y en esa ventana renovó dos veces.
+     *
+     * Queda escrito en vez de borrado a secas para que no vuelva a entrar la
+     * próxima vez que alguien barra los identificadores de `polimer` y lo vea
+     * contestar tan educadamente como los demás.
+     */
     views: [
-      { id: '99876593', label: 'Panorámica', url: 'https://polimer.lapalma.es/webcam/99876593' },
-      // Segundo ángulo del mismo emplazamiento. No figura en el dataset, así
-      // que no tiene posición propia y se cuelga del sitio, que es lo que es.
-      //
-      // ES LA MÁS LENTA DEL CATÁLOGO: en media hora de seguimiento (tres
-      // lecturas, 14 ago 2026) no cambió ni una vez, mientras la panorámica de
-      // esta misma torre publicaba dos imágenes. Se queda porque responde y
-      // porque el sitio está vivo, pero es la primera candidata a caerse si
-      // alguna vez hay que podar.
-      { id: '99876586', label: 'Segundo ángulo', url: 'https://polimer.lapalma.es/webcam/99876586' },
+      { id: '99876593', label: null, url: 'https://polimer.lapalma.es/webcam/99876593' },
     ],
   },
   {
@@ -119,6 +137,8 @@ const CABILDO_SITES: WebcamSite[] = [
     owner: CABILDO,
     operator: 'cabildo',
     stampedClock: true,
+    // Reloj impreso: 15:05:11 y 17:05:10. Dos horas clavadas.
+    slowMinutes: 120,
     views: [{ id: '99876587', label: null, url: 'https://polimer.lapalma.es/webcam/99876587' }],
   },
   {
@@ -169,6 +189,8 @@ const CABILDO_SITES: WebcamSite[] = [
     owner: CABILDO,
     operator: 'cabildo',
     stampedClock: true,
+    // Reloj impreso: 14:09:22 y 16:09:23. Dos horas otra vez.
+    slowMinutes: 120,
     views: [{ id: '99876592', label: null, url: 'https://polimer.lapalma.es/webcam/99876592' }],
   },
   {

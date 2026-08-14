@@ -1,14 +1,22 @@
 /**
  * Cuándo una webcam ha dejado de ser una webcam y es una foto vieja.
  *
+ * A QUIÉN JUZGA, PRIMERO. Solo a las cámaras que mandan `Last-Modified`: las
+ * del observatorio y la del ayuntamiento. **Las del Cabildo quedan fuera por
+ * completo** —su nginx sirve con `no-store` y sin esa cabecera— y eso importa
+ * para leer la tabla de abajo: tres de ellas publican cada DOS HORAS, medido, y
+ * si el umbral las alcanzara habría que ponerlo en otro sitio. No las alcanza,
+ * porque de ellas no llega ninguna hora que juzgar. Lo suyo se declara a mano
+ * con `slowMinutes` en el catálogo.
+ *
  * EL UMBRAL ESTÁ MEDIDO, no elegido, y lo que hay que enseñar son las dos
- * orillas: cuánto tarda la cámara VIVA más lenta y cuánto llevaba parada la
- * MUERTA más reciente. Medido el 14 de agosto de 2026 sobre las 34 cámaras que
- * se llegaron a probar, incluidas las que no entraron al catálogo:
+ * orillas: cuánto tarda la VIVA más lenta *de las que sí mandan sello* y cuánto
+ * llevaba parada la MUERTA más reciente. Medido el 14 de agosto de 2026 sobre
+ * las 34 cámaras que se llegaron a probar, incluidas las descartadas:
  *
  * | | `Last-Modified` más viejo observado |
  * |---|---|
- * | Skywatch ORM — la viva más lenta del catálogo | **30 min** |
+ * | Skywatch ORM — la más lenta con sello, y viva | **30 min** |
  * | Mercator — nocturna, de día no publica | **14 h** |
  * | El Paso (la-palma-aktuell) — parada | 19 días |
  * | All-sky de Warwick — parada | 20 días |
@@ -18,12 +26,11 @@
  * Entre las dos orillas hay un factor de 28. **Tres horas** cae seis veces por
  * encima de la más lenta que sigue viva y casi cinco veces por debajo de la
  * parada más reciente, así que ni una cámara lenta se marca por serlo ni una
- * nocturna se cuela como fresca a mediodía. Si algún día se añade una que
- * publique cada dos horas, esto hay que volver a medirlo — no subirlo a ojo.
+ * nocturna se cuela como fresca a mediodía.
  *
- * NO SE APLICA A LAS DEL CABILDO, y no por descuido: su servidor no manda
- * `Last-Modified`, así que de ellas no hay ninguna hora que juzgar. Ver
- * `stampedClock` en el catálogo.
+ * SI ALGÚN DÍA ENTRA UNA CON SELLO QUE PUBLIQUE CADA DOS HORAS, esto deja de
+ * valer: tres horas estarían a un mísero factor 1,5 de ella. Habría que volver
+ * a medir las dos orillas, no subir el número a ojo.
  */
 
 /** Tres horas. Ver la tabla de arriba antes de tocarlo. */

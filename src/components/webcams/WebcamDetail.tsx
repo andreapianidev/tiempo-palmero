@@ -49,6 +49,15 @@ function bust(url: string, nonce: number): string {
   return u.toString()
 }
 
+/** «cada 25 minutos», «cada 2 horas». Redondeado: es una cadencia medida a ojo
+ *  de reloj, no un horario publicado, y darla al minuto la haría parecer otra
+ *  cosa. */
+function everyLabel(minutes: number): string {
+  if (minutes < 90) return `${Math.round(minutes / 5) * 5} minutos`
+  const hours = minutes / 60
+  return hours === 1 ? 'hora' : `${Math.round(hours * 2) / 2} horas`.replace('.5', ',5')
+}
+
 export function WebcamDetail({ site, now, onWeather }: Props) {
   const urls = useMemo(() => site.views.map((v) => v.url), [site])
   const ages = useWebcamAge(urls, true)
@@ -71,6 +80,13 @@ export function WebcamDetail({ site, now, onWeather }: Props) {
         </p>
         <p className="mono dim small">{site.municipality}</p>
       </header>
+
+      {/* Antes de las imágenes, no debajo: si la cámara tarda horas en
+          renovarse, eso hay que saberlo ANTES de mirar la foto y creerse que
+          es el tiempo de ahora. */}
+      {site.slowMinutes !== undefined && (
+        <p className="warn small">{t.webcams.slow(everyLabel(site.slowMinutes))}</p>
+      )}
 
       <div className="cam-shots">
         {site.views.map((view) => {

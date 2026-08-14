@@ -765,6 +765,9 @@ export const es = {
      * enseñar la hora de descarga, que es otra cosa.
      */
     stampedClock: 'La fecha y la hora van impresas dentro de la imagen.',
+    slow: (label: string) =>
+      `Esta cámara renueva cada ${label} aproximadamente: lo que se ve puede ser de hace ` +
+      `ese rato, no de ahora mismo. La hora exacta va impresa en la imagen.`,
     stale:
       'Esta imagen lleva horas sin renovarse: enseña el tiempo de entonces, no el de ahora. ' +
       'La cámara puede estar parada.',

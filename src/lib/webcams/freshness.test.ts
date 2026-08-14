@@ -14,11 +14,23 @@ const HOUR = 60 * MIN
 const NOW = Date.UTC(2026, 7, 14, 14, 0, 0)
 
 describe('frescura de una webcam', () => {
-  it('no marca la viva más lenta del catálogo', () => {
-    // Skywatch ORM, la que más tardó en publicar de las que siguen vivas.
+  it('no marca la más lenta de las que mandan sello', () => {
+    // Skywatch ORM, la que más tardó en publicar de las vivas con sello.
     expect(isWebcamStale(NOW - 30 * MIN, NOW)).toBe(false)
     // Y con holgura: el doble de esa espera tampoco la marca.
     expect(isWebcamStale(NOW - 60 * MIN, NOW)).toBe(false)
+  })
+
+  it('deja fuera a las de dos horas, que son las que no mandan sello', () => {
+    // Tres cámaras del Cabildo publican cada 120 min y a esa cadencia el umbral
+    // SÍ las marcaría. No llegan aquí porque su servidor no manda
+    // `Last-Modified` y `useWebcamAge` devuelve null; lo suyo se declara con
+    // `slowMinutes`. Este test fija esa dependencia: si algún día empezaran a
+    // mandar sello, saltaría, que es exactamente cuando hay que volver a medir.
+    expect(isWebcamStale(null, NOW)).toBe(false)
+    expect(isWebcamStale(NOW - 150 * MIN, NOW)).toBe(false)
+    // Pero a las tres horas y media ya no se le concede el beneficio de la duda.
+    expect(isWebcamStale(NOW - 210 * MIN, NOW)).toBe(true)
   })
 
   it('marca la parada más reciente que se llegó a medir', () => {

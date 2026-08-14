@@ -129,7 +129,7 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   por cada acceso a sendero, separando coches, motos, pesados, bicicletas y
   peatones, con los últimos ocho días en barras y el denominador de la red a la
   vista (ver [los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece)).
-- **Webcam de la isla**: 18 emplazamientos y 27 ángulos, de las 60 que publica
+- **Webcam de la isla**: 18 emplazamientos y 26 ángulos, de las 60 que publica
   el Cabildo, en una sola capa. Al pinchar una salen sus imágenes, de cuándo es
   cada una y quién la opera (ver
   [las webcam](#las-webcam-y-el-dataset-que-apunta-a-un-servidor-caído)).
@@ -704,7 +704,7 @@ de 2024.
 Las cámaras no se han apagado: **se han mudado**. El Cabildo las sirve ahora
 desde `polimer.lapalma.es`, el backend de su portal `webcam.lapalma.es`, en
 JPEG de 2688×1520 por HTTPS. Barriendo el rango de identificadores y
-contrastando con los rótulos del portal salen **13 imágenes vivas**, entre ellas
+contrastando con los rótulos del portal salen **13 imágenes en pie**, entre ellas
 tres que el portal enseña y el dataset no. Dos de esos emplazamientos son torres
 de vigilancia de incendios: Las Tricias cae a **39 m** de la cámara `WTER 01` de
 la capa de incendios y San Antonio del Monte a **8 m** de `WTER 02`. No es la
@@ -731,12 +731,40 @@ de un «actualizado hace un momento» para todos:
   descarga como hora de la imagen: una panorámica puede llevar dos horas
   congelada y descargarse ahora mismo.
 
-Y la cadencia no es uniforme. Midiendo doce cámaras del Cabildo con tres
-lecturas separadas quince minutos, el 14 ago 2026 entre las 13:37 y las 14:07
-UTC: **diez publicaron dos o tres imágenes distintas en esa media hora, y dos no
-cambiaron ni una vez**. A los quince minutos sólo se habían movido seis, así que
-media hora es la ventana mínima para no confundir «lenta» con «parada». Ninguna
-declara su ritmo, así que la aplicación no lo promete.
+### La cadencia, y por qué medirla mal cuesta cámaras vivas
+
+Ninguna declara cada cuánto publica, así que hubo que cronometrarlas — y el
+primer par de intentos dio veredictos falsos, los dos en la misma dirección:
+marcar como muertas cámaras que funcionaban.
+
+| Ventana | Veredicto sobre las 12 del Cabildo |
+|---|---|
+| 15 min, 2 lecturas | 6 «paradas» |
+| 30 min, 3 lecturas | 2 «paradas» |
+| 54 min, 4 lecturas | 3 «paradas» |
+| **2 h 30, 9 lecturas + reloj impreso** | **1 parada de verdad** |
+
+Lo que aparecía al alargar la ventana es que **tres cámaras del Cabildo
+publican cada dos horas exactas**. No aproximadamente: el reloj impreso de Las
+Tricias pasó de `11:56:31` a `13:56:32` y a `15:56:32`; el de San Antonio del
+Monte, de `15:05:11` a `17:05:10`; el de Tirimaga, de `14:09:22` a `16:09:23`.
+El resto renueva en minutos.
+
+Podar con una ventana más corta que la cámara más lenta es tirar cámaras vivas
+creyendo que se limpia, y es el error caro de los dos: una cámara lenta
+etiquetada como muerta desaparece y nadie vuelve a mirarla. Por eso
+`scripts/checks/webcams.ts` usa por defecto **cinco lecturas repartidas en tres
+horas**, y por eso las tres de dos horas están en la capa con su cadencia
+declarada en la ficha —`slowMinutes` en el catálogo— en vez de fuera.
+
+Fuera se quedó **una sola**, y respondía `200 image/jpeg` con toda puntualidad:
+el segundo ángulo de Las Tricias (`99876586`) devolvió los mismos bytes en las
+nueve lecturas entre las 13:37 y las 16:06 UTC, con el reloj impreso clavado en
+las `09:59:30`. Contestar no es estar vivo, y ésa es toda la moraleja.
+
+Los relojes impresos, además, **no son homogéneos**: unos escriben `DD-MM-AAAA`
+y otros `MM-DD-AAAA`, unos van en hora insular y otros en UTC. Por eso el
+control automático no los lee y se apoya en que la imagen cambie.
 
 Quedan fuera, y la sección del panel lo dice: las diez del servidor caído, las
 que solo funcionan de noche (Mercator, las all-sky de MAGIC), las congeladas

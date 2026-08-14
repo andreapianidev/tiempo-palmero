@@ -8,7 +8,7 @@
  * servidor en pie fallaría diciendo algo del servidor y no del código—. Esto sí
  * toca la red, y por eso se ejecuta a mano:
  *
- *   npx tsx scripts/checks/webcams.ts            # 4 lecturas, 18 min de espera
+ *   npx tsx scripts/checks/webcams.ts            # 5 lecturas en 3 h
  *   npx tsx scripts/checks/webcams.ts 3 600      # 3 lecturas cada 600 s
  *
  * QUÉ MIDE, Y POR QUÉ NO BASTA CON PEDIRLA UNA VEZ. Un `200 image/jpeg` no
@@ -17,11 +17,17 @@
  * dos es que la imagen CAMBIE, así que esto pide cada URL varias veces
  * separadas en el tiempo y cuenta cuántas imágenes distintas salieron.
  *
- * LA VENTANA IMPORTA. Con quince minutos, seis de las doce cámaras del Cabildo
- * parecían paradas y sólo lo estaban dos: la ventana corta confunde «lenta» con
- * «muerta», y podar por ella habría tirado cuatro cámaras vivas. De ahí que por
- * defecto sean cuatro lecturas repartidas en casi una hora. Es lento a
- * propósito: es la única forma de que el veredicto signifique algo.
+ * LA VENTANA IMPORTA, Y MÁS DE LO QUE PARECE. La primera versión de esto usaba
+ * quince minutos: seis de las doce cámaras del Cabildo parecían paradas y sólo
+ * lo estaban dos. Se subió a cincuenta y cuatro minutos, y aun así marcaba como
+ * parada la panorámica de Las Tricias — que resultó publicar **cada dos horas
+ * exactas**: el 14 ago 2026 su reloj impreso pasó de `11:56:31` a `13:56:32`.
+ *
+ * Por eso el defecto son cinco lecturas repartidas en tres horas. Podar con una
+ * ventana más corta que la cámara más lenta del catálogo es tirar cámaras vivas
+ * creyendo que se limpia, que es el error caro de los dos: una cámara lenta
+ * etiquetada como muerta desaparece y nadie vuelve a mirarla. Es lento a
+ * propósito, y se ejecuta a mano justamente por eso.
  *
  * QUÉ NO USA: el reloj impreso en la imagen. Es el sello más fiable que tienen
  * las del Cabildo, pero no se puede leer sin OCR y además **no es homogéneo**:
@@ -35,8 +41,9 @@
 import { createHash } from 'node:crypto'
 import { WEBCAM_SITES, type WebcamSite, type WebcamView } from '../../src/lib/webcams/catalog'
 
-const ROUNDS = Number(process.argv[2] ?? 4)
-const GAP_S = Number(process.argv[3] ?? 1080)
+const ROUNDS = Number(process.argv[2] ?? 5)
+/** 45 min × 4 esperas = 3 h de ventana. Ver «la ventana importa», arriba. */
+const GAP_S = Number(process.argv[3] ?? 2700)
 
 interface Reading {
   status: number | string
