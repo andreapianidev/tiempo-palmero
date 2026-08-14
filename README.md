@@ -762,9 +762,34 @@ el segundo ángulo de Las Tricias (`99876586`) devolvió los mismos bytes en las
 nueve lecturas entre las 13:37 y las 16:06 UTC, con el reloj impreso clavado en
 las `09:59:30`. Contestar no es estar vivo, y ésa es toda la moraleja.
 
-Los relojes impresos, además, **no son homogéneos**: unos escriben `DD-MM-AAAA`
-y otros `MM-DD-AAAA`, unos van en hora insular y otros en UTC. Por eso el
-control automático no los lee y se apoya en que la imagen cambie.
+#### Y al final el reloj impreso sí se lee
+
+Durante un rato el control se apoyó solo en «¿cambia la imagen?», porque los
+relojes impresos **no son homogéneos**: unos escriben `DD-MM-AAAA` y otros
+`MM-DD-AAAA`, unos van en hora insular y otros en UTC, y ninguno está
+sincronizado con nada —el del Mirador de El Time se leyó seis minutos atrasado
+a las 13:37 UTC y nueve adelantado a las 16:36 del mismo día—. Pero rendirse ahí
+costaba tres horas de espera por cada comprobación.
+
+Se leen. El rótulo no es texto con antialias: es una **fuente de mapa de bits de
+7×10 escalada ×4**, idéntica píxel a píxel en todas las capturas, así que
+comparar contra plantillas es exacto donde un OCR sería aproximado — y no añade
+ninguna dependencia. `scripts/checks/stamp.ts` busca la franja del rótulo por su
+firma (bloques de tinta a paso constante), la binariza con Otsu sobre el propio
+recuadro, y compara cada glifo con las doce plantillas de
+`stamp-font.ts`. Nueve de las doce cámaras del Cabildo se leen con **cero por
+ciento de error** en los caracteres de la fecha; en las otras tres el rótulo cae
+sobre hierba al sol o sobre laurisilva y el contraste no da.
+
+Las dos ambigüedades no se resuelven inventando: se devuelven **todas** las
+interpretaciones posibles y se usa la **edad mínima**. Si hasta la lectura más
+favorable dice que la foto tiene cinco horas, está muerta, y ninguna cámara viva
+puede caer por el margen de una hora entre husos.
+
+El resultado es que el control ya no espera tres horas por sistema. De las 26
+vistas, **22 se resuelven con una sola petición** —doce por `Last-Modified`,
+nueve por el reloj impreso, dos marcadas por su cadena TLS— y la ventana larga
+la esperan solo las cuatro que no se han podido fechar.
 
 Quedan fuera, y la sección del panel lo dice: las diez del servidor caído, las
 que solo funcionan de noche (Mercator, las all-sky de MAGIC), las congeladas
