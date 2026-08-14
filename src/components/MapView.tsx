@@ -326,6 +326,12 @@ export function MapView(props: Props) {
    * sobre una pastilla se leía como parte de la cifra. Ver `declutterImpl`.
    */
   const firesRef = useRef<{ el: HTMLElement; lon: number; lat: number; alert: boolean }[]>([])
+  /**
+   * Las webcams. No compiten por el sitio —ver el bloque que las crea— pero sí
+   * tienen que esconderse cuando hay montaña delante: una cámara del Roque
+   * dibujada sobre la ladera que la tapa se lee como si estuviera en la ladera.
+   */
+  const webcamsRef = useRef<{ el: HTMLElement; lon: number; lat: number }[]>([])
   const placeMarkersRef = useRef<maplibregl.Marker[]>([])
   const probeMarkerRef = useRef<maplibregl.Marker | null>(null)
   const meMarkerRef = useRef<maplibregl.Marker | null>(null)
@@ -1205,6 +1211,18 @@ export function MapView(props: Props) {
       })
     }
 
+    /**
+     * Las webcams se saltan el REPARTO pero no la OCLUSIÓN. Son dos cosas
+     * distintas y solo una es opcional: amontonarse es cuestión de legibilidad
+     * —siete de ellas están dentro del recinto del observatorio y esconderlas
+     * por vecinas dejaría el Roque con un icono—, pero dibujar uno delante de
+     * la montaña que lo tapa es dibujarlo en el sitio equivocado.
+     */
+    for (const w of webcamsRef.current) {
+      if (covered(w.lon, w.lat)) behind.push(w.el)
+      else w.el.style.visibility = 'visible'
+    }
+
     const placement = place(items)
     // Las escrituras van TODAS al final, después de la última lectura. Mezclarlas
     // con las consultas de posición devolvería el recálculo de diseño por
@@ -1495,13 +1513,17 @@ export function MapView(props: Props) {
       }
     }
 
-    // Las webcams NO entran en el reparto de `declutter`, al contrario que las
+    // Las webcams NO entran en el REPARTO de `declutter`, al contrario que las
     // pastillas y los triángulos de incendio. Es deliberado: el reparto existe
     // para que dos CIFRAS no se pisen y se lean como una sola, y aquí no hay
     // ninguna cifra que malinterpretar. Siete de los sitios están dentro del
     // recinto del observatorio, a metros unos de otros, y esconderlos por
     // solaparse dejaría el Roque —justo donde más webcams hay— con un icono.
     // Se amontonan a zoom bajo y se separan al acercarse, como los sensores.
+    //
+    // La OCLUSIÓN sí la hacen, y va en `declutterImpl` con las demás.
+    const cams: { el: HTMLElement; lon: number; lat: number }[] = []
+
     if (visible.webcams) {
       for (const site of WEBCAM_SITES) {
         const el = webcamMarkerElement(site, {
@@ -1509,11 +1531,13 @@ export function MapView(props: Props) {
           label: (s) => `${t.webcams.title}: ${s.name}`,
         })
         add(site.lon, site.lat, el, 48)
+        cams.push({ el, lon: site.lon, lat: site.lat })
       }
     }
 
     pillsRef.current = pills
     firesRef.current = fires
+    webcamsRef.current = cams
     declutter()
 
     return () => {
@@ -1521,6 +1545,7 @@ export function MapView(props: Props) {
       markersRef.current = []
       pillsRef.current = []
       firesRef.current = []
+      webcamsRef.current = []
     }
   }, [
     ready,

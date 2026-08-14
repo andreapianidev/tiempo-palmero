@@ -7,6 +7,27 @@
  * marcador tiene que leerse igual en el móvil de la isla y en un escritorio.
  */
 
+/*
+ * NO SE LE PONE `position` AQUÍ, y no es un olvido.
+ *
+ * MapLibre le añade a este mismo botón su clase `.maplibregl-marker`, que trae
+ * `position:absolute; top:0; left:0` y luego escribe la posición en pantalla
+ * como un `transform: translate(...)`. Nuestra hoja se carga DESPUÉS que la
+ * suya y con la misma especificidad —una clase contra una clase—, así que
+ * cualquier `position` que se declare aquí gana y tumba el `absolute`.
+ *
+ * Y tumbarlo hace exactamente lo que se vio: con `position:relative` el botón
+ * vuelve al flujo normal del contenedor de marcadores, así que su origen deja
+ * de ser la esquina del mapa y pasa a ser el hueco que le toque en el flujo.
+ * El `translate` de MapLibre se sigue aplicando encima, pero sobre un origen
+ * equivocado y distinto para cada marcador: en plano casi no se nota, y al
+ * inclinar la vista y arrastrar, las cámaras patinan sobre el relieve en vez
+ * de quedarse clavadas en su sitio. Lo cuida `markers.test.ts`.
+ *
+ * La insignia de la esquina se posiciona igual de bien: `.maplibregl-marker`
+ * ya es un elemento posicionado, así que sirve de referencia a un hijo
+ * absoluto sin que aquí haga falta declarar nada.
+ */
 .mk-cam {
   width: 15px;
   height: 15px;
@@ -18,7 +39,6 @@
   display: grid;
   place-items: center;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
-  position: relative;
 }
 
 /* El objetivo. Oscuro sobre el cuerpo, como una cámara de verdad. */

@@ -26,6 +26,7 @@
 import { useMemo, useState } from 'react'
 import { formatIslandTime } from '../../lib/cabildo'
 import type { WebcamSite } from '../../lib/webcams/catalog'
+import { isWebcamStale } from '../../lib/webcams/freshness'
 import { useWebcamAge } from './useWebcamAge'
 import { humanAge, n, t } from '../../i18n'
 
@@ -95,7 +96,10 @@ export function WebcamDetail({ site, now, onWeather }: Props) {
                 {failed[view.id] ? null : stamp !== null ? (
                   <>
                     {t.webcams.shotAt} <strong>{formatIslandTime(stamp)}</strong>
-                    <span className="dim"> · {humanAge(now - stamp)}</span>
+                    <span className={isWebcamStale(stamp, now) ? 'warn' : 'dim'}>
+                      {' '}
+                      · {humanAge(now - stamp)}
+                    </span>
                   </>
                 ) : site.stampedClock ? (
                   <span className="dim">{t.webcams.stampedClock}</span>
@@ -105,6 +109,13 @@ export function WebcamDetail({ site, now, onWeather }: Props) {
                   </span>
                 )}
               </p>
+              {/* Una foto de hace horas no es el tiempo de ahora, y a simple
+                  vista no se distingue de una recién tomada: la luz de una
+                  mañana despejada se parece a la de una tarde despejada. Si el
+                  origen da la hora y esa hora es vieja, se dice aquí. */}
+              {!failed[view.id] && isWebcamStale(stamp, now) && (
+                <p className="warn small">{t.webcams.stale}</p>
+              )}
             </figure>
           )
         })}

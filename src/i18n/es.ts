@@ -765,6 +765,9 @@ export const es = {
      * enseñar la hora de descarga, que es otra cosa.
      */
     stampedClock: 'La fecha y la hora van impresas dentro de la imagen.',
+    stale:
+      'Esta imagen lleva horas sin renovarse: enseña el tiempo de entonces, no el de ahora. ' +
+      'La cámara puede estar parada.',
     unreachable:
       'Esta cámara no ha respondido. Son equipos de terceros —un ayuntamiento, un telescopio— ' +
       'que se apagan o se reinician sin avisar; vuelve a intentarlo.',
