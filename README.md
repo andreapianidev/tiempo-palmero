@@ -48,7 +48,9 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
 - [La red de guaguas](#la-red-de-guaguas-y-los-sitios-que-ahora-se-pueden-encender)
   — la red en presente, el horario con su fecha delante ·
   [Los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece) — el
-  endpoint que se llama «hoy» y publica cinco minutos
+  endpoint que se llama «hoy» y publica cinco minutos ·
+  [Las webcam](#las-webcam-y-el-dataset-que-apunta-a-un-servidor-caído) — 29 de
+  60 URL vivos, y dónde se mudaron las del Cabildo
 - [El mapa de viento](#el-mapa-de-viento) — la única capa donde un modelo pinta
   sobre la isla, y cómo se declara ·
   [El histórico](#el-histórico-y-por-qué-no-hay-base-de-datos) — 2 MB por día en
@@ -127,6 +129,10 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   por cada acceso a sendero, separando coches, motos, pesados, bicicletas y
   peatones, con los últimos ocho días en barras y el denominador de la red a la
   vista (ver [los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece)).
+- **Webcam de la isla**: 18 emplazamientos y 27 ángulos, de las 60 que publica
+  el Cabildo, en una sola capa. Al pinchar una salen sus imágenes, de cuándo es
+  cada una y quién la opera (ver
+  [las webcam](#las-webcam-y-el-dataset-que-apunta-a-un-servidor-caído)).
 - **Relieve sombreado** del mismo modelo de elevación que alimenta el cálculo,
   recortado por la línea de costa que publica el Cabildo (ver [cómo se dibuja el
   relieve](#el-relieve-lo-dibuja-el-hillshade-de-maplibre-y-no-un-shader-propio)).
@@ -676,6 +682,66 @@ mientras el Cabildo no la rellene: es de tipo texto y está **vacía en las 4939
 filas de un día de histórico y en las 52 de `_lastdata`**. Se parsea igualmente
 para que aparezca sola el día que exista, y queda escrito aquí para que nadie la
 persiga como si fuera un fallo de la aplicación.
+
+### Las webcam, y el dataset que apunta a un servidor caído
+
+El mismo catálogo ArcGIS publica **`webcam`**, 60 registros con la posición de
+cada cámara de la isla y un campo `web` con el URL de su imagen. Es la capa que
+más prometía y la que peor estaba. Medido URL por URL el 14 de agosto de 2026:
+
+| | |
+|---|---:|
+| Registros en el dataset | 60 |
+| Devuelven una imagen | **29** |
+| De esos, congelados desde 2016–2020 | 4 |
+| Los diez del propio Cabildo | **0** |
+
+Los diez registros del Cabildo apuntan todos a `locserhom.ddns.net`, un dominio
+dinámico que resuelve a 88.8.134.114 y no acepta conexiones: seis intentos, seis
+tiempos de espera agotados en el puerto 443. El dataset no se toca desde marzo
+de 2024.
+
+Las cámaras no se han apagado: **se han mudado**. El Cabildo las sirve ahora
+desde `polimer.lapalma.es`, el backend de su portal `webcam.lapalma.es`, en
+JPEG de 2688×1520 por HTTPS. Barriendo el rango de identificadores y
+contrastando con los rótulos del portal salen **13 imágenes vivas**, entre ellas
+tres que el portal enseña y el dataset no. Dos de esos emplazamientos son torres
+de vigilancia de incendios: Las Tricias cae a **39 m** de la cámara `WTER 01` de
+la capa de incendios y San Antonio del Monte a **8 m** de `WTER 02`. No es la
+térmica —esa no publica imagen— sino la panorámica en visible de la misma torre.
+
+Por eso el catálogo de esta aplicación (`lib/webcams/catalog.ts`) **es estático
+y no una consulta en vivo**: consumir el dataset tal cual sería pedirle a cada
+visitante que descubra por su cuenta que dos tercios de la lista están muertos.
+Las posiciones sí salen de él, que para eso sigue siendo la fuente buena: las
+cámaras no se han movido de sitio, solo de servidor.
+
+**La hora de la foto es el punto delicado**, y hay tres casos distintos en vez
+de un «actualizado hace un momento» para todos:
+
+- Las del observatorio y la del ayuntamiento **mandan `Last-Modified`**, así que
+  la ficha enseña la hora real de la imagen. Como ninguna cámara manda cabeceras
+  CORS, esa cabecera la lee `api/webcam`, que hace un HEAD y devuelve solo la
+  fecha: **la imagen no pasa por el proxy**, porque son hasta 1,2 MB y el
+  navegador puede pedírsela al origen él solo.
+- Las del Cabildo **no la mandan** —nginx con `no-store`— pero llevan la fecha y
+  la hora **impresas dentro del JPEG**. La ficha remite a ese rótulo.
+- Si no hay ninguna de las dos cosas, se dice solo cuándo la hemos descargado
+  nosotros, etiquetado como tal. Lo que nunca se hace es presentar la hora de
+  descarga como hora de la imagen: una panorámica puede llevar dos horas
+  congelada y descargarse ahora mismo.
+
+Y la cadencia no es uniforme. Midiendo las doce del Cabildo con dos lecturas
+separadas 15 minutos, **seis habían cambiado de imagen y seis no**; la de Las
+Tricias, descargada a las 13:37 UTC, traía impresas las 11:56. Ninguna declara
+su ritmo, así que la aplicación no lo promete.
+
+Quedan fuera, y la sección del panel lo dice: las diez del servidor caído, las
+que solo funcionan de noche (Mercator, las all-sky de MAGIC), las congeladas
+desde junio o julio, y las de alojamientos y particulares —que funcionan, pero
+no tienen licencia de reutilización ni publican coordenadas—. Las que entran del
+Cabildo sí la tienen: su «Aviso Legal» autoriza la reutilización comercial y no
+comercial citando la fuente.
 
 ### Faros, antenas de TDT y la cobertura móvil de 2013 (agosto 2026)
 
@@ -1613,6 +1679,7 @@ src/lib/
   ├── dem.ts              Lectura del DEM y muestreo bilineal
   ├── grid.ts             Malla raster de ~200 m
   ├── counters/           Aforos: modelo del día, del pulso y del censo
+  ├── webcams/            Catálogo depurado de webcams, con su procedencia
   └── cabildo.ts          Cliente de la API, decodificación posicional
 ```
 

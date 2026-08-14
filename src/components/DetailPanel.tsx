@@ -21,6 +21,8 @@ import { RouteDetail } from './guagua/RouteDetail'
 import { PlaceDetail, type PlaceSelection } from './places/PlaceDetail'
 import { RoadDetail, type RoadSelection } from './places/RoadDetail'
 import { CounterDetail, type CounterSelection } from './counters/CounterDetail'
+import { WebcamDetail } from './webcams/WebcamDetail'
+import type { WebcamSite } from '../lib/webcams/catalog'
 import type { GuaguaNetwork } from '../lib/guagua/network'
 import { n, n0, t, humanAge } from '../i18n'
 
@@ -42,6 +44,7 @@ export type Selection =
   | { kind: 'place'; value: PlaceSelection }
   | { kind: 'road'; value: RoadSelection }
   | { kind: 'counter'; value: CounterSelection }
+  | { kind: 'webcam'; value: WebcamSite }
 
 interface Props {
   selection: Selection
@@ -141,6 +144,9 @@ export function DetailPanel({
       {selection.kind === 'road' && <RoadDetail road={selection.value} onWeather={onWeather} />}
       {selection.kind === 'counter' && (
         <CounterDetail site={selection.value} now={now} onWeather={onWeather} />
+      )}
+      {selection.kind === 'webcam' && (
+        <WebcamDetail site={selection.value} now={now} onWeather={onWeather} />
       )}
     </section>
   )

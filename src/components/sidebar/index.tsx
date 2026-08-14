@@ -32,6 +32,8 @@ import { NetworkHealth, faultyOf } from './NetworkHealth'
 import { HiddenStations } from './HiddenStations'
 import { WindStatus } from './WindStatus'
 import { CounterStatus } from './CounterStatus'
+import { WebcamStatus } from './WebcamStatus'
+import { WEBCAM_SITES } from '../../lib/webcams/catalog'
 import { GuaguaHint } from './GuaguaHint'
 import { OsmRoadsHint } from './OsmRoadsHint'
 import { TdtHint } from './TdtHint'
@@ -389,6 +391,12 @@ export function Sidebar(props: Props) {
                 loading={props.counters.loading}
                 error={props.counters.error}
               />
+            </Section>
+          )}
+
+          {props.visible.webcams && (
+            <Section title={t.layers.webcams} defaultOpen badge={`${WEBCAM_SITES.length}`}>
+              <WebcamStatus />
             </Section>
           )}
 

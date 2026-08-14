@@ -1,0 +1,97 @@
+/*
+ * La capa de webcams: el pin y la ficha.
+ *
+ * El pin es un objetivo de cámara dibujado con dos círculos, no un glifo de
+ * texto como el triángulo de incendios. El motivo es el tamaño: a 13 px un
+ * emoji de cámara se convierte en una mancha distinta en cada sistema, y el
+ * marcador tiene que leerse igual en el móvil de la isla y en un escritorio.
+ */
+
+.mk-cam {
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1.5px solid rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
+  background: #b9a26a;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  position: relative;
+}
+
+/* El objetivo. Oscuro sobre el cuerpo, como una cámara de verdad. */
+.mk-cam-lens {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(20, 19, 17, 0.85);
+}
+
+/* Quién la opera, por color. El Cabildo en ocre —el mismo del resto de datos
+   insulares—, el observatorio en el violeta de la calidad del cielo, porque
+   está justo donde están los fotómetros, y lo municipal en gris. */
+.mk-cam-cabildo { background: #b9a26a; }
+.mk-cam-iac { background: #8f8fd8; }
+.mk-cam-ayuntamiento { background: #9aa39a; }
+
+/* Cuántos ángulos tiene, cuando tiene más de uno: al pinchar salen todos. */
+.mk-cam-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 11px;
+  height: 11px;
+  padding: 0 2px;
+  border-radius: 6px;
+  background: #141311;
+  color: var(--fg);
+  font: 600 8px/11px var(--sans);
+  text-align: center;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+/* --- la ficha ------------------------------------------------------------ */
+
+.chip-cam-cabildo { background: #b9a26a; color: #141311; }
+.chip-cam-iac { background: #8f8fd8; color: #141311; }
+.chip-cam-ayuntamiento { background: #9aa39a; color: #141311; }
+
+.cam-shots {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.cam-shot {
+  margin: 0;
+}
+
+.cam-shot img {
+  display: block;
+  width: 100%;
+  /* Las del Cabildo son 2688×1520 (16:9) y las del observatorio 4:3. Se deja
+     que cada una traiga su proporción en vez de recortarlas a una común: en
+     una panorámica de cumbre, el trozo que se perdería es justo el horizonte. */
+  height: auto;
+  border-radius: 4px;
+  background: #1c1a18;
+  /* Mientras carga, un hueco con la altura aproximada en vez de un salto del
+     panel entero cuando llega el JPEG. */
+  min-height: 90px;
+}
+
+.cam-when {
+  margin: 4px 0 0;
+}
+
+/* En vez del icono roto del navegador, que no dice de quién es la culpa. */
+.cam-failed {
+  margin: 0;
+  padding: 14px 12px;
+  border: 1px dashed rgba(200, 195, 188, 0.35);
+  border-radius: 4px;
+  background: #1c1a18;
+}

@@ -58,6 +58,10 @@ const INITIAL_LAYERS: LayerVisibility = {
   tdt: false,
   counters: false,
   fire: true,
+  // Apagada al llegar. No cuesta red —el catálogo es estático y las imágenes
+  // solo se piden al abrir una ficha— pero son dieciocho iconos más sobre una
+  // isla que ya llega con estaciones, CO₂ y cámaras de incendios encendidas.
+  webcams: false,
   wind: false,
   // Apagada al llegar, como el viento y por el mismo motivo: es una capa
   // animada, y una animación que arranca sola le quita a la isla el primer
@@ -571,6 +575,13 @@ export default function App() {
               today: counters.today ?? '',
             },
           })
+        }}
+        onWebcam={(site) => {
+          setProbe(null)
+          // Se pasa el sitio del catálogo tal cual: aquí no hay nada que la app
+          // sepa y la fuente no —ni altitud ni municipio, que el catálogo ya
+          // trae—, así que envolverlo solo añadiría un tipo intermedio.
+          setSelection({ kind: 'webcam', value: site })
         }}
         onPoi={(poi) => {
           setProbe(null)

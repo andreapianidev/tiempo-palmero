@@ -38,6 +38,7 @@ const GLYPH: Record<Selection['kind'], string> = {
   place: '★',
   road: '⌁',
   counter: '⇅',
+  webcam: '⊙',
 }
 
 export interface PointHead {
@@ -190,6 +191,16 @@ function headOfSelection(
         leadColor: AMBER,
         title: selection.value.name,
         meta: t.counters.kinds[selection.value.kind] ?? t.counters.title,
+      }
+    case 'webcam':
+      return {
+        lead,
+        leadColor: AMBER,
+        // Quién la opera y no «Webcam» a secas: en la fila que asoma de la
+        // hoja, saber que la imagen es del Cabildo o de un telescopio es lo
+        // único que cambia la confianza que merece antes de desplegarla.
+        title: selection.value.name,
+        meta: `${t.webcams.title} · ${selection.value.owner}`,
       }
   }
 }

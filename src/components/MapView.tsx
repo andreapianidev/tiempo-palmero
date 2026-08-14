@@ -70,6 +70,8 @@ import { readPlace, type PlaceRecord } from '../lib/places'
 import { addPlaceIcons, addPoiIcons } from './MapIcons'
 import { readRoad, type RoadRecord } from '../lib/roads'
 import { counterMarkerElement } from './counters/CounterMarker'
+import { webcamMarkerElement } from './webcams/WebcamMarker'
+import { WEBCAM_SITES, type WebcamSite } from '../lib/webcams/catalog'
 import type { CounterSite } from '../lib/counters/model'
 import type { WindField } from '../lib/wind/field'
 import { estimateBundle, type Model, type InterpolableVariable } from '../lib/interpolate'
@@ -112,6 +114,11 @@ export interface LayerVisibility {
   tdt: boolean
   counters: boolean
   fire: boolean
+  /**
+   * Las webcams públicas de la isla. No cuesta ninguna petición encenderla: el
+   * catálogo es estático y las imágenes solo se piden al abrir una ficha.
+   */
+  webcams: boolean
   wind: boolean
   /**
    * La evaporación que sube del terreno. Es una capa y no un modo como la 3D:
@@ -238,6 +245,7 @@ interface Props {
   onPlace: (place: PlaceRecord) => void
   onRoad: (road: RoadRecord, lon: number, lat: number) => void
   onCounter: (site: CounterSite) => void
+  onWebcam: (site: WebcamSite) => void
   /**
    * Avisa de si el zoom da ya para ver las paradas. Se llama solo al cruzar el
    * umbral, no en cada fotograma de un gesto: es un booleano, no el zoom.
@@ -1487,6 +1495,23 @@ export function MapView(props: Props) {
       }
     }
 
+    // Las webcams NO entran en el reparto de `declutter`, al contrario que las
+    // pastillas y los triángulos de incendio. Es deliberado: el reparto existe
+    // para que dos CIFRAS no se pisen y se lean como una sola, y aquí no hay
+    // ninguna cifra que malinterpretar. Siete de los sitios están dentro del
+    // recinto del observatorio, a metros unos de otros, y esconderlos por
+    // solaparse dejaría el Roque —justo donde más webcams hay— con un icono.
+    // Se amontonan a zoom bajo y se separan al acercarse, como los sensores.
+    if (visible.webcams) {
+      for (const site of WEBCAM_SITES) {
+        const el = webcamMarkerElement(site, {
+          onClick: (s) => handlers.current.onWebcam(s),
+          label: (s) => `${t.webcams.title}: ${s.name}`,
+        })
+        add(site.lon, site.lat, el, 48)
+      }
+    }
+
     pillsRef.current = pills
     firesRef.current = fires
     declutter()
@@ -1517,6 +1542,9 @@ export function MapView(props: Props) {
     visible.sky,
     visible.fire,
     visible.counters,
+    // El catálogo es estático, así que aquí solo hace falta el interruptor: no
+    // hay unos datos de webcam que puedan llegar tarde y repintar.
+    visible.webcams,
     props.air,
     props.co2,
     props.sky,

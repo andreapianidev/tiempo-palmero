@@ -39,6 +39,9 @@ export const es = {
     tdt: 'Cobertura TDT (simulada)',
     counters: 'Aforos de tráfico y senderos',
     fire: 'Cámaras de incendios',
+    // Debajo de las de incendios porque dos de estos emplazamientos SON esas
+    // torres: la misma caseta, una con la térmica y otra con la panorámica.
+    webcams: 'Webcam de la isla',
     hillshade: 'Relieve sombreado',
   },
 
@@ -745,6 +748,40 @@ export const es = {
       'Esta red no publica ninguna marca de tiempo. La antigüedad se mide desde nuestra propia consulta.',
     lastPolled: 'Consultado',
     onlyFour: 'Solo existen 4 cámaras. La ausencia de alerta no prueba que no haya fuego.',
+  },
+
+  webcams: {
+    title: 'Webcam',
+    operator: 'Opera',
+    views: 'Ángulos',
+    reload: 'Actualizar la imagen',
+    shotAt: 'Imagen de las',
+    downloadedAt: 'Descargada a las',
+    imageAlt: (site: string, view: string | null) =>
+      view ? `Webcam de ${site} — ${view}` : `Webcam de ${site}`,
+    /**
+     * El caso del Cabildo: su servidor no manda `Last-Modified`, pero la
+     * cámara imprime la fecha dentro del propio JPEG. Decirlo es más útil que
+     * enseñar la hora de descarga, que es otra cosa.
+     */
+    stampedClock: 'La fecha y la hora van impresas dentro de la imagen.',
+    unreachable:
+      'Esta cámara no ha respondido. Son equipos de terceros —un ayuntamiento, un telescopio— ' +
+      'que se apagan o se reinician sin avisar; vuelve a intentarlo.',
+    fromCabildo: 'Del Cabildo',
+    fromOrm: 'Del observatorio',
+    fromOthers: 'Municipales',
+    cadence:
+      'Cada cámara publica a su ritmo, de unos minutos a más de una hora, y ninguna lo declara. ' +
+      'Donde el servidor da la hora de la foto, la ficha la enseña; donde no, lo dice.',
+    excluded:
+      'Solo están las que respondieron y tienen posición publicada. Quedan fuera las diez del ' +
+      'Cabildo que aún apuntan a un servidor caído, las que solo funcionan de noche, las ' +
+      'congeladas desde junio o julio, y las privadas de alojamientos y particulares, que no ' +
+      'tienen licencia de reutilización ni coordenadas.',
+    licenceCabildo:
+      'Cabildo Insular de La Palma. Reutilización autorizada (Ley 37/2007) citando la fuente.',
+    licenceThirdParty: 'Imagen del operador indicado, enlazada desde su propio servidor.',
   },
 
   sky: {

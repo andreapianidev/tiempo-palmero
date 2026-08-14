@@ -43,6 +43,9 @@ const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
   { id: 'tdt', label: t.layers.tdt },
   { id: 'counters', label: t.layers.counters },
   { id: 'fire', label: t.layers.fire },
+  // Pegada a las de incendios: dos de sus emplazamientos son las mismas torres
+  // de vigilancia, con la térmica en una capa y la panorámica en la otra.
+  { id: 'webcams', label: t.layers.webcams },
 ]
 
 /** Un icono representativo por familia, para la leyenda. */
