@@ -99,6 +99,12 @@ const CABILDO_SITES: WebcamSite[] = [
       { id: '99876593', label: 'Panorámica', url: 'https://polimer.lapalma.es/webcam/99876593' },
       // Segundo ángulo del mismo emplazamiento. No figura en el dataset, así
       // que no tiene posición propia y se cuelga del sitio, que es lo que es.
+      //
+      // ES LA MÁS LENTA DEL CATÁLOGO: en media hora de seguimiento (tres
+      // lecturas, 14 ago 2026) no cambió ni una vez, mientras la panorámica de
+      // esta misma torre publicaba dos imágenes. Se queda porque responde y
+      // porque el sitio está vivo, pero es la primera candidata a caerse si
+      // alguna vez hay que podar.
       { id: '99876586', label: 'Segundo ángulo', url: 'https://polimer.lapalma.es/webcam/99876586' },
     ],
   },

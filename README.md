@@ -731,10 +731,12 @@ de un «actualizado hace un momento» para todos:
   descarga como hora de la imagen: una panorámica puede llevar dos horas
   congelada y descargarse ahora mismo.
 
-Y la cadencia no es uniforme. Midiendo las doce del Cabildo con dos lecturas
-separadas 15 minutos, **seis habían cambiado de imagen y seis no**; la de Las
-Tricias, descargada a las 13:37 UTC, traía impresas las 11:56. Ninguna declara
-su ritmo, así que la aplicación no lo promete.
+Y la cadencia no es uniforme. Midiendo doce cámaras del Cabildo con tres
+lecturas separadas quince minutos, el 14 ago 2026 entre las 13:37 y las 14:07
+UTC: **diez publicaron dos o tres imágenes distintas en esa media hora, y dos no
+cambiaron ni una vez**. A los quince minutos sólo se habían movido seis, así que
+media hora es la ventana mínima para no confundir «lenta» con «parada». Ninguna
+declara su ritmo, así que la aplicación no lo promete.
 
 Quedan fuera, y la sección del panel lo dice: las diez del servidor caído, las
 que solo funcionan de noche (Mercator, las all-sky de MAGIC), las congeladas
