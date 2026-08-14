@@ -12,10 +12,11 @@
  * navegador; esto necesita uno.
  *
  * CUÁNTO CUESTA. Sobre la malla de 1024 × 1024 que se usa: rasterizar y leer,
- * unas decenas de milisegundos; consultar la cota del DEM en cada texel, algo
- * más de cien. Se hace UNA vez, la primera que se enciende el océano, y en
- * trozos, cediendo el hilo entre franjas para no congelar el mapa mientras
- * tanto.
+ * unas decenas de milisegundos; consultar la cota del DEM, otras tantas, y solo
+ * en los texeles de tierra, que son poco más de un tercio del recuadro —708 km²
+ * de isla en 1.891 km² de rectángulo—. Se hace UNA vez, la primera que se
+ * enciende el océano, y en trozos, cediendo el hilo entre franjas para no
+ * congelar el mapa mientras tanto.
  */
 
 import { elevationAt, SEA_LEVEL_M, type Dem } from '../dem'
@@ -131,6 +132,14 @@ export async function buildShorelineMap(
     for (let y = 0; y < size; y++) {
       const lat = latFromMercatorY(box.y0 + ((y + 0.5) / size) * box.height)
       for (let x = 0; x < size; x++) {
+        // EN EL MAR, CERO, y sin preguntarle al DEM. La cota se lee después
+        // interpolando entre texeles de 34 × 54 m, así que un solo texel de mar
+        // con cota se propaga hacia fuera media celda: frente a una pared de
+        // 60 m eso secaba una franja de agua de hasta 43 m pegada a la costa
+        // (medido en `coverage.test.ts`). El DEM, a 33,5 m por píxel, tiene su
+        // propia costa y no es esta: la que manda es el límite insular que
+        // acaba de rasterizarse, que es también la que dibuja el mapa.
+        if (!land[y * size + x]) continue
         const lon = lonFromMercatorX(box.x0 + ((x + 0.5) / size) * box.width)
         const h = elevationAt(dem, lon, lat)
         elevation[y * size + x] = h === null || h < SEA_LEVEL_M ? 0 : h

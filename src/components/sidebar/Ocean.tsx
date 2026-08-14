@@ -75,8 +75,9 @@ export function Ocean({
 
       {failed && (
         <p className="warn small">
-          No se ha podido traer el oleaje. El mar se queda quieto en vez de
-          inventarse uno.
+          No se ha podido preparar el mar —el oleaje, la costa o el fondo—. Se
+          queda quieto en vez de inventarse uno. Apagar y volver a encender lo
+          reintenta.
         </p>
       )}
 

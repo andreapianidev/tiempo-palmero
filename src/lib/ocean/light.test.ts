@@ -10,10 +10,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   CALIMA_ONSET,
+  NIGHT_OPACITY,
   calimaFactor,
   clearSkyIrradiance,
   clearnessIndex,
   oceanLight,
+  seaOpacity,
   surfaceLight,
   waterColors,
 } from './light'
@@ -201,5 +203,58 @@ describe('el color del agua', () => {
     expect(r).toBeCloseTo(0.618, 1)
     expect(g).toBeCloseTo(0.678, 1)
     expect(b).toBeCloseTo(0.772, 1)
+  })
+})
+
+/**
+ * CUÁNTO TAPA EL AGUA AL MAPA.
+ *
+ * El fallo que caza: de noche el agua se pintaba opaca —luminancia 0,027, lisa,
+ * sin destello— encima de una ortofoto de mediodía cuyo mar mide 0,053 de
+ * mediana, 0,130 de percentil 90 y llega a 0,92 en el reflejo del sol (medido
+ * el 14 de agosto de 2026 contra el servicio de GRAFCAN, frente a Tijarafe).
+ * No es que el agua fuera más oscura: es que se llevaba por delante todo el
+ * rango alto y el mar se veía como una plancha.
+ *
+ * Las dos orillas: dejar ver el mapa de noche no puede costar que a mediodía el
+ * agua deje de ser agua y se vea la foto por debajo.
+ */
+describe('lo que el agua tapa', () => {
+  it('de día es opaca', () => {
+    expect(seaOpacity(waterColors(oceanLight(NOON, LON, LAT)).lit)).toBeCloseTo(1, 6)
+  })
+
+  it('de noche deja pasar algo más de la mitad del mapa', () => {
+    const lit = waterColors(oceanLight(NIGHT, LON, LAT)).lit
+    expect(seaOpacity(lit)).toBeCloseTo(NIGHT_OPACITY, 6)
+    // Con la mediana del mar de la ortofoto por debajo, la composición sube de
+    // 0,027 a 0,041: sigue siendo de noche, pero el mapa se lee.
+    const compuesto = NIGHT_OPACITY * 0.027 + (1 - NIGHT_OPACITY) * 0.053
+    expect(compuesto).toBeGreaterThan(0.027)
+    expect(compuesto).toBeLessThan(0.053)
+  })
+
+  it('pero la espuma tapa a cualquier hora', () => {
+    const lit = waterColors(oceanLight(NIGHT, LON, LAT)).lit
+    expect(seaOpacity(lit, 1)).toBeCloseTo(1, 6)
+    expect(seaOpacity(lit, 0.5)).toBeGreaterThan(seaOpacity(lit, 0))
+  })
+
+  it('el amanecer no da un salto', () => {
+    // Sube con el sol y no se sale del rango en ninguna hora del día: el mar no
+    // puede cambiar de opacidad de golpe mientras alguien está mirando el mapa.
+    const at = (h: number) =>
+      seaOpacity(
+        waterColors(oceanLight(utc(`2026-08-13T${String(h).padStart(2, '0')}:00:00Z`), LON, LAT))
+          .lit,
+      )
+    for (let h = 0; h < 24; h++) {
+      expect(at(h), `a las ${h}:00 UTC`).toBeGreaterThanOrEqual(NIGHT_OPACITY - 1e-9)
+      expect(at(h), `a las ${h}:00 UTC`).toBeLessThanOrEqual(1 + 1e-9)
+    }
+    // Amanece hacia las 07:00 UTC: a esa hora ya tapa más que de noche y menos
+    // que a mediodía.
+    expect(at(7)).toBeGreaterThan(NIGHT_OPACITY)
+    expect(at(7)).toBeLessThan(at(13))
   })
 })

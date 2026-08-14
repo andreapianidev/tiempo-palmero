@@ -25,7 +25,14 @@
  *     a contraluz se vea verde y encendida.
  */
 
-import { FOAM_MOON, FOAM_SUN } from '../../../lib/ocean/light'
+import { FOAM_MOON, FOAM_SUN, LIT_FLOOR, NIGHT_OPACITY } from '../../../lib/ocean/light'
+import {
+  CLIFF_BAND_M,
+  CLIFF_RUNUP_SHARE,
+  RUNUP_FACTOR,
+  RUNUP_MAX_M,
+  RUNUP_MIN_M,
+} from '../../../lib/ocean/coverage'
 import { CONSTANTS, UNIFORMS, WAVE_FUNCTIONS } from './waves'
 
 export const FRAGMENT_SHADER = /* glsl */ `
@@ -37,6 +44,16 @@ precision mediump float;
 
 ${UNIFORMS}
 ${CONSTANTS}
+
+// Los de la orilla. Salen de \`lib/ocean/coverage.ts\`, que es donde se prueban.
+const float RUNUP_FACTOR = ${RUNUP_FACTOR.toFixed(4)};
+const float RUNUP_MIN_M = ${RUNUP_MIN_M.toFixed(2)};
+const float RUNUP_MAX_M = ${RUNUP_MAX_M.toFixed(2)};
+const float CLIFF_RUNUP_SHARE = ${CLIFF_RUNUP_SHARE.toFixed(4)};
+const float CLIFF_BAND_M = ${CLIFF_BAND_M.toFixed(2)};
+// Y los de la luz, de \`lib/ocean/light.ts\`.
+const float LIT_FLOOR = ${LIT_FLOOR.toFixed(4)};
+const float NIGHT_OPACITY = ${NIGHT_OPACITY.toFixed(4)};
 
 uniform sampler2D u_detailTex;
 uniform sampler2D u_backgroundTex;
@@ -140,15 +157,24 @@ void main() {
   // El agua sube y baja por la playa con cada ola: es el *swash*, y sin él la
   // línea de costa se ve pintada. La excursión es del orden de la altura de la
   // ola, y la fase la marca la propia cresta que está llegando.
+  //
+  // Es el gemelo exacto de \`lib/ocean/coverage.ts\`, de donde salen estos
+  // números y donde está medido lo que decide: que el mar llegue a la costa y
+  // que no se suba al acantilado. Si esto cambia, cambia allí.
   vec4 swell = trainAt(u_swellTex, p);
   vec4 chop = trainAt(u_windSeaTex, p);
   float waveHeight = max(swell.z, chop.z);
-  float runup = clamp(waveHeight * 1.3, 0.3, 9.0);
+  float runup = clamp(waveHeight * RUNUP_FACTOR, RUNUP_MIN_M, RUNUP_MAX_M);
   float push = runup * max(crest, 0.0);
   float soft = max(1.0, u_metersPerPixel * 1.2);
   float coverage = smoothstep(-push, -push + soft, shoreDist);
-  // Y no trepa por un acantilado: contra pared, el agua rebota, no sube.
-  coverage *= 1.0 - smoothstep(runup * 0.5, runup * 0.5 + 1.5, landHeight);
+  // Y no trepa por un acantilado: contra pared, el agua rebota, no sube. SOLO
+  // EN TIERRA: \`ashore\` vale 1 en la roca y 0 en cuanto se sale al mar, y sin
+  // él la cota del texel de al lado —34 m de lado, interpolada— secaba una
+  // franja de mar de hasta 43 m pegada a la costa.
+  float ashore = 1.0 - smoothstep(0.0, soft, shoreDist);
+  coverage *= 1.0 - ashore *
+    smoothstep(runup * CLIFF_RUNUP_SHARE, runup * CLIFF_RUNUP_SHARE + CLIFF_BAND_M, landHeight);
   if (coverage <= 0.001) discard;
 
   // --- 2. la superficie ---------------------------------------------------
@@ -299,6 +325,16 @@ void main() {
   color = mix(color, u_horizon, fog * 0.9);
 
   float alpha = coverage * u_fade * (1.0 - beyond * 0.85) * (1.0 - fog * 0.35);
+
+  // Y de noche el agua deja ver el mapa que hay debajo en vez de taparlo. No es
+  // un truco de transparencia: es que las dos capas no viven a la misma hora
+  // —esta se dibuja con la luz de ahora y el fondo es una ortofoto de mediodía—
+  // y un agua nocturna opaca convierte medio mapa en una plancha lisa. Está
+  // medido en \`light.ts\`, en NIGHT_OPACITY. La espuma no entra: esa sí es
+  // opaca a cualquier hora.
+  float day = clamp((u_lit - LIT_FLOOR) / (1.0 - LIT_FLOOR), 0.0, 1.0);
+  alpha *= NIGHT_OPACITY + (1.0 - NIGHT_OPACITY) * max(day, foam);
+
 #ifndef REFRACT
   // Sin refracción el agua no lleva dentro lo que hay debajo, así que se deja
   // ver a través de ella en el bajío: es la única forma de que la ortofoto siga

@@ -29,6 +29,9 @@ attribute vec2 a_ndc;
 ${UNIFORMS}
 ${CONSTANTS}
 
+/** Lo que se acerca el agua a la cámara en el búfer de profundidad. Ver abajo. */
+const float DEPTH_BIAS = 1e-4;
+
 varying vec4 v_posDepth;
 varying vec4 v_normalCrest;
 varying vec4 v_shore;
@@ -93,5 +96,25 @@ void main() {
   v_range = vec2(length(p - u_camera.xy) * u_metersPerMerc, breaking);
 
   gl_Position = u_matrix * vec4(p + offset, u_seaLevel + height, 1.0);
+  // --- 3. y un pelo hacia la cámara ---------------------------------------
+  //
+  // El agua compite con la malla del terreno de MapLibre, que sobre el mar está
+  // aplanada a cero y escribe profundidad. Los dos metros de \`SEA_LIFT_M\`
+  // ganan esa carrera en el mundo, pero no siempre en el búfer: a unos
+  // kilómetros de la cámara, con un búfer de profundidad de 16 bits —que es lo
+  // que dan bastantes GPU móviles y algún portátil—, dos metros no llegan a un
+  // escalón del búfer y el mar desaparece de golpe a partir de una línea recta.
+  //
+  // El sesgo se aplica AQUÍ, en coordenadas de recorte, y no con
+  // \`polygonOffset\`: aquel escala con la pendiente del triángulo, y en una
+  // rejilla proyectada los triángulos del horizonte abarcan kilómetros, así que
+  // el sesgo se disparaba y el agua se pintaba por delante de tierra que sí
+  // estaba delante. En NDC no depende ni de la distancia ni del triángulo.
+  //
+  // 1e-4 sobre el rango [−1, 1] son 3,3 escalones de un búfer de 16 bits y 840
+  // de uno de 24: sobra para ganar y falta muchísimo para saltarse un
+  // acantilado. El \`max\` es para no empujar el vértice por detrás del plano
+  // cercano, que lo recortaría.
+  gl_Position.z = max(gl_Position.z - DEPTH_BIAS * gl_Position.w, -gl_Position.w);
 }
 `

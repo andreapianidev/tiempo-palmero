@@ -69,8 +69,9 @@ const MAX_RANGE_M = 300_000
  * mapa de orilla. Y el desnivel de la marea se sigue viendo, porque lo que
  * cambia con ella es la posición del agua RESPECTO A ESE CERO, no el cero.
  *
- * Va acompañado de un sesgo de polígono, porque a 100 km de distancia la
- * precisión del búfer de profundidad ya no distingue dos metros.
+ * Va acompañado de un sesgo en el búfer de profundidad —`DEPTH_BIAS`, en el
+ * sombreador de vértices— porque a unos kilómetros de la cámara, y en un búfer
+ * de 16 bits, la precisión ya no distingue dos metros.
  */
 const SEA_LIFT_M = 2
 
@@ -227,9 +228,17 @@ export class OceanLayer implements CustomLayerInterface {
     this.map?.triggerRepaint()
   }
 
-  /** Si la capa tiene ya con qué dibujar algo. Lo usa el panel. */
+  /**
+   * Si la capa tiene ya con qué dibujar algo. Lo usa el panel.
+   *
+   * LA COSTA CUENTA, y no es un detalle: sin ella `shoreAt` responde «mar
+   * abierto» en todas partes y el agua cubre la isla entera. Con la vista 3D
+   * eso lo tapa el relieve y casi no se nota; en vista plana, no hay relieve que
+   * lo tape. Vale más esperar medio segundo a que la costa esté que enseñar una
+   * isla inundada.
+   */
   get ready(): boolean {
-    return !!(this.field && this.bathymetry)
+    return !!(this.field && this.bathymetry && this.shoreline)
   }
 
   // --- ciclo de vida -------------------------------------------------------
@@ -420,20 +429,16 @@ export class OceanLayer implements CustomLayerInterface {
     gl.enable(gl.DEPTH_TEST)
     gl.depthMask(false)
     gl.disable(gl.CULL_FACE)
-    // El sesgo de profundidad, por lo mismo que los dos metros de arriba: cerca
-    // de la cámara sobran, pero en el horizonte el agua y la malla del terreno
-    // caen en el mismo valor del búfer y aparecería una banda parpadeante justo
-    // donde el mar se junta con el cielo. Es el mismo mecanismo con el que se
-    // pintan las marcas del suelo en cualquier motor 3D.
-    gl.enable(gl.POLYGON_OFFSET_FILL)
-    gl.polygonOffset(-1, -4)
+    // El sesgo de profundidad —que hace falta por lo mismo que los dos metros
+    // de arriba— NO se pone aquí con `polygonOffset`, sino en el sombreador de
+    // vértices y en coordenadas de recorte. El motivo está escrito allí: aquel
+    // escala con la pendiente del triángulo, y los de una rejilla proyectada
+    // abarcan kilómetros.
 
     gl.drawElements(gl.TRIANGLES, grid.count, gl.UNSIGNED_SHORT, 0)
 
     gl.disableVertexAttribArray(program.aNdc)
     gl.depthMask(true)
-    gl.disable(gl.POLYGON_OFFSET_FILL)
-    gl.polygonOffset(0, 0)
 
     // El mar se mueve, así que hay que pedir otro fotograma. Es la misma
     // decisión que en la capa de viento: lo pide el mapa, no un

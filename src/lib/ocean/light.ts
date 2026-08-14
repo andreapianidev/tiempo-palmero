@@ -156,6 +156,54 @@ export const FOAM_SUN = 0.65
 export const FOAM_MOON = 0.25
 
 /**
+ * La luz que queda en una noche cerrada, respecto a un mediodía despejado.
+ *
+ * No es cero, y no por gusto: un mar absolutamente negro se ve como un agujero
+ * recortado, no como agua. Es el suelo de `lit`, y lo usan tanto los colores de
+ * aquí como el sombreador.
+ */
+export const LIT_FLOOR = 0.22
+
+/**
+ * Cuánto tapa el agua al mapa cuando es de noche.
+ *
+ * ESTO NO ES FÍSICA, ES COMPOSICIÓN, y hace falta porque las dos capas no viven
+ * a la misma hora: el agua se dibuja con la luz de AHORA y el fondo del mapa es
+ * una ortofoto de un vuelo de mediodía que no cambia nunca. De noche el motor
+ * calcula, correctamente, un agua de luminancia 0,027 —plana, sin destello y sin
+ * gradiente— y la pinta opaca encima de un mar fotografiado con sol.
+ *
+ * Medido el 14 de agosto de 2026 contra la ortofoto en vivo de GRAFCAN, sobre
+ * el mar frente a Tijarafe (el de los pantallazos): mediana 0,053, percentil 90
+ * 0,130 y máximos de 0,92 en el destello del sol. O sea que el agua nocturna no
+ * es más oscura que esa foto EN MEDIA —0,027 contra 0,053—, pero se lleva por
+ * delante todo el rango alto, que es justamente lo que hace que el mar de la
+ * foto parezca mar. El resultado en pantalla es una plancha lisa.
+ *
+ * Con 0,45 la composición de noche queda en 0,041 de luminancia media y devuelve
+ * el percentil 90 a 0,072: el mar sigue viéndose más apagado que de día —que es
+ * lo que tiene que pasar a las dos de la mañana— pero el mapa se sigue leyendo
+ * por debajo. Con 1 (lo que había) el fondo desaparece; con 0,2 la noche se ve
+ * igual de clara que el mediodía y el modelo de luz deja de servir para nada.
+ *
+ * De día no se toca nada: a mediodía vale 1 y el agua vuelve a ser opaca.
+ */
+export const NIGHT_OPACITY = 0.45
+
+/**
+ * Cuánto tapa el agua al mapa, de `NIGHT_OPACITY` a 1.
+ *
+ * La espuma no entra en el trato: es lo único del mar que devuelve luz propia a
+ * cualquier hora, y una rompiente translúcida sobre la ortofoto se ve como una
+ * mancha sucia en vez de como agua rota.
+ */
+export function seaOpacity(lit: number, foam = 0): number {
+  const day = Math.max(0, Math.min(1, (lit - LIT_FLOOR) / (1 - LIT_FLOOR)))
+  const solid = Math.max(day, Math.max(0, Math.min(1, foam)))
+  return NIGHT_OPACITY + (1 - NIGHT_OPACITY) * solid
+}
+
+/**
  * La luz que baña la superficie del mar, y por tanto la que ilumina tanto la
  * espuma como el fondo que se ve a través del agua.
  *
@@ -206,10 +254,10 @@ export function waterColors(light: OceanLight): {
 } {
   const DEEP: Rgb = [0.004, 0.022, 0.052]
   const SHALLOW: Rgb = [0.03, 0.26, 0.28]
-  // Cuánta luz entra en el agua: el sol directo más el cielo. El 0,22 del
-  // fondo es la luz que queda en una noche cerrada, y no es cero porque un mar
-  // absolutamente negro se ve como un agujero recortado, no como agua.
-  const lit = 0.22 + 0.78 * Math.min(1, light.sunIntensity + 0.35 * light.moonIntensity)
+  // Cuánta luz entra en el agua: el sol directo más el cielo, sobre el suelo
+  // de `LIT_FLOOR`.
+  const lit =
+    LIT_FLOOR + (1 - LIT_FLOOR) * Math.min(1, light.sunIntensity + 0.35 * light.moonIntensity)
   const tint = (c: Rgb): Rgb => [
     c[0] * lit + light.ambient[0] * 0.25,
     c[1] * lit + light.ambient[1] * 0.25,

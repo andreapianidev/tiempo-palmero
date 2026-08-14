@@ -344,7 +344,11 @@ export function Sidebar(props: Props) {
               onDepth={props.onOceanDepth}
               quality={props.ocean.quality}
               onQuality={props.onOceanQuality}
-              ready={!!props.oceanData.field && !!props.oceanData.bathymetry}
+              ready={
+                !!props.oceanData.field &&
+                !!props.oceanData.bathymetry &&
+                !!props.oceanData.shoreline
+              }
               loading={props.oceanData.loading}
               failed={props.oceanData.failed}
             />

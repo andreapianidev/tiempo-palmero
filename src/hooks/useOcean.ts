@@ -106,16 +106,20 @@ export function useOcean(
   const [offshore, setOffshore] = useState<WindSample[]>([])
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
-  /** Para no volver a construir el mapa de costa en cada apagado y encendido. */
-  const built = useRef(false)
 
-  // --- lo que se descarga una sola vez ------------------------------------
+  // --- el fondo: se pide una vez -------------------------------------------
+  //
+  // La marca se levanta si la petición falla, así que apagar y volver a
+  // encender el océano lo reintenta. Antes se marcaba antes de empezar y no se
+  // levantaba nunca: una batimetría que fallara una vez —un despliegue a medias,
+  // un túnel— dejaba el mar sin fondo para el resto de la sesión.
+  const bathyStarted = useRef(false)
   useEffect(() => {
-    if (!enabled || built.current) return
-    built.current = true
+    if (!enabled || bathyStarted.current) return
+    bathyStarted.current = true
     let cancelled = false
 
-    const bathy = async () => {
+    void (async () => {
       const manifest = (await (await fetch(dataUrl('/ocean/manifest.json'))).json()) as {
         maxDepthM: number
         attribution: string
@@ -138,21 +142,51 @@ export function useOcean(
         attribution: manifest.attribution,
         deepestM: manifest.measured.deepestM,
       })
-    }
+    })().catch(() => {
+      if (cancelled) return
+      bathyStarted.current = false
+      setFailed(true)
+    })
 
-    const shore = async () => {
+    return () => {
+      cancelled = true
+    }
+  }, [enabled])
+
+  // --- la costa: se construye una vez, y se rehace si llega el DEM ---------
+  //
+  // El modelo de elevación y esto compiten por llegar primero, y quien gana
+  // cambia lo que se ve: sin DEM la costa se construye sin cotas, y entonces el
+  // agua no distingue un acantilado de una playa. Si el DEM aparece después, se
+  // rehace —cuesta unas decenas de milisegundos y no parpadea, porque lo único
+  // que pasa es que se reescribe la textura—. Sin esto, la línea de agua
+  // dependía del orden en que respondiera la red.
+  const shoreBuild = useRef({ running: false, done: false, withDem: false })
+  useEffect(() => {
+    if (!enabled) return
+    const state = shoreBuild.current
+    if (state.running) return
+    if (state.done && (state.withDem || dem === null)) return
+    state.running = true
+    let cancelled = false
+
+    void (async () => {
       const island = (await (
         await fetch(dataUrl('/layers/limite-insular.geojson'))
       ).json()) as GeoJSON.FeatureCollection
       if (cancelled) return
       const map = await buildShorelineMap(island, dem)
-      if (!cancelled) setShoreline(map)
-    }
-
-    void Promise.allSettled([bathy(), shore()]).then((results) => {
       if (cancelled) return
-      if (results.some((r) => r.status === 'rejected')) setFailed(true)
-    })
+      setShoreline(map)
+      state.done = true
+      state.withDem = dem !== null
+    })()
+      .catch(() => {
+        if (!cancelled) setFailed(true)
+      })
+      .finally(() => {
+        state.running = false
+      })
 
     return () => {
       cancelled = true
