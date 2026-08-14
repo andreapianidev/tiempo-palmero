@@ -1,19 +1,25 @@
 /**
  * Cartas náuticas: lo que un marino necesita ver sobre el agua.
  *
- * SON DOS CAPAS Y CADA UNA DICE UNA COSA DISTINTA:
+ * SON DOS CAPAS, CADA UNA DICE UNA COSA DISTINTA Y CADA UNA TIENE SU
+ * INTERRUPTOR. Compartían uno solo, llamado «cartas náuticas», y eso resultó
+ * ser una promesa que la pantalla no cumplía: quien lo encendía esperaba una
+ * carta —faros, boyas, sondas, derrotas— y lo que aparecía era un arcoíris de
+ * lado a lado, porque de las dos capas la que se ve es la del color. La otra,
+ * que sí es la carta, quedaba debajo y ni se notaba.
  *
- *  1. LA PROFUNDIDAD, en color, de EMODnet Bathymetry. Es el mismo dato con el
+ *  1. LAS BALIZAS, de OpenSeaMap: faros con su característica, boyas
+ *     cardinales y laterales, puertos y zonas restringidas. Es cartografía
+ *     hecha por navegantes, y es lo que de verdad se parece a una carta.
+ *
+ *  2. LA PROFUNDIDAD, en color, de EMODnet Bathymetry. Es el mismo dato con el
  *     que el sombreador decide dónde rompe la ola y de qué color es el agua
  *     —la misma malla de 1/16 de minuto—, pero aquí dibujado con su escala de
- *     color, que es lo que permite LEER la profundidad en vez de intuirla. El
- *     talud de La Palma cae de 0 a 4.000 m en veinte kilómetros y con esta capa
- *     se ve como lo que es: un cono volcánico de 6,4 km de altura del que la
- *     isla es solo la punta.
- *
- *  2. LAS BALIZAS, de OpenSeaMap: faros con su característica, boyas
- *     cardinales y laterales, puertos y zonas restringidas. Es cartografía
- *     hecha por navegantes.
+ *     color, que es lo que permite LEER la profundidad en vez de intuirla: rojo
+ *     somero, azul hondo. El talud de La Palma cae de 0 a 4.000 m en veinte
+ *     kilómetros y con esta capa se ve como lo que es, un cono volcánico de
+ *     6,4 km de altura del que la isla es solo la punta. Lo que NO es, es una
+ *     carta náutica: no lleva sondas, ni balizas, ni derrotas.
  *
  * NINGUNA DE LAS DOS LLEVA `bounds`, y eso es a propósito: las de GRAFCAN sí lo
  * llevan porque son cartografía de las islas y pedirles mar abierto sería pedir
@@ -100,6 +106,8 @@ export const SEAMARK_SOURCE: RasterSourceSpecification = {
  * 0,62 y no 1: por debajo está el mar simulado, moviéndose con el oleaje de
  * hoy, y taparlo del todo para pintar encima una lámina de color plano sería
  * cambiar una cosa que se mueve por otra que no. Con esta opacidad se leen las
- * bandas de profundidad Y se ve el agua viva por debajo.
+ * bandas de profundidad y todavía se distinguen los trenes de olas cruzando el
+ * verde, aunque el color manda: por eso esta capa tiene su propio interruptor
+ * y no viene puesta con el balizamiento.
  */
 export const DEPTH_OPACITY = 0.62

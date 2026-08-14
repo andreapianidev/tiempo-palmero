@@ -129,11 +129,13 @@ export default function App() {
    */
   const [ocean, setOcean] = useState<{
     on: boolean
-    charts: boolean
+    seamarks: boolean
+    depth: boolean
     quality: OceanQuality
   }>(() => ({
     on: false,
-    charts: false,
+    seamarks: false,
+    depth: false,
     quality: autoQuality(
       window.innerWidth * window.innerHeight * (window.devicePixelRatio || 1) ** 2,
       navigator.hardwareConcurrency ?? 4,
@@ -599,7 +601,8 @@ export default function App() {
         ocean={ocean}
         oceanData={oceanData}
         onOcean={() => setOcean((s) => ({ ...s, on: !s.on }))}
-        onOceanCharts={() => setOcean((s) => ({ ...s, charts: !s.charts }))}
+        onOceanSeamarks={() => setOcean((s) => ({ ...s, seamarks: !s.seamarks }))}
+        onOceanDepth={() => setOcean((s) => ({ ...s, depth: !s.depth }))}
         onOceanQuality={(quality) => setOcean((s) => ({ ...s, quality }))}
         visible={visible}
         onToggle={toggle}

@@ -132,14 +132,63 @@ export function calimaFactor(pm10: number | null): number {
 }
 
 /**
+ * Reflectancia de la espuma: cuánta luz devuelve, sin decir cuánta le llega.
+ *
+ * Es un ALBEDO y no un color de pantalla. La espuma es aire dentro de agua y
+ * dispersa casi todo lo que le entra —de 0,8 a 0,9 en las medidas de campo de
+ * Whitlock (1982) sobre borreguillos—, contra el 0,05 escaso del agua de al
+ * lado. Esa diferencia, de más de diez veces, es lo único que hace que la
+ * rompiente se vea: no es que la espuma sea blanca, es que devuelve la luz de
+ * la hora que sea mucho mejor que el agua.
+ */
+export const FOAM_ALBEDO: Rgb = [0.86, 0.89, 0.92]
+
+/**
+ * Con cuánta fuerza cuentan el sol y la luna en la luz que baña la superficie.
+ *
+ * 0,65 el sol NO es un gusto: es lo que deja la espuma de mediodía donde ya
+ * estaba antes de separar el albedo de la luz. Con el sol a 70°, cielo raso y
+ * sin calima, la espuma marcaba 0,618 / 0,678 / 0,772 en RGB; con el albedo
+ * fuera y este 0,65 marca 0,607 / 0,664 / 0,750, un 2 % por debajo. Con 0,55
+ * —el número que había— se quedaba en 0,521 / 0,578 / 0,665, un 16 % más apagada.
+ */
+export const FOAM_SUN = 0.65
+export const FOAM_MOON = 0.25
+
+/**
+ * La luz que baña la superficie del mar, y por tanto la que ilumina tanto la
+ * espuma como el fondo que se ve a través del agua.
+ *
+ * Vive aquí, y no suelta dentro del sombreador, porque es la cuenta que decide
+ * si la rompiente sale más clara o más oscura que el agua que la rodea, y esa
+ * es una afirmación que se puede comprobar con números a cualquier hora del
+ * día: lo hace `light.test.ts`.
+ */
+export function surfaceLight(light: OceanLight): Rgb {
+  const sun = light.sunIntensity * FOAM_SUN
+  const moon = FOAM_MOON * light.moonIntensity
+  return [
+    light.ambient[0] + light.sunColor[0] * sun + moon,
+    light.ambient[1] + light.sunColor[1] * sun + moon,
+    light.ambient[2] + light.sunColor[2] * sun + moon,
+  ]
+}
+
+/**
  * El color del agua bajo esa luz.
  *
- * Los tres colores base son los del agua oceánica limpia —el azul de mar
- * abierto, el turquesa del bajío y el blanco de la espuma— y lo que hace esta
- * función es apagarlos con la luz que de verdad hay: de noche el mar no es azul
- * oscuro, es casi negro con lo que refleje del cielo, y bajo una calima fuerte
- * el turquesa del bajío se vuelve gris verdoso porque la luz que entra en el
- * agua ya no es blanca.
+ * Los colores base son los del agua oceánica limpia —el azul de mar abierto y
+ * el turquesa del bajío— y lo que hace esta función es apagarlos con la luz que
+ * de verdad hay: de noche el mar no es azul oscuro, es casi negro con lo que
+ * refleje del cielo, y bajo una calima fuerte el turquesa del bajío se vuelve
+ * gris verdoso porque la luz que entra en el agua ya no es blanca.
+ *
+ * LA ESPUMA NO SE APAGA AQUÍ, y antes sí: salía de esta función ya multiplicada
+ * por `lit`, y el sombreador volvía a multiplicarla por la luz del momento.
+ * Apagada dos veces, de noche la rompiente acababa MÁS OSCURA que el agua sobre
+ * la que flota —0,017 de luminancia contra 0,027— y se dibujaba como una mancha
+ * negra pegada a la costa. Es lo que se veía en producción el 14 de agosto de
+ * 2026. Ahora de aquí sale el albedo y la luz la pone el sombreador, una vez.
  *
  * Vive aquí y no en el sombreador porque es una decisión de color, y las
  * decisiones de color se prueban mirando números, no recompilando.
@@ -147,7 +196,13 @@ export function calimaFactor(pm10: number | null): number {
 export function waterColors(light: OceanLight): {
   deep: Rgb
   shallow: Rgb
+  /** Albedo, sin luz puesta: ver `FOAM_ALBEDO`. */
   foam: Rgb
+  /**
+   * Cuánta luz hay sobre el agua respecto a un mediodía despejado, de 0,22 a 1.
+   * La usan los colores de aquí y, en el sombreador, la ortofoto del fondo.
+   */
+  lit: number
 } {
   const DEEP: Rgb = [0.004, 0.022, 0.052]
   const SHALLOW: Rgb = [0.03, 0.26, 0.28]
@@ -163,13 +218,10 @@ export function waterColors(light: OceanLight): {
   return {
     deep: tint(DEEP),
     shallow: tint(SHALLOW),
-    // La espuma no tiene color propio: dispersa la luz que le llega. Con el sol
-    // bajo, la espuma es naranja, y eso se ve en cualquier foto de un atardecer.
-    foam: [
-      0.86 * lit + light.sunColor[0] * light.sunIntensity * 0.16,
-      0.89 * lit + light.sunColor[1] * light.sunIntensity * 0.16,
-      0.92 * lit + light.sunColor[2] * light.sunIntensity * 0.16,
-    ],
+    // La espuma no tiene color propio: dispersa la luz que le llega, y con el
+    // sol bajo esa luz es naranja. Eso ya lo trae `u_sunColor` en el sombreador.
+    foam: FOAM_ALBEDO,
+    lit,
   }
 }
 

@@ -25,6 +25,7 @@
  *     a contraluz se vea verde y encendida.
  */
 
+import { FOAM_MOON, FOAM_SUN } from '../../../lib/ocean/light'
 import { CONSTANTS, UNIFORMS, WAVE_FUNCTIONS } from './waves'
 
 export const FRAGMENT_SHADER = /* glsl */ `
@@ -55,6 +56,7 @@ uniform float u_haze;
 uniform vec3 u_deepColor;
 uniform vec3 u_shallowColor;
 uniform vec3 u_foamColor;
+uniform float u_lit;
 
 uniform float u_detailMeters;
 uniform float u_detailAmp;
@@ -189,6 +191,15 @@ void main() {
   vec2 offset = n.xy * bend;
   vec3 bottom = texture2D(u_backgroundTex, clamp(screen + offset, vec2(0.002), vec2(0.998))).rgb;
 
+  // Y se apaga con la luz que hay AHORA. Lo que el mapa ha pintado debajo del
+  // agua es una ortofoto de un vuelo de mediodía, y sin esto el mar se llevaba
+  // puesta la luz de aquel día: a medianoche el agua somera salía con la
+  // claridad de las doce mientras el resto de la escena estaba a oscuras, y
+  // cualquier cosa iluminada de verdad —la espuma, la primera— quedaba encima
+  // como una mancha. Es la misma claridad que apaga el azul y el turquesa en
+  // waterColors: 1 a mediodía despejado, 0,22 en una noche cerrada.
+  bottom *= u_lit;
+
   // Cáusticas: los reticulados de luz que el sol dibuja en el fondo al pasar
   // por las olas. Solo donde el fondo se ve y solo con sol.
   float c1 = texture2D(u_detailTex, (posM + windDir * u_time * 0.35) / (u_detailMeters * 1.7)).b;
@@ -266,9 +277,17 @@ void main() {
 
   foam = clamp(foam, 0.0, 1.0);
   // La espuma es aire en agua: dispersa toda la luz que le llega, así que no
-  // tiene color propio, tiene el de la luz del momento. De noche es gris.
-  vec3 foamLit = u_foamColor * (u_ambient + u_sunColor * u_sunIntensity * 0.55 +
-                                vec3(0.25) * u_moonIntensity);
+  // tiene color propio, tiene el de la luz del momento.
+  //
+  // u_foamColor ES UN ALBEDO —0,86/0,89/0,92, ver light.ts— y la luz se le
+  // pone AQUÍ, una sola vez. Antes venía ya multiplicada por la claridad del
+  // momento y esta línea la volvía a multiplicar: apagada dos veces, en una
+  // noche sin luna la rompiente marcaba 0,017 de luminancia contra los 0,027
+  // del agua de debajo. Una espuma más oscura que su agua no existe —el aire
+  // atrapado devuelve diez veces más luz que el agua— y en pantalla salía como
+  // lo que era, una mancha de tinta pegada a la costa.
+  vec3 foamLit = u_foamColor * (u_ambient + u_sunColor * u_sunIntensity * ${FOAM_SUN.toFixed(4)} +
+                                vec3(${FOAM_MOON.toFixed(4)}) * u_moonIntensity);
   color = mix(color, foamLit, foam);
 
   // --- 6. distancia --------------------------------------------------------

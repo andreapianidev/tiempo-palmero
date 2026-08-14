@@ -958,7 +958,7 @@ export const es = {
     seamarksBody:
       'OpenSeaMap: faros con su característica, boyas cardinales y laterales, puertos y zonas ' +
       'restringidas, cartografiadas por navegantes sobre OpenStreetMap. Se piden mientras se miran, ' +
-      'solo con la carta náutica encendida.',
+      'solo con «Faros, boyas y puertos» encendido, y por debajo del zoom 9 no hay balizas dibujadas.',
     seamarksLicense: 'ODbL 1.0',
     demTitle: 'Modelo de elevación y relieve',
     demBody:

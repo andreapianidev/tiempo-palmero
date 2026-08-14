@@ -209,7 +209,7 @@ interface Props {
    * `visible` por lo mismo que la vista 3D —no cuenta como capa encendida— y
    * porque lleva su propio ajuste de calidad, que no lo tiene ninguna otra.
    */
-  ocean: { on: boolean; charts: boolean; quality: OceanQuality }
+  ocean: { on: boolean; seamarks: boolean; depth: boolean; quality: OceanQuality }
   oceanData: OceanData
   /** Fondo elegido. Los tres están declarados; solo uno tiene capa visible. */
   basemap: BasemapId
@@ -768,16 +768,21 @@ export function MapView(props: Props) {
     props.oceanData.solarWm2,
   ])
 
-  // Las cartas náuticas solo se piden si están encendidas Y hay mar que anotar:
-  // una carta sobre un mapa sin océano sería una capa suelta de isóbatas.
+  // Las dos capas de la carta, cada una con su interruptor: el balizamiento y
+  // la escala de color de profundidad no son la misma cosa ni se piden juntas.
+  // Ver `lib/ocean/charts.ts`. Ninguna se pide sin mar debajo: sobre un mapa sin
+  // océano serían dos capas sueltas encima del color de fondo.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
-    const on = props.ocean.on && props.ocean.charts
-    for (const id of [CHART_LAYERS.depth, CHART_LAYERS.seamarks]) {
+    const shown: [string, boolean][] = [
+      [CHART_LAYERS.depth, props.ocean.on && props.ocean.depth],
+      [CHART_LAYERS.seamarks, props.ocean.on && props.ocean.seamarks],
+    ]
+    for (const [id, on] of shown) {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
     }
-  }, [ready, props.ocean.on, props.ocean.charts])
+  }, [ready, props.ocean.on, props.ocean.depth, props.ocean.seamarks])
 
   // --- fondo de mapa -------------------------------------------------------
   //

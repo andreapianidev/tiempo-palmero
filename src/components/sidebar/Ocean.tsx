@@ -10,8 +10,12 @@ import { OCEAN_QUALITIES, QUALITY, type OceanQuality } from '../../lib/ocean/qua
 interface Props {
   on: boolean
   onToggle: () => void
-  charts: boolean
-  onCharts: () => void
+  /** Faros, boyas y puertos de OpenSeaMap: la carta náutica de verdad. */
+  seamarks: boolean
+  onSeamarks: () => void
+  /** La escala de color de profundidad de EMODnet. Otra cosa, y muy visible. */
+  depth: boolean
+  onDepth: () => void
   quality: OceanQuality
   onQuality: (q: OceanQuality) => void
   /** El mar ya tiene con qué dibujarse: batimetría y oleaje en memoria. */
@@ -23,8 +27,10 @@ interface Props {
 export function Ocean({
   on,
   onToggle,
-  charts,
-  onCharts,
+  seamarks,
+  onSeamarks,
+  depth,
+  onDepth,
   quality,
   onQuality,
   ready,
@@ -42,8 +48,14 @@ export function Ocean({
         </li>
         <li>
           <label>
-            <input type="checkbox" checked={charts} onChange={onCharts} disabled={!on} />
-            <span>Cartas náuticas</span>
+            <input type="checkbox" checked={seamarks} onChange={onSeamarks} disabled={!on} />
+            <span>Faros, boyas y puertos</span>
+          </label>
+        </li>
+        <li>
+          <label>
+            <input type="checkbox" checked={depth} onChange={onDepth} disabled={!on} />
+            <span>Profundidad en color</span>
           </label>
         </li>
       </ul>
@@ -68,11 +80,22 @@ export function Ocean({
         </p>
       )}
 
-      {on && charts && (
+      {on && seamarks && (
         <p className="dim small">
-          Isóbatas y color de profundidad de EMODnet, y el balizamiento de
-          OpenSeaMap: faros, boyas y puertos. Se piden mientras se miran y
-          cubren toda la pantalla, no solo el recuadro de la isla.
+          Balizamiento de OpenSeaMap, cartografiado por navegantes: faros con su
+          característica, boyas cardinales y laterales, puertos y zonas
+          restringidas. Por debajo del zoom 9 no hay balizas que enseñar.
+        </p>
+      )}
+
+      {on && depth && (
+        <p className="dim small">
+          La escala de color de EMODnet, la misma batimetría con la que el motor
+          decide dónde rompe la ola. <strong>Rojo es somero, azul es hondo:</strong>{' '}
+          la franja roja pegada a la costa es lo poco que hay de plataforma antes
+          de que el talud caiga, de 0 a 4.000 m en veinte kilómetros. No es una
+          carta náutica ni son rutas —es un mapa de profundidad—, y mientras esté
+          puesta tapa el agua en movimiento, que es lo que hay debajo.
         </p>
       )}
 

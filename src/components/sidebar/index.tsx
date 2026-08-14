@@ -76,10 +76,11 @@ interface Props {
   onTerrain: () => void
   onExaggeration: (x: Exaggeration) => void
   /** El mar. Tampoco es una capa: ver `MapView`. */
-  ocean: { on: boolean; charts: boolean; quality: OceanQuality }
+  ocean: { on: boolean; seamarks: boolean; depth: boolean; quality: OceanQuality }
   oceanData: OceanData
   onOcean: () => void
-  onOceanCharts: () => void
+  onOceanSeamarks: () => void
+  onOceanDepth: () => void
   onOceanQuality: (q: OceanQuality) => void
   visible: LayerVisibility
   onToggle: (key: keyof LayerVisibility) => void
@@ -337,8 +338,10 @@ export function Sidebar(props: Props) {
             <Ocean
               on={props.ocean.on}
               onToggle={props.onOcean}
-              charts={props.ocean.charts}
-              onCharts={props.onOceanCharts}
+              seamarks={props.ocean.seamarks}
+              onSeamarks={props.onOceanSeamarks}
+              depth={props.ocean.depth}
+              onDepth={props.onOceanDepth}
               quality={props.ocean.quality}
               onQuality={props.onOceanQuality}
               ready={!!props.oceanData.field && !!props.oceanData.bathymetry}

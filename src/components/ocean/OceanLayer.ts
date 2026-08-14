@@ -388,6 +388,9 @@ export class OceanLayer implements CustomLayerInterface {
     if (u.u_deepColor) gl.uniform3fv(u.u_deepColor, water.deep)
     if (u.u_shallowColor) gl.uniform3fv(u.u_shallowColor, water.shallow)
     if (u.u_foamColor) gl.uniform3fv(u.u_foamColor, water.foam)
+    // La claridad del momento. Apaga el azul y el turquesa aquí arriba, y en el
+    // sombreador apaga también la ortofoto que se ve por debajo del agua.
+    if (u.u_lit) gl.uniform1f(u.u_lit, water.lit)
     if (u.u_fade) gl.uniform1f(u.u_fade, this.fade)
 
     const bind = (unit: number, texture: WebGLTexture, location: WebGLUniformLocation | null) => {

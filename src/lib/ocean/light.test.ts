@@ -14,6 +14,8 @@ import {
   clearSkyIrradiance,
   clearnessIndex,
   oceanLight,
+  surfaceLight,
+  waterColors,
 } from './light'
 
 const LON = -17.7642
@@ -130,5 +132,74 @@ describe('la radiación medida manda', () => {
     const clear = oceanLight(NOON, LON, LAT, { pm10: null, solarWm2: 950 })
     expect(blind.clearness).toBeNull()
     expect(blind.sunIntensity).toBeCloseTo(clear.sunIntensity, 1)
+  })
+})
+
+describe('el color del agua', () => {
+  /** Luminancia Rec. 709: es la que decide qué se ve más claro en pantalla. */
+  const lum = (c: readonly number[]) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+  /** La espuma como acaba en pantalla: su albedo por la luz que le llega. */
+  const foamOnScreen = (at: number, inputs = { pm10: null, solarWm2: null }) => {
+    const light = oceanLight(at, LON, LAT, inputs)
+    const { foam } = waterColors(light)
+    const l = surfaceLight(light)
+    return [foam[0] * l[0], foam[1] * l[1], foam[2] * l[2]]
+  }
+
+  it('la espuma que sale de aquí es un albedo, no un color de pantalla', () => {
+    // El mismo número de día y de noche: lo que cambia es la luz, no la espuma.
+    expect(waterColors(oceanLight(NOON, LON, LAT)).foam).toEqual(
+      waterColors(oceanLight(NIGHT, LON, LAT)).foam,
+    )
+  })
+
+  it('la claridad va de la noche cerrada al mediodía', () => {
+    expect(waterColors(oceanLight(NIGHT, LON, LAT)).lit).toBeCloseTo(0.22, 3)
+    expect(waterColors(oceanLight(NOON, LON, LAT)).lit).toBeCloseTo(1, 3)
+  })
+
+  /**
+   * EL FALLO QUE ESTA PRUEBA CAZA, y el que no puede volver a colarse.
+   *
+   * Con la espuma apagada dos veces —una en `waterColors` y otra en el
+   * sombreador— la rompiente de una noche sin luna marcaba 0,017 de luminancia
+   * y el agua de debajo 0,027: la espuma salía un 35 % MÁS OSCURA que su agua y
+   * se dibujaba como una mancha negra pegada a la costa. Físicamente no puede
+   * pasar: el aire atrapado en la espuma devuelve unas diez veces más luz que
+   * el agua, esté iluminada por el sol, por la luna o por el resplandor del
+   * cielo.
+   *
+   * Y la prueba mira las dos orillas: que la rompiente destaque a las cuatro de
+   * la madrugada no puede costar que a mediodía salga reventada. El techo son
+   * 0,95 —blanco de pantalla sin llegar a saturar— y hoy el mediodía de agosto
+   * más claro se queda en 0,66.
+   */
+  it('la espuma siempre es más clara que el agua, a cualquier hora', () => {
+    for (let h = 0; h < 24; h++) {
+      const at = utc(`2026-08-13T${String(h).padStart(2, '0')}:00:00Z`)
+      const agua = lum(waterColors(oceanLight(at, LON, LAT)).deep)
+      const espuma = lum(foamOnScreen(at))
+      expect(espuma, `a las ${h}:00 UTC`).toBeGreaterThan(agua * 2)
+      expect(espuma, `a las ${h}:00 UTC`).toBeLessThan(0.95)
+    }
+  })
+
+  it('de noche cerrada la rompiente se ve, y apenas', () => {
+    // Ni negra ni blanca: un gris azulado que en pantalla se lee como una
+    // línea de espuma tenue, tres veces el agua que la rodea.
+    const espuma = lum(foamOnScreen(NIGHT))
+    const agua = lum(waterColors(oceanLight(NIGHT, LON, LAT)).deep)
+    expect(espuma).toBeCloseTo(0.079, 2)
+    expect(espuma / agua).toBeGreaterThan(2.5)
+    expect(espuma / agua).toBeLessThan(4)
+  })
+
+  it('a mediodía la espuma se queda donde estaba antes de separar el albedo', () => {
+    // La referencia son los tres números que daba la versión anterior con el
+    // sol a 70°, cielo raso y sin calima: 0,618 / 0,678 / 0,772.
+    const [r, g, b] = foamOnScreen(NOON)
+    expect(r).toBeCloseTo(0.618, 1)
+    expect(g).toBeCloseTo(0.678, 1)
+    expect(b).toBeCloseTo(0.772, 1)
   })
 })
