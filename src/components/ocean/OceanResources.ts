@@ -63,6 +63,7 @@ const UNIFORM_NAMES = [
   'u_shallowColor',
   'u_foamColor',
   'u_lit',
+  'u_baseReveal',
   'u_detailMeters',
   'u_detailAmp',
   'u_microVariance',

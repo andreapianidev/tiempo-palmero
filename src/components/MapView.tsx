@@ -715,10 +715,14 @@ export function MapView(props: Props) {
   // Los datos van por método y no por props, igual que en la capa de viento:
   // el mar es un objeto WebGL con seis texturas, y volver a añadirlo al mapa en
   // cada cambio recompilaría los sombreadores y reiniciaría la animación.
+  // El mar en movimiento depende también del fondo: sobre la carta topográfica
+  // no se dibuja. Lo dice el propio fondo, en el campo `sea` de `basemaps.ts`,
+  // y aquí solo se obedece. El interruptor NO se apaga por eso: quien vuelva al
+  // relieve o al satélite se encuentra el mar donde lo dejó.
   useEffect(() => {
     if (!ready) return
-    oceanLayerRef.current?.setVisible(props.ocean.on)
-  }, [ready, props.ocean.on])
+    oceanLayerRef.current?.setVisible(props.ocean.on && BASEMAPS[props.basemap].sea !== false)
+  }, [ready, props.ocean.on, props.basemap])
 
   useEffect(() => {
     if (!ready) return
@@ -749,9 +753,11 @@ export function MapView(props: Props) {
       tideM: props.oceanData.tideM ?? 0,
       windMs: props.oceanData.windMs,
       light: { pm10: props.oceanData.pm10, solarWm2: props.oceanData.solarWm2 },
+      basePhoto: BASEMAPS[props.basemap].sea === 'foto',
     })
   }, [
     ready,
+    props.basemap,
     props.oceanData.tideM,
     props.oceanData.windMs,
     props.oceanData.pm10,

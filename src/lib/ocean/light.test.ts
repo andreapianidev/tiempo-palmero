@@ -234,6 +234,16 @@ describe('lo que el agua tapa', () => {
     expect(compuesto).toBeLessThan(0.053)
   })
 
+  it('y solo si debajo hay algo que enseñar', () => {
+    // Sobre el fondo de relieve el mar es una tinta lisa de 0,003: destaparlo
+    // no destapa nada, solo apaga el agua. Medido, la composición nocturna
+    // caía de 0,027 a 0,014 —el mar quedaba la mitad de oscuro de lo que el
+    // propio motor había calculado—, y por eso `reveal` existe.
+    const lit = waterColors(oceanLight(NIGHT, LON, LAT)).lit
+    expect(seaOpacity(lit, 0, 0)).toBe(1)
+    expect(NIGHT_OPACITY * 0.027 + (1 - NIGHT_OPACITY) * 0.003).toBeLessThan(0.027)
+  })
+
   it('pero la espuma tapa a cualquier hora', () => {
     const lit = waterColors(oceanLight(NIGHT, LON, LAT)).lit
     expect(seaOpacity(lit, 1)).toBeCloseTo(1, 6)

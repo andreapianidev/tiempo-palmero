@@ -71,6 +71,28 @@ export interface Basemap {
    * invierte.
    */
   light: boolean
+  /**
+   * QUÉ HAY DEBAJO DEL AGUA en este fondo, que es lo que decide si el mar en
+   * movimiento tiene sentido encima y cómo se compone con él.
+   *
+   * Medido el 14 de agosto de 2026 sobre el mar frente a Tijarafe:
+   *
+   *   'foto'  la ortofoto de GRAFCAN, un mar fotografiado de verdad: 0,053 de
+   *           luminancia mediana, 0,130 de percentil 90 y hasta 0,92 en el
+   *           reflejo del sol. El agua puede DEJARLO VER cuando no hay luz
+   *           propia que enseñar (ver `NIGHT_OPACITY` en `ocean/light.ts`), y
+   *           la refracción tiene algo que refractar.
+   *   'plano' una tinta lisa: en el relieve, `COLORS.sea`, 0,003 de luminancia.
+   *           No hay nada debajo que enseñar, así que el agua se pinta opaca
+   *           siempre; dejarla translúcida solo la apagaría —la composición
+   *           nocturna caía a 0,014 contra los 0,027 del agua sola—. Es también
+   *           el fondo donde el mar en movimiento más cambia las cosas, porque
+   *           lo que había era un rectángulo negro.
+   *   false   aquí no se dibuja. La carta topográfica es papel: tiene su propio
+   *           mar, sus batimetrías y sus rótulos, y un océano fotorrealista
+   *           encima los tapa y desentona con todo lo demás.
+   */
+  sea: 'foto' | 'plano' | false
 }
 
 /**
@@ -152,6 +174,9 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     source: null,
     labelsFrom: null,
     light: false,
+    // Tinta lisa debajo del agua, y la más oscura de las tres: es donde el mar
+    // en movimiento más se nota.
+    sea: 'plano',
   },
   topografico: {
     id: 'topografico',
@@ -163,6 +188,9 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     source: grafcan('MT20', 'MT20', `${GRAFCAN_CREDIT} · Mapa Topográfico 1:20.000`),
     labelsFrom: 12.5,
     light: true,
+    // Papel. El mar de la carta ya está dibujado, con sus batimetrías y sus
+    // rótulos, y no hay océano que quepa encima sin taparlo.
+    sea: false,
   },
   satelite: {
     id: 'satelite',
@@ -177,6 +205,7 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     // justo lo que mejor se lee: no hay nada que invertir.
     labelsFrom: null,
     light: false,
+    sea: 'foto',
   },
 }
 

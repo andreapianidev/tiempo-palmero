@@ -74,6 +74,8 @@ uniform vec3 u_deepColor;
 uniform vec3 u_shallowColor;
 uniform vec3 u_foamColor;
 uniform float u_lit;
+/** 1 si debajo del agua hay una fotografía; 0 si es una tinta lisa. */
+uniform float u_baseReveal;
 
 uniform float u_detailMeters;
 uniform float u_detailAmp;
@@ -332,8 +334,12 @@ void main() {
   // y un agua nocturna opaca convierte medio mapa en una plancha lisa. Está
   // medido en \`light.ts\`, en NIGHT_OPACITY. La espuma no entra: esa sí es
   // opaca a cualquier hora.
+  //
+  // Solo cuando debajo hay una foto (\`u_baseReveal\`): sobre la tinta lisa del
+  // relieve no hay nada que destapar y translucir el agua solo la apaga.
   float day = clamp((u_lit - LIT_FLOOR) / (1.0 - LIT_FLOOR), 0.0, 1.0);
-  alpha *= NIGHT_OPACITY + (1.0 - NIGHT_OPACITY) * max(day, foam);
+  float translucent = NIGHT_OPACITY + (1.0 - NIGHT_OPACITY) * max(day, foam);
+  alpha *= mix(1.0, translucent, u_baseReveal);
 
 #ifndef REFRACT
   // Sin refracción el agua no lleva dentro lo que hay debajo, así que se deja

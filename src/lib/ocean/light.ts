@@ -196,11 +196,20 @@ export const NIGHT_OPACITY = 0.45
  * La espuma no entra en el trato: es lo único del mar que devuelve luz propia a
  * cualquier hora, y una rompiente translúcida sobre la ortofoto se ve como una
  * mancha sucia en vez de como agua rota.
+ *
+ * Y `reveal` dice si debajo hay algo que enseñar: 1 sobre la ortofoto, 0 sobre
+ * una tinta lisa. SIN ESTO LA CORRECCIÓN SE VUELVE EN CONTRA. En el fondo de
+ * relieve el mar es `COLORS.sea`, de 0,003 de luminancia, así que destapar el
+ * mapa de noche no destapa nada: solo apaga el agua, que caía de 0,027 a 0,014.
+ * Lo que salva una foto, oscurece una tinta plana. Ver el campo `sea` de
+ * `lib/basemaps.ts`, que es quien lo dice.
  */
-export function seaOpacity(lit: number, foam = 0): number {
+export function seaOpacity(lit: number, foam = 0, reveal = 1): number {
   const day = Math.max(0, Math.min(1, (lit - LIT_FLOOR) / (1 - LIT_FLOOR)))
   const solid = Math.max(day, Math.max(0, Math.min(1, foam)))
-  return NIGHT_OPACITY + (1 - NIGHT_OPACITY) * solid
+  const translucent = NIGHT_OPACITY + (1 - NIGHT_OPACITY) * solid
+  const r = Math.max(0, Math.min(1, reveal))
+  return 1 + (translucent - 1) * r
 }
 
 /**

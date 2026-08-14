@@ -27,7 +27,7 @@ import { useFireRisk } from './hooks/useFireRisk'
 import { fireValueAt } from './lib/fire/field'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
-import type { BasemapId } from './lib/basemaps'
+import { BASEMAPS, type BasemapId } from './lib/basemaps'
 import { DEFAULT_EXAGGERATION, type Exaggeration } from './lib/terrain'
 import { autoQuality, type OceanQuality } from './lib/ocean/quality'
 import { buildVaporField } from './lib/vapor/field'
@@ -600,7 +600,14 @@ export default function App() {
         onExaggeration={(exaggeration) => setTerrain((s) => ({ ...s, exaggeration }))}
         ocean={ocean}
         oceanData={oceanData}
-        onOcean={() => setOcean((s) => ({ ...s, on: !s.on }))}
+        onOcean={() => {
+          // Encender el mar sobre la carta topográfica no haría nada —ahí no se
+          // dibuja, ver el campo `sea` de `basemaps.ts`—, así que el propio
+          // interruptor lleva al satélite, que es donde mejor se ve. Un
+          // interruptor que no hace nada es peor que uno que hace de más.
+          if (!ocean.on && BASEMAPS[basemap].sea === false) setBasemap('satelite')
+          setOcean((s) => ({ ...s, on: !s.on }))
+        }}
         onOceanSeamarks={() => setOcean((s) => ({ ...s, seamarks: !s.seamarks }))}
         onOceanDepth={() => setOcean((s) => ({ ...s, depth: !s.depth }))}
         onOceanQuality={(quality) => setOcean((s) => ({ ...s, quality }))}

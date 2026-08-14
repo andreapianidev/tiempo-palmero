@@ -5,11 +5,14 @@
  * está en `OceanStatus`. Aquí solo hay decisiones.
  */
 
+import { BASEMAPS, type BasemapId } from '../../lib/basemaps'
 import { OCEAN_QUALITIES, QUALITY, type OceanQuality } from '../../lib/ocean/quality'
 
 interface Props {
   on: boolean
   onToggle: () => void
+  /** El fondo puesto: decide si el mar se dibuja y cómo se compone con él. */
+  basemap: BasemapId
   /** Faros, boyas y puertos de OpenSeaMap: la carta náutica de verdad. */
   seamarks: boolean
   onSeamarks: () => void
@@ -27,6 +30,7 @@ interface Props {
 export function Ocean({
   on,
   onToggle,
+  basemap,
   seamarks,
   onSeamarks,
   depth,
@@ -37,6 +41,8 @@ export function Ocean({
   loading,
   failed,
 }: Props) {
+  /** Sobre la carta topográfica no hay mar en movimiento. Ver `basemaps.ts`. */
+  const drawsSea = BASEMAPS[basemap].sea !== false
   return (
     <>
       <ul className="switches">
@@ -66,6 +72,15 @@ export function Ocean({
         aquí— sobre la batimetría real, con la marea puesta a su altura. Donde
         el fondo sube, la ola crece y rompe; donde la isla abriga, se aplana.
       </p>
+
+      {on && !drawsSea && (
+        <p className="warn small">
+          Sobre el <strong>{BASEMAPS[basemap].label}</strong> no se dibuja: esa
+          carta ya trae su propio mar, con sus batimetrías y sus rótulos, y el
+          agua en movimiento los taparía. En el relieve y en el satélite sigue
+          puesto, y el oleaje de aquí abajo se mide igual.
+        </p>
+      )}
 
       {on && !ready && !failed && (
         <p className="dim small">

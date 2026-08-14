@@ -338,6 +338,7 @@ export function Sidebar(props: Props) {
             <Ocean
               on={props.ocean.on}
               onToggle={props.onOcean}
+              basemap={props.basemap}
               seamarks={props.ocean.seamarks}
               onSeamarks={props.onOceanSeamarks}
               depth={props.ocean.depth}

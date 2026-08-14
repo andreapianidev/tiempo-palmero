@@ -106,6 +106,20 @@ describe('catálogo', () => {
     expect(new Set(BASEMAP_ORDER)).toEqual(new Set(Object.keys(BASEMAPS)))
   })
 
+  it('cada fondo dice qué tiene debajo del agua', () => {
+    // El mar en movimiento se dibuja sobre los dos fondos oscuros y no sobre la
+    // carta topográfica, que ya trae su propio mar dibujado. Y solo el satélite
+    // es una fotografía, que es lo que decide si el agua puede volverse
+    // translúcida de noche para dejarla ver: sobre la tinta lisa del relieve no
+    // hay nada que enseñar y translucirla solo la apagaría.
+    expect(BASEMAPS.satelite.sea).toBe('foto')
+    expect(BASEMAPS.relieve.sea).toBe('plano')
+    expect(BASEMAPS.topografico.sea).toBe(false)
+    // El fondo de papel es el mismo que el que no lleva mar. Si algún día se
+    // añade otro fondo claro, esta prueba obliga a decidirlo a conciencia.
+    for (const b of Object.values(BASEMAPS)) expect(b.sea === false).toBe(b.light)
+  })
+
   it('solo cede los topónimos el fondo que trae los suyos', () => {
     // El 12,5 está medido contra la carta (ver `basemaps.ts`): a z12 sus
     // rótulos no se leen y a z13 sí. Bajarlo dejaría un hueco sin nombres.

@@ -107,6 +107,14 @@ export interface OceanInputs {
   /** Viento medio sobre el mar, m/s. Fija la escala del rizado fino. */
   windMs: number
   light: LightInputs
+  /**
+   * Si debajo del agua hay una fotografía —la ortofoto— o una tinta lisa.
+   *
+   * Lo dice el campo `sea` del fondo de mapa que esté puesto, y aquí solo
+   * decide una cosa: si el agua puede volverse translúcida de noche para dejar
+   * ver lo que hay debajo. Sobre una tinta plana no hay nada que dejar ver.
+   */
+  basePhoto: boolean
 }
 
 export class OceanLayer implements CustomLayerInterface {
@@ -140,6 +148,7 @@ export class OceanLayer implements CustomLayerInterface {
     tideM: 0,
     windMs: 6,
     light: { pm10: null, solarWm2: null },
+    basePhoto: false,
   }
   /** La marea se persigue en vez de saltar: el agua sube despacio. */
   private tideNow = 0
@@ -400,6 +409,7 @@ export class OceanLayer implements CustomLayerInterface {
     // La claridad del momento. Apaga el azul y el turquesa aquí arriba, y en el
     // sombreador apaga también la ortofoto que se ve por debajo del agua.
     if (u.u_lit) gl.uniform1f(u.u_lit, water.lit)
+    if (u.u_baseReveal) gl.uniform1f(u.u_baseReveal, this.inputs.basePhoto ? 1 : 0)
     if (u.u_fade) gl.uniform1f(u.u_fade, this.fade)
 
     const bind = (unit: number, texture: WebGLTexture, location: WebGLUniformLocation | null) => {
