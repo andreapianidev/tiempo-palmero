@@ -14,8 +14,6 @@ import {
   type BasemapId,
 } from '../lib/basemaps'
 import { BASEMAP_LEVELS } from '../lib/realce/levels'
-import { registerRelief } from '../lib/relief/protocol'
-import { RELIEF_SOURCE, reliefLayer, reliefSource } from '../lib/relief/source'
 import { applyOverlayContrast } from './contrast/OverlayContrast'
 import { isBundleVariable, pinLabel, type MapVariable } from '../lib/variables'
 import { place, pillRank, RANK, type Box, type DeclutterItem } from '../lib/declutter'
@@ -402,17 +400,9 @@ export function MapView(props: Props) {
       // El relieve de casa NO se apaga al encender uno: mientras las teselas
       // del servicio llegan, lo que se ve por los huecos es la isla, no un
       // rectángulo negro.
-      // El sombreado propio, ANTES que los fondos externos: los dos se insertan
-      // delante de `municipal-boundaries`, así que el que entra primero queda
-      // debajo. Orden final: hillshade, relieve, GRAFCAN, líneas.
       //
-      // Va aquí y no en `buildStyle` porque registrarlo importa `maplibre-gl`
-      // en tiempo de ejecución, y ese fichero lo comparte la app nativa, donde
-      // esa librería no existe. Ver la cabecera de `mapStyle.ts`.
-      registerRelief(dem.manifest)
-      map.addSource(RELIEF_SOURCE, reliefSource(dem.manifest))
-      map.addLayer(reliefLayer(), 'municipal-boundaries')
-
+      // Se insertan delante de `municipal-boundaries`. Orden final: relleno
+      // insular, hillshade, GRAFCAN, líneas.
       for (const b of EXTERNAL_BASEMAPS) {
         const realce = BASEMAP_LEVELS[b.id]
         map.addSource(basemapSourceId(b.id), b.source)

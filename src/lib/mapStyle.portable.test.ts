@@ -13,9 +13,10 @@ import { describe, expect, it } from 'vitest'
  * app de iOS y Android deje de compilar.
  *
  * Y no se entera nadie: `npm test` y `npm run build` solo miran la web, donde
- * esa importación es perfectamente válida. Ya pasó una vez —el sombreado propio
- * se declaraba dentro de `buildStyle`, y con él entraba `maplibre.addProtocol`—
- * y de ahí sale este test.
+ * esa importación es perfectamente válida. Ya pasó una vez —un sombreado propio
+ * que se declaraba dentro de `buildStyle`, y con él entraba
+ * `maplibre.addProtocol`— y de ahí sale este test. Ese sombreado ya no está,
+ * pero el estilo lo sigue compartiendo la app nativa y la trampa sigue abierta.
  *
  * Las importaciones `import type` no cuentan: TypeScript las borra al compilar
  * y nunca llegan al empaquetado.
@@ -79,22 +80,17 @@ describe('el estilo del mapa sigue siendo portable a la app nativa', () => {
   })
 
   /**
-   * Y la otra orilla: que el detector no diga siempre que no. `relief/protocol`
-   * SÍ importa `maplibre-gl` a runtime —es su trabajo, se registra en ella— y
-   * tiene que salir señalado. Un test que solo comprueba que la lista está
-   * vacía pasaría igual con la expresión regular rota.
+   * Y la otra orilla: que el detector no diga siempre que no. `Terrain3D` SÍ
+   * importa `maplibre-gl` a runtime —le pide la cámara y el terreno, y es solo
+   * de la web— y tiene que salir señalado, sin estar en la cadena del estilo.
+   * Un test que solo comprueba que la lista está vacía pasaría igual con la
+   * expresión regular rota.
    */
   it('y el detector no está roto: caza la importación que sí existe', () => {
-    const src = readFileSync(resolve(HERE, 'relief/protocol.ts'), 'utf8')
-    expect(runtimeMaplibreImport(src)).toBe("import maplibregl from 'maplibre-gl'")
-    expect(files.some((f) => f.endsWith('relief/protocol.ts'))).toBe(false)
-  })
-
-  it('el sombreado propio no se declara en el estilo compartido', () => {
-    // Su fuente y su capa las añade `MapView`, que sí es solo de la web. En la
-    // app nativa un `relieve://` sería una fuente que no carga nunca.
-    const src = readFileSync(resolve(HERE, 'mapStyle.ts'), 'utf8')
-    expect(src).not.toContain('reliefSource')
-    expect(src).not.toContain('registerRelief')
+    const control = resolve(HERE, '../components/terrain/Terrain3D.ts')
+    expect(runtimeMaplibreImport(readFileSync(control, 'utf8'))).toBe(
+      "import maplibregl, { type Map as MlMap } from 'maplibre-gl'",
+    )
+    expect(files.includes(control)).toBe(false)
   })
 })

@@ -127,11 +127,10 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   por cada acceso a sendero, separando coches, motos, pesados, bicicletas y
   peatones, con los últimos ocho días en barras y el denominador de la red a la
   vista (ver [los aforos](#los-aforos-y-el-endpoint-que-no-dice-lo-que-parece)).
-- **Relieve sombreado** generado del mismo modelo de elevación que alimenta el
-  cálculo: cuatro luces, oclusión del cielo y realce de textura, calculados en
-  la máquina de quien mira (ver [cómo se dibuja el
-  relieve](#el-relieve-se-dibuja-aquí-y-no-con-una-sola-luz)). La isla es un
-  volcán: la sombra es lo que la hace legible.
+- **Relieve sombreado** del mismo modelo de elevación que alimenta el cálculo,
+  recortado por la línea de costa que publica el Cabildo (ver [cómo se dibuja el
+  relieve](#el-relieve-lo-dibuja-el-hillshade-de-maplibre-y-no-un-shader-propio)).
+  La isla es un volcán: la sombra es lo que la hace legible.
 
 Todo en castellano. La estructura de i18n está lista para más idiomas.
 
@@ -1650,49 +1649,36 @@ El talud es real y es lo más llamativo de esta isla —sube 6,9 km desde el
 fondo—, pero no se puede enseñar mientras solo exista en dos de los cuatro
 niveles.
 
-### El relieve se dibuja aquí, y no con una sola luz
+### El relieve lo dibuja el `hillshade` de MapLibre, y no un shader propio
 
-El `hillshade` de MapLibre se queda debajo como red de seguridad, pero lo que se
-ve encima es un sombreado propio, calculado tesela a tesela en un shader con las
-mismas teselas terrarium de `public/dem/`. **No se descarga nada nuevo.** Lo que
-cambia es cuánto se les saca, y son tres cosas:
+Lo dibujó un shader propio durante un día: cuatro luces con pesos, oclusión del
+cielo y realce de textura sobre una superficie bicúbica, todo calculado tesela a
+tesela con las mismas teselas terrarium de `public/dem/`. Medido, ganaba donde
+decía ganar —en el 32 % de la isla que mira entre el este y el suroeste, el
+negro sin forma pasaba del 5,67 % al 0,33 %—, y **se ha quitado igualmente**,
+porque su transparencia era el problema:
 
-**Cuatro luces en vez de una.** Con el sol en el noroeste —la convención
-cartográfica— toda ladera orientada al sureste cae al negro, y en La Palma eso
-es la vertiente de Mazo y Fuencaliente entera. Medido sobre las 63 teselas de
-z12 montadas (711 km² de tierra emergida, cota máxima 2400,1 m), el **32 %** de
-la isla mira entre el este y el suroeste. En esa parte, el porcentaje de píxeles
-que salen en negro sin forma —por debajo del 5 % de luminancia— pasa del
-**5,67 % al 0,33 %** al repartir la luz en cuatro focos con pesos.
+- El color de la tierra lo pone otra vez `island-fill`, el **polígono del
+  Cabildo**, con la línea de costa oficial. El sombreado propio lo ponía un
+  raster cuya opacidad era una curva de nivel del DEM, y una curva de nivel
+  sacada de una malla de 33,5 m no es una costa. Medido sobre las 63 teselas de
+  z12: el **72,9 %** de los píxeles de mar del primer anillo —34 m de la
+  orilla— se encendían por encima de 1,25× el fondo, con opacidad media 0,32.
+  Un halo alrededor de la isla entera.
+- Y más allá de ese anillo, **1,52 km²** de mar encendido a manchas, el 98-100 %
+  de ellos píxeles cuyo **propio dato del DEM es positivo**: las teselas
+  terrarium, en la orilla, no distinguen tierra de bajío. Eso no se arregla
+  moviendo el umbral, porque no es un umbral mal puesto: es el dato.
 
-**Y el precio de esas cuatro luces también está medido.** Meterlas en el mismo
-rango de grises comprime el contraste local: el porcentaje de píxeles cuyo
-vecindario entero cae dentro de un mismo nivel de gris de 8 bits sube del 0,21 %
-al 0,53 %. Quien lo paga es el **realce de textura** —la altitud menos su propia
-versión suavizada, la idea de Leland Brown—, que lo devuelve a 0,35 % en toda la
-isla y a 0,10 % en las laderas oscuras, menos de la mitad de lo que daba la luz
-única. La combinación gana en las dos cuentas justo donde importa.
+El `hillshade` de MapLibre ya estaba debajo como red de seguridad —para el caso
+de no tener WebGL2 o de que el shader no compilara— así que quitar la capa de
+encima es volver exactamente al relieve anterior, con la costa recortada por el
+contorno del Cabildo y la isla en el rango oscuro de siempre.
 
-**Y la superficie se reconstruye, no se amplía.** MapLibre lee el modelo en su
-malla y ahí se queda: a partir de z11 la imagen del sombreado se amplía y el
-relieve se vuelve manchas. Aquí la superficie se interpola bicúbica
-(Catmull-Rom) y la pendiente sale de la **derivada analítica** de esa superficie,
-no de restar píxeles vecinos —una malla de 33,5 m derivada por diferencias
-produce escalones de sombra; derivada de verdad, produce laderas—. Las teselas
-salen a 512 px y se siguen dibujando hasta dos niveles por encima del modelo,
-leyendo cada vez el trozo que toca. Entre dos cotas medidas se dibuja la curva
-que las une, que es lo mismo que hace el motor con la temperatura: **suavizar
-entre datos, nunca fabricarlos.** Por eso el margen son dos niveles y no cinco.
-
-La oclusión —una aproximación del factor de vista de cielo, ocho direcciones a
-dos distancias— es lo que hunde la Caldera de Taburiente en vez de dibujarla.
-
-Entra en el mapa por un esquema de URL propio (`relieve://`) registrado en
-MapLibre, así que usa su caché de teselas y se proyecta sobre el terreno en la
-vista 3D como cualquier otro fondo. Si no hay WebGL2, si el shader no compila o
-si faltan teselas del modelo, cada camino devuelve una tesela transparente y lo
-que se ve es el `hillshade` de siempre. Un fondo peor es un problema; un fondo
-negro es una aplicación rota.
+Queda pendiente, y es la vía para recuperar aquellas cuatro luces: recortar el
+sombreado con la **máscara del polígono del Cabildo** que ya se construye para
+el océano (`lib/ocean/land-mask.ts`, 1024² a 34 m por texel) en vez de con la
+cota del modelo. Mientras eso no esté, el relieve es el de la casa.
 
 ### A GRAFCAN se le piden los píxeles que la pantalla va a enseñar
 
@@ -1758,8 +1744,8 @@ debajo. No se sube todo a un mínimo legible; se mueve la escala completa. Hay u
 test que lo exige capa por capa.
 
 Lo que esto **no** arregla: una mediana describe un fondo liso, y la ortofoto no
-lo es —su variación local mediana es 0,0695, cinco veces la del relieve
-(0,0131)—. Sobre un invernadero blanco y un malpaís negro separados por diez
+lo es —de cerca, su variación local mediana es 0,0695, y el relieve es el más
+liso de los tres—. Sobre un invernadero blanco y un malpaís negro separados por diez
 metros no hay un solo color que funcione en los dos; hace falta que cada línea
 lleve su propio halo debajo, que es una capa más por cada capa de línea. Queda
 pendiente y los números para hacerlo ya están medidos. La capa de viento sí lo

@@ -26,13 +26,16 @@
  *    traslada la escala entera.
  *
  * El contraste se calcula sobre la luminancia MEDIANA del fondo, medida sobre
- * teselas reales de cada uno (ver `realce/levels.ts`): relieve 0,292,
- * ortofoto 0,343 y carta topográfica 0,808.
+ * teselas reales de cada uno (ver `realce/levels.ts`): ortofoto 0,343 y carta
+ * topográfica 0,808. El del relieve —0,292— es el único que ya no es una
+ * mediana sino un punto de calibración, y en `realce/levels.ts` está explicado
+ * por qué, con lo que pasa si se pone la mediana de verdad.
  *
  * LO QUE ESTO NO ARREGLA, Y CONVIENE SABERLO. Una mediana describe un fondo
- * liso, y la ortofoto no lo es: su variación local mediana es 0,0695, cinco
- * veces la del relieve (0,0131). Sobre un invernadero blanco y un malpaís negro
- * separados por diez metros no hay un solo color que funcione en los dos —hace
+ * liso, y la ortofoto no lo es: de cerca, su variación local mediana es 0,0695,
+ * y el relieve es el fondo más liso de los tres. Sobre un invernadero blanco y
+ * un malpaís negro separados por diez metros no hay un solo color que funcione
+ * en los dos —hace
  * falta que la línea lleve su propio halo debajo, que es una capa más por cada
  * capa de línea—. Eso queda pendiente y está medido para cuando se haga; lo que
  * este fichero resuelve es el fondo claro entero, que era el caso roto.
@@ -43,8 +46,12 @@ import { contrast, cssRgba, luminance, readableInk, type Ink } from './ratio'
 import { ROLES, ROLE_IDS, type RoleId } from './roles'
 
 /**
- * El fondo para el que se eligieron estos colores. Es el de casa, el que trae
- * la aplicación al abrirse y el único que no depende de nadie.
+ * El fondo para el que se eligieron estos colores: el de casa, el que trae la
+ * aplicación al abrirse y el único que no depende de nadie.
+ *
+ * Tiene que ser EXACTAMENTE `BASEMAP_LEVELS.relieve.luma` —no un número
+ * parecido— porque es lo que hace que sobre el relieve la regla devuelva los
+ * colores de partida bit a bit. Cuánto vale y por qué está ahí explicado.
  */
 export const REFERENCE_LUMA = BASEMAP_LEVELS.relieve.luma
 

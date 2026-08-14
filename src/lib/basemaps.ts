@@ -148,7 +148,7 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
   relieve: {
     id: 'relieve',
     label: 'Relieve',
-    note: 'Sombreado calculado aquí mismo con el modelo de elevación: cuatro luces, oclusión del cielo y realce de textura. Es el fondo sobre el que la malla de color se lee sin competencia.',
+    note: 'Sombreado del modelo de elevación, recortado por la línea de costa del Cabildo. Es el fondo sobre el que la malla de color se lee sin competencia.',
     source: null,
     labelsFrom: null,
     light: false,

@@ -125,12 +125,40 @@ const NEUTRAL = { contrast: 0, brightnessMin: 0, brightnessMax: 1 }
 
 export const BASEMAP_LEVELS: Record<'relieve' | 'topografico' | 'satelite', RasterAdjust> = {
   /**
-   * El relieve no pasa por aquí —se dibuja en casa y ya sale como tiene que
-   * salir—, pero sus dos cifras sí hacen falta: son las que dicen sobre qué
-   * fondo se van a pintar las carreteras. Medidas sobre el sombreado final,
-   * solo en tierra emergida.
+   * El relieve no pasa por aquí —lo dibuja el `hillshade` de MapLibre sobre el
+   * relleno insular y ya sale como tiene que salir—, pero sus dos cifras sí
+   * hacen falta: son las que dicen sobre qué fondo se van a pintar las
+   * carreteras.
+   *
+   * LA VARIACIÓN ESTÁ MEDIDA SOBRE EL FONDO QUE SE DIBUJA HOY: captura de la
+   * aplicación en Chrome sin cabeza el 14 de agosto de 2026, 1600 × 1100, la
+   * isla entera y todas las capas de encima apagadas, 156.275 píxeles de tierra
+   * emergida con la línea de costa y los rótulos recortados. Desviación típica
+   * mediana en ventanas de 5 × 5: **0,0174**. Sustituye al 0,0131 del sombreado
+   * propio de cuatro luces, que estuvo puesto un día y se quitó (ver el README).
+   *
+   * EL `luma` NO ES ESA MEDIANA, Y ESTO HAY QUE LEERLO ENTERO. En esa misma
+   * captura la mediana de la tierra emergida es **0,134**, no 0,292. Pero este
+   * número no describe el fondo: es el punto de referencia contra el que
+   * `contrast/palette.ts` define lo que tiene que conseguir cada tinta en los
+   * DEMÁS fondos —sobre el relieve la cuenta se resuelve sola y devuelve los
+   * colores de siempre, valga lo que valga—. Bajarlo a 0,134 infla las
+   * relaciones de contraste hasta que la traducción a la ortofoto deja de tener
+   * tono: medido, las doce tintas pierden el suyo —las carreteras salen
+   * `rgba(255,255,255,0.63)`, las guaguas `rgba(0,0,0,0.45)` y el ámbar de los
+   * senderos, blanco—. El 0,292 es el valor con el que esa traducción se
+   * calibró y con el que se ve como se ve.
+   *
+   * Queda pendiente y está escrito aquí para no olvidarlo: esto debería dejar
+   * de llamarse «la luminancia del relieve» y ser una constante de calibración
+   * con su propio nombre, o la relación de contraste de la WCAG debería dejar
+   * de ser la forma de medir cuánto resalta una línea sobre una foto.
+   *
+   * Las dos filas de abajo se midieron sobre teselas z16 de GRAFCAN, no sobre
+   * una captura de la isla entera: valen para comparar fondos, no para restar
+   * cifras entre filas.
    */
-  relieve: { ...NEUTRAL, saturation: 0, luma: 0.292, variation: 0.0131 },
+  relieve: { ...NEUTRAL, saturation: 0, luma: 0.292, variation: 0.0174 },
 
   topografico: { ...NEUTRAL, saturation: 0, luma: 0.808, variation: 0.0788 },
 

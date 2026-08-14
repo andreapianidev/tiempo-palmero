@@ -74,8 +74,8 @@ export const COLORS = {
  * ejecución — si una lo hace, el empaquetador de la app nativa no resuelve el
  * módulo y la app deja de compilar, sin que ninguna prueba de la web se entere.
  *
- * Por eso el sombreado propio NO se declara aquí: su fuente y su capa las añade
- * `MapView` al cargar, como ya hacía con los fondos de GRAFCAN.
+ * Por eso los fondos de GRAFCAN no se declaran aquí: sus fuentes y sus capas las
+ * añade `MapView` al cargar, que es solo de la web.
  */
 export function buildStyle(dem: DemManifest): StyleSpecification {
   // Límites exactos de la cobertura descargada. Sin esto MapLibre pide las
