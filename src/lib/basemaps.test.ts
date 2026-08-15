@@ -120,6 +120,23 @@ describe('catálogo', () => {
     for (const b of Object.values(BASEMAPS)) expect(b.sea === false).toBe(b.light)
   })
 
+  it('la luz del sol se repite encima solo donde el fondo la tapa', () => {
+    // El `hillshade` del estilo va DEBAJO de los fondos externos: sobre uno
+    // opaco, el interruptor de luz solar no cambiaría un píxel si no se
+    // repitiera la capa encima (ver `terrain-light-photo.ts`).
+    expect(BASEMAPS.satelite.sunShading).toBe(true)
+    // El relieve la lleva debajo y es el fondo mismo; repetirla sería dos veces.
+    expect(BASEMAPS.relieve.sunShading).toBe(false)
+    // Y la carta topográfica no la quiere: es papel, ya dice el relieve con sus
+    // curvas, y el sombreado es azul oscuro. Misma razón por la que no lleva mar.
+    expect(BASEMAPS.topografico.sunShading).toBe(false)
+    // Un fondo de casa nunca la necesita: si no hay nada externo encima, el
+    // sombreado de debajo se ve. Esto obliga a pensarlo si se añade otro.
+    for (const b of Object.values(BASEMAPS)) {
+      if (b.source === null) expect(b.sunShading, b.id).toBe(false)
+    }
+  })
+
   it('solo cede los topónimos el fondo que trae los suyos', () => {
     // El 12,5 está medido contra la carta (ver `basemaps.ts`): a z12 sus
     // rótulos no se leen y a z13 sí. Bajarlo dejaría un hueco sin nombres.

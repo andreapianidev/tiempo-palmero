@@ -41,6 +41,7 @@ import type { Cloud } from '../lib/sky/scene'
 import { dayFactor, type SkyPosition } from '../lib/sun'
 import { HILLSHADE_DEFAULT, terrainLight } from '../lib/terrain-light'
 import { Terrain3D } from './terrain/Terrain3D'
+import { applySunHillshade, sunHillshadeLayer } from './terrain/SunHillshade'
 import {
   ShadowLayer,
   SHADOW_LAYER_ID,
@@ -501,11 +502,16 @@ export function MapView(props: Props) {
         )
       }
 
-      // LA SOMBRA PROPIA DEL RELIEVE, justo encima de los fondos y debajo de
-      // todo lo demás. Va aquí y no junto al `hillshade` porque la ortofoto es
-      // opaca y tapa el sombreado entero: por debajo de GRAFCAN, esta capa no
-      // se vería con el fondo de satélite puesto, que es justo donde más falta
-      // hace. Ver la cabecera de `shadow/ShadowLayer.ts`.
+      // Y LA LUZ DEL SOL SOBRE EL FONDO FOTOGRÁFICO, por el mismo motivo por el
+      // que la sombra va aquí abajo: la ortofoto es opaca y tapa el `hillshade`
+      // del estilo entero. Es esa misma capa repetida encima y translúcida, sin
+      // fuente nueva ni petición nueva. Ver `terrain/SunHillshade.ts`.
+      map.addLayer(sunHillshadeLayer(), 'municipal-boundaries')
+
+      // LA SOMBRA PROPIA DEL RELIEVE, justo encima de los fondos y de la luz que
+      // acaba de ponerse, y debajo de todo lo demás. Primero lo que la ladera
+      // recibe por su orientación, después lo que le quita lo que tiene delante.
+      // Ver la cabecera de `shadow/ShadowLayer.ts`.
       //
       // Se crea con un píxel transparente y apagada, como la malla: la imagen
       // se sustituye en cada barrido y recrear la fuente hace parpadear el mapa.
@@ -947,6 +953,10 @@ export function MapView(props: Props) {
   //
   // Al apagar se devuelven los valores del estilo, que vienen de la misma
   // constante que el estilo usó para ponerlos.
+  //
+  // Y la misma luz se le pasa a la capa de encima del fondo, que es la que se ve
+  // cuando hay una ortofoto tapando ésta. Van juntas a propósito: son el mismo
+  // sombreado, y calcular la luz dos veces sería tener dos soles otra vez.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready || !map.getLayer('hillshade')) return
@@ -958,8 +968,10 @@ export function MapView(props: Props) {
     map.setPaintProperty('hillshade', 'hillshade-highlight-color', light.highlight)
     map.setPaintProperty('hillshade', 'hillshade-shadow-color', light.shadow)
     map.setPaintProperty('hillshade', 'hillshade-accent-color', light.accent)
+    applySunHillshade(map, { on: props.sunLight.on, basemap: props.basemap, light })
   }, [
     ready,
+    props.basemap,
     props.sunLight.on,
     props.sunLight.sun,
     props.sunLight.moon,

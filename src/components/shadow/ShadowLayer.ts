@@ -11,11 +11,17 @@
  * interpolada, y por la misma razón.
  *
  * DÓNDE VA EN LA PILA, que no es un detalle. Va POR ENCIMA de los fondos de
- * GRAFCAN. La ortofoto es opaca y tapa el `hillshade` entero: medido el 15 de
- * agosto de 2026, con el fondo «Satélite» puesto, la luz solar de
- * `terrain-light.ts` no pinta un solo píxel. Esta capa es entonces la ÚNICA
- * iluminación que llega a la ortofoto, y por eso se inserta después de los
+ * GRAFCAN. La ortofoto es opaca y tapa el `hillshade` del estilo entero: medido
+ * el 15 de agosto de 2026, con el fondo «Satélite» puesto, la luz solar de
+ * `terrain-light.ts` no pintaba un solo píxel. Por debajo de GRAFCAN, esta capa
+ * tampoco se vería justo donde más falta hace, así que se inserta después de los
  * fondos y antes de la malla de color, que es dato y no se sombrea.
+ *
+ * Ese mismo día, y por el mismo motivo, se le puso delante una segunda capa de
+ * `hillshade` translúcida —`terrain/SunHillshade.ts`— para que la luz del sol
+ * también llegue a la foto. El orden entre las dos no es casual: primero lo que
+ * la ladera recibe por su orientación, después lo que le quita lo que tiene
+ * delante.
  *
  * CUÁNDO SE RECALCULA. El barrido cuesta 21 ms sobre la malla a mitad de
  * resolución (medido sobre el DEM real, 896 × 1152, MacBook Air M2), así que no

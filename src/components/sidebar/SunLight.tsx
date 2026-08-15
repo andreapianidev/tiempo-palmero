@@ -34,11 +34,17 @@
  * nube piden además la escena atmosférica encendida, que es de donde salen.
  *
  * PERO NO DEPENDEN LA UNA DE LA OTRA, y por eso son dos casillas y no una con
- * una subordinada. Medido el 15 de agosto de 2026: la ortofoto de GRAFCAN es
- * opaca y va POR ENCIMA del `hillshade` en la pila de capas, así que con el
- * fondo «Satélite» o «Tiempo real» puesto la luz del sol sobre el relieve no
- * pinta un solo píxel. Las sombras sí —van encima de los fondos—, y ahí son la
- * única iluminación que llega a la foto.
+ * una subordinada: cada una contesta media pregunta —hacia dónde mira la ladera
+ * y qué tiene delante— y cualquiera de las dos vale sola.
+ *
+ * LAS DOS FUNCIONAN SOBRE CUALQUIER FONDO, y hubo que hacerlo. La ortofoto de
+ * GRAFCAN es opaca y va POR ENCIMA del `hillshade` del estilo, así que con el
+ * fondo «Satélite» puesto esta casilla no pintaba un solo píxel mientras las
+ * sombras sí: la mitad de la función se veía y la otra mitad no, sin que nada lo
+ * explicara. Desde el 15 de agosto de 2026 el mismo sombreado se repite encima
+ * de la foto, translúcido —ver `lib/terrain-light-photo.ts`, donde su opacidad
+ * está medida contra teselas reales—. Sobre la carta topográfica sigue sin
+ * dibujarse, y a propósito: es papel, y ya trae sus curvas de nivel.
  */
 
 import { n0 } from '../../i18n'
@@ -167,9 +173,13 @@ export function SunLight({
       </p>
 
       <p className="dim small">
-        Sobre los fondos de <strong>satélite y tiempo real</strong> son la única
-        luz que se ve: la ortofoto es opaca y tapa el sombreado del relieve
-        entero, así que ahí la casilla de arriba no cambia nada y ésta sí.
+        Sobre el fondo de <strong>satélite</strong> las dos siguen valiendo. La
+        ortofoto es opaca y tapa el sombreado del relieve, así que ahí la luz se
+        vuelve a dibujar encima de la foto, a un tercio de fuerza: lo justo para
+        mandar sobre la luz del día del vuelo —que va cocida en la imagen y tira
+        por donde le da la gana— sin borrar lo que se ha venido a ver. Sobre la
+        carta <strong>topográfica</strong> no se dibuja: es papel, y sus curvas
+        de nivel ya cuentan el relieve.
       </p>
     </>
   )

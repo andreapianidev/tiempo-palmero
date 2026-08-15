@@ -93,6 +93,23 @@ export interface Basemap {
    *           encima los tapa y desentona con todo lo demás.
    */
   sea: 'foto' | 'plano' | false
+  /**
+   * SI LA LUZ DEL SOL SE VUELVE A DIBUJAR ENCIMA DE ESTE FONDO.
+   *
+   * El `hillshade` del estilo va debajo de los fondos externos, así que sobre
+   * uno opaco no se ve. Los que pongan esto en `true` llevan una segunda capa de
+   * sombreado por encima —misma luz, translúcida—, que es lo que hace que el
+   * interruptor de luz solar signifique algo fuera del relieve. Ver
+   * `terrain-light-photo.ts`, donde está medida su opacidad.
+   *
+   *   relieve      false — el sombreado ES el fondo; encima sería dos veces.
+   *   satélite     true  — la ortofoto lo tapa entero, y es donde más falta hace.
+   *   topográfico  false — y no por descuido. Es la misma razón por la que no
+   *                lleva mar: es papel. La carta ya dice el relieve con sus
+   *                curvas de nivel, y el sombreado —que es azul oscuro— sobre
+   *                papel blanco ensucia las curvas en vez de añadir nada.
+   */
+  sunShading: boolean
 }
 
 /**
@@ -177,6 +194,8 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     // Tinta lisa debajo del agua, y la más oscura de las tres: es donde el mar
     // en movimiento más se nota.
     sea: 'plano',
+    // Aquí el sombreado no va encima: es el fondo mismo.
+    sunShading: false,
   },
   topografico: {
     id: 'topografico',
@@ -191,6 +210,8 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     // Papel. El mar de la carta ya está dibujado, con sus batimetrías y sus
     // rótulos, y no hay océano que quepa encima sin taparlo.
     sea: false,
+    // Y por lo mismo, tampoco luz: las curvas de nivel ya dicen el relieve.
+    sunShading: false,
   },
   satelite: {
     id: 'satelite',
@@ -206,6 +227,9 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     labelsFrom: null,
     light: false,
     sea: 'foto',
+    // La foto es opaca y se come el sombreado de debajo. Aquí la luz del sol se
+    // vuelve a dibujar encima, translúcida: es el único fondo donde hace falta.
+    sunShading: true,
   },
 }
 

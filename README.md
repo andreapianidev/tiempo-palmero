@@ -1654,6 +1654,43 @@ y sombras suaves; una nueva no ilumina nada y queda un relieve apenas insinuado.
 Se le deja un mínimo de sombreado a propósito, porque el mapa se sigue usando de
 noche para leer temperaturas y un relieve sin forma se lee peor.
 
+**Y sobre la ortofoto, otra vez.** La capa `hillshade` del estilo va debajo de
+los fondos de GRAFCAN y la ortofoto es opaca: con el fondo «Satélite» puesto,
+este interruptor no cambiaba un solo píxel, mientras que las sombras arrojadas
+—que van encima de los fondos— sí se veían. Media función encendida y media
+apagada, sin nada que lo explicara. Así que sobre los fondos fotográficos el
+mismo sombreado se repite por encima, translúcido: misma fuente `raster-dem`,
+misma dirección, misma exageración, ninguna tesela nueva.
+
+Lo único que hay que decidir ahí es **con cuánta fuerza**, porque la foto ya
+viene iluminada: trae dentro el sol del día del vuelo, y ese no se apaga. Está
+medido con `scripts/checks/foto-hillshade.ts`, que reescribe los dos shaders de
+MapLibre línea a línea y los compone sobre teselas pedidas en vivo — tres
+recuadros de 6,4 km, la foto a 8,4 m por píxel, tres alturas de sol. En el caso
+peor, sol a 10° sobre la pared de la Caldera:
+
+| opacidad | separación luz/sombra | textura de la foto |
+|---:|---:|---:|
+| 0,20 | +0,036 | 81 % |
+| 0,30 | +0,082 | 73 % |
+| **0,35** | **+0,105** | **69 %** |
+| 0,40 | +0,128 | 65 % |
+| 1,00 | +0,392 | 34 % |
+
+Las dos orillas. **Abajo**, la luz del vuelo, que a esa hora tira en contra: las
+laderas que miran al sol de ahora salen 0,053 más oscuras que las que le dan la
+espalda, así que con 0,20 —que solo consigue +0,036— la luz nueva ni siquiera le
+da la vuelta a la vieja. **Arriba**, un presupuesto declarado: en el caso peor
+tiene que sobrevivir más de dos tercios de la textura propia de la ortofoto. El
+0,35 es la opacidad más fuerte que cabe ahí, y con ella la luz nueva manda 1,98
+veces sobre la del vuelo. Donde hay foto que mirar en vez de pared vertical la
+deja casi entera: 83 % en la colada de Tajogaite, 89 % en el llano de Aridane.
+
+Sobre la **carta topográfica** no se dibuja, y no por descuido: es la misma razón
+por la que tampoco lleva mar. Es papel, ya cuenta el relieve con sus curvas de
+nivel, y un sombreado azul oscuro sobre papel blanco las ensucia en vez de añadir
+nada.
+
 **Y por eso es experimental y no el comportamiento normal: se ve mejor y se lee
 peor.** La luz fija no es un descuido, es una convención con dos siglos detrás
 que deja el mapa igual de legible a cualquier hora; la real hunde media isla en
