@@ -24,6 +24,8 @@ import { Section } from './Section'
 import { PlaceSearch } from './PlaceSearch'
 import { VariablePicker } from './VariablePicker'
 import { FireRisk } from './FireRisk'
+import { Sky3D } from './Sky3D'
+import type { SkyState } from '../../hooks/useSky'
 import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
 import { PlaceSwitches, PLACE_COUNT, activePlaceCount } from './PlaceSwitches'
 import type { PlaceVisibility } from '../../hooks/usePlaces'
@@ -71,6 +73,10 @@ interface Props {
   coverage: CoverageState
   /** La capa experimental de incendios: su modelo y qué le falta. */
   fire: FireRiskState
+  /** La escena atmosférica experimental: la rejilla del cielo y sus cifras. */
+  sky: SkyState
+  sky3dOn: boolean
+  onSky3d: () => void
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
@@ -251,7 +257,18 @@ export function Sidebar(props: Props) {
             todavía no se sostienen como el resto de la aplicación, y ponerla
             arriba las igualaría con lo que sí está medido.
           */}
-          <Section title={t.fireRisk.title} badge={fireOn ? 'activa' : '1'}>
+          {/*
+            El marcador dice cuántas de las funciones experimentales están
+            encendidas, no cuántas hay. Antes decía «1» —el número de funciones—
+            y con dos ya no significaba nada: lo que interesa saber sin abrir la
+            sección es si hay algo experimental actuando sobre lo que se ve.
+          */}
+          <Section
+            title={t.fireRisk.title}
+            badge={`${(fireOn ? 1 : 0) + (props.sky3dOn ? 1 : 0)}/2`}
+          >
+            <Sky3D sky={props.sky} on={props.sky3dOn} onToggle={props.onSky3d} />
+            <hr className="sep" />
             <FireRisk
               fire={props.fire}
               active={fireOn}

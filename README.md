@@ -57,9 +57,11 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
   origen, 124 KB en el navegador, cero almacenamiento propio ·
   [La vista 3D](#la-vista-3d) — sin una descarga más, y por qué no exagera el
   relieve · [El océano](#el-océano) — dos trenes de olas sobre batimetría real
-- [La sección experimental](#la-sección-experimental-y-el-índice-de-incendio) —
-  el índice de incendio: cinco incendios, un clasificador validado escondiendo
-  uno entero cada vez, y todo lo que no puede hacer
+- [La sección experimental](#la-sección-experimental) — [la escena
+  atmosférica](#la-escena-atmosférica-nubes-y-lluvia-en-volumen): cuántas nubes
+  dibuja y por qué esa cuenta sale de una fórmula y no de un gusto · [el índice
+  de incendio](#el-índice-de-incendio): cinco incendios, un clasificador
+  validado escondiendo uno entero cada vez, y todo lo que no puede hacer
 - [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — qué se
   llama de verdad, y con qué permiso
 - [Arquitectura](#arquitectura)
@@ -133,6 +135,11 @@ Detectarlo y descartarlo mejora el RMSE un **43,7 %**.
   el Cabildo, en una sola capa. Al pinchar una salen sus imágenes, de cuándo es
   cada una y quién la opera (ver
   [las webcam](#las-webcam-y-el-dataset-que-apunta-a-un-servidor-caído)).
+- **Nubes y lluvia en tres dimensiones** (experimental): la nubosidad de los
+  tres pisos y la precipitación del modelo, dibujadas como volumen sobre el
+  relieve, cada capa a su cota y arrastrada por el viento de SU nivel —que no es
+  el de superficie— (ver [la escena
+  atmosférica](#la-escena-atmosférica-nubes-y-lluvia-en-volumen)).
 - **Relieve sombreado** del mismo modelo de elevación que alimenta el cálculo,
   recortado por la línea de costa que publica el Cabildo (ver [cómo se dibuja el
   relieve](#el-relieve-lo-dibuja-el-hillshade-de-maplibre-y-no-un-shader-propio)).
@@ -1431,12 +1438,121 @@ que una completa, y la forma no puede ser el único aviso.
 
 ---
 
-## La sección experimental, y el índice de incendio
+## La sección experimental
 
-Es la primera función que entra en un sitio nuevo de la barra lateral,
-**«Experimental»**, plegado y detrás de un aviso. Va ahí y no entre las
-variables normales porque no se sostiene igual que el resto de la aplicación, y
-ponerla al lado de la temperatura la igualaría con una medida.
+Hay un sitio aparte en la barra lateral, **«Experimental»**, plegado y detrás de
+un aviso, para las funciones que no se sostienen igual que el resto de la
+aplicación. Van ahí y no entre las variables normales porque ponerlas al lado de
+la temperatura las igualaría con una medida. Hoy hay dos.
+
+### La escena atmosférica: nubes y lluvia en volumen
+
+Dibuja el tiempo que hay ahora mismo **como volumen sobre el relieve**: bancos
+de nubes a su cota, moviéndose, y cortinas de lluvia colgando de las que llueven
+hasta el suelo que tienen debajo.
+
+**Qué es dato y qué es dibujo**, que es la distinción que sostiene toda la
+función:
+
+| Dato | Dibujo |
+|---|---|
+| Nubosidad de cada piso (bajo, medio, alto), % | La silueta concreta de cada nube |
+| Precipitación, mm en la última hora | Cuántos hilos tiene una cortina de lluvia |
+| Viento que arrastra cada piso | El tamaño de cada mota |
+| La cota a la que va cada capa | — |
+
+El modelo dice que hay un 40 % de cielo cubierto a 1200 m. No dice —ni puede—
+que haya un cúmulo concreto en un punto concreto con esa forma. Esa parte es una
+representación plausible de una cifra real, y el panel lo dice con esas palabras:
+**no es un radar ni una observación**.
+
+**Cuántas nubes hay no se elige: se despeja.** Repartiendo discos de radio `R` al
+azar sobre un área `A`, la fracción de suelo que tapan es `1 − exp(−λ·πR²)`
+—modelo booleano de discos—. Despejando, para tapar una fracción `c` hacen falta
+`N = −(A/πR²)·ln(1−c)` discos. Así, cuando el modelo dice 40 %, lo que se dibuja
+tapa un 40 % del cielo **contando el solape**, que es lo que hace que la regla
+ingenua `N ∝ c` se quede corta en cuanto se pasa de la mitad. Hay una prueba que
+lo mide por Monte Carlo —tira 4000 puntos y cuenta en cuántos cae una mota— y
+comprueba que lo dibujado cae a menos de 10 puntos de lo que el modelo dijo, al
+20 %, al 50 % y al 80 %.
+
+Y el radio crece con la cobertura, que es la otra mitad de la idea: un cielo al
+10 % son cúmulos sueltos de buen tiempo y uno al 95 % es una **manta**, que es lo
+que se ve desde la Cumbre cuando el alisio aprieta. Hacer crecer `R` con `c`
+convierte una cosa en la otra de forma continua.
+
+**El viento no se escala: se pide a su altura.** La solución fácil era coger los
+10 m que la aplicación ya descarga y multiplicarlos por un factor. Medido en el
+centro de la isla el 15 de agosto de 2026 a las 08:30 UTC, en la misma petición:
+
+| Nivel | Velocidad | Dirección |
+|---|---|---|
+| 10 m | 3,3 m/s | **51°** (alisio del noreste) |
+| 900 hPa (~1000 m) | 5,3 m/s | **44°** (el mismo alisio, más arriba) |
+| 700 hPa (~3000 m) | 6,2 m/s | **275°** (del oeste — casi el contrario) |
+| 300 hPa (~9200 m) | 6,4 m/s | 21° |
+
+Los 231° que separan el piso bajo del medio son un cizallamiento normal, y
+significan que cualquier factor aplicado al viento de superficie habría
+arrastrado las nubes medias **justo hacia el lado contrario** al que van. No es
+un error de matiz en la velocidad: es la dirección al revés. Así que cada piso
+pide el viento de su nivel de presión, en la misma llamada.
+
+**La cota de la capa baja sale de la medida cuando la hay.** Los 3 km con los que
+Open-Meteo define `cloud_cover_low` son un techo de clasificación, no una altura:
+una nube de alisio está pegada a la inversión, que en esta isla anda por los
+1000-1600 m. Esa cota ya la mide el
+[mar de nubes](#el-mar-de-nubes-la-cumbre-y-los-senderos-agosto-2026) contra los
+sondeos, así que cuando hay manta diagnosticada la capa baja se dibuja **en
+ella**; si no, en el nivel de condensación por ascenso; y si tampoco, en una cota
+por defecto que el panel etiqueta como la menos fiable de las tres. El panel
+siempre dice cuál de los tres casos está viendo.
+
+**Los umbrales de lluvia están medidos contra esta isla, no copiados.** El
+criterio clásico de lluvia fuerte —7,6 mm/h— es de climas continentales y aquí no
+describe nada. Sobre dos años de archivo horario (ago 2024 – ago 2026) en tres
+puntos —barlovento, cumbre y sotavento—:
+
+| | Barlovento | Cumbre | Sotavento |
+|---|---|---|---|
+| Horas con lluvia | 23,3 % | 17,9 % | 10,4 % |
+| Mediana de esas horas | 0,20 mm/h | 0,20 | 0,20 |
+| Percentil 99 | 3,6 mm/h | 3,9 | 5,1 |
+| Máximo en dos años | 11,1 mm/h | 14,2 | 11,4 |
+
+Con el umbral en 7,6 la escena habría enseñado lluvia intensa un puñado de horas
+en dos años: un estado que no se ve nunca es un estado que no está. Está en
+**3,5 mm/h**, justo por debajo del percentil 99, y el mínimo para dibujar algo en
+0,05 —porque la lluvia normal de La Palma es la lluvia fina, y un umbral cómodo
+de 0,5 se habría comido la mitad de las veces que de verdad llueve.
+
+**Y la lluvia cae a 7 m/s**, que es la velocidad terminal de una gota de 2 mm a
+nivel del mar. No se ha acelerado para que se note más: desde una base a 1200 m
+sobre un suelo a 400, un hilo tarda unos dos minutos en llegar, y eso es lo que
+hace que se lea como una cortina que cuelga y no como lluvia de videojuego. Cada
+hilo conoce la cota del terreno bajo él —el mismo DEM que sombrea el mapa— y
+muere al alcanzarla, para que no se vea llover por dentro de la montaña.
+
+**Cómo se dibuja.** Cada nube es un racimo de motas y cada mota es un punto de
+`gl.POINTS` al que el fragmento le inventa la normal de una esfera: en el centro
+mira a la cámara, en el borde apunta hacia afuera. Con esa normal se ilumina como
+se iluminaría una esfera —el truco del *impostor*—, y miles de esferas solapadas
+leen como una masa con relieve. La luz **no está falseada**: la dirección del sol
+sale de su posición astronómica real y se pasa a los ejes de la cámara con el
+rumbo y la inclinación del mapa, lo cual es exacto para una luz direccional. Se
+gire el mapa como se gire, las nubes se encienden por la cara que da al sol.
+
+La capa va en `renderingMode: '3d'`, así que comparte el búfer de profundidad con
+el relieve: la Cumbre tapa la nube que queda detrás, una manta a 1200 m sale
+cortada por las paredes de la Caldera por donde las corta de verdad, y los picos
+de más de 1600 m asoman por encima. Cuando la base de la capa cae por debajo del
+terreno, eso que se ve pegado a la ladera es exactamente lo que en la isla se
+llama niebla.
+
+No pide nada mientras está apagada, que es como llega: son 70 puntos con once
+variables cada uno.
+
+### El índice de incendio
 
 **Lo primero, lo que no es.** No es un aviso oficial ni sustituye a ninguno.
 Los avisos de riesgo, las alertas y las prohibiciones las publican el Cabildo
@@ -1447,7 +1563,7 @@ incendios se lee como «cuarenta posibilidades de cien», y no es eso.
 
 Lo que sí es: el producto de dos cosas medidas por separado.
 
-### 1. Dónde se quema esta isla — un clasificador, y cinco incendios
+#### 1. Dónde se quema esta isla — un clasificador, y cinco incendios
 
 La pregunta que el modelo contesta es estrecha a propósito: **dado que en La
 Palma se declara un gran incendio, ¿qué probabilidad hay de que llegue a este
@@ -1497,7 +1613,7 @@ concreta: tiene 2.225 km de pistas agrícolas y forestales, y el **60,5 % de las
 celdas tienen una vía dentro**. La mediana de la distancia es 0 m. Aquí casi
 nada es remoto, así que la variable no separa nada.
 
-### 2. Cómo de excepcional es el día — un percentil, no un umbral
+#### 2. Cómo de excepcional es el día — un percentil, no un umbral
 
 Los cinco incendios son cinco días. Con cinco días **no se ajusta un modelo
 meteorológico**: se ajusta un recuerdo. Así que la parte del tiempo no se
@@ -1529,7 +1645,7 @@ de Garafía de 2020 empezó en un día del montón. Con cinco casos eso no valid
 escala ni la desmiente: la sitúa, y se publica tal cual en vez de quedarse con
 los cuatro que quedan bien.
 
-### La validación es la parte seria
+#### La validación es la parte seria
 
 Es donde casi todos los mapas de riesgo de incendio que circulan hacen trampa
 sin querer. Repartir las celdas al azar entre entrenamiento y prueba da un AUC
@@ -1557,7 +1673,7 @@ que el modelo no tiene derecho a saberlo todavía, así que se sacan del ajuste
 por completo. Meterlas como negativas enseñaría que el sitio donde de verdad
 ardió es un sitio que no arde.
 
-### Por qué árboles y no una recta
+#### Por qué árboles y no una recta
 
 Se midió, con el mismo protocolo duro:
 
@@ -1580,7 +1696,7 @@ dentro del ruido de tener cinco pliegues mientras que las interacciones de
 cuatro variables ajustadas sobre cinco incendios son exactamente cómo se
 memoriza un perímetro.
 
-### Qué llega al navegador
+#### Qué llega al navegador
 
 Nada de todo eso. El entrenamiento vive en `scripts/ml/`, en Python con
 scikit-learn, y se corre a mano; lo que se despliega son **dos ficheros**:
@@ -1604,7 +1720,7 @@ comparado con `<` en vez de `<=`, la tasa de aprendizaje aplicada dos veces o el
 orden de las columnas cambiado al reentrenar no rompen nada: producen un mapa
 con la forma de la isla, colores verosímiles y cifras equivocadas.
 
-### El combustible, y el año que lleva pegado
+#### El combustible, y el año que lleva pegado
 
 La cartografía de **modelos de combustible de Canarias** que publica el Gobierno
 de Canarias trae La Palma ya recortada: 14.153 polígonos a 25 m con la
@@ -1624,7 +1740,7 @@ dos**, casi todas en el borde de la costa. Ahí no se pinta nada y la ficha lo
 dice. «No lo sé» y «aquí no arde» son cosas distintas, y colapsarlas pintaría de
 tranquilo justo lo que nadie ha mirado.
 
-### Lo que esta capa no puede hacer
+#### Lo que esta capa no puede hacer
 
 - **No predice igniciones.** Aprende dónde llegan los incendios, no dónde
   empiezan.

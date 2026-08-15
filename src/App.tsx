@@ -32,6 +32,9 @@ import { DEFAULT_EXAGGERATION, type Exaggeration } from './lib/terrain'
 import { autoQuality, type OceanQuality } from './lib/ocean/quality'
 import { buildVaporField } from './lib/vapor/field'
 import { breathAt } from './lib/vapor/breath'
+import { useSky } from './hooks/useSky'
+import { islandLcl } from './lib/sky/base'
+import { solarPosition } from './lib/sun'
 import { PARTICLE_SPEEDUP } from './lib/vapor/clock'
 import { useBreathClock } from './hooks/useBreathClock'
 
@@ -326,6 +329,35 @@ export default function App() {
     [breathClock.at],
   )
 
+  /**
+   * La escena atmosférica en 3D. Función experimental, apagada al llegar.
+   *
+   * Apagada NO por prudencia estética sino porque cuesta una petición de 70
+   * puntos con once variables cada uno: quien no la use no la paga. Es la misma
+   * regla que el Roque, la ETo o los senderos.
+   */
+  const [sky3dOn, setSky3dOn] = useState(false)
+  /**
+   * El nivel de condensación medio de la isla, para cuando no hay manta
+   * diagnosticada. Se calcula solo con la escena encendida —recorre 576 puntos
+   * del motor— y solo hace falta si el sondeo no ha encontrado inversión.
+   */
+  const lclM = useMemo(
+    () => (sky3dOn && !deck?.present ? islandLcl(data.dem, data.models) : null),
+    [sky3dOn, deck, data.dem, data.models],
+  )
+  const sky = useSky(sky3dOn, deck, lclM, data.lastUpdate)
+  /**
+   * Dónde está el sol AHORA sobre el centro de la isla: es lo que ilumina las
+   * nubes. Se recalcula con `now`, que ya late una vez por minuto para el resto
+   * de la interfaz; el sol se mueve 0,25° por minuto, así que ese ritmo sobra y
+   * no hace falta un reloj propio.
+   */
+  const sun = useMemo(
+    () => solarPosition(new Date(now), ISLAND_BREATH_LON, ISLAND_BREATH_LAT),
+    [now],
+  )
+
   const roque = data.roque
   const agro = useAgro(data.dem, openSections.agro)
   const trailReports = useTrailReports(
@@ -517,6 +549,7 @@ export default function App() {
         counters={counters.sites}
         wind={wind.field}
         vapor={vaporField}
+        sky3d={{ on: sky3dOn, clouds: sky.clouds, sun }}
         vaporClock={{
           at: breathClock.at,
           timeScale: breathClock.playing ? PARTICLE_SPEEDUP : 1,
@@ -660,6 +693,9 @@ export default function App() {
         viario={{ loading: viario.loading, failed: viario.failed, tracksZoomReached }}
         tdt={{ loading: tdt.loading, failed: tdt.failed }}
         deck={deck}
+        sky={sky}
+        sky3dOn={sky3dOn}
+        onSky3d={() => setSky3dOn((v) => !v)}
         vapor={{
           field: vaporField,
           breath,

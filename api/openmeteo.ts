@@ -45,6 +45,8 @@ const TTL_SECONDS: Record<string, number> = {
   profile: 600,
   /** Rejilla de viento de fondo, donde no llega ninguna estación. */
   wind: 300,
+  /** Rejilla de nubosidad y lluvia de la escena 3D. Misma malla que el viento. */
+  sky: 300,
   /** Evapotranspiración de referencia, que se refresca una vez al día. */
   eto: 3600,
 }

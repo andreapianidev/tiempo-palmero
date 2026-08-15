@@ -35,6 +35,10 @@ import type { OceanQuality } from '../lib/ocean/quality'
 import type { OceanData } from '../hooks/useOcean'
 import { VaporLayer } from './vapor/VaporLayer'
 import type { VaporField } from '../lib/vapor/field'
+import { CloudLayer } from './sky/CloudLayer'
+import { RainLayer } from './sky/RainLayer'
+import type { Cloud } from '../lib/sky/scene'
+import { dayFactor, type SolarPosition } from '../lib/sun'
 import { Terrain3D } from './terrain/Terrain3D'
 import { markerSize } from './markers/size'
 import { silenceDepthProbe } from './markers/depthProbe'
@@ -204,6 +208,20 @@ interface Props {
   /** La hora que se está dibujando y a qué velocidad corre su sol. */
   vaporClock: { at: Date; timeScale: number }
   /**
+   * La escena atmosférica en tres dimensiones: nubes y lluvia.
+   *
+   * Va aparte de `visible` por lo mismo que la vista 3D y el océano: no es una
+   * capa más de la lista, es una función experimental que se enciende en su
+   * propia sección y que no debe contar en el marcador de capas activas.
+   *
+   * Las nubes llegan YA COLOCADAS —`hooks/useSky.ts` las construye a partir de
+   * la rejilla del modelo— y aquí solo se dibujan y se mueven. Es la misma
+   * división que con el vapor: quien decide qué hay es un módulo de `lib/`,
+   * quien lo pinta es una capa de GL, y el panel enseña las mismas cifras que
+   * el mapa está usando porque son literalmente el mismo objeto.
+   */
+  sky3d: { on: boolean; clouds: Cloud[]; sun: SolarPosition }
+  /**
    * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
    * capa más: cambia la cámara, no lo que se dibuja. Ver `lib/terrain.ts`.
    */
@@ -311,6 +329,9 @@ export function MapView(props: Props) {
   const oceanLayerRef = useRef<OceanLayer | null>(null)
   /** La de vapor, por lo mismo: objeto WebGL con partículas que sobreviven. */
   const vaporLayerRef = useRef<VaporLayer | null>(null)
+  /** Las dos de la escena atmosférica, por lo mismo. */
+  const cloudLayerRef = useRef<CloudLayer | null>(null)
+  const rainLayerRef = useRef<RainLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
   const terrainRef = useRef<Terrain3D | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
@@ -528,6 +549,24 @@ export function MapView(props: Props) {
       vaporLayerRef.current = vaporLayer
       map.addLayer(vaporLayer)
 
+      // Las nubes van ENCIMA del vapor, que es el orden en que están en el
+      // aire: el vapor sube desde el suelo y deja de dibujarse justo en el
+      // nivel de condensación, que es donde empieza la nube. Las dos capas
+      // comparten esa cota —`decks.ts` usa el mismo nivel que `vapor/field.ts`—
+      // así que la columna de bruma entrega el relevo a la nube sin solaparse.
+      //
+      // Y la lluvia después de las nubes: cuelga por debajo de la base de la
+      // suya, así que casi nunca compiten por el mismo píxel, y donde compiten
+      // —una cortina vista de frente con su nube detrás— lo correcto es que el
+      // agua se vea delante.
+      const cloudLayer = new CloudLayer()
+      cloudLayerRef.current = cloudLayer
+      map.addLayer(cloudLayer)
+
+      const rainLayer = new RainLayer()
+      rainLayerRef.current = rainLayer
+      map.addLayer(rainLayer)
+
       // El relieve no añade ninguna capa: reutiliza la fuente `terrain` del
       // estilo, que ya está cargada porque la usa el sombreado.
       terrainRef.current = new Terrain3D(map)
@@ -708,6 +747,8 @@ export function MapView(props: Props) {
     return () => {
       terrainRef.current?.destroy()
       terrainRef.current = null
+      cloudLayerRef.current = null
+      rainLayerRef.current = null
       map.remove()
       mapRef.current = null
       setReady(false)
@@ -945,6 +986,44 @@ export function MapView(props: Props) {
     if (!ready) return
     vaporLayerRef.current?.setClock(props.vaporClock.at, props.vaporClock.timeScale)
   }, [ready, props.vaporClock.at, props.vaporClock.timeScale])
+
+  // --- escena atmosférica: nubes y lluvia -----------------------------------
+  //
+  // Mismo criterio que las dos anteriores: los datos entran por método y la capa
+  // no se vuelve a crear nunca. Aquí importa el doble, porque recrearla no solo
+  // recompilaría los shaders: rebarajaría las siluetas de todas las nubes y
+  // reiniciaría la cortina de lluvia a medio caer.
+  //
+  // La escena y la lluvia se ponen en el MISMO efecto y con la misma
+  // dependencia. Son la misma escena vista dos veces —de qué nubes cae el agua
+  // es una propiedad de esas nubes—, y separarlos abría la puerta a un
+  // fotograma con la lluvia de la escena anterior colgando de las nubes de la
+  // nueva.
+  useEffect(() => {
+    if (!ready) return
+    cloudLayerRef.current?.setScene(props.sky3d.clouds)
+    rainLayerRef.current?.setScene(props.sky3d.clouds, dem)
+  }, [ready, props.sky3d.clouds, dem])
+
+  useEffect(() => {
+    if (!ready) return
+    cloudLayerRef.current?.setVisible(props.sky3d.on)
+    rainLayerRef.current?.setVisible(props.sky3d.on)
+  }, [ready, props.sky3d.on])
+
+  useEffect(() => {
+    if (!ready) return
+    cloudLayerRef.current?.setExaggeration(props.terrain.exaggeration)
+    rainLayerRef.current?.setExaggeration(props.terrain.exaggeration)
+  }, [ready, props.terrain.exaggeration])
+
+  // La luz. Las dos capas tienen que recibir el MISMO sol: si la nube se
+  // apagara al anochecer y la lluvia no, se vería llover de un cielo vacío.
+  useEffect(() => {
+    if (!ready) return
+    cloudLayerRef.current?.setSun(props.sky3d.sun)
+    rainLayerRef.current?.setDay(dayFactor(props.sky3d.sun.elevation))
+  }, [ready, props.sky3d.sun])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {

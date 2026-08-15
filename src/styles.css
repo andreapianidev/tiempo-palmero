@@ -268,6 +268,12 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .switches label:hover { color: var(--fg); }
 .switches input { accent-color: var(--amber); width: 15px; height: 15px; cursor: pointer; }
 
+/* Separa dos funciones dentro de una misma sección. Hoy solo lo usa
+   «Experimental», que es la única que contiene más de una cosa independiente:
+   sin la raya, el interruptor de incendios parecía otra opción de la escena
+   atmosférica que tiene encima. */
+.sep { border: 0; border-top: 1px solid var(--line); margin: 16px 0 12px; }
+
 .search { margin-top: 14px; position: relative; }
 .search input {
   width: 100%;

@@ -821,6 +821,37 @@ export const es = {
     age: 'Sondeo de noviembre y diciembre de 2013. No hay medidas posteriores: esto NO es la cobertura de hoy. Desde entonces se desplegó el 4G, llegó el 5G y la erupción de 2021 se llevó parte de la red del oeste.',
   },
 
+  /**
+   * La escena atmosférica. Las cadenas dicen lo que es y lo que NO es, porque
+   * es la capa de la aplicación con más capacidad de que la confundan con un
+   * radar meteorológico. Ver la cabecera de `components/sidebar/Sky3D.tsx`.
+   */
+  sky3d: {
+    layer: 'Nubes y lluvia en 3D',
+    hint:
+      'Dibuja la nubosidad y la lluvia del modelo como volumen sobre el relieve. Las nubes van a la cota que les toca, se mueven con el viento de SU nivel —que no es el de superficie: hoy el aire de 900 hPa venía del noreste y el de 700 hPa del oeste— y el relieve las tapa cuando quedan detrás.',
+    loading: 'Pidiendo la nubosidad al modelo…',
+    failed: 'No se pudo cargar la nubosidad del modelo.',
+    low: 'Nubosidad baja',
+    mid: 'Nubosidad media',
+    high: 'Nubosidad alta',
+    rain: 'Puntos con lluvia',
+    rainValue: (n: number) => `${n} de 70`,
+    base: 'Capa baja',
+    /**
+     * De dónde sale la cota de la capa baja. Son tres frases distintas porque
+     * son tres grados de certeza distintos, y decir «1200 m» sin más las
+     * igualaría.
+     */
+    baseSource: {
+      deck: 'La cota sale del sondeo de hoy: es la inversión del alisio que ha encontrado el modelo, la misma que usa el mar de nubes.',
+      lcl: 'No hay inversión diagnosticada hoy, así que la cota es el nivel de condensación por ascenso que sale de la temperatura y el punto de rocío medios de la isla.',
+      default: 'Sin sondeo ni superficie con que calcularla, la capa se dibuja a la cota en la que suele estar la inversión en esta isla. Es la menos fiable de las tres.',
+    },
+    scope:
+      'No es un radar ni una observación. Lo medido es un porcentaje de nubosidad por piso, del modelo ICON, en celdas de 5 km sobre la isla y de ~25 km sobre el mar; la forma concreta de cada nube es una representación de esa cifra, no una nube que alguien haya visto.',
+  },
+
   fireRisk: {
     title: 'Experimental',
     layer: 'Índice de incendio',

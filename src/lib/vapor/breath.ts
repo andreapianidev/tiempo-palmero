@@ -24,68 +24,19 @@
  * la interfaz lo dice donde se enciende.
  */
 
-/** Grados a radianes y al revés, que aquí se usan a cada paso. */
-const RAD = Math.PI / 180
-const DEG = 180 / Math.PI
+import { solarPosition } from '../sun'
 
 /**
- * Elevación del sol sobre el horizonte, en grados.
+ * Elevación del sol sobre el horizonte, en grados. Negativo de noche.
  *
- * Algoritmo de posición solar de la NOAA en su forma reducida: da mejor de
- * 0,01° entre 1950 y 2050, que es una precisión ridículamente alta para lo que
- * se le pide —saber si el sol lleva tres horas calentando una ladera o tres
- * horas sin hacerlo—, pero es corto y no tiene casos raros.
- *
- * Negativo de noche. En el solsticio de verano en La Palma llega a ~78°.
+ * El cálculo vive en `lib/sun.ts` desde que la escena 3D necesitó también el
+ * azimut para iluminar las nubes: son la misma astronomía y estaba a un paso de
+ * quedar copiada en dos ficheros. Se sigue exportando desde aquí porque es
+ * donde la busca quien lee el reloj de la brisa, y porque las pruebas de este
+ * módulo son las que responden de ella.
  */
 export function solarElevation(at: Date, lon: number, lat: number): number {
-  // Día juliano y siglos julianos desde J2000.
-  const jd = at.getTime() / 86_400_000 + 2_440_587.5
-  const t = (jd - 2_451_545) / 36_525
-
-  const meanLong = (280.46646 + t * (36_000.76983 + t * 0.0003032)) % 360
-  const meanAnom = 357.52911 + t * (35_999.05029 - 0.0001537 * t)
-  const eccent = 0.016708634 - t * (0.000042037 + 0.0000001267 * t)
-
-  const center =
-    Math.sin(meanAnom * RAD) * (1.914602 - t * (0.004817 + 0.000014 * t)) +
-    Math.sin(2 * meanAnom * RAD) * (0.019993 - 0.000101 * t) +
-    Math.sin(3 * meanAnom * RAD) * 0.000289
-  const trueLong = meanLong + center
-
-  const omega = 125.04 - 1934.136 * t
-  const apparentLong = trueLong - 0.00569 - 0.00478 * Math.sin(omega * RAD)
-
-  const meanObliq =
-    23 + (26 + (21.448 - t * (46.815 + t * (0.00059 - t * 0.001813))) / 60) / 60
-  const obliq = meanObliq + 0.00256 * Math.cos(omega * RAD)
-
-  const declination =
-    Math.asin(Math.sin(obliq * RAD) * Math.sin(apparentLong * RAD)) * DEG
-
-  // Ecuación del tiempo, en minutos.
-  const y = Math.tan((obliq / 2) * RAD) ** 2
-  const eqTime =
-    4 *
-    DEG *
-    (y * Math.sin(2 * meanLong * RAD) -
-      2 * eccent * Math.sin(meanAnom * RAD) +
-      4 * eccent * y * Math.sin(meanAnom * RAD) * Math.cos(2 * meanLong * RAD) -
-      0.5 * y * y * Math.sin(4 * meanLong * RAD) -
-      1.25 * eccent * eccent * Math.sin(2 * meanAnom * RAD))
-
-  // Hora solar verdadera. Se trabaja en UTC y se corrige con la longitud: la
-  // zona horaria oficial no pinta nada aquí, el sol no la conoce.
-  const minutesUtc =
-    at.getUTCHours() * 60 + at.getUTCMinutes() + at.getUTCSeconds() / 60
-  const trueSolarMin = (minutesUtc + eqTime + 4 * lon + 1440) % 1440
-  const hourAngle = trueSolarMin / 4 - 180
-
-  const zenith = Math.acos(
-    Math.sin(lat * RAD) * Math.sin(declination * RAD) +
-      Math.cos(lat * RAD) * Math.cos(declination * RAD) * Math.cos(hourAngle * RAD),
-  )
-  return 90 - zenith * DEG
+  return solarPosition(at, lon, lat).elevation
 }
 
 /**
