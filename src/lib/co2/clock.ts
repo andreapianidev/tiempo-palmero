@@ -37,22 +37,10 @@
  * de hacer nada por sí solo, sin que nadie tenga que acordarse de venir aquí.
  */
 
+import { canaryOffsetMs } from '../cabildo'
+
 /** Margen antes de dar por corrido un reloj. Un lote sano no pasa de aquí. */
 export const SKEW_TOLERANCE_MS = 5 * 60 * 1000
-
-/**
- * Desfase de Canarias respecto a UTC en un instante, en ms. +1 h en horario de
- * verano, 0 el resto del año. Sale de la base de zonas horarias del propio
- * entorno, no de una tabla escrita a mano que habría que mantener.
- */
-export function canaryOffsetMs(atMs: number): number {
-  const d = new Date(atMs)
-  const local = new Date(d.toLocaleString('en-US', { timeZone: 'Atlantic/Canary' }))
-  const utc = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }))
-  // Al minuto: `toLocaleString` pierde los milisegundos y dejaría un resto que
-  // no significa nada.
-  return Math.round((local.getTime() - utc.getTime()) / 60_000) * 60_000
-}
 
 /**
  * Cuánto hay que restar a los `Ts` de un lote para que sean UTC de verdad.

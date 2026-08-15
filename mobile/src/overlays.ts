@@ -38,11 +38,14 @@ export const OVERLAYS: OverlaySwitch[] = [
 ]
 
 /**
- * Al arrancar, ninguna: en un teléfono el mapa entra ya con la malla de color y
- * los pins de las estaciones encima, y añadirle de salida senderos, guaguas y
- * carreteras lo convierte en un plano. Las cámaras de incendios son la
- * excepción de la web —van encendidas— y aquí no, porque allí caben en un
+ * La PRIMERA vez, ninguna: en un teléfono el mapa entra ya con la malla de
+ * color y los pins de las estaciones encima, y añadirle de salida senderos,
+ * guaguas y carreteras lo convierte en un plano. Las cámaras de incendios son
+ * la excepción de la web —van encendidas— y aquí no, porque allí caben en un
  * margen y aquí se comerían la isla.
+ *
+ * A partir de la segunda manda lo que el usuario dejó encendido; esto pasa a
+ * ser el relleno de lo que no se reconozca. Ver `useOverlays.ts`.
  */
 export const NO_OVERLAYS: OverlayVisibility = {
   trails: false,

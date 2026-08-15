@@ -31,7 +31,7 @@ import {
 import type { OceanLight } from '../../lib/ocean/light'
 import { airMass } from '../../lib/shadow/depth'
 import type { SkyPosition } from '../../lib/sun'
-import { sunScreen } from '../../lib/sky/sun-screen'
+import { CAMERA_FOV_DEG, sunScreen } from '../../lib/sky/sun-screen'
 import { SUN_FRAGMENT_SHADER, SUN_VERTEX_SHADER } from './sun-shaders'
 
 export const SUN_LAYER_ID = 'sky-sun'
@@ -46,16 +46,6 @@ type ViewMatrix = Parameters<CustomRenderMethod>[1]
  * total o anular— y esa diferencia aquí no la vería nadie: es medio píxel.
  */
 const SUN_ANGULAR_DIAMETER_DEG = 0.533
-
-/**
- * Campo de visión vertical de la cámara de MapLibre: 36,87°, su valor de
- * fábrica (`Transform.fov`, 0,6435 rad).
- *
- * Se lee del transform si está disponible y si no se usa éste. Hace falta para
- * una sola cosa: pasar de grados de cielo a fracción de pantalla, que es lo que
- * decide el tamaño del disco.
- */
-const DEFAULT_FOV_DEG = 36.87
 
 /**
  * Cuántas veces el radio del disco mide el cuadrilátero que se dibuja.
@@ -179,7 +169,7 @@ export class SunLayer implements CustomLayerInterface {
     // Medio grado de cielo, en fracción de media pantalla. El campo de visión de
     // MapLibre no es API pública: se lee si está y si no se usa el de fábrica.
     const fovDeg =
-      (map.transform as unknown as { fov?: number } | undefined)?.fov ?? DEFAULT_FOV_DEG
+      (map.transform as unknown as { fov?: number } | undefined)?.fov ?? CAMERA_FOV_DEG
     const halfFov = (fovDeg / 2) * (Math.PI / 180)
     const discRadius =
       Math.tan(((SUN_ANGULAR_DIAMETER_DEG / 2) * Math.PI) / 180) / Math.tan(halfFov)

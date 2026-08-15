@@ -64,7 +64,8 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
   validado escondiendo uno entero cada vez, y todo lo que no puede hacer
 - [Licencias en tiempo de ejecución](#licencias-en-tiempo-de-ejecución) — qué se
   llama de verdad, y con qué permiso
-- [Arquitectura](#arquitectura)
+- [Arquitectura](#arquitectura) — [lo elegido dura](#lo-elegido-dura): qué se
+  guarda, qué no, y por qué lo guardado no se cree a ciegas
 - [La aplicación de iOS y Android](#la-aplicación-de-ios-y-android) — Expo sobre
   el mismo motor, sin una línea de cálculo duplicada
 - [Trampas de esta API](#trampas-de-esta-api-que-ya-están-resueltas-en-el-código)
@@ -1785,13 +1786,43 @@ a su altura, con la aureola apagándose según la masa de aire que atraviesa el
 rayo. Va al fondo del búfer de profundidad, así que **el relieve lo tapa sin que
 haya que calcular ninguna oclusión**. El disco borra el cielo que tiene detrás y
 la aureola se suma: con la mezcla aditiva a secas salía blanco azulado a 9° de
-altura, que es justo lo que no hace un sol poniente. Tiene casilla propia, porque
-es lo único de esta función que dibuja en vez de iluminar.
+altura, que es justo lo que no hace un sol poniente. Tiene casilla propia porque
+dibujar un sol sobre un mapa de datos es una decisión de quien mira, no del
+programa.
 
 Y una limitación que conviene decir: con la vista al tope, el borde de arriba de
-la pantalla queda a **3,4° sobre el horizonte** —campo de visión de 36,87°—, así
-que el disco solo entra en cuadro con el sol más bajo que eso y mirando hacia él.
-El resto del día está ahí, encima de la pantalla, iluminando todo lo demás.
+la pantalla queda a **3,4° sobre el horizonte** —75° de inclinación y 18,4° de
+medio campo de visión—, así que el disco solo entra en cuadro con el sol más bajo
+que eso y mirando hacia él. El resto del día está ahí, encima de la pantalla,
+iluminando todo lo demás.
+
+**La carrera del sol**, que es la respuesta a esa limitación. El disco se
+enciende a las cuatro de la tarde y no dibuja nada, porque el sol está a 68° y la
+pantalla llega a 3,4: una casilla marcada sin efecto no se distingue de una
+averiada. El camino que el sol recorre hoy, en cambio, **baja hasta el horizonte
+por los dos extremos**, que además es donde está la pregunta que se hace delante
+de un mapa de La Palma: por dónde sale y por dónde se pone, hoy —30° más al norte
+en junio que en diciembre—.
+
+Se dibuja del orto al ocaso oficiales (**−0,833°**: 16′ de semidiámetro más 34′
+de refracción), muestreado cada **20 minutos**. Ese paso está medido, no elegido:
+contra un muestreo de un minuto el 21 de junio —el día más largo—, la polilínea
+se separa del arco 0,020°, que con 24 píxeles por grado es medio píxel. A 30
+minutos serían 1,1 px y a 60, 4,4: un arco hecho de trozos rectos. Lleva **una
+marca por cada hora en punto** del reloj de la isla —contar marcas hasta el
+horizonte es contar la luz que queda— y una marca larga donde está el sol ahora.
+
+**Lo que no se ve es la mitad del dato.** La línea va al fondo del búfer de
+profundidad, igual que el disco, así que el relieve la tapa: el trozo escondido
+detrás de la Cumbre es exactamente el rato que el sol tarda en asomar por encima
+del filo después de haber salido. En el valle de Aridane eso es más de una hora
+entre el orto del almanaque y el amanecer de verdad, y sale dibujado sin calcular
+nada.
+
+Las horas se comprobaron contra un tercero, porque salen escritas en el panel:
+Open-Meteo para 28,65 N 17,86 O, cuatro días de 2026 —14 de mayo, 21 de junio, 15
+y 30 de agosto—. **Máxima diferencia, 1 minuto**, que es la resolución con la que
+ellos las publican.
 
 **Y por eso es experimental y no el comportamiento normal: se ve mejor y se lee
 peor.** La luz fija no es un descuido, es una convención con dos siglos detrás
@@ -2138,6 +2169,7 @@ src/lib/
   ├── grid.ts             Malla raster de ~200 m
   ├── counters/           Aforos: modelo del día, del pulso y del censo
   ├── webcams/            Catálogo depurado de webcams, con su procedencia
+  ├── settings/           Lo elegido, que dura: cajón por plataforma y validación
   └── cabildo.ts          Cliente de la API, decodificación posicional
 ```
 
@@ -2420,6 +2452,51 @@ El umbral de 720 px está escrito **una sola vez**, en `useIsMobile()`. La hoja
 de estilos no lo repite: cuelga de la clase `.app-mobile` que pone ese hook, y
 así no hay ninguna franja de anchos en la que JavaScript monte una disposición
 y el CSS pinte la otra.
+
+### Lo elegido dura
+
+Hasta agosto de 2026 no duraba nada. Cada interruptor vivía en un `useState` con
+su valor de fábrica escrito al lado, así que recargar la página —o que el
+teléfono matara la app en segundo plano, o desplegar una versión nueva— devolvía
+la isla al estado de la primera visita. Quien miraba siempre el punto de rocío,
+con el fondo de satélite y el mar encendido, lo volvía a encender cada vez.
+
+Ahora se guardan **todos** los ajustes: las capas, los sitios, la variable, el
+fondo, la vista 3D con su exageración, el océano con sus tres opciones, la
+escena atmosférica, la luz solar y sus sombras, y qué secciones del panel están
+desplegadas. En la web van a `localStorage`; en el móvil, a un archivo del
+directorio de documentos —`expo-file-system`, que ya estaba en el proyecto para
+el caché del DEM, en vez de un módulo nativo más—. Las dos lecturas son
+**síncronas**, y eso no es un detalle de implementación: hidratar después del
+primer render obliga a pintar la malla en temperatura y corregirla al fotograma
+siguiente, y ese salto se ve.
+
+Lo que **no** se guarda es el estado de la sesión: el punto consultado, la ficha
+abierta, la ubicación, si el zoom da ya para ver las paradas. Son respuestas a
+algo que se acaba de preguntar, no preferencias.
+
+Dos consecuencias que conviene tener escritas, porque son facturas reales y no
+efectos secundarios inesperados:
+
+- **Las capas pesadas se vuelven a pedir en cada arranque.** La red de guaguas
+  son 1,5 MB y el viario de OSM 5,2 MB, y no se descargan hasta que su
+  interruptor se enciende; dejarlo encendido significa pedirlos otra vez mañana.
+  Lo mismo con la ETo de la sección de agricultura. Es lo que se pidió al dejar
+  el interruptor puesto, pero en red móvil se nota.
+- **La calidad del océano deja de medirse sola.** `autoQuality()` mira los
+  píxeles de la pantalla y el equipo, y solo corre la primera vez; después manda
+  la guardada, porque el ajuste no distingue una calidad medida de una elegida a
+  mano. Quien enchufe el mismo portátil a un monitor de 4K arranca con la
+  calidad que se midió sin él, y lo corrige en un toque desde el panel.
+
+Nada de lo guardado se cree a ciegas. Lo que sale del disco lo escribió una
+versión anterior de la aplicación, así que se valida entero contra el catálogo
+vivo (`lib/settings/revive.ts`): **lo que no se reconoce se sustituye por el
+valor de fábrica y lo demás se conserva**. Una capa retirada no puede llevarse
+por delante las ocho que siguen encendidas, una capa añadida esta semana no
+puede impedir leer lo guardado el mes pasado, y una calidad de océano renombrada
+no puede apagarle el mar a quien lo tenía puesto. Los tres casos, con su
+contrario al lado, están en `revive.test.ts` y `store.test.ts`.
 
 ---
 

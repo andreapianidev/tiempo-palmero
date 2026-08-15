@@ -27,14 +27,23 @@ import { useFireRisk } from './hooks/useFireRisk'
 import { fireValueAt } from './lib/fire/field'
 import type { DisplayVariable } from './lib/interpolate'
 import type { GazetteerEntry } from './lib/api'
-import { BASEMAPS, type BasemapId } from './lib/basemaps'
-import { DEFAULT_EXAGGERATION, type Exaggeration } from './lib/terrain'
-import { autoQuality, type OceanQuality } from './lib/ocean/quality'
+import { BASEMAPS, BASEMAP_ORDER, type BasemapId } from './lib/basemaps'
+import {
+  DEFAULT_EXAGGERATION,
+  EXAGGERATIONS,
+  maxPitchFor,
+  type Exaggeration,
+} from './lib/terrain'
+import { autoQuality, OCEAN_QUALITIES, type OceanQuality } from './lib/ocean/quality'
+import { usePersistentState } from './lib/settings/usePersistentState'
+import { bool, flags, oneOf, shape } from './lib/settings/revive'
 import { buildVaporField } from './lib/vapor/field'
 import { breathAt } from './lib/vapor/breath'
 import { useSky } from './hooks/useSky'
 import { islandLcl } from './lib/sky/base'
 import { moonState, sunPosition } from './lib/sun'
+import { sunCrossing, sunEvents, sunTrack, type TrackPoint } from './lib/sky/sun-path'
+import { skyCeilingDeg } from './lib/sky/sun-screen'
 import { oceanLight } from './lib/ocean/light'
 import { measuredLight } from './lib/measured-light'
 import { PARTICLE_SPEEDUP } from './lib/vapor/clock'
@@ -50,6 +59,25 @@ const ISLAND_BREATH_LAT = 28.66
 import { warmNearbyLayers } from './lib/nearby'
 import { t } from './i18n'
 
+/**
+ * El camino del sol cuando está apagado. Una constante y no un `[]` nuevo cada
+ * vez: es la dependencia de un efecto del mapa, y un array recién hecho lo
+ * dispararía en cada pintado.
+ */
+const EMPTY_TRACK: readonly TrackPoint[] = []
+
+/**
+ * Las capas de la PRIMERA visita.
+ *
+ * «Primera» en sentido literal desde que los ajustes se guardan: esto es lo que
+ * ve quien llega sin nada elegido todavía, y también el relleno de cualquier
+ * capa que lo guardado no reconozca. A partir de la segunda visita manda lo que
+ * el usuario dejó encendido, no esta tabla.
+ *
+ * Por eso los «apagada al llegar» de aquí abajo siguen siendo ciertos y siguen
+ * teniendo motivo: son el argumento de qué merece el primer vistazo de alguien
+ * que no ha elegido nada, no una opinión sobre lo que ese alguien elija después.
+ */
 const INITIAL_LAYERS: LayerVisibility = {
   grid: true,
   stations: true,
@@ -63,16 +91,26 @@ const INITIAL_LAYERS: LayerVisibility = {
   tdt: false,
   counters: false,
   fire: true,
-  // Apagada al llegar. No cuesta red —el catálogo es estático y las imágenes
-  // solo se piden al abrir una ficha— pero son dieciocho iconos más sobre una
-  // isla que ya llega con estaciones, CO₂ y cámaras de incendios encendidas.
+  // Apagada la primera vez. No cuesta red —el catálogo es estático y las
+  // imágenes solo se piden al abrir una ficha— pero son dieciocho iconos más
+  // sobre una isla que ya llega con estaciones, CO₂ y cámaras de incendios
+  // encendidas.
   webcams: false,
   wind: false,
-  // Apagada al llegar, como el viento y por el mismo motivo: es una capa
+  // Apagada la primera vez, como el viento y por el mismo motivo: es una capa
   // animada, y una animación que arranca sola le quita a la isla el primer
   // vistazo, que es de lo que se está midiendo.
   vapor: false,
 }
+
+/**
+ * El catálogo de variables que un ajuste guardado puede nombrar, sacado del
+ * propio catálogo y no escrito a mano: una variable retirada de `variables.ts`
+ * deja de reconocerse el mismo día que se retira, y quien la tuviera elegida
+ * vuelve a la temperatura en vez de arrastrar un identificador muerto hasta el
+ * motor de dibujo.
+ */
+const MAP_VARIABLES = Object.keys(VARIABLES) as MapVariable[]
 
 export default function App() {
   const data = useIslandData()
@@ -95,13 +133,21 @@ export default function App() {
   // cuántas estaciones lo miden aunque el mapa no lo dibuje, y el coste es una
   // petición al modelo cada refresco.
   const wind = useWindField(data.dem, data.stations, data.lastUpdate)
-  const [visible, setVisible] = useState<LayerVisibility>(INITIAL_LAYERS)
+  const [visible, setVisible] = usePersistentState<LayerVisibility>(
+    'layers',
+    INITIAL_LAYERS,
+    flags(),
+  )
   // Al revés que el viento: la red de guaguas son 1,5 MB y no alimenta ningún
   // cálculo, así que no se pide hasta que alguien enciende la capa.
   const guagua = useGuagua(visible.guagua)
   // Los sitios se encienden uno a uno; la capa del mapa está siempre viva y lo
   // que cambia es qué puntos entran en ella.
-  const [placesOn, setPlacesOn] = useState<PlaceVisibility>(NO_PLACES)
+  const [placesOn, setPlacesOn] = usePersistentState<PlaceVisibility>(
+    'places',
+    NO_PLACES,
+    flags(),
+  )
   const places = usePlaces(placesOn, visible.roads)
   // El viario de OSM es la capa más pesada de todas —5,2 MB— y por eso es la que
   // más motivos tiene para no pedirse hasta que alguien la encienda.
@@ -109,48 +155,79 @@ export default function App() {
   // Igual que las guaguas: tres peticiones al servicio del Cabildo que no se
   // hacen mientras el interruptor esté apagado.
   const counters = useCounters(visible.counters)
-  const [variable, setVariable] = useState<MapVariable>('temperature')
-  // El fondo de casa es el de arranque, y a propósito: es el único que no
-  // depende de un servicio ajeno para que la isla aparezca en pantalla.
-  const [basemap, setBasemap] = useState<BasemapId>('relieve')
+  const [variable, setVariable] = usePersistentState<MapVariable>(
+    'variable',
+    'temperature',
+    oneOf(MAP_VARIABLES),
+  )
+  // El fondo de casa es el de la primera visita, y a propósito: es el único que
+  // no depende de un servicio ajeno para que la isla aparezca en pantalla. Quien
+  // elija otro se lo encuentra puesto la próxima vez, servicio ajeno incluido.
+  const [basemap, setBasemap] = usePersistentState<BasemapId>(
+    'basemap',
+    'relieve',
+    oneOf(BASEMAP_ORDER),
+  )
   /**
-   * La vista 3D. Apagada al llegar, y no por prudencia técnica: en plano se
+   * La vista 3D. Apagada la primera vez, y no por prudencia técnica: en plano se
    * compara una ladera con otra de un vistazo, y eso es lo que esta aplicación
-   * hace. La 3D es para entender la isla, no para leerla.
+   * hace. La 3D es para entender la isla, no para leerla — pero eso es un
+   * argumento sobre por dónde empezar, no sobre dónde quedarse, así que quien la
+   * encienda la conserva.
    *
    * No está en `LayerVisibility` porque no es una capa: no añade nada al mapa,
    * cambia la cámara. Meterla ahí haría que el contador de «capas activas» del
    * panel contara una cosa que no se dibuja.
    */
-  const [terrain, setTerrain] = useState<{ on: boolean; exaggeration: Exaggeration }>({
-    on: false,
-    exaggeration: DEFAULT_EXAGGERATION,
-  })
+  const [terrain, setTerrain] = usePersistentState<{ on: boolean; exaggeration: Exaggeration }>(
+    'terrain',
+    { on: false, exaggeration: DEFAULT_EXAGGERATION },
+    shape({ on: bool, exaggeration: oneOf(EXAGGERATIONS) }),
+  )
   /**
-   * El océano. Apagado al llegar, y por el mismo motivo que la vista 3D: lo
+   * El océano. Apagado la primera vez, y por el mismo motivo que la vista 3D: lo
    * primero que esta aplicación tiene que enseñar es el dato, y un mar animado
    * con oleaje real es lo más llamativo de la pantalla —tanto, que se lleva la
    * mirada por delante de la isla, que es de lo que va esto—. Quien lo quiera,
-   * lo enciende, y entonces sí manda.
+   * lo enciende, y entonces sí manda; y a partir de ahí manda también en los
+   * arranques siguientes, porque encenderlo fue una elección y no un descuido.
    *
    * La calidad se decide sola mirando cuántos píxeles hay que pintar y qué
    * equipo hay debajo, y se puede cambiar a mano. Ver `lib/ocean/quality.ts`.
+   *
+   * Y aquí hay una cesión consciente: `autoQuality()` solo corre la PRIMERA vez.
+   * A partir de ahí manda lo guardado, porque el ajuste no distingue una calidad
+   * medida de una elegida a mano y respetar la elección del usuario pesa más que
+   * volver a medir. La factura la paga quien cambie de pantalla —el mismo
+   * portátil enchufado a un monitor de 4K pinta cuatro veces más píxeles y
+   * arrancaría con la calidad que se midió sin él—; se arregla en un toque desde
+   * el panel, y no se arregla solo. Si algún día molesta, lo que hay que guardar
+   * son dos campos, `quality` y «esta la elegí yo», no uno.
    */
-  const [ocean, setOcean] = useState<{
+  const [ocean, setOcean] = usePersistentState<{
     on: boolean
     seamarks: boolean
     depth: boolean
     quality: OceanQuality
-  }>(() => ({
-    on: false,
-    seamarks: false,
-    depth: false,
-    quality: autoQuality(
-      window.innerWidth * window.innerHeight * (window.devicePixelRatio || 1) ** 2,
-      navigator.hardwareConcurrency ?? 4,
-      window.matchMedia('(pointer: coarse)').matches,
-    ),
-  }))
+  }>(
+    'ocean',
+    () => ({
+      on: false,
+      seamarks: false,
+      depth: false,
+      quality: autoQuality(
+        window.innerWidth * window.innerHeight * (window.devicePixelRatio || 1) ** 2,
+        navigator.hardwareConcurrency ?? 4,
+        window.matchMedia('(pointer: coarse)').matches,
+      ),
+    }),
+    shape({
+      on: bool,
+      seamarks: bool,
+      depth: bool,
+      quality: oneOf(OCEAN_QUALITIES),
+    }),
+  )
   /**
    * Y sus datos. Igual que las guaguas o el viario: no se pide ni un byte
    * mientras el interruptor esté apagado. El campo de viento que le entra es el
@@ -211,12 +288,18 @@ export default function App() {
    * martillear a un observatorio ajeno, pero desde que su termómetro entra en
    * el motor (ver `summit.ts`) esa lectura la necesita el mapa entero, así que
    * la trae `useIslandData` y aquí solo queda el estado de plegado.
+   *
+   * El plegado dura de una sesión a la siguiente, y con él dura su coste: quien
+   * deje la agricultura desplegada paga esa petición de ETo en CADA arranque,
+   * no solo en aquel en el que la abrió. Es lo que significa guardar el ajuste,
+   * y es correcto —una sección abierta es una sección que se quiere leer—, pero
+   * conviene tenerlo escrito aquí y no descubrirlo en el panel de red.
    */
-  const [openSections, setOpenSections] = useState({
-    roque: false,
-    agro: false,
-    trails: false,
-  })
+  const [openSections, setOpenSections] = usePersistentState<{
+    roque: boolean
+    agro: boolean
+    trails: boolean
+  }>('sections', { roque: false, agro: false, trails: false }, flags())
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000)
@@ -332,13 +415,14 @@ export default function App() {
   )
 
   /**
-   * La escena atmosférica en 3D. Función experimental, apagada al llegar.
+   * La escena atmosférica en 3D. Función experimental, apagada la primera vez.
    *
    * Apagada NO por prudencia estética sino porque cuesta una petición de 70
    * puntos con once variables cada uno: quien no la use no la paga. Es la misma
-   * regla que el Roque, la ETo o los senderos.
+   * regla que el Roque, la ETo o los senderos. Quien sí la use la paga en cada
+   * arranque desde que se guarda el ajuste, que es lo que pidió al encenderla.
    */
-  const [sky3dOn, setSky3dOn] = useState(false)
+  const [sky3dOn, setSky3dOn] = usePersistentState('sky3d', false, bool)
   /**
    * El nivel de condensación medio de la isla, para cuando no hay manta
    * diagnosticada. Se calcula solo con la escena encendida —recorre 576 puntos
@@ -361,23 +445,62 @@ export default function App() {
   )
 
   /**
-   * La luz solar sobre el relieve. Experimental, apagada al llegar: ver la
+   * La luz solar sobre el relieve. Experimental, apagada la primera vez: ver la
    * cabecera de `SunLight.tsx` —se ve mejor y se lee peor.
    */
-  const [sunLightOn, setSunLightOn] = useState(false)
+  const [sunLightOn, setSunLightOn] = usePersistentState('sunLight', false, bool)
   /**
    * Las sombras arrojadas, dentro de la misma función y con su propio
    * interruptor. Van aparte de `sunLightOn` porque no dependen de él: el
    * sombreado de MapLibre desaparece bajo la ortofoto y las sombras no, así que
    * sobre el fondo de satélite son lo único que ilumina la isla.
    */
-  const [sunShadowsOn, setSunShadowsOn] = useState(false)
+  const [sunShadowsOn, setSunShadowsOn] = usePersistentState('sunShadows', false, bool)
   /**
    * El disco del sol en el cielo. Tercera casilla de la misma función, y la
    * única de las tres que DIBUJA algo en vez de iluminar: por eso va aparte.
    * Apagada al llegar, como las otras dos.
    */
-  const [sunDiscOn, setSunDiscOn] = useState(false)
+  const [sunDiscOn, setSunDiscOn] = usePersistentState('sunDisc', false, bool)
+  /**
+   * El camino que recorre el sol hoy, del orto al ocaso. Cuarta casilla, y la
+   * que contesta lo que el disco no puede: el disco solo entra en cuadro con el
+   * sol por debajo de 3,4°, así que a mediodía se enciende y no pasa nada. El
+   * camino baja hasta el horizonte por los dos extremos y se ve siempre.
+   */
+  const [sunPathOn, setSunPathOn] = usePersistentState('sunPath', false, bool)
+  /**
+   * El orto, el ocaso y el mediodía de hoy. Se calculan siempre —son unas
+   * decenas de microsegundos una vez por minuto— porque los lee el panel, que
+   * es donde salen escritos con hora y rumbo.
+   */
+  const sunDay = useMemo(() => sunEvents(now, ISLAND_BREATH_LON, ISLAND_BREATH_LAT), [now])
+  /**
+   * Y el camino entero, solo con la casilla encendida: son 43 posiciones del
+   * sol, baratas pero no gratis, y quien no lo dibuje no las paga.
+   */
+  const sunPathTrack = useMemo<readonly TrackPoint[]>(
+    () => (sunPathOn ? sunTrack(now, ISLAND_BREATH_LON, ISLAND_BREATH_LAT) : EMPTY_TRACK),
+    [sunPathOn, now],
+  )
+  /**
+   * Hasta qué altura del cielo llega la pantalla con este fondo, y a qué hora
+   * baja el sol de ahí.
+   *
+   * DEPENDE DEL FONDO porque depende del tope de inclinación, y ese es 75° con el
+   * relieve de casa y 65° con los de GRAFCAN —una limitación de licencia, ver
+   * `terrain.ts`—. Con 65° el techo sale NEGATIVO: el horizonte no entra en
+   * pantalla y no hay cielo donde dibujar. El panel lo dice; antes las dos
+   * casillas se quedaban mudas sin explicar por qué.
+   */
+  const sunCeilingDeg = useMemo(() => skyCeilingDeg(maxPitchFor(basemap)), [basemap])
+  const sunCeilingMs = useMemo(
+    () =>
+      sunCeilingDeg > 0
+        ? sunCrossing(now, ISLAND_BREATH_LON, ISLAND_BREATH_LAT, sunCeilingDeg, 1)
+        : null,
+    [now, sunCeilingDeg],
+  )
   /**
    * La luna, solo cuando hace falta: de día no ilumina nada que se note, y con
    * el interruptor apagado no ilumina nada en absoluto. Las efemérides de Meeus
@@ -619,6 +742,8 @@ export default function App() {
           moonPhase: moon?.illumination ?? 0,
           dome: domeLight,
           disc: sunDiscOn,
+          path: sunPathOn,
+          track: sunPathTrack,
         }}
         vaporClock={{
           at: breathClock.at,
@@ -771,10 +896,33 @@ export default function App() {
           moon: moon ? { elevationDeg: moon.elevationDeg, azimuthDeg: moon.azimuthDeg } : null,
           moonPhase: moon?.illumination ?? 0,
           disc: sunDiscOn,
+          path: sunPathOn,
+          day: sunDay,
+          ceilingDeg: sunCeilingDeg,
+          ceilingMs: sunCeilingMs,
         }}
         onSunLight={() => setSunLightOn((v) => !v)}
         onSunShadows={() => setSunShadowsOn((v) => !v)}
-        onSunDisc={() => setSunDiscOn((v) => !v)}
+        /*
+          Las dos que dibujan en el cielo encienden la vista 3D, por la misma
+          regla que la escena atmosférica y que el mar: en plano no hay cielo
+          donde dibujarlas, y un interruptor que no hace nada es peor que uno que
+          hace de más. La cámara sube además hasta donde el horizonte entra en
+          pantalla, y eso lo hace el mapa —ver `Terrain3D.skyward()`—, que es
+          quien sabe a qué inclinación está.
+
+          Apagarlas no devuelve la vista al plano, igual que con la escena: para
+          entonces quien mira ya ha visto la isla en relieve y puede querer
+          quedarse ahí.
+        */
+        onSunDisc={() => {
+          if (!sunDiscOn) setTerrain((s) => ({ ...s, on: true }))
+          setSunDiscOn((v) => !v)
+        }}
+        onSunPath={() => {
+          if (!sunPathOn) setTerrain((s) => ({ ...s, on: true }))
+          setSunPathOn((v) => !v)
+        }}
         sky3dOn={sky3dOn}
         /*
           Encenderla inclina la cámara, y es la misma regla que ya sigue el

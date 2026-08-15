@@ -32,6 +32,16 @@ export const LAYERS: LayerChip[] = [
   { id: 'sky', label: 'Cielo' },
 ]
 
+/**
+ * Los identificadores válidos, sacados de la propia fila de chips.
+ *
+ * Es lo que valida la capa guardada de la sesión anterior: una capa que se
+ * retire de `LAYERS` deja de reconocerse el mismo día, y quien la tuviera
+ * elegida vuelve a la temperatura en vez de arrastrar un identificador que ya
+ * no dibuja nada.
+ */
+export const LAYER_IDS: readonly LayerId[] = LAYERS.map((chip) => chip.id)
+
 export function isVariable(layer: LayerId): layer is DisplayVariable {
   return isDisplayVariable(layer)
 }

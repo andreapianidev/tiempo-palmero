@@ -117,6 +117,25 @@ const ZENITH_NIGHT: Rgb = [0.015, 0.025, 0.05]
 const HORIZON_NIGHT: Rgb = [0.05, 0.07, 0.12]
 const CALIMA: Rgb = [0.72, 0.62, 0.45]
 
+/**
+ * De qué color se ve el sol a una altura dada, con la calima que haya.
+ *
+ * SE ENROJECE AL BAJAR porque el rayo atraviesa más aire —el mismo camino
+ * óptico largo que hace que el ocaso y la calima se parezcan— y el corte está en
+ * 25°: por encima el sol ya es blanco. Al cuadrado y no lineal porque el
+ * enrojecimiento no reparte: casi todo pasa en los últimos diez grados.
+ *
+ * ESTÁ AQUÍ FUERA porque lo usan dos cosas que salen en la misma pantalla: el
+ * sol de AHORA —el disco, y la luz con la que se pinta el agua— y el color del
+ * CAMINO que recorre hoy (`sky/sun-path.ts`), que es el mismo sol en otras
+ * horas. Con una copia en cada sitio, el arco y el disco se habrían separado en
+ * el primer retoque del naranja.
+ */
+export function sunColorAt(elevationDeg: number, calima: number): Rgb {
+  const redness = Math.pow(1 - Math.max(0, Math.min(1, elevationDeg / 25)), 2)
+  return mix(SUN_HIGH, SUN_LOW, Math.max(redness, calima * 0.6))
+}
+
 export interface LightInputs {
   /** PM10 en µg/m³, de las estaciones de calidad del aire. */
   pm10: number | null
@@ -320,9 +339,10 @@ export function oceanLight(
   const cloudy = clearness === null ? 0 : Math.max(0, Math.min(1, (0.72 - clearness) / 0.5))
 
   // El sol se enrojece al bajar: es el mismo camino óptico más largo que hace
-  // que la calima y el ocaso se parezcan.
+  // que la calima y el ocaso se parezcan. La cuenta vive en `sunColorAt`, que
+  // la comparte con el camino del sol.
   const redness = Math.pow(1 - Math.max(0, Math.min(1, sun.elevationDeg / 25)), 2)
-  const sunColor = mix(SUN_HIGH, SUN_LOW, Math.max(redness, calima * 0.6))
+  const sunColor = sunColorAt(sun.elevationDeg, calima)
   const sunIntensity = daylight * (1 - 0.75 * cloudy) * (1 - 0.45 * calima)
 
   const zenith = mix(

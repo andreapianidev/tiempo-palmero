@@ -4,19 +4,28 @@
  * Los tres hooks que hay debajo —guaguas, sitios y aforos— son exactamente los
  * de la web, sin una copia móvil: se piden a demanda, cada uno cuando su
  * interruptor se enciende, y apagar no tira lo descargado. Lo único que añade
- * este envoltorio es guardar los interruptores y no obligar a la pantalla del
+ * este envoltorio es sostener los interruptores y no obligar a la pantalla del
  * mapa a conocer tres hooks para enseñar una hoja de casillas.
+ *
+ * Los interruptores DURAN de una sesión a la siguiente, y eso tiene una
+ * consecuencia que conviene tener delante: la red de guaguas son 1,5 MB y los
+ * aforos son tres peticiones al Cabildo, y quien los deje encendidos los vuelve
+ * a pedir en cada arranque. Es lo que se pidió al dejarlos encendidos —el
+ * interruptor no promete «solo por esta vez»—, pero es una factura de red real
+ * y no un detalle. Ver `@core/lib/settings/store.ts`.
  *
  * Los senderos y las cámaras de incendios no aparecen aquí porque no se piden:
  * vienen dentro de `useIslandData()` desde que arranca la app, igual que en la
  * web. Encender su casilla no descarga nada, solo los dibuja.
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useGuagua, type GuaguaData } from '@core/hooks/useGuagua'
 import { usePlaces, NO_PLACES, type PlaceVisibility, type PlacesData } from '@core/hooks/usePlaces'
 import { useCounters, type CountersData } from '@core/hooks/useCounters'
 import type { PlaceKind } from '@core/lib/places'
+import { usePersistentState } from '@core/lib/settings/usePersistentState'
+import { flags } from '@core/lib/settings/revive'
 import { NO_OVERLAYS, type OverlayId, type OverlayVisibility } from '../overlays'
 
 export interface Overlays {
@@ -32,8 +41,12 @@ export interface Overlays {
 }
 
 export function useOverlays(): Overlays {
-  const [visible, setVisible] = useState<OverlayVisibility>(NO_OVERLAYS)
-  const [places, setPlaces] = useState<PlaceVisibility>(NO_PLACES)
+  const [visible, setVisible] = usePersistentState<OverlayVisibility>(
+    'overlays',
+    NO_OVERLAYS,
+    flags(),
+  )
+  const [places, setPlaces] = usePersistentState<PlaceVisibility>('places', NO_PLACES, flags())
 
   const guagua = useGuagua(visible.guagua)
   const placesData = usePlaces(places, visible.roads)

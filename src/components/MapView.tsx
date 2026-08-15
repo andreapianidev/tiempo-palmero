@@ -37,8 +37,10 @@ import { VaporLayer } from './vapor/VaporLayer'
 import type { VaporField } from '../lib/vapor/field'
 import { CloudLayer } from './sky/CloudLayer'
 import { SunLayer } from './sky/SunLayer'
+import { SunPathLayer } from './sky/SunPathLayer'
 import { RainLayer } from './sky/RainLayer'
 import type { Cloud } from '../lib/sky/scene'
+import type { TrackPoint } from '../lib/sky/sun-path'
 import { dayFactor, type SkyPosition } from '../lib/sun'
 import { HILLSHADE_DEFAULT, terrainLight } from '../lib/terrain-light'
 import { Terrain3D } from './terrain/Terrain3D'
@@ -270,6 +272,21 @@ interface Props {
     dome: OceanLight | null
     /** Si se dibuja el disco del sol en el cielo. Ver `sky/SunLayer.ts`. */
     disc: boolean
+    /**
+     * Si se dibuja el camino que recorre el sol hoy. Ver `sky/SunPathLayer.ts`.
+     *
+     * Va con el disco y no dentro de él porque contesta otra cosa: el disco dice
+     * dónde está el sol AHORA —y solo se ve en la ventana estrecha de cerca del
+     * horizonte—; el camino dice por dónde sale y por dónde se pone, que se ve
+     * a cualquier hora porque baja hasta el horizonte por los dos lados.
+     */
+    path: boolean
+    /**
+     * El camino, ya calculado. Llega desde fuera por lo mismo que `dome`: sale
+     * de la misma astronomía que la posición del sol de esta pantalla, y
+     * calcularlo aquí dentro sería tener dos.
+     */
+    track: readonly TrackPoint[]
   }
   /**
    * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
@@ -382,6 +399,7 @@ export function MapView(props: Props) {
   /** Las dos de la escena atmosférica, por lo mismo. */
   const cloudLayerRef = useRef<CloudLayer | null>(null)
   const sunLayerRef = useRef<SunLayer | null>(null)
+  const sunPathLayerRef = useRef<SunPathLayer | null>(null)
   const rainLayerRef = useRef<RainLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
   const terrainRef = useRef<Terrain3D | null>(null)
@@ -683,6 +701,13 @@ export function MapView(props: Props) {
       // profundidad 1 —el fondo de la escena— así que lo tapa todo lo que tenga
       // profundidad escrita, y con la mezcla aditiva lo que se dibuje después
       // se suma encima. Puesto al final, se comería el ribete de las nubes.
+      // Y EL CAMINO ANTES QUE EL SOL, que es el único orden que no miente: el
+      // disco es el sol de ahora y está EN el camino, así que cuando los dos
+      // caen en el mismo píxel el que tiene que verse es el disco.
+      const sunPathLayer = new SunPathLayer()
+      sunPathLayerRef.current = sunPathLayer
+      map.addLayer(sunPathLayer)
+
       const sunLayer = new SunLayer()
       sunLayerRef.current = sunLayer
       map.addLayer(sunLayer)
@@ -877,6 +902,7 @@ export function MapView(props: Props) {
       terrainRef.current = null
       cloudLayerRef.current = null
       sunLayerRef.current = null
+      sunPathLayerRef.current = null
       rainLayerRef.current = null
       map.remove()
       mapRef.current = null
@@ -1273,6 +1299,7 @@ export function MapView(props: Props) {
     cloudLayerRef.current?.setLight(props.sunLight.dome)
     sunLayerRef.current?.setSun(props.sky3d.sun)
     sunLayerRef.current?.setLight(props.sunLight.dome)
+    sunPathLayerRef.current?.setLight(props.sunLight.dome)
     rainLayerRef.current?.setDay(dayFactor(props.sky3d.sun.elevationDeg))
   }, [ready, props.sky3d.sun, props.sunLight.dome])
 
@@ -1283,6 +1310,43 @@ export function MapView(props: Props) {
     if (!ready) return
     sunLayerRef.current?.setVisible(props.sunLight.disc)
   }, [ready, props.sunLight.disc])
+
+  // El camino del sol: su propia casilla, y su propio dato. Se recalcula solo
+  // cuando cambia el día —`sunTrack` se memoriza fuera—, así que esto es una
+  // asignación por minuto y no una vuelta por las cuarenta y tres posiciones.
+  useEffect(() => {
+    if (!ready) return
+    sunPathLayerRef.current?.setTrack(props.sunLight.track)
+  }, [ready, props.sunLight.track])
+
+  useEffect(() => {
+    if (!ready) return
+    sunPathLayerRef.current?.setVisible(props.sunLight.path)
+  }, [ready, props.sunLight.path])
+
+  /**
+   * Encender algo que se dibuja EN EL CIELO sube la cámara hasta donde hay
+   * cielo.
+   *
+   * Con la inclinación de entrada —55°— el borde de arriba de la pantalla queda
+   * por debajo del horizonte: se marca la casilla del disco y no aparece nada.
+   * La cuenta y los tres casos en los que esto no hace nada están en
+   * `Terrain3D.skyward()`.
+   *
+   * SOLO AL ENCENDER, y solo si lo enciende alguien: la primera vuelta no mueve
+   * nada. Si no, un ajuste guardado de la visita anterior levantaría la cámara
+   * al arrancar, que es justo lo contrario de lo que se quiere —lo primero que
+   * esta aplicación tiene que enseñar es la isla en plano, con su dato encima—.
+   */
+  const skyWantedRef = useRef<boolean | null>(null)
+  useEffect(() => {
+    if (!ready) return
+    const wanted = props.sunLight.disc || props.sunLight.path
+    const before = skyWantedRef.current
+    skyWantedRef.current = wanted
+    if (before === null || before || !wanted) return
+    terrainRef.current?.skyward()
+  }, [ready, props.sunLight.disc, props.sunLight.path])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {

@@ -15,11 +15,13 @@ import * as Haptics from 'expo-haptics'
 import { useIslandData, municipalityOf } from '@core/hooks/useIslandData'
 import { elevationAt } from '@core/lib/dem'
 import { estimateBundle, type Bundle, type DisplayVariable } from '@core/lib/interpolate'
-import { VARIABLES } from '@core/lib/variables'
+import { VARIABLES, VARIABLE_ORDER } from '@core/lib/variables'
 import type { Station } from '@core/lib/quality'
 import { routeBounds } from '@core/lib/guagua/display'
+import { usePersistentState } from '@core/lib/settings/usePersistentState'
+import { bool, oneOf } from '@core/lib/settings/revive'
 import { t } from '@core/i18n'
-import { isVariable, type LayerId } from '../layers'
+import { LAYER_IDS, isVariable, type LayerId } from '../layers'
 import { color, font, space } from '../theme'
 import { Header } from '../components/Header'
 import { LayerChips } from '../components/LayerChips'
@@ -48,10 +50,20 @@ export function MapScreen() {
   const icons = useMapIcons()
   const mapHandle = useRef<MapHandle | null>(null)
 
-  const [layer, setLayer] = useState<LayerId>('temperature')
+  // Los tres duran de una sesión a la siguiente: son lo que alguien elige
+  // mirar, no estado de esta sesión. Ver `@core/lib/settings/`.
+  const [layer, setLayer] = usePersistentState<LayerId>(
+    'layer',
+    'temperature',
+    oneOf(LAYER_IDS),
+  )
   /** La malla siempre pinta una variable, aunque la capa activa sea el viento. */
-  const [variable, setVariable] = useState<DisplayVariable>('temperature')
-  const [gridOn, setGridOn] = useState(true)
+  const [variable, setVariable] = usePersistentState<DisplayVariable>(
+    'variable',
+    'temperature',
+    oneOf(VARIABLE_ORDER),
+  )
+  const [gridOn, setGridOn] = usePersistentState('grid', true, bool)
   const [probe, setProbe] = useState<PointPlace | null>(null)
   /** Alto de lo que asoma de la hoja en reposo, para no tapar los FABs. */
   const [peekHeight, setPeekHeight] = useState(110)

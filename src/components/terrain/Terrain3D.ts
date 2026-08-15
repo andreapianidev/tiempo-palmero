@@ -22,6 +22,7 @@
  */
 
 import maplibregl, { type Map as MlMap } from 'maplibre-gl'
+import { skyCeilingDeg } from '../../lib/sky/sun-screen'
 import {
   DEFAULT_EXAGGERATION,
   ENTRY_PITCH,
@@ -76,6 +77,28 @@ export class Terrain3D {
     // Apagada, el valor se guarda y se aplicará al encender. Llamar a
     // `setTerrain` con la 3D apagada la encendería por la puerta de atrás.
     if (this.on) this.map.setTerrain(terrainSpec(exaggeration))
+  }
+
+  /**
+   * Sube la cámara hasta el tope, que es donde el cielo entra en pantalla.
+   *
+   * LO PIDEN LAS DOS CASILLAS QUE DIBUJAN EN EL CIELO —el disco del sol y su
+   * carrera—, y por el mismo motivo por el que encender el mar lleva al fondo de
+   * satélite: un interruptor que no hace nada es peor que uno que hace de más.
+   * Con la inclinación de entrada, 55°, el borde de arriba de la pantalla queda
+   * por DEBAJO del horizonte: se enciende el sol y no aparece nada, que es
+   * exactamente la queja que trajo todo esto.
+   *
+   * NO HACE NADA EN TRES CASOS, y los tres son a propósito: con la 3D apagada
+   * —ahí la cámara está bloqueada en plano—, con un fondo cuyo tope no llega a
+   * enseñar el horizonte —los de GRAFCAN, 65°— y con la vista ya arriba, para no
+   * dar un tirón a quien ya estaba mirando el cielo.
+   */
+  skyward(): void {
+    if (!this.on) return
+    if (skyCeilingDeg(this.ceiling) <= 0) return
+    if (this.map.getPitch() >= this.ceiling - 0.5) return
+    this.map.easeTo({ pitch: this.ceiling, duration: ENTER_MS })
   }
 
   private enter(): void {

@@ -174,6 +174,41 @@ export function formatIslandTime(epochMs: number): string {
 }
 
 /**
+ * Solo la hora del reloj de la isla, sin fecha: `19:51`.
+ *
+ * REDONDEA AL MINUTO, y no es un detalle: `Intl` trunca, así que un ocaso a las
+ * 19:50:50 se escribiría «19:50» mientras cualquier almanaque dice 19:51. Lo
+ * que se enseña es una hora de reloj, no un instante recortado.
+ */
+export function formatIslandClock(epochMs: number): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    timeZone: ISLAND_TZ,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(Math.round(epochMs / 60_000) * 60_000))
+}
+
+/**
+ * Desfase de Canarias respecto a UTC en un instante, en ms. +1 h en horario de
+ * verano, 0 el resto del año. Sale de la base de zonas horarias del propio
+ * entorno, no de una tabla escrita a mano que habría que mantener.
+ *
+ * VIVÍA DENTRO DE `co2/clock.ts`, donde nació para corregir el reloj corrido de
+ * DEMASE, y salió de allí cuando la carrera del sol necesitó saber cuándo son
+ * las horas en punto del reloj de la isla. Un módulo de gases no es el sitio
+ * donde el resto de la aplicación va a buscar el huso horario: aquí está al
+ * lado de `ISLAND_TZ`, que es de donde sale.
+ */
+export function canaryOffsetMs(atMs: number): number {
+  const d = new Date(atMs)
+  const local = new Date(d.toLocaleString('en-US', { timeZone: ISLAND_TZ }))
+  const utc = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }))
+  // Al minuto: `toLocaleString` pierde los milisegundos y dejaría un resto que
+  // no significa nada.
+  return Math.round((local.getTime() - utc.getTime()) / 60_000) * 60_000
+}
+
+/**
  * `YYYY-MM-DD` del día de la ISLA, que no siempre es el día UTC: en verano
  * Canarias va una hora por delante, así que entre las 23:00 y las 00:00 hora
  * insular el día UTC todavía es el de ayer. Los agregados diarios de aforos

@@ -6,7 +6,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { canaryOffsetMs, clockSkewMs, SKEW_TOLERANCE_MS } from './clock'
+import { canaryOffsetMs } from '../cabildo'
+import { clockSkewMs, SKEW_TOLERANCE_MS } from './clock'
 
 const H = 3_600_000
 /** 13 ago 2026, 08:19 UTC. Canarias en horario de verano: UTC+1. */

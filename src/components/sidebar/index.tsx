@@ -20,6 +20,7 @@ import type { LayerVisibility } from '../MapView'
 import { landShareAbove, type Dem } from '../../lib/dem'
 import { t } from '../../i18n'
 
+import type { SunEvents } from '../../lib/sky/sun-path'
 import { Section } from './Section'
 import { PlaceSearch } from './PlaceSearch'
 import { VariablePicker } from './VariablePicker'
@@ -27,7 +28,7 @@ import { FireRisk } from './FireRisk'
 import { Sky3D } from './Sky3D'
 import { WindAnimation } from './WindAnimation'
 import { SeaMotion } from './SeaMotion'
-import { SunLight } from './SunLight'
+import { SunLight } from './sun'
 import type { SkyPosition } from '../../lib/sun'
 import type { SkyState } from '../../hooks/useSky'
 import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
@@ -87,13 +88,30 @@ interface Props {
     shadows: boolean
     /** El disco del sol dibujado en el cielo. Ver `sky/SunLayer.ts`. */
     disc: boolean
+    /** El camino que recorre el sol hoy. Ver `sky/SunPathLayer.ts`. */
+    path: boolean
     sun: SkyPosition
     moon: SkyPosition | null
     moonPhase: number
+    /** Orto, ocaso y mediodía de hoy, para escribirlos con hora y rumbo. */
+    day: SunEvents
+    /**
+     * Hasta qué altura del cielo llega la pantalla con el fondo puesto. Negativo
+     * con los fondos de GRAFCAN, donde la cámara solo se inclina 65° y el
+     * horizonte no llega a entrar en cuadro.
+     */
+    ceilingDeg: number
+    /**
+     * Cuándo baja el sol, por la tarde, de ese techo. Es lo que permite decir a
+     * qué hora vuelve a verse el disco en vez de dejar una casilla encendida que
+     * no dibuja nada.
+     */
+    ceilingMs: number | null
   }
   onSunLight: () => void
   onSunShadows: () => void
   onSunDisc: () => void
+  onSunPath: () => void
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
@@ -287,7 +305,12 @@ export function Sidebar(props: Props) {
               (props.sky3dOn ? 1 : 0) +
               (props.visible.wind ? 1 : 0) +
               (props.ocean.on ? 1 : 0) +
-              (props.sunLight.on || props.sunLight.shadows || props.sunLight.disc ? 1 : 0)
+              (props.sunLight.on ||
+              props.sunLight.shadows ||
+              props.sunLight.disc ||
+              props.sunLight.path
+                ? 1
+                : 0)
             }/5`}
           >
             <Sky3D sky={props.sky} on={props.sky3dOn} onToggle={props.onSky3d} />
@@ -299,9 +322,17 @@ export function Sidebar(props: Props) {
               onToggleShadows={props.onSunShadows}
               disc={props.sunLight.disc}
               onToggleDisc={props.onSunDisc}
+              path={props.sunLight.path}
+              onTogglePath={props.onSunPath}
               sun={props.sunLight.sun}
               moon={props.sunLight.moon}
               moonPhase={props.sunLight.moonPhase}
+              day={props.sunLight.day}
+              ceilingDeg={props.sunLight.ceilingDeg}
+              ceilingMs={props.sunLight.ceilingMs}
+              basemap={props.basemap}
+              view3d={props.terrain.on}
+              clouds={props.sky3dOn}
             />
             <hr className="sep" />
             <WindAnimation
