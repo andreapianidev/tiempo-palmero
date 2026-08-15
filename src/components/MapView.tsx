@@ -41,6 +41,12 @@ import type { Cloud } from '../lib/sky/scene'
 import { dayFactor, type SkyPosition } from '../lib/sun'
 import { HILLSHADE_DEFAULT, terrainLight } from '../lib/terrain-light'
 import { Terrain3D } from './terrain/Terrain3D'
+import {
+  ShadowLayer,
+  SHADOW_LAYER_ID,
+  SHADOW_SOURCE_ID,
+  TRANSPARENT_PIXEL,
+} from './shadow/ShadowLayer'
 import { markerSize } from './markers/size'
 import { silenceDepthProbe } from './markers/depthProbe'
 import { hiddenByRelief, type Camera } from '../lib/occlusion'
@@ -232,7 +238,18 @@ interface Props {
    *
    * `moon` llega solo cuando hace falta: de día no se calcula.
    */
-  sunLight: { on: boolean; sun: SkyPosition; moon: SkyPosition | null; moonPhase: number }
+  sunLight: {
+    on: boolean
+    /**
+     * Las sombras que el relieve se echa encima. Es la misma función llevada
+     * hasta el final —el `hillshade` sabe hacia dónde mira cada ladera, no qué
+     * tiene delante—, y por eso viaja aquí dentro y no como interruptor suelto.
+     */
+    shadows: boolean
+    sun: SkyPosition
+    moon: SkyPosition | null
+    moonPhase: number
+  }
   /**
    * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
    * capa más: cambia la cámara, no lo que se dibuja. Ver `lib/terrain.ts`.
@@ -346,6 +363,7 @@ export function MapView(props: Props) {
   const rainLayerRef = useRef<RainLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
   const terrainRef = useRef<Terrain3D | null>(null)
+  const shadowRef = useRef<ShadowLayer | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
   const pillsRef = useRef<
     { el: HTMLElement; lon: number; lat: number; priority: number; elevation?: number }[]
@@ -476,6 +494,39 @@ export function MapView(props: Props) {
           'municipal-boundaries',
         )
       }
+
+      // LA SOMBRA PROPIA DEL RELIEVE, justo encima de los fondos y debajo de
+      // todo lo demás. Va aquí y no junto al `hillshade` porque la ortofoto es
+      // opaca y tapa el sombreado entero: por debajo de GRAFCAN, esta capa no
+      // se vería con el fondo de satélite puesto, que es justo donde más falta
+      // hace. Ver la cabecera de `shadow/ShadowLayer.ts`.
+      //
+      // Se crea con un píxel transparente y apagada, como la malla: la imagen
+      // se sustituye en cada barrido y recrear la fuente hace parpadear el mapa.
+      map.addSource(SHADOW_SOURCE_ID, {
+        type: 'image',
+        url: TRANSPARENT_PIXEL,
+        coordinates: [
+          [-18.05, 28.9],
+          [-17.7, 28.9],
+          [-17.7, 28.4],
+          [-18.05, 28.4],
+        ],
+      })
+      map.addLayer(
+        {
+          id: SHADOW_LAYER_ID,
+          type: 'raster',
+          source: SHADOW_SOURCE_ID,
+          layout: { visibility: 'none' },
+          paint: {
+            'raster-opacity': 1,
+            'raster-resampling': 'linear',
+            'raster-fade-duration': 0,
+          },
+        },
+        'municipal-boundaries',
+      )
 
       // EL MAR VA AQUÍ: encima de los tres fondos y del sombreado, debajo de
       // todo lo que es un dato. Es lo que hace que el océano se vea igual con el
@@ -879,6 +930,32 @@ export function MapView(props: Props) {
     props.sunLight.moon,
     props.sunLight.moonPhase,
   ])
+
+  // --- sombras arrojadas ---------------------------------------------------
+  //
+  // Va aparte del efecto de arriba aunque las dos cosas sean «la luz del sol»,
+  // y no por gusto: aquélla toca cinco propiedades de pintura y termina, ésta
+  // gobierna un objeto con estado que se guarda entre renders, decide solo
+  // cuándo merece la pena rehacer el barrido y tiene que soltarse al desmontar.
+  // Son los mismos motivos por los que `Terrain3D` y `OceanLayer` viven en una
+  // ref y no en el cuerpo del componente.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || !dem) return
+    if (!shadowRef.current) shadowRef.current = new ShadowLayer(map, dem)
+    const layer = shadowRef.current
+    layer.setEnabled(props.sunLight.shadows)
+    layer.update(props.sunLight.sun)
+  }, [ready, dem, props.sunLight.shadows, props.sunLight.sun])
+
+  // El DEM se sustituye entero cuando termina de cargar, y la capa se queda con
+  // el de antes: se tira y se rehace con el nuevo.
+  useEffect(() => {
+    return () => {
+      shadowRef.current?.destroy()
+      shadowRef.current = null
+    }
+  }, [dem])
 
   // --- fondo de mapa -------------------------------------------------------
   //

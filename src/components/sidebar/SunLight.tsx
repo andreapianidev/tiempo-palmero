@@ -21,14 +21,31 @@
  * reflejo del sol sobre el mar en su sitio real y las nubes encendidas por la
  * cara que les da la luz. La isla que había en medio seguía iluminada desde el
  * noroeste. Eran tres soles distintos en la misma pantalla.
+ *
+ * LAS SOMBRAS ARROJADAS VAN AQUÍ DENTRO, con su propio interruptor, y no como
+ * una función experimental más: son esta misma llevada hasta el final. El
+ * sombreado de MapLibre sabe hacia dónde mira cada ladera pero no qué tiene
+ * delante, y quien enciende «la luz real» y se encuentra después un segundo
+ * interruptor llamado «sombras reales» no entiende por qué el primero no las
+ * hacía ya.
+ *
+ * PERO NO DEPENDEN LA UNA DE LA OTRA, y por eso son dos casillas y no una con
+ * una subordinada. Medido el 15 de agosto de 2026: la ortofoto de GRAFCAN es
+ * opaca y va POR ENCIMA del `hillshade` en la pila de capas, así que con el
+ * fondo «Satélite» o «Tiempo real» puesto la luz del sol sobre el relieve no
+ * pinta un solo píxel. Las sombras sí —van encima de los fondos—, y ahí son la
+ * única iluminación que llega a la foto.
  */
 
 import { n0 } from '../../i18n'
 import type { SkyPosition } from '../../lib/sun'
+import { shadowDepth } from '../../lib/shadow/depth'
 
 interface Props {
   on: boolean
   onToggle: () => void
+  shadows: boolean
+  onToggleShadows: () => void
   sun: SkyPosition
   moon: SkyPosition | null
   /** Fracción iluminada del disco lunar, 0 a 1. */
@@ -42,7 +59,15 @@ function compass(deg: number): string {
   return points[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16]
 }
 
-export function SunLight({ on, onToggle, sun, moon, moonPhase }: Props) {
+export function SunLight({
+  on,
+  onToggle,
+  shadows,
+  onToggleShadows,
+  sun,
+  moon,
+  moonPhase,
+}: Props) {
   const isDay = sun.elevationDeg > -6
   const moonUp = moon !== null && moon.elevationDeg > -2
 
@@ -53,6 +78,10 @@ export function SunLight({ on, onToggle, sun, moon, moonPhase }: Props) {
           <input type="checkbox" checked={on} onChange={onToggle} />
           <span>Luz del sol real</span>
         </label>
+        <label>
+          <input type="checkbox" checked={shadows} onChange={onToggleShadows} />
+          <span>Sombras arrojadas</span>
+        </label>
       </div>
 
       <p className="dim small">
@@ -62,7 +91,7 @@ export function SunLight({ on, onToggle, sun, moon, moonPhase }: Props) {
         encendida de las nubes: con esto, las tres cosas dejan de contradecirse.
       </p>
 
-      {on && (
+      {(on || shadows) && (
         <table className="kv">
           <tbody>
             <tr>
@@ -73,6 +102,14 @@ export function SunLight({ on, onToggle, sun, moon, moonPhase }: Props) {
                   : `${n0(-sun.elevationDeg)}° bajo el horizonte`}
               </td>
             </tr>
+            {shadows && sun.elevationDeg > 0 && (
+              <tr>
+                <th>Sombra</th>
+                <td className="mono">
+                  quita el {Math.round(shadowDepth(sun.elevationDeg) * 100)} % de la luz
+                </td>
+              </tr>
+            )}
             <tr>
               <th>Luna</th>
               <td className="mono">
@@ -101,9 +138,25 @@ export function SunLight({ on, onToggle, sun, moon, moonPhase }: Props) {
       </p>
 
       <p className="dim small">
-        No dibuja sombras arrojadas: el sombreado de MapLibre sabe hacia dónde
-        mira cada ladera, pero no sabe que la pared de la Caldera le tapa el sol
-        al barranco de al lado.
+        Las <strong>sombras arrojadas</strong> contestan la otra mitad de la
+        pregunta: no hacia dónde mira una ladera, sino qué tiene delante. Se
+        calculan sobre el mismo modelo de elevación que pone las cotas, sin pedir
+        nada, y son lo que hace que la pared de la Caldera le quite el sol al
+        barranco de al lado y que el Roque se proyecte hacia el este al amanecer.
+      </p>
+
+      <p className="dim small">
+        Son cosa del sol bajo. Medido sobre el modelo: con el sol a 5° hay un{' '}
+        <strong>50 % de la isla en sombra propia</strong>, a 10° un 45 %, a 20°
+        un 13 %, a 30° un 4 % y por encima de 60° ya no hay ninguna. Y cuanto más
+        bajo está el sol, más suaves son —dentro de una sombra sigue entrando la
+        luz del cielo, que a esas horas ya es la mayor parte de la que hay—.
+      </p>
+
+      <p className="dim small">
+        Sobre los fondos de <strong>satélite y tiempo real</strong> son la única
+        luz que se ve: la ortofoto es opaca y tapa el sombreado del relieve
+        entero, así que ahí la casilla de arriba no cambia nada y ésta sí.
       </p>
     </>
   )

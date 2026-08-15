@@ -364,6 +364,13 @@ export default function App() {
    */
   const [sunLightOn, setSunLightOn] = useState(false)
   /**
+   * Las sombras arrojadas, dentro de la misma función y con su propio
+   * interruptor. Van aparte de `sunLightOn` porque no dependen de él: el
+   * sombreado de MapLibre desaparece bajo la ortofoto y las sombras no, así que
+   * sobre el fondo de satélite son lo único que ilumina la isla.
+   */
+  const [sunShadowsOn, setSunShadowsOn] = useState(false)
+  /**
    * La luna, solo cuando hace falta: de día no ilumina nada que se note, y con
    * el interruptor apagado no ilumina nada en absoluto. Las efemérides de Meeus
    * no son caras, pero calcular lo que nadie va a mirar tampoco es gratis.
@@ -567,6 +574,7 @@ export default function App() {
         sky3d={{ on: sky3dOn, clouds: sky.clouds, sun }}
         sunLight={{
           on: sunLightOn,
+          shadows: sunShadowsOn,
           sun,
           moon: moon ? { elevationDeg: moon.elevationDeg, azimuthDeg: moon.azimuthDeg } : null,
           moonPhase: moon?.illumination ?? 0,
@@ -717,11 +725,13 @@ export default function App() {
         sky={sky}
         sunLight={{
           on: sunLightOn,
+          shadows: sunShadowsOn,
           sun,
           moon: moon ? { elevationDeg: moon.elevationDeg, azimuthDeg: moon.azimuthDeg } : null,
           moonPhase: moon?.illumination ?? 0,
         }}
         onSunLight={() => setSunLightOn((v) => !v)}
+        onSunShadows={() => setSunShadowsOn((v) => !v)}
         sky3dOn={sky3dOn}
         /*
           Encenderla inclina la cámara, y es la misma regla que ya sigue el

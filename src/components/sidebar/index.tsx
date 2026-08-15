@@ -82,8 +82,15 @@ interface Props {
   sky3dOn: boolean
   onSky3d: () => void
   /** La luz solar sobre el relieve: otra función experimental. */
-  sunLight: { on: boolean; sun: SkyPosition; moon: SkyPosition | null; moonPhase: number }
+  sunLight: {
+    on: boolean
+    shadows: boolean
+    sun: SkyPosition
+    moon: SkyPosition | null
+    moonPhase: number
+  }
   onSunLight: () => void
+  onSunShadows: () => void
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
@@ -277,7 +284,7 @@ export function Sidebar(props: Props) {
               (props.sky3dOn ? 1 : 0) +
               (props.visible.wind ? 1 : 0) +
               (props.ocean.on ? 1 : 0) +
-              (props.sunLight.on ? 1 : 0)
+              (props.sunLight.on || props.sunLight.shadows ? 1 : 0)
             }/5`}
           >
             <Sky3D sky={props.sky} on={props.sky3dOn} onToggle={props.onSky3d} />
@@ -285,6 +292,8 @@ export function Sidebar(props: Props) {
             <SunLight
               on={props.sunLight.on}
               onToggle={props.onSunLight}
+              shadows={props.sunLight.shadows}
+              onToggleShadows={props.onSunShadows}
               sun={props.sunLight.sun}
               moon={props.sunLight.moon}
               moonPhase={props.sunLight.moonPhase}
