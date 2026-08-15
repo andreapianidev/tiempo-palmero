@@ -44,9 +44,30 @@ export interface Dem {
   originY: number
 }
 
+/**
+ * La versión de los datos del relieve, para colgarla de cada URL de tesela.
+ *
+ * POR QUÉ HACE FALTA, y no es una precaución teórica. Las teselas se sirven con
+ * `immutable` y un año de caché —lo dice `vercel.json`, y está bien: son 118
+ * ficheros que no cambian entre despliegues—. Pero el nombre tampoco cambiaba
+ * NUNCA, así que cuando el 15 de agosto de 2026 se corrigieron 40 teselas para
+ * quitarles la plataforma fantasma de la costa, el arreglo se desplegó y no le
+ * llegó a nadie que ya hubiera abierto el mapa: su navegador seguía —y seguiría
+ * durante un año— con las de antes. El fallo se veía arreglado en una ventana
+ * de incógnito y roto en la de siempre, que es la peor manera de fallar.
+ *
+ * Con la versión colgada de la URL, `immutable` vuelve a ser lo que dice ser:
+ * este contenido, en esta dirección, no cambia. Cuando cambia, la dirección es
+ * otra. Sale de `generated`, que `prepare-data.ts` ya reescribe en cada pasada.
+ */
+export function demVersion(manifest: DemManifest): string {
+  const t = Date.parse(manifest.generated)
+  return Number.isFinite(t) ? String(t) : '0'
+}
+
 /** Ruta de una tesela dentro del sitio. La base la pone `endpoints.ts`. */
 export function demTilePath(manifest: DemManifest, tx: number, ty: number): string {
-  return `/dem/${manifest.zoom}/${tx}/${ty}.png`
+  return `/dem/${manifest.zoom}/${tx}/${ty}.png?v=${demVersion(manifest)}`
 }
 
 /** Recorre las teselas del manifiesto en el orden en que se guardaron. */

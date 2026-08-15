@@ -98,11 +98,51 @@ export const BIAS_STEPS = 4
  * Tres metros. No es una elección estética: es un píxel. En la vista que enseña
  * la isla entera —30 m por píxel— tres metros de cota sobre una pendiente del
  * 10 % son 30 m de suelo, o sea un píxel de orilla mal puesta. Por debajo de eso
- * no hay nada que ver, y por encima empieza a verse. Tiene que ser mayor que el
- * metro de `BIAS_M` —si no, el techo pelearía con el suelo en las vistas
- * picadas, donde `sen(θ)` vale casi 1—, y lo es por tres veces.
+ * no hay nada que ver, y por encima empieza a verse.
+ *
+ * TIENE DOS SUELOS, y los dos importan. Uno es `BIAS_M`: si el techo bajara del
+ * metro, pelearía con él en las vistas picadas, donde `sen(θ)` vale casi 1. El
+ * otro es `LOWEST_TIDE_M`: el techo acota el empujón, y con la marea baja parte
+ * de ese empujón es lo ÚNICO que mantiene el mar por delante de la lámina plana
+ * de MapLibre. Un techo por debajo de la marea más baja no arreglaría una
+ * ladera: borraría el mar entero.
  */
 export const MAX_LEAK_M = 3
+
+/**
+ * La marea más baja que hay que sostener, en metros bajo el nivel medio.
+ *
+ * −1,18. Medido contra la API marina de Open-Meteo frente a Tazacorte, 744
+ * horas seguidas —del 16 de julio al 15 de agosto de 2026—: mínimo −1,18 m,
+ * máximo +0,90 m, recorrido 2,08 m. Es la cifra que tiene que caber por debajo
+ * de `MAX_LEAK_M`, y cabe con 1,8 m de sobra.
+ */
+export const LOWEST_TIDE_M = -1.18
+
+/**
+ * El empujón que hace falta solo para alcanzar la lámina plana de MapLibre.
+ *
+ * El terreno de MapLibre pone el mar en cero y escribe profundidad. Cuando la
+ * marea deja el agua por debajo, hay que ganarle esa diferencia; y como el
+ * empujón va por el rayo, la diferencia vertical se paga dividida por el seno
+ * del picado. Es el gemelo de `need` en el sombreador de vértices.
+ */
+export function tideGapPush(tideM: number, sinDepression: number): number {
+  return Math.max(0, -tideM) / Math.max(Math.abs(sinDepression), 1e-6)
+}
+
+/**
+ * Lo que un plano de agua LEVANTADO `liftM` metros pinta sobre tierra llana.
+ *
+ * Es el precio del levantamiento vertical que se quitó el 15 de agosto de 2026:
+ * el rayo corta un plano alto antes de llegar a donde habría cortado el cero, y
+ * el mapa de orilla se consulta en ese punto adelantado. `liftM / tg(θ)`, que
+ * mirando de canto no tiene tope. El empujón por el rayo no tiene este término
+ * porque no mueve el corte: por eso lo sustituye.
+ */
+export function liftFloodM(liftM: number, depressionDeg: number): number {
+  return liftM / Math.tan((depressionDeg * Math.PI) / 180)
+}
 
 /**
  * Bits del búfer de profundidad cuando la GPU no lo dice.

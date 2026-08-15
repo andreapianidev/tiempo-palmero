@@ -18,7 +18,7 @@ import { HILLSHADE_DEFAULT } from './terrain-light'
 import { dataUrl } from './endpoints'
 import { pixelXToLon, pixelYToLat } from './geo'
 import { SKY } from './terrain'
-import type { DemManifest } from './dem'
+import { demVersion, type DemManifest } from './dem'
 import { roleCss } from './contrast/roles'
 
 /**
@@ -98,7 +98,10 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
     sources: {
       terrain: {
         type: 'raster-dem',
-        tiles: [dataUrl('/dem/{z}/{x}/{y}.png')],
+        // La versión va colgada de la URL a propósito: ver `demVersion` en
+        // `dem.ts`. Sin ella, una tesela corregida no le llega jamás a quien ya
+        // tenga la anterior en la caché del navegador.
+        tiles: [dataUrl(`/dem/{z}/{x}/{y}.png?v=${demVersion(dem)}`)],
         encoding: 'terrarium',
         tileSize: 256,
         // Hay teselas de z9 a z12. Declarar solo z12 dejaba el relieve invisible

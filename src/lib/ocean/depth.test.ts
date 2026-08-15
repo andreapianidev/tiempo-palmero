@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   BIAS_M,
   BIAS_STEPS,
+  LOWEST_TIDE_M,
   MAX_LEAK_M,
   biasWorld,
   leakGroundM,
   leakHeightM,
+  liftFloodM,
   ndcStep,
+  tideGapPush,
   worldPerNdc,
   type Frustum,
 } from './depth'
@@ -189,6 +192,41 @@ describe('la otra orilla: que el mar siga estando ahí', () => {
       metersPerUnit: ISLA.metersPerUnit,
     })
     expect(leakHeightM(con24 * ISLA.metersPerUnit, r.sin)).toBeLessThan(MAX_LEAK_M)
+  })
+})
+
+describe('los dos metros que se levantaba el plano del agua', () => {
+  it('pintaban tierra llana sin tope, y el tope lo ponía solo el ángulo', () => {
+    // Lo que se veía: el agua metida en las plataneras de la costa baja.
+    expect(liftFloodM(2, 5)).toBeCloseTo(23, 0)
+    expect(liftFloodM(2, 2)).toBeCloseTo(57, 0)
+    expect(liftFloodM(2, 1)).toBeCloseTo(115, 0)
+    // Y de canto, sin límite: a medio grado ya son más de doscientos metros.
+    expect(liftFloodM(2, 0.5)).toBeGreaterThan(200)
+  })
+
+  it('el empujón por el rayo hace el mismo trabajo sin ese término', () => {
+    // No mueve el corte del rayo con el plano, así que el mapa de orilla se
+    // consulta donde toca y no hay «suelo invadido» que dependa del ángulo:
+    // lo único que cede es cota, y está acotada por el techo.
+    for (const dep of [10, 5, 2, 1, 0.5]) {
+      const sin = Math.sin((dep * Math.PI) / 180)
+      const push = tideGapPush(LOWEST_TIDE_M, sin)
+      expect(leakHeightM(push, sin)).toBeCloseTo(Math.abs(LOWEST_TIDE_M), 6)
+      expect(leakHeightM(push, sin)).toBeLessThanOrEqual(MAX_LEAK_M)
+    }
+  })
+
+  it('y con la marea más baja el mar sigue estando: el techo lo permite', () => {
+    // La otra orilla. Si `MAX_LEAK_M` bajara de 1,18 el mar desaparecería
+    // entero en bajamar, que es peor que cualquier ladera mojada.
+    expect(MAX_LEAK_M).toBeGreaterThan(Math.abs(LOWEST_TIDE_M))
+    for (const dep of [30, 5, 1]) {
+      const sin = Math.sin((dep * Math.PI) / 180)
+      expect(tideGapPush(LOWEST_TIDE_M, sin)).toBeLessThan(MAX_LEAK_M / sin)
+    }
+    // Con la marea alta no hace falta empujón ninguno por este concepto.
+    expect(tideGapPush(0.9, Math.sin(0.1))).toBe(0)
   })
 })
 

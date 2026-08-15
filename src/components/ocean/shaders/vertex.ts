@@ -149,7 +149,19 @@ void main() {
   float probe = max(meter, dist * PROBE_SHARE);
   vec4 clipB = u_matrix * vec4(world + (toCam / dist) * probe, 1.0);
 
-  float push = BIAS_M * meter;
+  // El seno del picado del rayo, que es el cambio de moneda entre «metros de
+  // empujón» y «metros de ladera que el agua puede cubrir».
+  float sinDown = max(abs(toCam.z) / dist, 1e-6);
+
+  // LO QUE LE FALTA AL AGUA PARA ALCANZAR LA LÁMINA PLANA DE MAPLIBRE, que
+  // está en cero y escribe profundidad. Con la marea baja el plano del agua
+  // queda por debajo —hasta 1,18 m, medido sobre 31 días frente a Tazacorte— y
+  // sin ganarle esa diferencia el mar desaparece entero. Se gana AQUÍ, por el
+  // rayo, y no levantando el plano: levantarlo movería el corte del rayo hacia
+  // el mar y con él la consulta del mapa de orilla. Ver \`OceanLayer.ts\`.
+  float need = max(0.0, -u_seaLevel) / sinDown;
+
+  float push = max(BIAS_M * meter, need);
   if (clipA.w > 0.0 && clipB.w > 0.0) {
     // Cuánto NDC gana la sonda entera. De ahí salen los metros que hacen falta
     // para ganar los escalones de búfer que pide \`u_depthSlack\`.
@@ -157,9 +169,10 @@ void main() {
     if (gain > 1e-9) {
       float steps = (u_depthSlack / gain) * probe;
       // Y el techo, que no se mide en metros de empujón sino en lo único que
-      // importa: cuánta ladera se come. \`toCam.z / dist\` es el seno del
-      // picado del rayo, o sea el cambio de moneda entre las dos cosas.
-      float ceiling = (MAX_LEAK_M * meter) / max(abs(toCam.z) / dist, 1e-6);
+      // importa: cuánta ladera se come. Es mayor que \`need\` por construcción
+      // —\`MAX_LEAK_M\` supera la marea más baja que hay—, así que nunca puede
+      // borrar el mar por apretar el techo.
+      float ceiling = (MAX_LEAK_M * meter) / sinDown;
       push = min(max(push, steps), max(push, ceiling));
     }
   }
