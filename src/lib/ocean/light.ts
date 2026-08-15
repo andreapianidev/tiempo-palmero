@@ -48,6 +48,15 @@ export interface OceanLight {
   haze: number
   /** Índice de claridad medido, de 0 a 1. `null` si no hay radiación fresca. */
   clearness: number | null
+  /**
+   * Cuánta calima hay, de 0 a 1, ya traducida desde el PM10 medido.
+   *
+   * Sale afuera —y no solo mezclada en los colores de aquí— porque el aire que
+   * hay ENTRE la cámara y lo que se mira también depende de ella: es lo que
+   * decide cuánto se traga la distancia (`sky/haze.ts`). Es la misma cifra que
+   * tiñe estos colores, y tiene que serlo.
+   */
+  calima: number
 }
 
 /**
@@ -352,5 +361,6 @@ export function oceanLight(
     // deja de venir de un punto y viene de medio cielo.
     haze: Math.max(0, Math.min(1, 0.15 + 0.55 * calima + 0.5 * cloudy)),
     clearness,
+    calima,
   }
 }

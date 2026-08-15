@@ -22,6 +22,7 @@ import { MAP_BBOX } from '../../src/lib/geo.js'
 import { buildCloudScene, puffCount, type Cloud } from '../../src/lib/sky/scene.js'
 import type { SkySample } from '../../src/lib/sky/model.js'
 import { selfShade, MULTIPLE_SCATTERING } from '../../src/lib/sky/selfshade.js'
+import { crossShade } from '../../src/lib/sky/crossshade.js'
 import type { SkyPosition } from '../../src/lib/sun.js'
 
 const calm = { u: 0, v: 0 }
@@ -167,7 +168,7 @@ function exposure(cloud: Cloud): Float32Array {
   for (let k = 0; k < views; k++) {
     // 35° de elevación: la vista 3D entra con 55° de inclinación de cámara, o
     // sea mirando desde 35° sobre el horizonte.
-    const vis = selfShade(dry, sun(35, (360 * k) / views), undefined, 0)
+    const vis = selfShade(dry, sun(35, (360 * k) / views), { multipleScattering: 0 })
     for (let i = 0; i < out.length; i++) out[i] += vis[i] / views
   }
   return out
@@ -178,7 +179,7 @@ function sceneMean(clouds: Cloud[], ms: number, position = HIGH_SUN): number {
   let sum = 0
   let w = 0
   for (const c of clouds) {
-    const light = selfShade(c, position, undefined, ms)
+    const light = selfShade(c, position, { multipleScattering: ms })
     const vis = exposure(c)
     for (let i = 0; i < c.puffs.length; i++) {
       sum += light[i] * vis[i]
@@ -211,7 +212,7 @@ function darkestVisible(clouds: Cloud[], ms: number, position: SkyPosition): num
   let total = 0
   for (const c of clouds) {
     if (c.precipMm > 0) continue
-    const light = selfShade(c, position, undefined, ms)
+    const light = selfShade(c, position, { multipleScattering: ms })
     const vis = exposure(c)
     for (let i = 0; i < c.puffs.length; i++) {
       rows.push({ v: light[i], w: vis[i] })
@@ -246,7 +247,7 @@ function darkestVisible(clouds: Cloud[], ms: number, position: SkyPosition): num
   console.log('  dispersión   lo más oscuro   cara al sol − contraria   mediodía')
   for (const ms of [0, 0.1, 0.15, 0.2, 0.22, 0.25, 0.3, 0.4, 0.55]) {
     const sample = clouds.filter((c) => c.etage === 'low')[0]
-    const split = flankSplit(sample, selfShade(sample, low, undefined, ms), 100)
+    const split = flankSplit(sample, selfShade(sample, low, { multipleScattering: ms }), 100)
     console.log(
       `  ${ms.toFixed(2).padStart(8)}     ${darkestVisible(clouds, ms, low).toFixed(3)}` +
         `           ${split.toFixed(3)}                  ${sceneMean(clouds, ms).toFixed(3)}`,
@@ -321,14 +322,40 @@ for (const s of scenes) {
   console.log()
 }
 
+// --- 3. la sombra entre nubes ------------------------------------------------
+//
+// Lo que la autosombra no puede dar: una manta tapa a la nube que tiene detrás.
+{
+  console.log('SOMBRA ENTRE NUBES — cuánta luz le queda a cada nube\n')
+  console.log('  escena                    sol      media   la más tapada   a la sombra (<0,7)')
+  for (const s2 of scenes) {
+    const clouds = buildCloudScene(s2.samples, BAND, SEED)
+    for (const [el, az] of [[70, 180], [20, 110], [8, 95]] as [number, number][]) {
+      const beam = crossShade(clouds, sun(el, az))
+      const v = [...beam].sort((a, b) => a - b)
+      const shaded = v.filter((x) => x < 0.7).length
+      console.log(
+        `  ${s2.name.padEnd(24)}  ${String(el).padStart(3)}°   ` +
+          `${mean(v).toFixed(3)}   ${v[0].toFixed(3)}          ` +
+          `${((100 * shaded) / v.length).toFixed(0)} %`,
+      )
+    }
+  }
+  console.log()
+}
+
 // --- el coste ---------------------------------------------------------------
 //
 // El barrido entero de la escena, que es lo que se paga cada vez que el sol se
 // mueve medio grado —unos dos minutos de reloj—.
 const worst = buildCloudScene(uniform(95, 90, 90), BAND, SEED)
 const out = new Float32Array(64)
+const cross = new Float32Array(worst.length)
 const sweep = () => {
-  for (const c of worst) selfShade(c, sun(35, 120), out)
+  crossShade(worst, sun(35, 120), cross)
+  for (let i = 0; i < worst.length; i++) {
+    selfShade(worst[i], sun(35, 120), { out, beam: cross[i] })
+  }
 }
 sweep()
 sweep()

@@ -42,7 +42,8 @@
  */
 
 import type { SkySpecification } from 'maplibre-gl'
-import type { OceanLight, Rgb } from './ocean/light'
+import { waterColors, type OceanLight, type Rgb } from './ocean/light'
+import { COLORS } from './mapStyle'
 import { dayFactor, type SkyPosition } from './sun'
 import { SKY } from './terrain'
 
@@ -100,4 +101,30 @@ export function skyDome(light: OceanLight, sun: SkyPosition): SkySpecification {
     // para la ladera de delante—.
     'fog-color': toHex(mix(NIGHT.fog, light.horizon, day)),
   }
+}
+
+/**
+ * EL FONDO, que es la superficie más grande de la pantalla y no sabía la hora.
+ *
+ * Medido: con la cámara a 55° —la inclinación de entrada de la vista 3D— el
+ * horizonte no ha entrado todavía en pantalla, así que lo que llena la parte de
+ * arriba NO es la cúpula: es la capa `background` de `mapStyle.ts`, un
+ * `#080b10` fijo. Con la luz real encendida, esa banda cambiaba −0,002 de
+ * luminancia, o sea nada.
+ *
+ * Es mar lejano, así que se pinta con el color del agua profunda BAJO LA LUZ DE
+ * AHORA —el mismo `waterColors` que usa el sombreador del océano—, y no con un
+ * tercer azul inventado. Con la capa del mar encendida las dos cosas coinciden
+ * por construcción; con ella apagada, el fondo es lo único que hay y al menos
+ * sabe qué hora es.
+ *
+ * NO ES LA LUZ DEL CIELO NI LA DEL HORIZONTE. Un mar de mediodía no es del
+ * color del cielo de mediodía: el agua absorbe el rojo y devuelve muy poco de
+ * lo que le entra, y por eso `waterColors` parte de un azul casi negro y lo
+ * enciende. Usar aquí el color del horizonte pintaría de cielo la mitad de
+ * abajo de la pantalla.
+ */
+export function seaBackground(light: OceanLight | null): string {
+  if (!light) return COLORS.sea
+  return toHex(waterColors(light).deep)
 }

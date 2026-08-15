@@ -856,6 +856,15 @@ export const es = {
      */
     shading:
       'Cada nube se sombrea a sí misma: desde cada mota se mira hacia el sol a través de las demás de su nube y se cuenta cuánta tiene delante. Por eso lo oscuro no está siempre abajo — al mediodía es la panza, y con el sol rasante es el lado contrario al sol, que es lo que hace que un cúmulo del atardecer se lea como un objeto con volumen.',
+    /** Y una nube contra las demás: el cirro le quita el sol al cúmulo. */
+    crossShading:
+      'Y unas nubes le hacen sombra a otras: una capa alta extendida apaga los cúmulos que tiene debajo, y con el sol rasante una hilera se enciende por la punta y se apaga hacia dentro. Se calcula solo cuando el sol se mueve medio grado, no en cada fotograma.',
+    /**
+     * El aire que hay delante. Va aquí y no en la luz solar porque se ve
+     * siempre que haya nubes, con la luz real encendida o no.
+     */
+    haze:
+      'Y lo que hay entre la cámara y cada nube: el aire. Una nube al otro extremo de la isla se ve con un 43 % de bruma encima —dispersión de Rayleigh, la misma que hace azul el cielo— y con calima, medida por el PM10 de las estaciones, con el 97 %. Es lo que separa una nube lejana de una cercana cuando las dos son igual de blancas.',
   },
 
   fireRisk: {

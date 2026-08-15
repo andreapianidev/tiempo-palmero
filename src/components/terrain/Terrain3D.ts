@@ -40,6 +40,8 @@ export class Terrain3D {
   /** La brújula solo existe mientras haya algo que orientar. */
   private compass: maplibregl.NavigationControl | null = null
   private lockTimer: ReturnType<typeof setTimeout> | null = null
+  /** Hasta dónde deja inclinarse el fondo de ahora. Ver `maxPitchFor`. */
+  private ceiling: number = MAX_PITCH
 
   constructor(private readonly map: MlMap) {}
 
@@ -48,6 +50,24 @@ export class Terrain3D {
     this.on = on
     if (on) this.enter()
     else this.exit()
+  }
+
+  /**
+   * El tope de inclinación del fondo que hay puesto.
+   *
+   * Se puede llamar con la 3D apagada —entonces solo se guarda— y también con
+   * la cámara ya inclinada por encima del tope nuevo, que es lo que pasa al
+   * cambiar del relieve a un fondo de GRAFCAN mirando rasante: ahí la cámara
+   * BAJA hasta el tope, con animación, en vez de quedarse fuera de rango.
+   */
+  setCeiling(ceiling: number): void {
+    if (ceiling === this.ceiling) return
+    this.ceiling = ceiling
+    if (!this.on) return
+    this.map.setMaxPitch(ceiling)
+    if (this.map.getPitch() > ceiling) {
+      this.map.easeTo({ pitch: ceiling, duration: ENTER_MS })
+    }
   }
 
   setExaggeration(exaggeration: number): void {
@@ -63,7 +83,7 @@ export class Terrain3D {
     this.clearLock()
     // El tope va ANTES del giro: con `maxPitch` a cero, `easeTo` se recortaría
     // a sí mismo y la cámara no se movería ni un grado.
-    map.setMaxPitch(MAX_PITCH)
+    map.setMaxPitch(this.ceiling)
     map.setTerrain(terrainSpec(this.exaggeration))
     if (!this.compass) {
       this.compass = new maplibregl.NavigationControl({

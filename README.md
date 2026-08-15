@@ -1731,6 +1731,68 @@ por la que tampoco lleva mar. Es papel, ya cuenta el relieve con sus curvas de
 nivel, y un sombreado azul oscuro sobre papel blanco las ensucia en vez de añadir
 nada.
 
+#### Y el resto de lo que estaba parado
+
+Encontrado el cuarto sol, se vieron los que quedaban detrás. Todos son la misma
+clase de defecto —un color fijo donde debería haber una hora— y todos se
+arreglan con la luz que ya se calcula:
+
+**El fondo, que es la superficie más grande de la pantalla.** A 55° el horizonte
+no ha entrado todavía, así que lo que llena la parte de arriba no es la cúpula:
+es la capa `background`, un `#080b10` fijo. Con la luz real encendida esa banda
+cambiaba −0,002 de luminancia, o sea nada. Ahora se pinta con el color del agua
+profunda bajo la luz de ahora —el mismo `waterColors` del sombreador del océano—
+y no con un tercer azul inventado. No con el color del horizonte, que es lo
+fácil y sería falso: un mar de mediodía no es del color del cielo de mediodía,
+porque el agua absorbe el rojo y devuelve muy poco de lo que le entra.
+
+**El aire entre la cámara y las nubes.** La bruma de MapLibre se aplica a las
+capas que drapea sobre el terreno y no a las personalizadas, así que el relieve
+lejano se desvanecía y las nubes no: una a 40 km se dibujaba tan nítida como la
+de encima de la cabeza. El coeficiente no es un ajuste — es **dispersión de
+Rayleigh**: espesor óptico vertical 0,10 a 550 nm sobre 8 km de altura de
+escala, o sea 1,25·10⁻⁵ por metro. Da un 6 % de bruma a 5 km, un 22 % a 20 y un
+**43 % a 45 km**, que es la isla de punta a punta. La calima lo multiplica por
+ocho —con el PM10 medido, no con un número de dibujo— y entonces a 45 km queda
+el 97 %: el horizonte desaparece, que es lo que se ve un día de calima.
+
+**Las nubes entre ellas.** La autosombra resolvía lo que una nube se tapa a sí
+misma y ahí se paraba: cada una se iluminaba como si estuviera sola. Ahora hay un
+segundo barrido, nube contra nube, con cada una como un elipsoide —2,6 km de
+radio y 500 m de espesor: tratarla como esfera le haría dar sombra a dos
+kilómetros por encima de donde está—. Medido: con **un solo estrato y el sol
+alto no pasa nada** (1,000 de luz media, y ese número es la prueba de que el rayo
+sale de la superficie de la nube y no de su centro), y con **tres estratos el
+37-43 % de las nubes queda a la sombra de las de arriba**. El barrido entero
+—cross más autosombra, 290 nubes y 7.074 motas— cuesta 4,4 ms, una vez cada dos
+minutos de reloj.
+
+**El color de la noche de las nubes**, que era `vec3(0.13, 0.16, 0.24)` escrito
+en el sombreador. Ahora es la luz ambiente que `ocean/light.ts` calcula con la
+hora y la luna: con luna llena alta una nube nocturna se ve, y sin luna, apenas.
+
+**La cámara, que no llegaba donde está el cielo.** El tope de inclinación eran
+65° por dos motivos escritos, y uno de los dos —las teselas de GRAFCAN— no se
+aplica al relieve de casa, que no le pide nada a nadie. Con ese fondo el tope
+sube a **75°**, medido sobre la Caldera a z12,5: a 75 la cámara sigue fuera del
+terreno y a 80 el relieve de delante ya sale deformado. Con las cartas de
+GRAFCAN se queda en 65 y, si se cambia de fondo mirando rasante, la cámara baja
+sola.
+
+**Y el sol, que no estaba dibujado.** Disco de `0,53°` —lo que mide de verdad; un
+sol más grande es el error más repetido de las escenas 3D—, del color que le toca
+a su altura, con la aureola apagándose según la masa de aire que atraviesa el
+rayo. Va al fondo del búfer de profundidad, así que **el relieve lo tapa sin que
+haya que calcular ninguna oclusión**. El disco borra el cielo que tiene detrás y
+la aureola se suma: con la mezcla aditiva a secas salía blanco azulado a 9° de
+altura, que es justo lo que no hace un sol poniente. Tiene casilla propia, porque
+es lo único de esta función que dibuja en vez de iluminar.
+
+Y una limitación que conviene decir: con la vista al tope, el borde de arriba de
+la pantalla queda a **3,4° sobre el horizonte** —campo de visión de 36,87°—, así
+que el disco solo entra en cuadro con el sol más bajo que eso y mirando hacia él.
+El resto del día está ahí, encima de la pantalla, iluminando todo lo demás.
+
 **Y por eso es experimental y no el comportamiento normal: se ve mejor y se lee
 peor.** La luz fija no es un descuido, es una convención con dos siglos detrás
 que deja el mapa igual de legible a cualquier hora; la real hunde media isla en

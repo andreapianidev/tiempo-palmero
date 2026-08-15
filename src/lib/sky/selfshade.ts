@@ -105,13 +105,27 @@ const RAIN_FULL_MM = 4
  * entera cada vez que el sol se mueve medio grado, y reservar un array por nube
  * y por barrido llenaría el recolector de basura para nada.
  */
+export interface SelfShadeOptions {
+  /** Array a reutilizar. Ver el porqué en la cabecera de la función. */
+  out?: Float32Array
+  /** Solo lo mueve el script que lo calibra. En la aplicación es el de arriba. */
+  multipleScattering?: number
+  /**
+   * Cuánto haz le llega YA a esta nube, de 0 a 1: lo que le dejan las otras
+   * nubes que tiene entre ella y el sol (`crossshade.ts`). Entra multiplicando
+   * el haz y NO la luz final, para que el suelo de dispersión múltiple se cuente
+   * una sola vez: si se aplicara fuera, una manta cerrada acabaría más clara que
+   * una nube suelta, que es exactamente lo contrario de lo que pasa.
+   */
+  beam?: number
+}
+
 export function selfShade(
   cloud: Cloud,
   sun: SkyPosition,
-  out?: Float32Array,
-  /** Solo lo mueve el script que lo calibra. En la aplicación es el de arriba. */
-  multipleScattering = MULTIPLE_SCATTERING,
+  options: SelfShadeOptions = {},
 ): Float32Array {
+  const { out, multipleScattering = MULTIPLE_SCATTERING, beam: incoming = 1 } = options
   const puffs = cloud.puffs
   const n = puffs.length
   const light = out && out.length >= n ? out : new Float32Array(n)
@@ -177,7 +191,7 @@ export function selfShade(
       tau += (tauCenter * chord) / (2 * r)
     }
 
-    const beam = Math.exp(-tau)
+    const beam = incoming * Math.exp(-tau)
     light[i] =
       (multipleScattering + (1 - multipleScattering) * beam) * rainFactor
   }

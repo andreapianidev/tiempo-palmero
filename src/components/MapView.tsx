@@ -36,6 +36,7 @@ import type { OceanData } from '../hooks/useOcean'
 import { VaporLayer } from './vapor/VaporLayer'
 import type { VaporField } from '../lib/vapor/field'
 import { CloudLayer } from './sky/CloudLayer'
+import { SunLayer } from './sky/SunLayer'
 import { RainLayer } from './sky/RainLayer'
 import type { Cloud } from '../lib/sky/scene'
 import { dayFactor, type SkyPosition } from '../lib/sun'
@@ -57,8 +58,8 @@ import { markerSize } from './markers/size'
 import { silenceDepthProbe } from './markers/depthProbe'
 import { hiddenByRelief, type Camera } from '../lib/occlusion'
 import { elevationAt } from '../lib/dem'
-import { FLAT_MAX_PITCH, SKY, type Exaggeration } from '../lib/terrain'
-import { skyDome } from '../lib/sky-dome'
+import { FLAT_MAX_PITCH, maxPitchFor, SKY, type Exaggeration } from '../lib/terrain'
+import { seaBackground, skyDome } from '../lib/sky-dome'
 import type { OceanLight } from '../lib/ocean/light'
 import {
   addGuaguaLayers,
@@ -267,6 +268,8 @@ interface Props {
      * `SKY`, que es la de siempre.
      */
     dome: OceanLight | null
+    /** Si se dibuja el disco del sol en el cielo. Ver `sky/SunLayer.ts`. */
+    disc: boolean
   }
   /**
    * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
@@ -378,6 +381,7 @@ export function MapView(props: Props) {
   const vaporLayerRef = useRef<VaporLayer | null>(null)
   /** Las dos de la escena atmosférica, por lo mismo. */
   const cloudLayerRef = useRef<CloudLayer | null>(null)
+  const sunLayerRef = useRef<SunLayer | null>(null)
   const rainLayerRef = useRef<RainLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
   const terrainRef = useRef<Terrain3D | null>(null)
@@ -675,6 +679,14 @@ export function MapView(props: Props) {
       // suya, así que casi nunca compiten por el mismo píxel, y donde compiten
       // —una cortina vista de frente con su nube detrás— lo correcto es que el
       // agua se vea delante.
+      // EL SOL VA ANTES QUE LAS NUBES, y no es un detalle de orden: se dibuja a
+      // profundidad 1 —el fondo de la escena— así que lo tapa todo lo que tenga
+      // profundidad escrita, y con la mezcla aditiva lo que se dibuje después
+      // se suma encima. Puesto al final, se comería el ribete de las nubes.
+      const sunLayer = new SunLayer()
+      sunLayerRef.current = sunLayer
+      map.addLayer(sunLayer)
+
       const cloudLayer = new CloudLayer()
       cloudLayerRef.current = cloudLayer
       map.addLayer(cloudLayer)
@@ -864,6 +876,7 @@ export function MapView(props: Props) {
       terrainRef.current?.destroy()
       terrainRef.current = null
       cloudLayerRef.current = null
+      sunLayerRef.current = null
       rainLayerRef.current = null
       map.remove()
       mapRef.current = null
@@ -878,8 +891,11 @@ export function MapView(props: Props) {
   useEffect(() => {
     if (!ready) return
     terrainRef.current?.setExaggeration(props.terrain.exaggeration)
+    // El tope de inclinación va ANTES de encender: `enter()` lo lee para poner
+    // el `maxPitch` con el que después inclina la cámara.
+    terrainRef.current?.setCeiling(maxPitchFor(props.basemap))
     terrainRef.current?.setEnabled(props.terrain.on)
-  }, [ready, props.terrain.on, props.terrain.exaggeration])
+  }, [ready, props.terrain.on, props.terrain.exaggeration, props.basemap])
 
   // --- océano --------------------------------------------------------------
   //
@@ -1005,9 +1021,14 @@ export function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
-    const dome = props.sunLight.dome
+    const dome = props.sunLight.on ? props.sunLight.dome : null
     map.setSky(dome ? skyDome(dome, props.sunLight.sun) : SKY)
-  }, [ready, props.sunLight.dome, props.sunLight.sun])
+    // Y el fondo, que a la inclinación de entrada es lo que llena la parte de
+    // arriba de la pantalla: mar lejano, no cúpula. Ver `seaBackground`.
+    if (map.getLayer('sea')) {
+      map.setPaintProperty('sea', 'background-color', seaBackground(dome))
+    }
+  }, [ready, props.sunLight.on, props.sunLight.dome, props.sunLight.sun])
 
   // --- sombras arrojadas ---------------------------------------------------
   //
@@ -1240,11 +1261,28 @@ export function MapView(props: Props) {
 
   // La luz. Las dos capas tienen que recibir el MISMO sol: si la nube se
   // apagara al anochecer y la lluvia no, se vería llover de un cielo vacío.
+  //
+  // Y la nube recibe además la luz completa —la que ilumina el agua y pinta la
+  // cúpula—, de la que saca dos cosas: el color al que se desvanece la distancia
+  // y la luz que hay de noche. Va aparte del sol porque no depende del
+  // interruptor de luz solar: la escena atmosférica se dibuja con su propio
+  // interruptor y el aire que hay delante existe igual.
   useEffect(() => {
     if (!ready) return
     cloudLayerRef.current?.setSun(props.sky3d.sun)
+    cloudLayerRef.current?.setLight(props.sunLight.dome)
+    sunLayerRef.current?.setSun(props.sky3d.sun)
+    sunLayerRef.current?.setLight(props.sunLight.dome)
     rainLayerRef.current?.setDay(dayFactor(props.sky3d.sun.elevationDeg))
-  }, [ready, props.sky3d.sun])
+  }, [ready, props.sky3d.sun, props.sunLight.dome])
+
+  // El disco del sol tiene su propia casilla: es lo único de esta función que
+  // se DIBUJA en vez de iluminar, y dibujar un sol sobre un mapa de datos es una
+  // decisión de quien mira, no del programa.
+  useEffect(() => {
+    if (!ready) return
+    sunLayerRef.current?.setVisible(props.sunLight.disc)
+  }, [ready, props.sunLight.disc])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {

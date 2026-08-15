@@ -38,7 +38,7 @@
 
 export const VERTEX_SHADER = `
 attribute vec3 a_pos;
-// radio en metros, opacidad, sombreado vertical (0 base oscura, 1 cima), semilla
+// radio en metros, opacidad, luz que le llega a la mota, semilla
 attribute vec4 a_shape;
 
 uniform mat4 u_matrix;
@@ -47,13 +47,29 @@ uniform float u_pixelRatio;
 uniform float u_pxPerMeter;
 // La w del centro del mapa. Es la referencia de la perspectiva.
 uniform float u_refW;
+// Dónde está el ojo, en Mercator, y cuántos metros mide una unidad Mercator.
+uniform vec3 u_camera;
+uniform float u_metersPerMerc;
+// Extinción del aire, por metro. Ver lib/sky/haze.ts.
+uniform float u_extinction;
 
 varying float v_alpha;
 varying float v_shade;
 varying float v_seed;
+varying float v_haze;
 
 void main() {
   gl_Position = u_matrix * vec4(a_pos, 1.0);
+
+  // EL AIRE QUE HAY DELANTE. La bruma de MapLibre solo llega a las capas que
+  // drapea sobre el terreno, así que esta capa se la aplica ella misma, con la
+  // misma ley y hacia el mismo color: sin esto, una nube a 40 km se dibuja tan
+  // nítida como la que está encima de la cabeza y la escena se lee plana.
+  //
+  // La distancia se mide en Mercator y se pasa a metros con la escala de la
+  // latitud del centro, que es la misma conversión que usa el mar.
+  float dist = distance(a_pos, u_camera) * u_metersPerMerc;
+  v_haze = 1.0 - exp(-u_extinction * dist);
 
   // Proporción de profundidad respecto al centro: 1 en el centro, mayor delante
   // y menor detrás. Mismo criterio que la capa de vapor, y por el mismo motivo:
@@ -83,6 +99,12 @@ precision mediump float;
 uniform vec3 u_sunDir;
 // 1 de día, 0 de noche cerrada, con el crepúsculo por el medio.
 uniform float u_day;
+// El color al que se desvanece la distancia: el del horizonte, el mismo al que
+// se desvanece el relieve.
+uniform vec3 u_hazeColor;
+// La luz que hay de noche —la que ilumina lo que no ve el sol—, calculada por
+// ocean/light.ts con la hora y la luna de verdad.
+uniform vec3 u_night;
 
 varying float v_alpha;
 // Cuánta luz le llega a esta mota después de atravesar su propia nube: 1 si el
@@ -94,6 +116,8 @@ varying float v_alpha;
 // se dibujan en una sola llamada.
 varying float v_shade;
 varying float v_seed;
+// Cuánto aire hay entre esta mota y el ojo, de 0 a 1.
+varying float v_haze;
 
 void main() {
   // Coordenada dentro del punto, centrada, con la y hacia arriba como en
@@ -121,10 +145,14 @@ void main() {
   vec3 shadow = vec3(0.60, 0.65, 0.74);
   vec3 c = mix(shadow, lit, lambert) * v_shade;
 
-  // De noche la nube no desaparece: se apaga a un gris azulado y sigue tapando
-  // las estrellas, que es lo que hace una nube de noche. Apagarla del todo
-  // dejaría la escena mintiendo —cielo raso— justo la mitad de las horas.
-  vec3 night = vec3(0.13, 0.16, 0.24) * (0.55 + 0.45 * v_shade);
+  // De noche la nube no desaparece: se apaga y sigue tapando las estrellas, que
+  // es lo que hace una nube de noche. Apagarla del todo dejaría la escena
+  // mintiendo —cielo raso— justo la mitad de las horas.
+  //
+  // El color de esa noche ya no es una constante: es la luz ambiente que
+  // ocean/light.ts calcula con la hora y la luna, la misma que ilumina el
+  // agua. Con luna llena alta una nube nocturna se ve; sin luna, apenas.
+  vec3 night = u_night * (0.55 + 0.45 * v_shade);
   c = mix(night, c, u_day);
 
   float r = sqrt(r2);
@@ -140,6 +168,12 @@ void main() {
   // o sea en el borde del impostor, que es lo que pone el smoothstep del radio.
   float backlit = max(0.0, -u_sunDir.z);
   c += vec3(1.0, 0.97, 0.90) * backlit * smoothstep(0.35, 1.0, r) * 0.8 * u_day;
+
+  // Y por último el aire que hay hasta aquí. Va DESPUÉS del ribete y de la
+  // noche porque la bruma se suma a lo que salga: es lo último que le pasa a la
+  // luz antes de llegar al ojo, y lo que hace que dos nubes iguales a distinta
+  // distancia se distingan.
+  c = mix(c, u_hazeColor, v_haze);
 
   // El borde se deshace. Dónde empieza a deshacerse es el único mando que hay
   // entre dos defectos opuestos, y los dos se han visto:

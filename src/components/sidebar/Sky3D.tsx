@@ -84,6 +84,8 @@ export function Sky3D({ sky, on, onToggle }: Props) {
               estar, y quien mira tiene derecho a saber cuál de las dos ve. */}
           <p className="dim small">{t.sky3d.baseSource[sky.lowSource]}</p>
           <p className="dim small">{t.sky3d.shading}</p>
+          <p className="dim small">{t.sky3d.crossShading}</p>
+          <p className="dim small">{t.sky3d.haze}</p>
           <p className="dim small">{t.sky3d.scope}</p>
         </>
       )}

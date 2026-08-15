@@ -12,14 +12,19 @@
 
 import {
   EXAGGERATIONS,
+  GRAZING_MAX_PITCH,
   MAX_PITCH,
   exaggerationLabel,
+  maxPitchFor,
   slopeDegrees,
   type Exaggeration,
 } from '../../lib/terrain'
+import type { BasemapId } from '../../lib/basemaps'
 import { n } from '../../i18n'
 
 interface Props {
+  /** Qué fondo hay puesto: decide hasta dónde se puede inclinar. */
+  basemap: BasemapId
   on: boolean
   onToggle: () => void
   exaggeration: Exaggeration
@@ -28,7 +33,15 @@ interface Props {
   windOn: boolean
 }
 
-export function Scene3D({ on, onToggle, exaggeration, onExaggeration, windOn }: Props) {
+export function Scene3D({
+  basemap,
+  on,
+  onToggle,
+  exaggeration,
+  onExaggeration,
+  windOn,
+}: Props) {
+  const ceiling = maxPitchFor(basemap)
   return (
     <div className="subblock">
       <p className="lbl">Vista 3D</p>
@@ -71,8 +84,8 @@ export function Scene3D({ on, onToggle, exaggeration, onExaggeration, windOn }: 
           <ul className="gestures">
             <li>
               <kbd>Ctrl</kbd> + arrastrar — gira los 360° en horizontal e
-              inclina hasta {MAX_PITCH}° en vertical. Con ratón, el botón
-              derecho hace lo mismo.
+              inclina hasta {ceiling}° en vertical. Con ratón, el botón derecho
+              hace lo mismo.
             </li>
             <li>
               <kbd>Mayús</kbd> + flechas — lo mismo con el teclado, después de
@@ -87,6 +100,34 @@ export function Scene3D({ on, onToggle, exaggeration, onExaggeration, windOn }: 
               plano.
             </li>
           </ul>
+
+          {/*
+            Por qué el tope depende del fondo. No es un ajuste fino: es la
+            diferencia entre que el cielo exista o no, y quien mira tiene
+            derecho a saber por qué la misma vista se inclina distinto según la
+            carta que tenga debajo.
+          */}
+          <p className="dim small">
+            {basemap === 'relieve' ? (
+              <>
+                Con el relieve de casa se llega a {GRAZING_MAX_PITCH}°, y a
+                partir de los ~63° <strong>aparece el cielo</strong>: por debajo
+                de esa inclinación el horizonte queda fuera de la pantalla y lo
+                de arriba del todo sigue siendo mar. Con una carta de GRAFCAN el
+                tope baja a {MAX_PITCH}°, porque cada grado de más son teselas
+                que hay que pedirle a un servicio cuya licencia prohíbe la
+                descarga masiva — y el relieve de casa no le pide nada a nadie.
+              </>
+            ) : (
+              <>
+                Con esta carta el tope es {MAX_PITCH}°: cada grado más rasante
+                es más isla en pantalla y más teselas pedidas a GRAFCAN, cuya
+                licencia prohíbe la descarga masiva. Con el relieve de casa —que
+                no pide teselas a nadie— se llega a {GRAZING_MAX_PITCH}°, que es
+                donde el horizonte entra en la pantalla y hay cielo que ver.
+              </>
+            )}
+          </p>
 
           <p className="lbl" style={{ marginTop: 14 }}>
             Exageración vertical

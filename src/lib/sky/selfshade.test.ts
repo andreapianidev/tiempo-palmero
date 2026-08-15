@@ -155,6 +155,6 @@ describe('autosombra de las nubes', () => {
     // Si reservara un array por nube y por barrido, serían cientos de objetos
     // nuevos cada dos minutos para nada.
     const out = new Float32Array(deck.puffs.length)
-    expect(selfShade(deck, sun(45, 120), out)).toBe(out)
+    expect(selfShade(deck, sun(45, 120), { out })).toBe(out)
   })
 })

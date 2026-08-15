@@ -85,12 +85,15 @@ interface Props {
   sunLight: {
     on: boolean
     shadows: boolean
+    /** El disco del sol dibujado en el cielo. Ver `sky/SunLayer.ts`. */
+    disc: boolean
     sun: SkyPosition
     moon: SkyPosition | null
     moonPhase: number
   }
   onSunLight: () => void
   onSunShadows: () => void
+  onSunDisc: () => void
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
@@ -284,7 +287,7 @@ export function Sidebar(props: Props) {
               (props.sky3dOn ? 1 : 0) +
               (props.visible.wind ? 1 : 0) +
               (props.ocean.on ? 1 : 0) +
-              (props.sunLight.on || props.sunLight.shadows ? 1 : 0)
+              (props.sunLight.on || props.sunLight.shadows || props.sunLight.disc ? 1 : 0)
             }/5`}
           >
             <Sky3D sky={props.sky} on={props.sky3dOn} onToggle={props.onSky3d} />
@@ -294,6 +297,8 @@ export function Sidebar(props: Props) {
               onToggle={props.onSunLight}
               shadows={props.sunLight.shadows}
               onToggleShadows={props.onSunShadows}
+              disc={props.sunLight.disc}
+              onToggleDisc={props.onSunDisc}
               sun={props.sunLight.sun}
               moon={props.sunLight.moon}
               moonPhase={props.sunLight.moonPhase}
@@ -393,6 +398,7 @@ export function Sidebar(props: Props) {
               onToggleGrid={() => props.onToggle('grid')}
             />
             <Scene3D
+              basemap={props.basemap}
               on={props.terrain.on}
               onToggle={props.onTerrain}
               exaggeration={props.terrain.exaggeration}

@@ -39,7 +39,12 @@ import { metersPerPixel } from '../../lib/geo'
 import { mercatorZ } from '../../lib/wind/altitude'
 import { driftClouds, EFFECTIVE_OVERLAP, type Cloud } from '../../lib/sky/scene'
 import { selfShade } from '../../lib/sky/selfshade'
+import { crossShade } from '../../lib/sky/crossshade'
 import { dayFactor, type SkyPosition } from '../../lib/sun'
+import type { OceanLight } from '../../lib/ocean/light'
+import { hazeExtinction } from '../../lib/sky/haze'
+import { cameraPosition, invert } from '../../lib/ocean/mat4'
+import { metersPerMercatorUnit } from '../../lib/ocean/mercator'
 import { FRAGMENT_SHADER, VERTEX_SHADER } from './shaders'
 
 export const CLOUD_LAYER_ID = 'sky-clouds'
@@ -54,6 +59,14 @@ const MAX_DT = 0.1
 
 /** Floats por vértice: `x, y, z` y `radio, alfa, sombra, semilla`. */
 const STRIDE_FLOATS = 7
+
+/**
+ * La luz nocturna de casa: el gris azulado que el sombreador llevaba escrito
+ * antes de que la noche la calculara `ocean/light.ts`. Solo se usa mientras no
+ * haya llegado una luz de verdad —el primer fotograma— para que la escena no
+ * parpadee de negro.
+ */
+const NIGHT_FALLBACK = [0.13, 0.16, 0.24] as const
 
 
 /*
@@ -203,6 +216,11 @@ export class CloudLayer implements CustomLayerInterface {
   private uRefW: WebGLUniformLocation | null = null
   private uSunDir: WebGLUniformLocation | null = null
   private uDay: WebGLUniformLocation | null = null
+  private uCamera: WebGLUniformLocation | null = null
+  private uMetersPerMerc: WebGLUniformLocation | null = null
+  private uExtinction: WebGLUniformLocation | null = null
+  private uHazeColor: WebGLUniformLocation | null = null
+  private uNight: WebGLUniformLocation | null = null
 
   private clouds: Cloud[] = []
   /**
@@ -211,12 +229,19 @@ export class CloudLayer implements CustomLayerInterface {
    * y solo cambia con el sol: ver `reshade`.
    */
   private shade: Float32Array[] = []
+  /**
+   * Y cuánta le llega a cada NUBE después de las demás: una manta tapa a la que
+   * tiene detrás. Ver `lib/sky/crossshade.ts`.
+   */
+  private cross: Float32Array = new Float32Array(0)
   /** Con qué sol se hizo el barrido de arriba. `null` = hay que rehacerlo. */
   private shadedAt: SkyPosition | null = null
   private visible = false
   private exaggeration = 1
   private lastFrame = 0
   private sun: SkyPosition = { elevationDeg: 45, azimuthDeg: 180 }
+  /** La luz del momento. Ver `setLight`. */
+  private light: OceanLight | null = null
 
   private vertices = new Float32Array(0)
   /** Índices de nube ordenados de atrás adelante. Se reutiliza el array. */
@@ -257,6 +282,7 @@ export class CloudLayer implements CustomLayerInterface {
     this.order = clouds.map((_, i) => i)
     // Nubes nuevas, autosombra nueva: son otras formas.
     this.shade = clouds.map((c) => new Float32Array(c.puffs.length))
+    if (this.cross.length < clouds.length) this.cross = new Float32Array(clouds.length)
     this.shadedAt = null
     this.map?.triggerRepaint()
   }
@@ -282,8 +308,14 @@ export class CloudLayer implements CustomLayerInterface {
       if (dAz > 180) dAz = 360 - dAz
       if (dAz <= 0.5 && Math.abs(sun.elevationDeg - prev.elevationDeg) <= 0.25) return
     }
+    // Primero lo que una nube le quita a otra, que es una sola pasada sobre la
+    // escena; después, dentro de cada nube, lo que se quita a sí misma.
+    this.cross = crossShade(this.clouds, sun, this.cross)
     for (let i = 0; i < this.clouds.length; i++) {
-      this.shade[i] = selfShade(this.clouds[i], sun, this.shade[i])
+      this.shade[i] = selfShade(this.clouds[i], sun, {
+        out: this.shade[i],
+        beam: this.cross[i],
+      })
     }
     this.shadedAt = { elevationDeg: sun.elevationDeg, azimuthDeg: sun.azimuthDeg }
   }
@@ -305,6 +337,19 @@ export class CloudLayer implements CustomLayerInterface {
 
   setSun(sun: SkyPosition): void {
     this.sun = sun
+    this.map?.triggerRepaint()
+  }
+
+  /**
+   * La luz de este instante: la misma que ilumina el agua y pinta la cúpula.
+   *
+   * De ella salen dos cosas que antes eran constantes en el sombreador: el color
+   * al que se desvanece la distancia —el del horizonte— y la luz que hay de
+   * noche. `null` mientras no llegue: entonces se usan los valores de casa, que
+   * es lo que había.
+   */
+  setLight(light: OceanLight | null): void {
+    this.light = light
     this.map?.triggerRepaint()
   }
 
@@ -333,6 +378,11 @@ export class CloudLayer implements CustomLayerInterface {
     this.uRefW = gl.getUniformLocation(program, 'u_refW')
     this.uSunDir = gl.getUniformLocation(program, 'u_sunDir')
     this.uDay = gl.getUniformLocation(program, 'u_day')
+    this.uCamera = gl.getUniformLocation(program, 'u_camera')
+    this.uMetersPerMerc = gl.getUniformLocation(program, 'u_metersPerMerc')
+    this.uExtinction = gl.getUniformLocation(program, 'u_extinction')
+    this.uHazeColor = gl.getUniformLocation(program, 'u_hazeColor')
+    this.uNight = gl.getUniformLocation(program, 'u_night')
 
     this.buffer = gl.createBuffer()
   }
@@ -388,6 +438,33 @@ export class CloudLayer implements CustomLayerInterface {
     const [sx, sy, sz] = sunToCamera(this.sun, map.getBearing(), map.getPitch())
     gl.uniform3f(this.uSunDir, sx, sy, sz)
     gl.uniform1f(this.uDay, dayFactor(this.sun.elevationDeg))
+
+    // EL AIRE QUE HAY DELANTE. Hace falta saber dónde está el ojo, y MapLibre no
+    // lo publica: se saca invirtiendo la matriz de vista, que es lo mismo que ya
+    // hace el mar para sus reflejos. Si no se puede —proyección ortográfica—, la
+    // bruma se apaga en vez de inventarse una distancia.
+    const inverse = invert(matrix as unknown as ArrayLike<number>)
+    const eye = inverse ? cameraPosition(inverse) : null
+    const light = this.light
+    if (eye && light) {
+      gl.uniform3f(this.uCamera, eye[0], eye[1], eye[2])
+      gl.uniform1f(this.uMetersPerMerc, metersPerMercatorUnit(center.lat))
+      gl.uniform1f(this.uExtinction, hazeExtinction(light))
+      gl.uniform3f(this.uHazeColor, light.horizon[0], light.horizon[1], light.horizon[2])
+    } else {
+      gl.uniform3f(this.uCamera, 0, 0, 0)
+      gl.uniform1f(this.uMetersPerMerc, 0)
+      gl.uniform1f(this.uExtinction, 0)
+      gl.uniform3f(this.uHazeColor, 0, 0, 0)
+    }
+
+    // Y la luz de la noche. Sin `light` se usa la de casa, que es la constante
+    // que había en el sombreador.
+    if (light) {
+      gl.uniform3f(this.uNight, light.ambient[0], light.ambient[1], light.ambient[2])
+    } else {
+      gl.uniform3f(this.uNight, NIGHT_FALLBACK[0], NIGHT_FALLBACK[1], NIGHT_FALLBACK[2])
+    }
 
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)

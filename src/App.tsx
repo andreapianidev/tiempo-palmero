@@ -373,6 +373,12 @@ export default function App() {
    */
   const [sunShadowsOn, setSunShadowsOn] = useState(false)
   /**
+   * El disco del sol en el cielo. Tercera casilla de la misma función, y la
+   * única de las tres que DIBUJA algo en vez de iluminar: por eso va aparte.
+   * Apagada al llegar, como las otras dos.
+   */
+  const [sunDiscOn, setSunDiscOn] = useState(false)
+  /**
    * La luna, solo cuando hace falta: de día no ilumina nada que se note, y con
    * el interruptor apagado no ilumina nada en absoluto. Las efemérides de Meeus
    * no son caras, pero calcular lo que nadie va a mirar tampoco es gratis.
@@ -394,12 +400,15 @@ export default function App() {
    * mediodía de calima saldría lechoso con el océano encendido y limpio con el
    * océano apagado.
    *
-   * Solo con el interruptor puesto: `oceanLight` recorre las estaciones para
-   * sacar dos medianas, y quien no encienda la luz real no lo paga.
+   * La usan dos funciones y por eso se calcula con cualquiera de las dos
+   * encendidas: la cúpula del cielo, y la escena atmosférica —de donde saca el
+   * color al que se desvanece la distancia y la luz que hay de noche—. Con las
+   * dos apagadas no se calcula: `oceanLight` recorre las estaciones para sacar
+   * dos medianas, y quien no encienda nada de esto no lo paga.
    */
   const domeLight = useMemo(
     () =>
-      sunLightOn
+      sunLightOn || sky3dOn
         ? oceanLight(
             now,
             ISLAND_BREATH_LON,
@@ -407,7 +416,7 @@ export default function App() {
             measuredLight(data.stations, data.air),
           )
         : null,
-    [sunLightOn, now, data.stations, data.air],
+    [sunLightOn, sky3dOn, now, data.stations, data.air],
   )
 
   const roque = data.roque
@@ -609,6 +618,7 @@ export default function App() {
           moon: moon ? { elevationDeg: moon.elevationDeg, azimuthDeg: moon.azimuthDeg } : null,
           moonPhase: moon?.illumination ?? 0,
           dome: domeLight,
+          disc: sunDiscOn,
         }}
         vaporClock={{
           at: breathClock.at,
@@ -760,9 +770,11 @@ export default function App() {
           sun,
           moon: moon ? { elevationDeg: moon.elevationDeg, azimuthDeg: moon.azimuthDeg } : null,
           moonPhase: moon?.illumination ?? 0,
+          disc: sunDiscOn,
         }}
         onSunLight={() => setSunLightOn((v) => !v)}
         onSunShadows={() => setSunShadowsOn((v) => !v)}
+        onSunDisc={() => setSunDiscOn((v) => !v)}
         sky3dOn={sky3dOn}
         /*
           Encenderla inclina la cámara, y es la misma regla que ya sigue el

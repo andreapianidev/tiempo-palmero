@@ -56,6 +56,8 @@ interface Props {
   onToggle: () => void
   shadows: boolean
   onToggleShadows: () => void
+  disc: boolean
+  onToggleDisc: () => void
   sun: SkyPosition
   moon: SkyPosition | null
   /** Fracción iluminada del disco lunar, 0 a 1. */
@@ -74,6 +76,8 @@ export function SunLight({
   onToggle,
   shadows,
   onToggleShadows,
+  disc,
+  onToggleDisc,
   sun,
   moon,
   moonPhase,
@@ -91,6 +95,10 @@ export function SunLight({
         <label>
           <input type="checkbox" checked={shadows} onChange={onToggleShadows} />
           <span>Sombras arrojadas</span>
+        </label>
+        <label>
+          <input type="checkbox" checked={disc} onChange={onToggleDisc} />
+          <span>El disco del sol</span>
         </label>
       </div>
 
@@ -182,7 +190,27 @@ export function SunLight({
       </p>
 
       <p className="dim small">
-        Sobre el fondo de <strong>satélite</strong> las dos siguen valiendo. La
+        <strong>El disco del sol</strong> es la única de las tres que dibuja algo
+        en vez de iluminar, y por eso tiene casilla propia: un sol sobre un mapa
+        de datos es una decisión de quien mira. Se dibuja a{' '}
+        <span className="mono">0,53°</span>, que es lo que mide de verdad —el
+        error más repetido en una escena 3D es un sol de cartel—, con el color
+        que le corresponde a su altura y con la aureola apagándose según el aire
+        que el rayo atraviesa. El relieve lo tapa cuando se pone delante, sin
+        cálculo ninguno: se dibuja al fondo de la escena.
+      </p>
+
+      <p className="dim small">
+        <strong>Y hay que decir cuándo se ve</strong>, porque es una ventana
+        estrecha: en vista inclinada al tope, el borde de arriba de la pantalla
+        queda a <span className="mono">3,4°</span> sobre el horizonte, así que el
+        sol solo entra en cuadro con el sol más bajo que eso —cerca del orto y
+        del ocaso— y mirando hacia él. El resto del día está ahí, encima de la
+        pantalla, iluminando todo lo demás.
+      </p>
+
+      <p className="dim small">
+        Sobre el fondo de <strong>satélite</strong> las dos primeras siguen valiendo. La
         ortofoto es opaca y tapa el sombreado del relieve, así que ahí la luz se
         vuelve a dibujar encima de la foto, a un tercio de fuerza: lo justo para
         mandar sobre la luz del día del vuelo —que va cocida en la imagen y tira

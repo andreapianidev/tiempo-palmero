@@ -18,6 +18,7 @@
  */
 
 import type { SkySpecification, TerrainSpecification } from 'maplibre-gl'
+import type { BasemapId } from './basemaps'
 
 /** El id de la fuente `raster-dem` del estilo. Está en un solo sitio. */
 export const TERRAIN_SOURCE = 'terrain'
@@ -75,6 +76,41 @@ export function slopeDegrees(exaggeration: number): number {
  *     acota el resto.
  */
 export const MAX_PITCH = 65
+
+/**
+ * Y hasta dónde se puede inclinar cuando el fondo es el de casa: 75°.
+ *
+ * DE LOS DOS MOTIVOS DE ARRIBA, EL SEGUNDO NO SE APLICA AL RELIEVE PROPIO. Las
+ * teselas del relieve son las del DEM, que ya están descargadas y no las sirve
+ * GRAFCAN: por muchos grados que se incline la cámara, no se le pide una
+ * petición más a nadie. La licencia que acota el tope acota los otros dos
+ * fondos, no éste.
+ *
+ * Y el primero —la cámara metiéndose en el terreno— se ha vuelto a mirar donde
+ * más miedo daba: centro sobre la Caldera, z12,5, con la vista 3D encendida. A
+ * 75° la cámara sigue fuera y la Cumbre se recorta contra el cielo; a 80° el
+ * relieve de delante ya sale estirado hasta deformarse.
+ *
+ * LO QUE SE GANA es que el cielo exista. El sombreador de cielo de MapLibre solo
+ * pinta por encima del horizonte, y el horizonte NO ENTRA EN PANTALLA hasta los
+ * ~63°: medido en el navegador, a 55° —la inclinación de entrada— la banda de
+ * arriba no cambia un solo píxel al encender la luz real, y a 65° ya cambia
+ * +0,325 de luminancia. Con el tope en 65 el cielo vivía en los dos últimos
+ * grados de recorrido; con 75 hay sitio para mirarlo.
+ */
+export const GRAZING_MAX_PITCH = 75
+
+/**
+ * Cuánto se deja inclinar con cada fondo.
+ *
+ * Vive aquí y no en `basemaps.ts` porque es una propiedad de la CÁMARA, no del
+ * fondo: lo que decide es hasta dónde llega la vista, y el fondo solo aporta el
+ * motivo. Al revés —una columna más en la tabla de fondos— ese motivo se
+ * perdería en cuanto alguien añadiera un cuarto fondo sin leer esto.
+ */
+export function maxPitchFor(basemap: BasemapId): number {
+  return basemap === 'relieve' ? GRAZING_MAX_PITCH : MAX_PITCH
+}
 
 /**
  * El tope en 2D: cero.
