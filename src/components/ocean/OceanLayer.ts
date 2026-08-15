@@ -29,6 +29,7 @@ import { MAP_BBOX } from '../../lib/geo'
 import { mercatorBox, metersPerMercatorUnit } from '../../lib/ocean/mercator'
 import { cameraPosition, invert, multiply, translation } from '../../lib/ocean/mat4'
 import { oceanLight, waterColors, type LightInputs } from '../../lib/ocean/light'
+import { BIAS_STEPS, FALLBACK_DEPTH_BITS, ndcStep } from '../../lib/ocean/depth'
 import { QUALITY, type OceanQuality } from '../../lib/ocean/quality'
 import type { OceanField } from '../../lib/ocean/field'
 import type { ShorelineMap } from '../../lib/ocean/land-mask'
@@ -101,6 +102,22 @@ const BLEND_STEP_MS = 90
  */
 const BACKGROUND_IDLE_MS = 250
 
+/**
+ * Cuántos bits de profundidad da esta GPU.
+ *
+ * Casi siempre 24, a veces 32 y en alguna GPU móvil vieja 16, que es la que
+ * decide de verdad —ver `lib/ocean/depth.ts`—. Si el contexto no lo dice, se
+ * supone el peor caso: un sesgo de más se nota mucho menos que un mar que
+ * desaparece.
+ */
+function depthBitsOf(gl: Gl): number {
+  const bits = gl.getParameter(gl.DEPTH_BITS) as unknown
+  if (typeof bits !== 'number' || !Number.isFinite(bits) || bits < 8 || bits > 32) {
+    return FALLBACK_DEPTH_BITS
+  }
+  return bits
+}
+
 export interface OceanInputs {
   /** Marea sobre el nivel medio, m. */
   tideM: number
@@ -152,6 +169,16 @@ export class OceanLayer implements CustomLayerInterface {
   }
   /** La marea se persigue en vez de saltar: el agua sube despacio. */
   private tideNow = 0
+
+  /**
+   * Lo que hay que ganarle al terreno en el búfer, en NDC. Se mide al entrar.
+   *
+   * No cambia nunca —el contexto es el mismo mientras el mapa viva— así que se
+   * pregunta una sola vez: `getParameter` obliga a sincronizar con la GPU, y
+   * hacerlo en cada fotograma es exactamente lo que `lib/occlusion.ts` quitó de
+   * en medio.
+   */
+  private depthSlack = BIAS_STEPS * ndcStep(FALLBACK_DEPTH_BITS)
 
   private backgroundW = 0
   private backgroundH = 0
@@ -255,6 +282,7 @@ export class OceanLayer implements CustomLayerInterface {
   onAdd(map: MlMap, gl: Gl): void {
     this.map = map
     this.gl = gl
+    this.depthSlack = BIAS_STEPS * ndcStep(depthBitsOf(gl))
     this.program = buildProgram(gl, this.quality)
     this.grid = buildGrid(gl, this.quality)
     this.textures = buildTextures(gl)
@@ -336,6 +364,7 @@ export class OceanLayer implements CustomLayerInterface {
     }
     if (u.u_metersPerMerc) gl.uniform1f(u.u_metersPerMerc, metersPerMerc)
     if (u.u_maxRange) gl.uniform1f(u.u_maxRange, MAX_RANGE_M / metersPerMerc)
+    if (u.u_depthSlack) gl.uniform1f(u.u_depthSlack, this.depthSlack)
     if (u.u_camera) gl.uniform3f(u.u_camera, camera[0], camera[1], camera[2])
     if (u.u_metersPerPixel) gl.uniform1f(u.u_metersPerPixel, metersPerPixel)
     if (u.u_resolution) {

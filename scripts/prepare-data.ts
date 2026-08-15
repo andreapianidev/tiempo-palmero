@@ -105,6 +105,161 @@ function flattenSeafloor(png: PNG): boolean {
   return touched
 }
 
+/**
+ * Y la tierra que se ha salido al mar, también a cero.
+ *
+ * ES EL GEMELO DE `flattenSeafloor`, y hace falta por lo mismo: las teselas de
+ * los zooms bajos no son las de arriba encogidas, son otro dato. Aquello
+ * quitaba el talud submarino que solo existía hasta z10; esto quita lo
+ * contrario, una PLATAFORMA DE TIERRA FANTASMA que en esos mismos niveles se
+ * mete kilómetro y pico dentro del agua.
+ *
+ * MEDIDO el 15 de agosto de 2026 sobre 7.572 puntos de mar —los de una rejilla
+ * de 0,0025° que caen fuera del límite insular y a menos de 4 km de él—,
+ * contando en cuántos el DEM da cota de tierra (más de 1,5 m):
+ *
+ *   |     | a >100 m | a >400 m | a >800 m | a >1.600 m | cota máx |
+ *   | z9  |      902 |      538 |      202 |         12 |    253 m |
+ *   | z10 |      880 |      516 |      188 |         11 |    298 m |
+ *   | z11 |       36 |        0 |        0 |          0 |     80 m |
+ *   | z12 |        2 |        0 |        0 |          0 |     35 m |
+ *
+ * Doce puntos con roca inventada a más de kilómetro y medio de la costa, y
+ * quinientos a más de cuatrocientos metros, con cotas de hasta 253 m. Los dos
+ * niveles finos no la tienen: es un problema de los dos gruesos y de nadie más.
+ *
+ * En el mapa plano no se ve —el mar se pinta encima—, pero en la vista 3D esa
+ * plataforma se levanta del agua y MapLibre la pinta con lo que el drapeado
+ * tenga sobre el mar, que es tinta oscura y sombreado de ladera a plena sombra:
+ * LA FRANJA NEGRA que bordea la costa norte al alejarse es eso, y desaparece al
+ * acercarse porque a z12 la plataforma no existe. Después de este recorte no
+ * queda un solo punto con tierra más allá de los 400 m en ningún nivel, y lo
+ * que queda dentro —67 puntos a z10, entre 100 y 200 m— cabe en un píxel de esa
+ * tesela, que mide 134 m.
+ *
+ * QUIÉN MANDA. El límite insular del Cabildo, igual que en `lib/ocean/
+ * land-mask.ts`: es la costa que dibuja el mapa, la que decide dónde empieza el
+ * agua y la que ya se rasteriza para el océano. Aquí se rasteriza otra vez
+ * —esto es Node y aquello es un `<canvas>`— y todo lo que caiga fuera de ella,
+ * más `OFFSHORE_TOLERANCE_M` de margen, se pone a cero.
+ *
+ * EL MARGEN existe porque el DEM y el polígono no tienen por qué coincidir al
+ * píxel: a z12 son 3 píxeles de 33,5 m. Sin margen se podría comer un borde de
+ * acantilado de verdad; con más, no se quitaría la plataforma. No cambia
+ * ninguna cota de tierra por la misma razón que `flattenSeafloor`: lo que se
+ * toca está fuera de la isla.
+ */
+const OFFSHORE_TOLERANCE_M = 100
+
+type Ring = [number, number][]
+
+/** Los anillos del límite insular, en grados. Uno por polígono y por hueco. */
+async function islandRings(): Promise<Ring[]> {
+  const file = path.join(PUBLIC, 'layers', 'limite-insular.geojson')
+  if (!existsSync(file)) return []
+  const geo = JSON.parse(await readFile(file, 'utf8')) as GeoJSON.FeatureCollection
+  const rings: Ring[] = []
+  for (const f of geo.features) {
+    const g = f.geometry
+    if (g.type === 'Polygon') rings.push(...(g.coordinates as Ring[]))
+    else if (g.type === 'MultiPolygon') for (const p of g.coordinates) rings.push(...(p as Ring[]))
+  }
+  return rings
+}
+
+/**
+ * La isla pintada sobre la rejilla de teselas de un zoom: 1 tierra, 0 mar.
+ *
+ * Relleno por barrido con la regla par-impar —la misma que usa la máscara del
+ * océano, y por el mismo motivo: los huecos del límite insular vienen con el
+ * mismo sentido que el contorno—, y después una dilatación de `radius` píxeles,
+ * que es el margen traducido a la escala de este zoom.
+ */
+function landMask(
+  rings: Ring[],
+  z: number,
+  r: { x0: number; y0: number; cols: number; rows: number },
+): Uint8Array {
+  const w = r.cols * 256
+  const h = r.rows * 256
+  const ox = r.x0 * 256
+  const oy = r.y0 * 256
+  const crossings: number[][] = Array.from({ length: h }, () => [])
+
+  for (const ring of rings) {
+    for (let i = 0; i + 1 < ring.length; i++) {
+      const ax = lonToPixelX(ring[i][0], z) - ox
+      const ay = latToPixelY(ring[i][1], z) - oy
+      const bx = lonToPixelX(ring[i + 1][0], z) - ox
+      const by = latToPixelY(ring[i + 1][1], z) - oy
+      if (ay === by) continue
+      const lo = Math.max(0, Math.ceil(Math.min(ay, by) - 0.5))
+      const hi = Math.min(h - 1, Math.floor(Math.max(ay, by) - 0.5))
+      for (let j = lo; j <= hi; j++) {
+        const y = j + 0.5
+        // El intervalo se cierra por arriba y se abre por abajo, que es lo que
+        // hace que un vértice justo en la línea cuente una sola vez.
+        if (ay <= y === by <= y) continue
+        crossings[j].push(ax + ((y - ay) * (bx - ax)) / (by - ay))
+      }
+    }
+  }
+
+  const mask = new Uint8Array(w * h)
+  for (let j = 0; j < h; j++) {
+    const xs = crossings[j]
+    if (xs.length < 2) continue
+    xs.sort((a, b) => a - b)
+    for (let k = 0; k + 1 < xs.length; k += 2) {
+      const from = Math.max(0, Math.ceil(xs[k] - 0.5))
+      const to = Math.min(w - 1, Math.floor(xs[k + 1] - 0.5))
+      for (let i = from; i <= to; i++) mask[j * w + i] = 1
+    }
+  }
+
+  const radius = Math.round(OFFSHORE_TOLERANCE_M / metersPerPixel(28.65, z))
+  if (radius <= 0) return mask
+  const tmp = new Uint8Array(w * h)
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      let v = 0
+      for (let d = -radius; d <= radius && !v; d++) {
+        const x = i + d
+        if (x >= 0 && x < w) v = mask[j * w + x]
+      }
+      tmp[j * w + i] = v
+    }
+  }
+  for (let i = 0; i < w; i++) {
+    for (let j = 0; j < h; j++) {
+      let v = 0
+      for (let d = -radius; d <= radius && !v; d++) {
+        const y = j + d
+        if (y >= 0 && y < h) v = tmp[y * w + i]
+      }
+      mask[j * w + i] = v
+    }
+  }
+  return mask
+}
+
+/** Pone a cero lo que esté fuera de la isla. Idempotente, como el otro. */
+function flattenOffshore(png: PNG, mask: Uint8Array, maskW: number, ox: number, oy: number): boolean {
+  let touched = false
+  for (let j = 0; j < png.height; j++) {
+    for (let i = 0; i < png.width; i++) {
+      if (mask[(oy + j) * maskW + (ox + i)]) continue
+      const p = (j * png.width + i) * 4
+      if (png.data[p] === 128 && png.data[p + 1] === 0 && png.data[p + 2] === 0) continue
+      png.data[p] = 128
+      png.data[p + 1] = 0
+      png.data[p + 2] = 0
+      touched = true
+    }
+  }
+  return touched
+}
+
 interface DemManifest {
   /** Zoom del que se leen las altitudes: siempre el más fino. */
   zoom: number
@@ -147,10 +302,20 @@ async function prepareDem(): Promise<void> {
   let downloaded = 0
   let cached = 0
   let flattened = 0
+  let dried = 0
+
+  const rings = await islandRings()
+  if (!rings.length) {
+    warn('DEM: sin límite insular todavía; la plataforma fantasma se quitará en la próxima pasada')
+  }
 
   for (let z = DEM_MIN_ZOOM; z <= DEM_ZOOM; z++) {
     const r = tileRange(z)
     log(`DEM z${z}: ${r.cols}×${r.rows} = ${r.cols * r.rows} teselas`)
+    const mask = rings.length ? landMask(rings, z, r) : null
+    const maskW = r.cols * 256
+    const dry = (png: PNG, tx: number, ty: number) =>
+      mask ? flattenOffshore(png, mask, maskW, (tx - r.x0) * 256, (ty - r.y0) * 256) : false
     for (let ty = r.y0; ty <= r.y1; ty++) {
       for (let tx = r.x0; tx <= r.x1; tx++) {
         const dir = path.join(PUBLIC, 'dem', String(z), String(tx))
@@ -162,10 +327,11 @@ async function prepareDem(): Promise<void> {
           // esta pasada haría falta borrar `public/dem/` a mano para arreglarla.
           // Es idempotente: a la segunda vuelta no queda nada que aplanar.
           const png = PNG.sync.read(await readFile(file))
-          if (flattenSeafloor(png)) {
-            await writeFile(file, PNG.sync.write(png))
-            flattened++
-          }
+          const hundido = flattenSeafloor(png)
+          const seco = dry(png, tx, ty)
+          if (hundido || seco) await writeFile(file, PNG.sync.write(png))
+          if (hundido) flattened++
+          if (seco) dried++
           continue
         }
         await mkdir(dir, { recursive: true })
@@ -176,6 +342,7 @@ async function prepareDem(): Promise<void> {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const png = PNG.sync.read(Buffer.from(await res.arrayBuffer()))
             if (flattenSeafloor(png)) flattened++
+            if (dry(png, tx, ty)) dried++
             await writeFile(file, PNG.sync.write(png))
             ok = true
             downloaded++
@@ -188,6 +355,7 @@ async function prepareDem(): Promise<void> {
     }
   }
   if (flattened) log(`DEM: fondo marino aplanado en ${flattened} teselas`)
+  if (dried) log(`DEM: plataforma fantasma quitada en ${dried} teselas`)
 
   const r = tileRange(DEM_ZOOM)
   const manifest: DemManifest = {
