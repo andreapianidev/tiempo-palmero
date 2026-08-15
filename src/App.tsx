@@ -374,6 +374,26 @@ export default function App() {
   }, [])
 
   /**
+   * Elegir variable ENCIENDE la malla.
+   *
+   * Los chips de variable no pintan nada por su cuenta: lo que colorea la isla
+   * con la variable elegida es la malla interpolada, y con la malla apagada
+   * pulsar «CO₂ del suelo» o «Índice de incendio» no cambiaba un solo píxel del
+   * mapa. Ni siquiera los pines: fuera del paquete higrotérmico siguen
+   * enseñando temperatura a propósito (ver `pinVariable` en `MapView`), así que
+   * para tres de las siete variables el chip quedaba completamente muerto.
+   *
+   * Es la misma regla que ya sigue el interruptor del mar, que se lleva el
+   * fondo al satélite porque sobre la carta topográfica no se dibujaría: un
+   * interruptor que no hace nada es peor que uno que hace de más. Y apagar la
+   * malla sigue estando a una casilla, justo debajo de los chips.
+   */
+  const chooseVariable = useCallback((v: MapVariable) => {
+    setVariable(v)
+    setVisible((s) => (s.grid ? s : { ...s, grid: true }))
+  }, [])
+
+  /**
    * Qué se hace con la ubicación cuando el navegador la da.
    *
    * Del arranque llega `auto: true` y entonces NO se vuela: la vista de llegada
@@ -600,7 +620,7 @@ export default function App() {
 
       <Sidebar
         variable={variable}
-        onVariable={setVariable}
+        onVariable={chooseVariable}
         co2Field={co2Field}
         coverage={coverage}
         fire={fire}
@@ -706,7 +726,7 @@ export default function App() {
             locationDenied: geo.denied,
           })}
           variable={variable}
-          onVariable={setVariable}
+          onVariable={chooseVariable}
           headVariable={bundleVariable}
           stops={stops}
           gridOn={visible.grid}

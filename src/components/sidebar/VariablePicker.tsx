@@ -11,12 +11,22 @@
  * Estaba en la lista de capas, a seis entradas de distancia de los chips que
  * deciden su contenido, y desde allí no se veía que fueran la misma cosa.
  *
+ * Y por eso mismo, elegir un chip la enciende (`chooseVariable` en `App.tsx`):
+ * con la malla apagada los chips no cambiaban un píxel del mapa, y tres de
+ * ellos —CO₂, cobertura, incendio— no cambiaban tampoco los pines. Apagarla
+ * sigue siendo cosa de esta casilla y de nadie más.
+ *
  * La lista de variables NO vive aquí: está en `lib/variables.ts`, que es la
  * misma tabla que consume la app nativa. Este fichero solo la dibuja.
  */
 
 import { rampCss } from '../../lib/palette'
-import { VARIABLES, PICKER_VARIABLE_ORDER, type MapVariable } from '../../lib/variables'
+import {
+  VARIABLES,
+  PICKER_VARIABLE_ORDER,
+  EXPERIMENTAL_VARIABLES,
+  type MapVariable,
+} from '../../lib/variables'
 import { BandScale } from './BandScale'
 import { n0, t } from '../../i18n'
 
@@ -54,6 +64,18 @@ export function VariablePicker({ variable, onVariable, gridOn, onToggleGrid }: P
         ))}
       </div>
 
+      {/* Va ENTRE los chips y la escala, que es justo el hueco donde se abre la
+          duda: ningún chip marcado y debajo una rampa de colores que sí está
+          pintando la isla. */}
+      {EXPERIMENTAL_VARIABLES.has(variable) && (
+        <p className="warn small">
+          {t.variables.experimentalActive(spec.label)}{' '}
+          <button className="link-btn" onClick={() => onVariable('temperature')}>
+            {t.variables.backToTemperature}
+          </button>
+        </p>
+      )}
+
       {spec.bands ? (
         <BandScale bands={spec.bands} unit={spec.unit} />
       ) : (
@@ -80,6 +102,11 @@ export function VariablePicker({ variable, onVariable, gridOn, onToggleGrid }: P
           </label>
         </li>
       </ul>
+
+      {/* Apagada, la escala de color de aquí arriba no corresponde a nada de lo
+          que hay en pantalla. Decirlo aquí es más barato que dejar que alguien
+          lo deduzca mirando un mapa sin colores. */}
+      {!gridOn && <p className="warn small">{t.variables.gridOff}</p>}
 
       {/* Una variable que no cubre la isla lo dice antes de que nadie busque su
           pueblo en el mapa y no encuentre color. */}

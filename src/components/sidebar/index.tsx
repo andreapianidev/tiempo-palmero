@@ -165,6 +165,15 @@ export function Sidebar(props: Props) {
     [props.dem, ceiling],
   )
 
+  /**
+   * La capa de incendio se está VIENDO, que no es lo mismo que estar elegida.
+   *
+   * El índice no tiene dibujo propio: sale por la malla interpolada, igual que
+   * la temperatura. Con la malla apagada la casilla decía «encendida» sobre un
+   * mapa donde no había ni un color de incendio.
+   */
+  const fireOn = props.variable === 'fire' && props.visible.grid
+
   return (
     <>
       {/* Lo que queda fuera de la hoja se toca para cerrarla. Solo se ve en el
@@ -242,16 +251,20 @@ export function Sidebar(props: Props) {
             todavía no se sostienen como el resto de la aplicación, y ponerla
             arriba las igualaría con lo que sí está medido.
           */}
-          <Section
-            title={t.fireRisk.title}
-            badge={props.variable === 'fire' ? 'activa' : '1'}
-          >
+          <Section title={t.fireRisk.title} badge={fireOn ? 'activa' : '1'}>
             <FireRisk
               fire={props.fire}
-              active={props.variable === 'fire'}
-              onActivate={() =>
-                props.onVariable(props.variable === 'fire' ? 'temperature' : 'fire')
-              }
+              active={fireOn}
+              /*
+                Encender pide la variable y `onVariable` se encarga de la malla;
+                apagar devuelve a la temperatura y deja la malla encendida, que
+                es lo que enseña el selector de arriba.
+
+                El caso raro —variable de incendio elegida pero malla apagada a
+                mano— cae del lado de encender, porque la casilla está sin
+                marcar: hace lo que dice.
+              */
+              onActivate={() => props.onVariable(fireOn ? 'temperature' : 'fire')}
             />
           </Section>
 

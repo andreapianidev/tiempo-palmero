@@ -47,6 +47,23 @@ export const es = {
 
   variables: {
     title: 'Variable',
+    /**
+     * Qué hace la casilla de la malla, dicho debajo de la casilla.
+     *
+     * Encendida no hace falta explicar nada —se ve—, así que solo habla cuando
+     * está apagada, que es cuando el panel enseña una escala de color que en el
+     * mapa no está en ninguna parte.
+     */
+    gridOff:
+      'Apagada: el mapa enseña el fondo, sin color de la variable. Elegir cualquier variable la vuelve a encender.',
+    /**
+     * Lo experimental colorea la isla pero no tiene chip, así que con el índice
+     * de incendio encendido esta sección enseñaba una escala de color sin un
+     * solo botón marcado. Esta línea dice de quién es esa escala y cómo salir.
+     */
+    experimentalActive: (label: string) =>
+      `La malla está enseñando «${label}», de la sección Experimental. Por eso no hay ningún chip marcado: no es una variable medida.`,
+    backToTemperature: 'Volver a la temperatura',
     temperature: 'Temperatura',
     relativehumidity: 'Humedad relativa',
     dewpoint: 'Punto de rocío',
@@ -816,6 +833,16 @@ export const es = {
      */
     disclaimer:
       'Función experimental. No es un aviso oficial ni sustituye a ninguno: los avisos de riesgo, las alertas y las prohibiciones las publican el Cabildo Insular y el Gobierno de Canarias.',
+    /**
+     * Dónde sale el índice, dicho junto al interruptor que lo enciende.
+     *
+     * No tiene dibujo propio: ocupa la malla interpolada, la misma que estaba
+     * enseñando la temperatura. Encenderlo cambia el contenido del mapa entero,
+     * y eso conviene saberlo antes de marcar la casilla, no después.
+     */
+    layerHint:
+      'Ocupa la malla interpolada: mientras esté encendido, la isla se colorea con el índice y no con la variable meteorológica.',
+    layerOn: 'La malla está enseñando el índice. Apagarlo devuelve la temperatura.',
     what: 'Qué es esta cifra',
     whatBody:
       'El producto de dos números. El primero contesta «si hay un gran incendio en La Palma, ¿llega hasta aquí?», y sale de un clasificador entrenado con los cinco incendios de los que existe perímetro publicado. El segundo dice cómo de excepcional es el tiempo de hoy, como percentil sobre veinticuatro años de archivo. No es una probabilidad de que algo arda.',

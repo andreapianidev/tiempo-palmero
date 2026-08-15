@@ -18,7 +18,11 @@ import { fuelLabel } from '../../lib/fire/fuel'
 
 interface Props {
   fire: FireRiskState
-  /** Está elegida la variable, o solo se está mirando la sección. */
+  /**
+   * El índice se está VIENDO en el mapa, que es variable elegida Y malla
+   * encendida. No basta con la primera: sin malla no hay dónde pintarlo, y la
+   * casilla marcada sobre un mapa sin un solo color de incendio mentía.
+   */
   active: boolean
   onActivate: () => void
 }
@@ -38,6 +42,11 @@ export function FireRisk({ fire, active, onActivate }: Props) {
           <span>{t.fireRisk.layer}</span>
         </label>
       </div>
+
+      {/* El interruptor no enciende una capa que se suma a lo que ya hay: le
+          quita el mapa a la variable meteorológica y se lo queda. Se dice
+          antes de marcarlo, y se recuerda mientras está marcado. */}
+      <p className="dim small">{active ? t.fireRisk.layerOn : t.fireRisk.layerHint}</p>
 
       {fire.loading && (
         <p className="dim small history-loading">

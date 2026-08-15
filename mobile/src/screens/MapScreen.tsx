@@ -222,9 +222,21 @@ export function MapScreen() {
     void locate(false)
   }, [island.dem, island.models.temperature, locate])
 
+  /**
+   * Elegir una variable enciende la malla, igual que en la web.
+   *
+   * Es la misma razón allí y aquí: la variable no se dibuja sola, la dibuja la
+   * malla, y con la malla apagada pulsar «Humedad» no cambiaba nada de lo que
+   * hay en pantalla. Solo con las variables: las demás capas —el viento— sí se
+   * pintan por su cuenta y no tienen por qué devolver un fondo de colores que
+   * alguien acababa de quitar.
+   */
   const onSelectLayer = useCallback((next: LayerId) => {
     setLayer(next)
-    if (isVariable(next)) setVariable(next)
+    if (isVariable(next)) {
+      setVariable(next)
+      setGridOn(true)
+    }
   }, [])
 
   /**
