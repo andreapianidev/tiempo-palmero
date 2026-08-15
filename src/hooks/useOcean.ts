@@ -41,6 +41,7 @@ import {
 } from '../lib/ocean/marine'
 import { buildOceanField, type OceanField } from '../lib/ocean/field'
 import { buildShorelineMap, type ShorelineMap } from '../lib/ocean/land-mask'
+import { pm10Now, solarNow } from '../lib/measured-light'
 import type { AirStation } from './useIslandData'
 
 export interface BathymetryAsset {
@@ -82,14 +83,6 @@ const EMPTY: OceanData = {
   failed: false,
   pm10: null,
   solarWm2: null,
-}
-
-/** Mediana, que aguanta un sensor disparado mejor que la media. */
-function median(values: number[]): number | null {
-  if (!values.length) return null
-  const s = [...values].sort((a, b) => a - b)
-  const m = s.length >> 1
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
 }
 
 export function useOcean(
@@ -247,23 +240,11 @@ export function useOcean(
     return speeds.reduce((a, b) => a + b, 0) / speeds.length
   }, [offshore])
 
-  const pm10 = useMemo(() => {
-    const values: number[] = []
-    for (const a of air) {
-      if (a.ageHours > 6) continue
-      const v = a.values.find((x) => x.key === 'pm10')
-      if (v && Number.isFinite(v.value)) values.push(v.value)
-    }
-    return median(values)
-  }, [air])
-
-  const solarWm2 = useMemo(() => {
-    const values = stations
-      .filter((s) => s.ageHours <= 2 && s.solarradiation !== null)
-      .map((s) => s.solarradiation as number)
-      .filter((v) => Number.isFinite(v) && v >= 0)
-    return median(values)
-  }, [stations])
+  // Las dos medidas que cambian la LUZ viven en `lib/measured-light.ts` desde
+  // que el cielo de la vista 3D pinta el mismo cielo que este mar refleja: son
+  // los mismos números o son dos cielos.
+  const pm10 = useMemo(() => pm10Now(air), [air])
+  const solarWm2 = useMemo(() => solarNow(stations), [stations])
 
   if (!enabled) return EMPTY
 

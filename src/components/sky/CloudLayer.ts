@@ -37,8 +37,8 @@ import {
 } from 'maplibre-gl'
 import { metersPerPixel } from '../../lib/geo'
 import { mercatorZ } from '../../lib/wind/altitude'
-import { RAIN_HEAVY_MM } from '../../lib/sky/field'
 import { driftClouds, EFFECTIVE_OVERLAP, type Cloud } from '../../lib/sky/scene'
+import { selfShade } from '../../lib/sky/selfshade'
 import { dayFactor, type SkyPosition } from '../../lib/sun'
 import { FRAGMENT_SHADER, VERTEX_SHADER } from './shaders'
 
@@ -56,14 +56,14 @@ const MAX_DT = 0.1
 const STRIDE_FLOATS = 7
 
 
-/**
- * Cuánto oscurece la base de cada estrato, de 0 a 1.
- *
- * Sube con el espesor óptico: la manta baja es la que más luz para antes de
- * llegar abajo, el cirro casi ninguna. Dibujo, con la física detrás explicada en
- * la cabecera de `shaders.ts`.
+/*
+ * AQUÍ ESTABA `BASE_SHADE`, una constante por estrato —0,45 la manta baja, 0,32
+ * la media, 0,10 el cirro— con una rampa de altura debajo. Lo sustituye
+ * `lib/sky/selfshade.ts`, que marcha hacia el sol a través de las demás motas
+ * de la nube y devuelve la luz que de verdad le llega a cada una. La constante
+ * no era una opción que ofrecer a nadie: era una simplificación, y por eso su
+ * relevo no lleva interruptor.
  */
-const BASE_SHADE: Record<Cloud['etage'], number> = { low: 0.45, mid: 0.32, high: 0.1 }
 
 /**
  * El hervido: cuánto se mueve cada mota alrededor de su sitio, y a qué ritmo.
@@ -106,15 +106,6 @@ const BILLOW_PERIOD_MAX_S = 90
  * precisamente su corte horizontal contra la ladera.
  */
 const BILLOW_VERTICAL = 0.45
-
-/**
- * Qué fracción de la nube, desde la base, participa del oscurecimiento.
- *
- * 0,55: la mitad de abajo larga. Por encima de esa altura la mota se dibuja
- * plenamente iluminada. Ver el comentario en `fillVertices`, que es donde se
- * explica por qué una rampa lineal apagaba la nube entera.
- */
-const SHADE_DEPTH = 0.55
 
 function compile(gl: Gl, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type)
@@ -214,6 +205,14 @@ export class CloudLayer implements CustomLayerInterface {
   private uDay: WebGLUniformLocation | null = null
 
   private clouds: Cloud[] = []
+  /**
+   * Cuánta luz le llega a cada mota tras atravesar su propia nube, una entrada
+   * por nube. Lo calcula `lib/sky/selfshade.ts` y se guarda aquí porque es caro
+   * y solo cambia con el sol: ver `reshade`.
+   */
+  private shade: Float32Array[] = []
+  /** Con qué sol se hizo el barrido de arriba. `null` = hay que rehacerlo. */
+  private shadedAt: SkyPosition | null = null
   private visible = false
   private exaggeration = 1
   private lastFrame = 0
@@ -256,7 +255,37 @@ export class CloudLayer implements CustomLayerInterface {
     // vuelva a crecer se encuentra el sitio ya hecho.
     if (this.vertices.length < needed) this.vertices = new Float32Array(needed)
     this.order = clouds.map((_, i) => i)
+    // Nubes nuevas, autosombra nueva: son otras formas.
+    this.shade = clouds.map((c) => new Float32Array(c.puffs.length))
+    this.shadedAt = null
     this.map?.triggerRepaint()
+  }
+
+  /**
+   * Rehace la autosombra de la escena si el sol se ha movido lo suficiente.
+   *
+   * Los dos umbrales son los mismos que los de la sombra arrojada del relieve
+   * —medio grado de acimut, un cuarto de altura, o sea unos dos minutos de
+   * reloj— y por el mismo motivo: es un barrido que cuesta milisegundos y que no
+   * cambia nada apreciable entre un fotograma y el siguiente.
+   *
+   * La deriva NO lo invalida: una nube se traslada rígida y sus motas conservan
+   * las posiciones relativas, que es lo único que este cálculo mira. El hervido
+   * tampoco —mueve cada mota un 9 % de su radio—, y recalcular por eso sería
+   * pagar un barrido por fotograma para no ver la diferencia.
+   */
+  private reshade(): void {
+    const prev = this.shadedAt
+    const sun = this.sun
+    if (prev) {
+      let dAz = Math.abs(sun.azimuthDeg - prev.azimuthDeg) % 360
+      if (dAz > 180) dAz = 360 - dAz
+      if (dAz <= 0.5 && Math.abs(sun.elevationDeg - prev.elevationDeg) <= 0.25) return
+    }
+    for (let i = 0; i < this.clouds.length; i++) {
+      this.shade[i] = selfShade(this.clouds[i], sun, this.shade[i])
+    }
+    this.shadedAt = { elevationDeg: sun.elevationDeg, azimuthDeg: sun.azimuthDeg }
   }
 
   setVisible(visible: boolean): void {
@@ -327,6 +356,7 @@ export class CloudLayer implements CustomLayerInterface {
     this.clockS += dt
 
     driftClouds(this.clouds, dt)
+    this.reshade()
 
     const vertexCount = this.fillVertices(matrix)
     if (vertexCount === 0) {
@@ -400,11 +430,10 @@ export class CloudLayer implements CustomLayerInterface {
       // Opacidad por mota: la inversa de apilar `EFFECTIVE_OVERLAP` capas hasta
       // llegar al espesor de la nube. Ver la constante.
       const puffAlpha = 1 - Math.pow(1 - Math.min(0.999, c.density), 1 / EFFECTIVE_OVERLAP)
-      // La nube que llueve va más negra por debajo, y tanto más cuanto más
-      // llueve. El tope es 0,85: por encima la base se vuelve un agujero negro y
-      // deja de leerse como nube.
-      const rain = c.precipMm > 0 ? Math.min(1, c.precipMm / RAIN_HEAVY_MM) : 0
-      const baseShade = Math.min(0.85, BASE_SHADE[c.etage] + 0.3 * rain)
+      // Cuánta luz le llega a cada mota lo dice `selfShade`, que ya ha corrido
+      // en `reshade` con el sol de ahora. La lluvia entra ahí dentro: es la
+      // cortina de debajo, y oscurece la panza sin ser parte del volumen.
+      const shade = this.shade[ci]
 
       const thickness = c.top - c.base
       const lat = c.lat
@@ -478,19 +507,15 @@ export class CloudLayer implements CustomLayerInterface {
         out[n++] = mercatorZ(alt * this.exaggeration, plat)
         out[n++] = p.radiusM * this.puffScale[pi]
         out[n++] = puffAlpha
-        // La sombra NO cae linealmente con la altura dentro de la nube: solo
-        // oscurece el tercio de abajo, y de ahí para arriba la mota está
-        // plenamente iluminada.
+        // CUÁNTA LUZ LE LLEGA A ESTA MOTA, calculada y no supuesta.
         //
-        // Con una rampa lineal la nube entera salía apagada, y no por un error
-        // de color sino por dónde están las motas: repartidas en una cúpula, su
-        // altura media dentro de la nube es ~0,38, así que la mota TÍPICA se
-        // llevaba el 62 % del oscurecimiento y el resultado era una masa gris
-        // uniforme con la cima igual de sucia que la base. Lo que hay que
-        // oscurecer es la panza, que es la que no ve el sol; el resto de la
-        // nube sí lo ve.
-        const hs = Math.min(1, p.h / SHADE_DEPTH)
-        out[n++] = 1 - baseShade * (1 - hs * hs * (3 - 2 * hs))
+        // Aquí había una rampa con la altura dentro de la nube: la panza oscura,
+        // la cima encendida, siempre y en la misma dirección. Es cierto con el
+        // sol en lo alto y falso el resto del día — con el sol rasante lo que
+        // una nube tiene oscuro no es la panza, es el lado contrario al sol.
+        // Ahora sale de marchar hacia el sol a través de las demás motas de esta
+        // misma nube: ver `lib/sky/selfshade.ts`.
+        out[n++] = shade[pi]
         out[n++] = p.seed
       }
     }

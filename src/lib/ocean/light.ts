@@ -24,7 +24,7 @@
  * colores se calculan aquí, donde se pueden probar.
  */
 
-import { moonState, sunPosition } from '../sun'
+import { moonState, skyVector, sunPosition } from '../sun'
 
 export type Rgb = [number, number, number]
 
@@ -291,11 +291,11 @@ export function oceanLight(
   const sun = sunPosition(at, lonDeg, latDeg)
   const moon = moonState(at, lonDeg, latDeg)
 
-  const toVector = (elevationDeg: number, azimuthDeg: number): Rgb => {
-    const e = (elevationDeg * Math.PI) / 180
-    const a = (azimuthDeg * Math.PI) / 180
-    return [Math.cos(e) * Math.sin(a), Math.cos(e) * Math.cos(a), Math.sin(e)]
-  }
+  // El vector unitario hacia un astro sale de `sun.ts`: lo necesitan también las
+  // nubes y su autosombra, y tres copias de la misma conversión son tres sitios
+  // donde equivocarse de signo en el acimut.
+  const toVector = (elevationDeg: number, azimuthDeg: number): Rgb =>
+    skyVector({ elevationDeg, azimuthDeg })
 
   /**
    * El día no se apaga en el horizonte: entre el ocaso y la noche cerrada hay

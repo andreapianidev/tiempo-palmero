@@ -101,6 +101,15 @@ export function SunLight({
         encendida de las nubes: con esto, las tres cosas dejan de contradecirse.
       </p>
 
+      <p className="dim small">
+        Y con ellas <strong>el cielo de la vista 3D</strong>, que era el cuarto:
+        un azul de noche fijo y una bruma gris a cualquier hora. Ahora es el
+        mismo cielo que refleja el agua —de los mismos números, no de una copia—,
+        así que al atardecer el horizonte se calienta y la bruma con él, y con
+        calima el aire se vuelve lechoso porque lo dice el PM10 que miden las
+        estaciones.
+      </p>
+
       {(on || shadows) && (
         <table className="kv">
           <tbody>

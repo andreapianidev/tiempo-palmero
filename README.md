@@ -1594,6 +1594,46 @@ sale de su posición astronómica real y se pasa a los ejes de la cámara con el
 rumbo y la inclinación del mapa, lo cual es exacto para una luz direccional. Se
 gire el mapa como se gire, las nubes se encienden por la cara que da al sol.
 
+**Y cada nube se hace sombra a sí misma.** Aquí había una constante por estrato
+—0,45 la manta baja, 0,32 la media, 0,10 el cirro— con una rampa de altura
+debajo: la panza oscura, la cima encendida, siempre y en la misma dirección. Es
+cierto con el sol en lo alto y falso el resto del día: con el sol rasante lo
+oscuro de una nube no es la panza, es **el lado contrario al sol**. Ahora, desde
+cada mota se marcha hacia el sol contando la nube que tiene delante —la cuerda
+dentro de cada esfera que el rayo atraviesa— y de ahí sale la transmitancia.
+
+No hay ninguna constante de extinción nueva: un rayo que cruza una mota por su
+centro se apaga exactamente lo que esa mota tapa al dibujarse, así que la nube se
+sombrea con la misma opacidad con la que se pinta. Dos detalles que sí costaron
+medirlos:
+
+- **El rayo sale de la cara de la mota, no de su centro.** Lo que hay que saber
+  es cuánta luz llega a la superficie iluminada, que es lo que se ve. Con el
+  origen en el centro, cada mota se entierra bajo la mitad de sus vecinas y hasta
+  la cima de una manta salía a media luz: 0,41 contra el 0,93 que da bien puesta.
+- **El suelo de dispersión múltiple, 0,22.** Una nube se reparte la luz por
+  dentro muchísimas veces, y por eso la panza de un cúmulo es gris claro y no
+  negra. Cuánto vale eso no sale de ningún dato de este repositorio, así que se
+  acota: por debajo, no dejar agujeros —el sombreador multiplica el color por
+  este número, y con 0 la cara en sombra se dibuja negra, que es el mismo
+  argumento con el que el mar tiene su `LIT_FLOOR`—; por arriba, que cada punto
+  de suelo se come el contraste que es la razón de ser del cambio. Con 0,22 lo
+  más oscuro que se ve es 0,230 y se conserva el 78 % del contraste direccional.
+
+El barrido es n² por nube —900 operaciones con las 30 motas de una nube baja— y
+**no se hace por fotograma**: solo cuando el sol se mueve medio grado, que son
+unos dos minutos de reloj. Medido sobre la peor escena posible, 290 nubes y 7.074
+motas: **1,8 ms de mediana**, contra los 16,7 ms que dura un fotograma a 60 Hz.
+La deriva no lo invalida —una nube se traslada rígida— y el hervido tampoco.
+
+Una consecuencia que conviene decir: **el mediodía sale más claro que antes**,
+0,96 contra 0,81 pesando cada mota por lo que se la ve. No es una deriva; la
+constante oscurecía la base de todas las nubes estuviera o no a la vista, y ésta
+solo oscurece lo que de verdad está enterrado. Una manta de mediodía vista desde
+arriba es blanca. Todo esto vive dentro de la escena atmosférica y **no lleva
+interruptor propio**: la constante era una simplificación, no una opción que
+ofrecerle a nadie.
+
 La capa va en `renderingMode: '3d'`, así que comparte el búfer de profundidad con
 el relieve: la Cumbre tapa la nube que queda detrás, una manta a 1200 m sale
 cortada por las paredes de la Caldera por donde las corta de verdad, y los picos
@@ -1696,6 +1736,46 @@ peor.** La luz fija no es un descuido, es una convención con dos siglos detrás
 que deja el mapa igual de legible a cualquier hora; la real hunde media isla en
 sombra al amanecer. Como esto es primero un instrumento para leer temperaturas y
 después un mapa bonito, la convención se queda de fábrica y la verdad se ofrece.
+
+#### El cuarto sol: el cielo de la vista 3D
+
+Quedaba uno. El mar tenía su reflejo en el sitio real, las nubes su cara
+encendida, el relieve su luz — y detrás de todo eso, la cúpula del cielo seguía
+siendo `#070a12` de cenit, `#3a4152` de horizonte y una bruma `#141924`, a las
+tres de la tarde igual que a medianoche. Un cielo nocturno permanente.
+
+Con el interruptor puesto, esos tres colores salen de **`ocean/light.ts`, sin
+recalcular nada**. Ese módulo ya computa el cenit y el horizonte para el agua, y
+con más de lo que da la geometría: el índice de claridad de la radiación que
+**miden** las estaciones y el PM10 de la calima. Reproducir aquí ese cálculo
+habría sido un quinto sol, y de los caros — el mar refleja el cielo, así que dos
+cielos distintos se ven contradiciéndose en el mismo fotograma, uno encima del
+horizonte y otro debajo. De paso, las dos medianas que sacan esas medidas se han
+salido del hook del océano a `lib/measured-light.ts`, porque si dependieran de
+él, el mismo mediodía de calima saldría lechoso con el mar encendido y limpio con
+el mar apagado.
+
+Lo único que se añade es un **suelo**: de noche mandan los colores de casa, no
+los físicos. El mar puede irse a negro porque debajo sigue estando el mapa; la
+línea del horizonte no, porque es la que dice dónde acaba la isla. Se mezclan con
+`dayFactor`, la misma rampa de crepúsculo que apaga las nubes, y la continuidad
+sale por construcción: medido minuto a minuto sobre el orto, el color del
+horizonte se mueve **5 niveles de 255 como mucho**, con mediana 0.
+
+Y la bruma **es** el color del horizonte, no un tercer color que elegir: la
+perspectiva aérea converge exactamente a la radiancia del cielo en la dirección
+en que se mira. Cuánto llega a fundirse en los 45 km que mide la isla es
+geometría —`fog-ground-blend`, `horizon-fog-blend`— y ésa no se toca.
+
+**Dónde se ve, medido en el navegador**: el cielo de MapLibre solo pinta por
+encima del horizonte, y con esta cámara el horizonte no entra en pantalla hasta
+los ~63°. A la inclinación de entrada, 55°, lo que hay arriba del todo sigue
+siendo el fondo `sea` (#080b10) y lo que cambia es la bruma sobre el relieve: el
+9,8 % de los píxeles, +0,006 de luminancia media. Al tope de 65° cambia el 29,4 %
+y la banda superior sube +0,325 — ahí el cielo es cielo. Que la cámara no pase de
+65° tiene [dos motivos que no son estéticos](#el-relieve-lo-dibuja-el-hillshade-de-maplibre-y-no-un-shader-propio),
+y hasta que uno de los dos cambie, este cielo vive en los últimos dos grados de
+inclinación.
 
 ### El índice de incendio
 

@@ -49,6 +49,20 @@ export interface SkyPosition {
   azimuthDeg: number
 }
 
+/**
+ * La misma posición, como vector unitario en la base local: este, norte, arriba.
+ *
+ * Vive aquí porque ya la necesitaban tres sitios —la luz del agua, la
+ * iluminación de las nubes y su autosombra— y tres copias de la misma conversión
+ * son tres sitios donde equivocarse de signo en el acimut. Es la misma razón por
+ * la que `dayFactor` no está dentro de la capa de nubes.
+ */
+export function skyVector(p: SkyPosition): [number, number, number] {
+  const e = p.elevationDeg * RAD
+  const a = p.azimuthDeg * RAD
+  return [Math.cos(e) * Math.sin(a), Math.cos(e) * Math.cos(a), Math.sin(e)]
+}
+
 function julianDay(at: number): number {
   return at / 86400000 + 2440587.5
 }

@@ -35,6 +35,8 @@ import { breathAt } from './lib/vapor/breath'
 import { useSky } from './hooks/useSky'
 import { islandLcl } from './lib/sky/base'
 import { moonState, sunPosition } from './lib/sun'
+import { oceanLight } from './lib/ocean/light'
+import { measuredLight } from './lib/measured-light'
 import { PARTICLE_SPEEDUP } from './lib/vapor/clock'
 import { useBreathClock } from './hooks/useBreathClock'
 
@@ -379,6 +381,34 @@ export default function App() {
     () => (sunLightOn && sun.elevationDeg <= 0 ? moonState(now, ISLAND_BREATH_LON, ISLAND_BREATH_LAT) : null),
     [sunLightOn, sun.elevationDeg, now],
   )
+  /**
+   * La luz de este instante para el CIELO de la vista 3D.
+   *
+   * Es la misma función que ilumina el agua, con las mismas dos medidas —
+   * radiación y PM10— y por eso se calcula aquí y no dentro del mapa: el mar
+   * refleja el cielo, así que si cada uno se lo calculara por su cuenta se
+   * verían dos cielos distintos a los dos lados del horizonte.
+   *
+   * Las medidas se sacan de `measured-light.ts` y NO de `oceanData`, que llega
+   * vacío cuando la capa del mar está apagada: si dependiera de ella, el mismo
+   * mediodía de calima saldría lechoso con el océano encendido y limpio con el
+   * océano apagado.
+   *
+   * Solo con el interruptor puesto: `oceanLight` recorre las estaciones para
+   * sacar dos medianas, y quien no encienda la luz real no lo paga.
+   */
+  const domeLight = useMemo(
+    () =>
+      sunLightOn
+        ? oceanLight(
+            now,
+            ISLAND_BREATH_LON,
+            ISLAND_BREATH_LAT,
+            measuredLight(data.stations, data.air),
+          )
+        : null,
+    [sunLightOn, now, data.stations, data.air],
+  )
 
   const roque = data.roque
   const agro = useAgro(data.dem, openSections.agro)
@@ -578,6 +608,7 @@ export default function App() {
           sun,
           moon: moon ? { elevationDeg: moon.elevationDeg, azimuthDeg: moon.azimuthDeg } : null,
           moonPhase: moon?.illumination ?? 0,
+          dome: domeLight,
         }}
         vaporClock={{
           at: breathClock.at,

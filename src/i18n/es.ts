@@ -850,6 +850,12 @@ export const es = {
     },
     scope:
       'No es un radar ni una observación. Lo medido es un porcentaje de nubosidad por piso, del modelo ICON, en celdas de 5 km sobre la isla y de ~25 km sobre el mar; la forma concreta de cada nube es una representación de esa cifra, no una nube que alguien haya visto.',
+    /**
+     * Cómo se sombrean. No lleva interruptor y no debería llevarlo: era una
+     * simplificación —una constante por estrato—, no una opción que ofrecer.
+     */
+    shading:
+      'Cada nube se sombrea a sí misma: desde cada mota se mira hacia el sol a través de las demás de su nube y se cuenta cuánta tiene delante. Por eso lo oscuro no está siempre abajo — al mediodía es la panza, y con el sol rasante es el lado contrario al sol, que es lo que hace que un cúmulo del atardecer se lea como un objeto con volumen.',
   },
 
   fireRisk: {

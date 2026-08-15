@@ -57,7 +57,9 @@ import { markerSize } from './markers/size'
 import { silenceDepthProbe } from './markers/depthProbe'
 import { hiddenByRelief, type Camera } from '../lib/occlusion'
 import { elevationAt } from '../lib/dem'
-import { FLAT_MAX_PITCH, type Exaggeration } from '../lib/terrain'
+import { FLAT_MAX_PITCH, SKY, type Exaggeration } from '../lib/terrain'
+import { skyDome } from '../lib/sky-dome'
+import type { OceanLight } from '../lib/ocean/light'
 import {
   addGuaguaLayers,
   setGuaguaData,
@@ -255,6 +257,16 @@ interface Props {
     sun: SkyPosition
     moon: SkyPosition | null
     moonPhase: number
+    /**
+     * La luz de este instante, para el cielo de la vista 3D. Es el MISMO objeto
+     * que ilumina el agua —`ocean/light.ts`—, y por eso llega desde fuera en vez
+     * de calcularse aquí: el mar refleja el cielo, así que dos cálculos serían
+     * dos cielos contradiciéndose a los dos lados del horizonte.
+     *
+     * `null` con el interruptor apagado: entonces manda la cúpula fija de
+     * `SKY`, que es la de siempre.
+     */
+    dome: OceanLight | null
   }
   /**
    * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
@@ -977,6 +989,25 @@ export function MapView(props: Props) {
     props.sunLight.moon,
     props.sunLight.moonPhase,
   ])
+
+  // --- el cielo de la vista 3D ---------------------------------------------
+  //
+  // Va con la misma casilla y no con una suya: es el cuarto sol de la escena
+  // —el mar, las nubes y el relieve ya sabían la hora; el aire que hay detrás,
+  // no— y ofrecer «cielo real» aparte de «luz real» sería preguntar dos veces
+  // por la misma cosa.
+  //
+  // `setSky` acepta el cambio en caliente y no reconstruye nada: es el mismo
+  // trato que el `paint` del hillshade. En vista plana no se dibuja ni un
+  // píxel de esto —MapLibre solo pinta por encima del horizonte, y con la
+  // cámara a cero el horizonte está en el infinito—, así que apagarlo con la 3D
+  // sería trabajo para nada.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    const dome = props.sunLight.dome
+    map.setSky(dome ? skyDome(dome, props.sunLight.sun) : SKY)
+  }, [ready, props.sunLight.dome, props.sunLight.sun])
 
   // --- sombras arrojadas ---------------------------------------------------
   //

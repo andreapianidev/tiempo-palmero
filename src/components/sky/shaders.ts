@@ -23,11 +23,17 @@
  * sol está bajo por el oeste, las nubes se encienden por su cara oeste y se
  * ensombrecen por la este, en la pantalla, gire el mapa como gire.
  *
- * LA BASE VA OSCURA. Es el otro cincuenta por ciento del efecto y no es un
- * adorno: una nube es ópticamente espesa, así que a su parte de abajo no le
- * llega la luz que ya se ha dispersado arriba. Sin esto, una nube iluminada por
- * igual arriba y abajo se lee como una bola de algodón flotando; con esto, se
- * lee como una nube vista desde debajo, que es desde donde se las ve.
+ * LO QUE LA NUBE SE TAPA A SÍ MISMA. Es el otro cincuenta por ciento del efecto
+ * y no es un adorno: una nube es ópticamente espesa, así que a la parte que
+ * queda detrás no le llega la luz que la de delante ya se ha llevado. Sin esto,
+ * una nube iluminada por igual por todos lados se lee como una bola de algodón
+ * flotando.
+ *
+ * Y NO ES SIEMPRE LA PANZA. Aquí había una rampa con la altura —base oscura,
+ * cima encendida— que es lo que se ve con el sol en lo alto y falso el resto del
+ * día: con el sol rasante lo oscuro de una nube es el lado contrario al sol. Lo
+ * que llega ahora en `v_shade` es el barrido de verdad, de cada mota hacia el
+ * sol a través de las demás de su nube (`lib/sky/selfshade.ts`).
  */
 
 export const VERTEX_SHADER = `
@@ -79,11 +85,13 @@ uniform vec3 u_sunDir;
 uniform float u_day;
 
 varying float v_alpha;
-// Cuánta luz le llega a esta mota por estar donde está dentro de su nube: 0 en
-// la base, 1 en la cima. Viene resuelto de la CPU y no calculado aquí porque
-// **cuánto** oscurece la base depende de la nube —la que llueve es más espesa y
-// más negra por debajo— y todas las nubes se dibujan en una sola llamada, así
-// que no puede ser un uniform: tiene que viajar con cada vértice.
+// Cuánta luz le llega a esta mota después de atravesar su propia nube: 1 si el
+// sol la ve sin nada delante, y hacia el suelo de dispersión múltiple según lo
+// enterrada que esté. Viene resuelto de la CPU —lib/sky/selfshade.ts— porque
+// es un barrido de cada mota contra todas las de su nube, cuesta n² y solo
+// cambia cuando se mueve el sol; recalcularlo aquí sería hacerlo por píxel y
+// por fotograma. Viaja con el vértice y no como uniform porque todas las nubes
+// se dibujan en una sola llamada.
 varying float v_shade;
 varying float v_seed;
 

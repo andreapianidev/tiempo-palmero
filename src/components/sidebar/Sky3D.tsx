@@ -83,6 +83,7 @@ export function Sky3D({ sky, on, onToggle }: Props) {
               nube puesta donde el sondeo dice que está y una puesta donde suele
               estar, y quien mira tiene derecho a saber cuál de las dos ve. */}
           <p className="dim small">{t.sky3d.baseSource[sky.lowSource]}</p>
+          <p className="dim small">{t.sky3d.shading}</p>
           <p className="dim small">{t.sky3d.scope}</p>
         </>
       )}
