@@ -1443,7 +1443,33 @@ que una completa, y la forma no puede ser el único aviso.
 Hay un sitio aparte en la barra lateral, **«Experimental»**, plegado y detrás de
 un aviso, para las funciones que no se sostienen igual que el resto de la
 aplicación. Van ahí y no entre las variables normales porque ponerlas al lado de
-la temperatura las igualaría con una medida. Hoy hay dos.
+la temperatura las igualaría con una medida. Hoy hay **cuatro**, y las cuatro
+tienen en común lo mismo: dibujan más de lo que miden.
+
+Dos de ellas no nacieron aquí, se mudaron:
+
+- **El viento animado** estaba en la lista de capas, el primero, entre las
+  estaciones meteorológicas y los sensores de CO₂. Esa vecindad decía algo que
+  no es cierto: que lo que se dibuja son medidas. Las partículas siguen un campo
+  continuo que no existe en ningún sensor —se construye mezclando las estaciones
+  que publican dirección con una rejilla del modelo donde no llega ninguna—, y
+  en una isla donde dos puntos a 5 km pueden soplar al revés ese relleno es una
+  parte grande de lo que se ve. La cifra que lo sostiene sigue en su sección
+  «Viento», con el reparto entre lo medido y lo modelado.
+- **El mar en movimiento** estaba en «Océano», compartiendo lista con el
+  balizamiento de OpenSeaMap y la batimetría de EMODnet. Pero esas dos son
+  cartografía ajena, publicada, que se pide y se dibuja tal cual, y esto es una
+  superficie CALCULADA: la altura de ola, el periodo, la marea y la profundidad
+  son dato, pero la ola que se ve romper en un punto la pone un sombreador.
+
+Y al mudarse el mar, las dos cartas **han dejado de depender de él**. Estaban
+deshabilitadas mientras el océano estuviera apagado, razonando que sin agua
+debajo serían dos capas sueltas sobre el color de fondo. No es cierto —se
+dibujan sobre cualquier fondo, y sobre la ortofoto la batimetría se lee
+perfectamente— y el precio era absurdo: para ver una carta publicada por EMODnet
+había que encender antes una simulación que no tiene nada que ver con ella, y
+que además se lleva el fondo al satélite cuando la carta topográfica no dibuja
+mar.
 
 ### La escena atmosférica: nubes y lluvia en volumen
 

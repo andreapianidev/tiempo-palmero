@@ -25,6 +25,8 @@ import { PlaceSearch } from './PlaceSearch'
 import { VariablePicker } from './VariablePicker'
 import { FireRisk } from './FireRisk'
 import { Sky3D } from './Sky3D'
+import { WindAnimation } from './WindAnimation'
+import { SeaMotion } from './SeaMotion'
 import type { SkyState } from '../../hooks/useSky'
 import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
 import { PlaceSwitches, PLACE_COUNT, activePlaceCount } from './PlaceSwitches'
@@ -265,9 +267,35 @@ export function Sidebar(props: Props) {
           */}
           <Section
             title={t.fireRisk.title}
-            badge={`${(fireOn ? 1 : 0) + (props.sky3dOn ? 1 : 0)}/2`}
+            badge={`${
+              (fireOn ? 1 : 0) +
+              (props.sky3dOn ? 1 : 0) +
+              (props.visible.wind ? 1 : 0) +
+              (props.ocean.on ? 1 : 0)
+            }/4`}
           >
             <Sky3D sky={props.sky} on={props.sky3dOn} onToggle={props.onSky3d} />
+            <hr className="sep" />
+            <WindAnimation
+              on={props.visible.wind}
+              onToggle={() => props.onToggle('wind')}
+              wind={props.wind}
+            />
+            <hr className="sep" />
+            <SeaMotion
+              on={props.ocean.on}
+              onToggle={props.onOcean}
+              basemap={props.basemap}
+              quality={props.ocean.quality}
+              onQuality={props.onOceanQuality}
+              ready={
+                !!props.oceanData.field &&
+                !!props.oceanData.bathymetry &&
+                !!props.oceanData.shoreline
+              }
+              loading={props.oceanData.loading}
+              failed={props.oceanData.failed}
+            />
             <hr className="sep" />
             <FireRisk
               fire={props.fire}
@@ -355,8 +383,15 @@ export function Sidebar(props: Props) {
               mira. Los otros dos dicen cómo se dibuja la tierra; este, cómo se
               dibuja el agua, que en una isla es casi toda la pantalla.
 
-              Plegada, la pestaña dice la altura de ola de ahora mismo: es lo
-              único de esta sección que hace falta saber sin abrirla. */}
+              Aquí quedan las CARTAS —balizamiento y profundidad, cartografía
+              publicada por otros— y el estado del mar. El interruptor del mar
+              simulado se ha ido a «Experimental»: dibuja una superficie
+              calculada, no una carta, y esa diferencia se pierde si comparte
+              lista con dos capas que sí son dato ajeno.
+
+              Plegada, la pestaña sigue diciendo la altura de ola de ahora
+              mismo: es lo único de esta sección que hace falta saber sin
+              abrirla, y se mide esté el mar dibujado o no. */}
           <Section
             title="Océano"
             badge={
@@ -368,22 +403,11 @@ export function Sidebar(props: Props) {
             }
           >
             <Ocean
-              on={props.ocean.on}
-              onToggle={props.onOcean}
-              basemap={props.basemap}
               seamarks={props.ocean.seamarks}
               onSeamarks={props.onOceanSeamarks}
               depth={props.ocean.depth}
               onDepth={props.onOceanDepth}
-              quality={props.ocean.quality}
-              onQuality={props.onOceanQuality}
-              ready={
-                !!props.oceanData.field &&
-                !!props.oceanData.bathymetry &&
-                !!props.oceanData.shoreline
-              }
-              loading={props.oceanData.loading}
-              failed={props.oceanData.failed}
+              seaOn={props.ocean.on}
             />
             {props.ocean.on && props.oceanData.marine.length > 0 && (
               <OceanStatus

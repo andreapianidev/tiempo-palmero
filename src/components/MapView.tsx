@@ -821,19 +821,26 @@ export function MapView(props: Props) {
 
   // Las dos capas de la carta, cada una con su interruptor: el balizamiento y
   // la escala de color de profundidad no son la misma cosa ni se piden juntas.
-  // Ver `lib/ocean/charts.ts`. Ninguna se pide sin mar debajo: sobre un mapa sin
-  // océano serían dos capas sueltas encima del color de fondo.
+  // Ver `lib/ocean/charts.ts`.
+  //
+  // YA NO DEPENDEN DEL MAR SIMULADO. Dependían: se pedían solo con el océano
+  // encendido, razonando que sin agua debajo serían dos capas sueltas sobre el
+  // color de fondo. El razonamiento no se sostiene —son rásteres que se dibujan
+  // sobre cualquier fondo, y encima de la ortofoto la batimetría se lee
+  // perfectamente— y el precio sí era real: para ver una carta publicada por
+  // EMODnet había que encender antes una simulación que no tiene nada que ver
+  // con ella, y que además se lleva el fondo al satélite.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
     const shown: [string, boolean][] = [
-      [CHART_LAYERS.depth, props.ocean.on && props.ocean.depth],
-      [CHART_LAYERS.seamarks, props.ocean.on && props.ocean.seamarks],
+      [CHART_LAYERS.depth, props.ocean.depth],
+      [CHART_LAYERS.seamarks, props.ocean.seamarks],
     ]
     for (const [id, on] of shown) {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')
     }
-  }, [ready, props.ocean.on, props.ocean.depth, props.ocean.seamarks])
+  }, [ready, props.ocean.depth, props.ocean.seamarks])
 
   // --- fondo de mapa -------------------------------------------------------
   //

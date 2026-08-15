@@ -4,8 +4,8 @@
  * El orden es el de la lista, no el de pintado: se lee de arriba abajo como un
  * índice de lo que hay en la isla.
  *
- * DOS CAPAS NO ESTÁN EN ESTA LISTA, y en los dos casos por el mismo motivo: se
- * encienden donde se entiende lo que hacen, no en un índice alfabético.
+ * TRES CAPAS NO ESTÁN EN ESTA LISTA, y en los tres casos por el mismo motivo:
+ * se encienden donde se entiende lo que hacen, no en un índice alfabético.
  *
  *  - La **malla interpolada** va junto a los chips de variable
  *    (`VariablePicker`), porque su contenido es justo la variable elegida y
@@ -14,8 +14,14 @@
  *    qué es la brisa de ladera y —sobre todo— qué parte de lo que se ve es dato
  *    y qué parte es dibujo. Una casilla suelta aquí encendería la capa más
  *    espectacular de la aplicación sin nada de eso al lado.
+ *  - El **viento animado** se ha ido a «Experimental». Estaba aquí, entre las
+ *    capas de sensores, y esa vecindad decía algo que no es cierto: sus
+ *    partículas no son medidas, son un campo interpolado con relleno de modelo
+ *    donde la red no llega, y a 25 estaciones con dirección sobre una isla
+ *    donde dos puntos a 5 km pueden soplar al revés. La cifra que la sostiene
+ *    sigue en su sección «Viento», con las estaciones que la miden.
  *
- * Las dos siguen siendo `LayerVisibility`, así que el mapa las trata como a
+ * Las tres siguen siendo `LayerVisibility`, así que el mapa las trata como a
  * cualquier otra; lo que cambia es dónde está su interruptor. Y por eso el
  * contador de la pestaña cuenta sobre `LAYERS` y no sobre las claves del
  * objeto: dice cuántas de LAS DE ESTA LISTA están encendidas, que es lo que
@@ -27,7 +33,6 @@ import { poiIconDataUrl, type PoiFamily } from '../../lib/poi'
 import { t } from '../../i18n'
 
 const LAYERS: { id: keyof LayerVisibility; label: string }[] = [
-  { id: 'wind', label: t.layers.wind },
   { id: 'stations', label: t.layers.stations },
   { id: 'air', label: t.layers.air },
   { id: 'co2', label: t.layers.co2 },
