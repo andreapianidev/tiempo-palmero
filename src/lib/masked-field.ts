@@ -19,6 +19,8 @@
  * color tiene que saltar ahí en vez de disolverse.
  */
 
+import { M_PER_DEG_LAT, M_PER_DEG_LON } from './geo'
+
 export interface FieldNode {
   lon: number
   lat: number
@@ -37,10 +39,12 @@ export interface MaskedField {
   colorOf: (value: number) => string
 }
 
-export const M_PER_DEG_LAT = 110_574
+// Vive en `geo.ts`, que es donde está el resto de la geodesia. Se reexporta
+// para no romper a quien ya lo importaba de aquí.
+export { M_PER_DEG_LAT }
 
 export function mPerDegLon(lat: number): number {
-  return 111_320 * Math.cos((lat * Math.PI) / 180)
+  return M_PER_DEG_LON * Math.cos((lat * Math.PI) / 180)
 }
 
 /**

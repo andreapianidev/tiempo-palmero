@@ -50,6 +50,23 @@ export function haversineKm(a: LonLat, b: LonLat): number {
 
 export const TILE_SIZE = 256
 
+/**
+ * Cuánto mide un grado, en metros.
+ *
+ * Están aquí y no en cada fichero que los necesita porque ya llegaron a estar
+ * en tres —`masked-field.ts`, `sky/scene.ts` y `vapor/particles.ts`— y el
+ * tercero usa 111.320 para la latitud, que es el grado de PARALELO en el
+ * ecuador, no el de meridiano. La diferencia es del 0,7 % y no se ve en una
+ * partícula de vapor, pero dos constantes con el mismo nombre y distinto valor
+ * son un error esperando a que alguien las compare.
+ *
+ * El meridiano y el paralelo del ecuador no miden lo mismo porque la Tierra no
+ * es una esfera: 110.574 m el grado de latitud, 111.320 m el de longitud en el
+ * ecuador, que hay que multiplicar por el coseno de la latitud.
+ */
+export const M_PER_DEG_LAT = 110_574
+export const M_PER_DEG_LON = 111_320
+
 export function lonToPixelX(lon: number, z: number): number {
   return ((lon + 180) / 360) * TILE_SIZE * 2 ** z
 }

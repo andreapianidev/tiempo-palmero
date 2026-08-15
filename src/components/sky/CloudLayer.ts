@@ -38,7 +38,7 @@ import {
 import { metersPerPixel } from '../../lib/geo'
 import { mercatorZ } from '../../lib/wind/altitude'
 import { RAIN_HEAVY_MM } from '../../lib/sky/field'
-import { driftClouds, type Cloud } from '../../lib/sky/scene'
+import { driftClouds, EFFECTIVE_OVERLAP, type Cloud } from '../../lib/sky/scene'
 import { dayFactor, type SkyPosition } from '../../lib/sun'
 import { FRAGMENT_SHADER, VERTEX_SHADER } from './shaders'
 
@@ -55,20 +55,6 @@ const MAX_DT = 0.1
 /** Floats por vértice: `x, y, z` y `radio, alfa, sombra, semilla`. */
 const STRIDE_FLOATS = 7
 
-/**
- * Cuántas motas se solapan, de media, sobre un punto del interior de una nube.
- *
- * Sirve para repartir la opacidad: para que una nube de espesor óptico `D` salga
- * con ese espesor y no completamente blanca, cada una de las `n` motas que se
- * apilan tiene que valer `1 − (1 − D)^(1/n)`, que es la inversa de componer `n`
- * capas translúcidas. Sin esto, veintidós motas al 95 % dan blanco puro y un
- * cirro tenue se vuelve indistinguible de un estratocúmulo.
- *
- * 5 es una estimación de dibujo, no una medida: las motas no se solapan igual en
- * el centro que en el borde. Es la cifra con la que la diferencia entre los tres
- * estratos se ve como lo que es —el cirro deja pasar el fondo, la manta no.
- */
-const EFFECTIVE_OVERLAP = 5
 
 /**
  * Cuánto oscurece la base de cada estrato, de 0 a 1.

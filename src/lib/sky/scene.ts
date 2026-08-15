@@ -33,7 +33,7 @@
  * cielo cubierto pedía miles de nubes.
  */
 
-import { MAP_BBOX } from '../geo'
+import { MAP_BBOX, M_PER_DEG_LAT, M_PER_DEG_LON } from '../geo'
 import { deckFor, type Deck, type Etage } from './decks'
 import { RAIN_MIN_MM, skyAt, windAt } from './field'
 import type { SkySample } from './model'
@@ -121,6 +121,27 @@ const RADIUS_GROWTH = 2
 const PUFFS_PER_CLOUD: Record<Etage, number> = { low: 30, mid: 18, high: 12 }
 
 /**
+ * Cuántas motas se solapan, de media, sobre un punto del interior de una nube.
+ *
+ * Sirve para repartir la opacidad: para que una nube de espesor óptico `D` salga
+ * con ese espesor y no completamente blanca, cada una de las `n` motas que se
+ * apilan tiene que valer `1 − (1 − D)^(1/n)`, que es la inversa de componer `n`
+ * capas translúcidas. Sin esto, veintidós motas al 95 % dan blanco puro y un
+ * cirro tenue se vuelve indistinguible de un estratocúmulo.
+ *
+ * 5 es una estimación de dibujo, no una medida: las motas no se solapan igual en
+ * el centro que en el borde. Es la cifra con la que la diferencia entre los tres
+ * estratos se ve como lo que es —el cirro deja pasar el fondo, la manta no.
+ *
+ * VIVE AQUÍ, con el resto de la forma de una nube, y no en la capa que la
+ * dibuja, porque desde que hay sombras hay DOS sitios que reparten la misma
+ * opacidad entre las mismas motas: el sombreador que enciende la nube por
+ * arriba y la mancha que echa sobre el suelo. Con una copia en cada uno, una
+ * nube podría verse espesa y dar una sombra tenue.
+ */
+export const EFFECTIVE_OVERLAP = 5
+
+/**
  * Una de cada cuántas motas es de DETALLE en vez de cuerpo.
  *
  * Una nube con todas las motas del mismo tamaño se lee como un racimo de bolas
@@ -203,8 +224,7 @@ const COVER_CAP = 0.97
 const DENSITY: Record<Etage, number> = { low: 0.95, mid: 0.72, high: 0.34 }
 
 /** Metros por grado. Constantes, a esta latitud sobran los refinamientos. */
-const M_PER_DEG_LAT = 110_574
-const M_PER_DEG_LON = 111_320
+
 
 /**
  * Generador pseudoaleatorio determinista (mulberry32).

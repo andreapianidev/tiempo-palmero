@@ -29,6 +29,10 @@
  * interruptor llamado «sombras reales» no entiende por qué el primero no las
  * hacía ya.
  *
+ * LA CASILLA CUBRE LAS DOS SOMBRAS —la del relieve y la de las nubes— porque
+ * para quien mira son la misma cosa: algo que se pone delante del sol. Las de
+ * nube piden además la escena atmosférica encendida, que es de donde salen.
+ *
  * PERO NO DEPENDEN LA UNA DE LA OTRA, y por eso son dos casillas y no una con
  * una subordinada. Medido el 15 de agosto de 2026: la ortofoto de GRAFCAN es
  * opaca y va POR ENCIMA del `hillshade` en la pila de capas, así que con el
@@ -151,6 +155,15 @@ export function SunLight({
         un 13 %, a 30° un 4 % y por encima de 60° ya no hay ninguna. Y cuanto más
         bajo está el sol, más suaves son —dentro de una sombra sigue entrando la
         luz del cielo, que a esas horas ya es la mayor parte de la que hay—.
+      </p>
+
+      <p className="dim small">
+        Con la <strong>escena atmosférica</strong> encendida, las nubes también
+        echan la suya. Cada una cae a <span className="mono">altura ÷ tg(altura
+        del sol)</span> de distancia y se estira en la dirección de la luz: a
+        mediodía la mancha está casi debajo de la nube, y con el sol a 10° una
+        nube a 1.200 m proyecta a 6,8 km, que es por lo que al atardecer aparecen
+        sombras donde no hay ninguna nube encima.
       </p>
 
       <p className="dim small">

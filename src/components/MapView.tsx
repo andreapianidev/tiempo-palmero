@@ -47,6 +47,11 @@ import {
   SHADOW_SOURCE_ID,
   TRANSPARENT_PIXEL,
 } from './shadow/ShadowLayer'
+import {
+  CloudShadowLayer,
+  CLOUD_SHADOW_LAYER_ID,
+  CLOUD_SHADOW_SOURCE_ID,
+} from './shadow/CloudShadowLayer'
 import { markerSize } from './markers/size'
 import { silenceDepthProbe } from './markers/depthProbe'
 import { hiddenByRelief, type Camera } from '../lib/occlusion'
@@ -364,6 +369,7 @@ export function MapView(props: Props) {
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
   const terrainRef = useRef<Terrain3D | null>(null)
   const shadowRef = useRef<ShadowLayer | null>(null)
+  const cloudShadowRef = useRef<CloudShadowLayer | null>(null)
   /** Pins de estación en juego, para resolver solapamientos en cada movimiento. */
   const pillsRef = useRef<
     { el: HTMLElement; lon: number; lat: number; priority: number; elevation?: number }[]
@@ -518,6 +524,35 @@ export function MapView(props: Props) {
           id: SHADOW_LAYER_ID,
           type: 'raster',
           source: SHADOW_SOURCE_ID,
+          layout: { visibility: 'none' },
+          paint: {
+            'raster-opacity': 1,
+            'raster-resampling': 'linear',
+            'raster-fade-duration': 0,
+          },
+        },
+        'municipal-boundaries',
+      )
+
+      // Y encima, las manchas de las nubes. Van después de las del relieve
+      // porque una nube tapa el sol pase lo que pase debajo, y porque así las
+      // dos se componen en el mismo orden en que ocurren: primero lo que quita
+      // la montaña, después lo que quita la nube.
+      map.addSource(CLOUD_SHADOW_SOURCE_ID, {
+        type: 'image',
+        url: TRANSPARENT_PIXEL,
+        coordinates: [
+          [-18.05, 28.9],
+          [-17.7, 28.9],
+          [-17.7, 28.4],
+          [-18.05, 28.4],
+        ],
+      })
+      map.addLayer(
+        {
+          id: CLOUD_SHADOW_LAYER_ID,
+          type: 'raster',
+          source: CLOUD_SHADOW_SOURCE_ID,
           layout: { visibility: 'none' },
           paint: {
             'raster-opacity': 1,
@@ -948,12 +983,33 @@ export function MapView(props: Props) {
     layer.update(props.sunLight.sun)
   }, [ready, dem, props.sunLight.shadows, props.sunLight.sun])
 
+  // Las manchas de las nubes. Piden las dos cosas: el interruptor de sombras y
+  // que haya cielo dibujado, porque sin escena atmosférica no hay ninguna nube
+  // de la que sacar una sombra.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || !dem) return
+    if (!cloudShadowRef.current) cloudShadowRef.current = new CloudShadowLayer(map, dem)
+    const layer = cloudShadowRef.current
+    layer.setScene(props.sky3d.clouds, props.sunLight.sun)
+    layer.setEnabled(props.sunLight.shadows && props.sky3d.on && props.sky3d.clouds.length > 0)
+  }, [
+    ready,
+    dem,
+    props.sunLight.shadows,
+    props.sunLight.sun,
+    props.sky3d.on,
+    props.sky3d.clouds,
+  ])
+
   // El DEM se sustituye entero cuando termina de cargar, y la capa se queda con
   // el de antes: se tira y se rehace con el nuevo.
   useEffect(() => {
     return () => {
       shadowRef.current?.destroy()
       shadowRef.current = null
+      cloudShadowRef.current?.destroy()
+      cloudShadowRef.current = null
     }
   }, [dem])
 
