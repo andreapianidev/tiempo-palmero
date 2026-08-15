@@ -34,7 +34,7 @@ import { buildVaporField } from './lib/vapor/field'
 import { breathAt } from './lib/vapor/breath'
 import { useSky } from './hooks/useSky'
 import { islandLcl } from './lib/sky/base'
-import { solarPosition } from './lib/sun'
+import { moonState, sunPosition } from './lib/sun'
 import { PARTICLE_SPEEDUP } from './lib/vapor/clock'
 import { useBreathClock } from './hooks/useBreathClock'
 
@@ -354,8 +354,23 @@ export default function App() {
    * no hace falta un reloj propio.
    */
   const sun = useMemo(
-    () => solarPosition(new Date(now), ISLAND_BREATH_LON, ISLAND_BREATH_LAT),
+    () => sunPosition(now, ISLAND_BREATH_LON, ISLAND_BREATH_LAT),
     [now],
+  )
+
+  /**
+   * La luz solar sobre el relieve. Experimental, apagada al llegar: ver la
+   * cabecera de `SunLight.tsx` —se ve mejor y se lee peor.
+   */
+  const [sunLightOn, setSunLightOn] = useState(false)
+  /**
+   * La luna, solo cuando hace falta: de día no ilumina nada que se note, y con
+   * el interruptor apagado no ilumina nada en absoluto. Las efemérides de Meeus
+   * no son caras, pero calcular lo que nadie va a mirar tampoco es gratis.
+   */
+  const moon = useMemo(
+    () => (sunLightOn && sun.elevationDeg <= 0 ? moonState(now, ISLAND_BREATH_LON, ISLAND_BREATH_LAT) : null),
+    [sunLightOn, sun.elevationDeg, now],
   )
 
   const roque = data.roque
@@ -550,6 +565,12 @@ export default function App() {
         wind={wind.field}
         vapor={vaporField}
         sky3d={{ on: sky3dOn, clouds: sky.clouds, sun }}
+        sunLight={{
+          on: sunLightOn,
+          sun,
+          moon: moon ? { elevationDeg: moon.elevationDeg, azimuthDeg: moon.azimuthDeg } : null,
+          moonPhase: moon?.illumination ?? 0,
+        }}
         vaporClock={{
           at: breathClock.at,
           timeScale: breathClock.playing ? PARTICLE_SPEEDUP : 1,
@@ -694,6 +715,13 @@ export default function App() {
         tdt={{ loading: tdt.loading, failed: tdt.failed }}
         deck={deck}
         sky={sky}
+        sunLight={{
+          on: sunLightOn,
+          sun,
+          moon: moon ? { elevationDeg: moon.elevationDeg, azimuthDeg: moon.azimuthDeg } : null,
+          moonPhase: moon?.illumination ?? 0,
+        }}
+        onSunLight={() => setSunLightOn((v) => !v)}
         sky3dOn={sky3dOn}
         /*
           Encenderla inclina la cámara, y es la misma regla que ya sigue el

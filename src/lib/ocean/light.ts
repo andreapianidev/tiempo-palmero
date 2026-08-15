@@ -24,7 +24,7 @@
  * colores se calculan aquí, donde se pueden probar.
  */
 
-import { moonState, sunPosition } from './sun'
+import { moonState, sunPosition } from '../sun'
 
 export type Rgb = [number, number, number]
 

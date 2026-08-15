@@ -1,95 +1,165 @@
+/**
+ * Sol y luna, contra hechos astronómicos y no contra otra implementación.
+ *
+ * No hay aquí ninguna tabla de orto y ocaso copiada de un servicio: lo que se
+ * comprueba son cosas que tienen que salir por definición —la declinación en
+ * los solsticios, la ecuación del tiempo en sus dos extremos, la duración del
+ * día del solsticio en esta latitud— y la coherencia interna de las dos
+ * efemérides entre sí. Un test contra una tabla copiada solo demuestra que se
+ * copió bien.
+ */
+
 import { describe, expect, it } from 'vitest'
-import { dayFactor, solarPosition } from './sun'
-import { solarElevation } from './vapor/breath'
+import { dayFactor, dayLengthHours, moonState, solarGeometry, sunPosition } from './sun'
 
-/** El centro de La Palma, que es donde se ilumina la escena. */
-const LON = -17.86
-const LAT = 28.66
+/** Santa Cruz de La Palma. */
+const LON = -17.7642
+const LAT = 28.6835
 
-describe('posición solar', () => {
-  /**
-   * La prueba que de verdad importa para la escena: el sol tiene que salir por
-   * el este y ponerse por el oeste. El azimut se calcula con un `acos`, que solo
-   * devuelve de 0 a 180, y hay que reflejarlo por la tarde. Sin ese reflejo el
-   * sol se pone por donde ha salido, las nubes se iluminan por la cara
-   * equivocada toda la tarde, y nada de eso da error: sale un número plausible.
-   */
-  it('sale por el este y se pone por el oeste', () => {
-    // 21 de junio de 2026. Salida y puesta aproximadas en La Palma, en UTC.
-    const morning = solarPosition(new Date('2026-06-21T08:00:00Z'), LON, LAT)
-    const evening = solarPosition(new Date('2026-06-21T19:00:00Z'), LON, LAT)
+const utc = (iso: string) => Date.parse(iso)
 
-    expect(morning.elevation).toBeGreaterThan(0)
-    expect(evening.elevation).toBeGreaterThan(0)
-    // Por la mañana el sol está en la mitad este (0-180°).
-    expect(morning.azimuth).toBeGreaterThan(45)
-    expect(morning.azimuth).toBeLessThan(135)
-    // Por la tarde, en la mitad oeste (180-360°).
-    expect(evening.azimuth).toBeGreaterThan(250)
-    expect(evening.azimuth).toBeLessThan(320)
+describe('geometría solar', () => {
+  it('da 23,44° de declinación en los solsticios', () => {
+    expect(solarGeometry(utc('2026-06-21T12:00:00Z')).declinationDeg).toBeCloseTo(23.44, 1)
+    expect(solarGeometry(utc('2026-12-21T12:00:00Z')).declinationDeg).toBeCloseTo(-23.44, 1)
   })
 
-  it('al mediodía solar está al sur, que es donde culmina en esta latitud', () => {
-    // Se comprueba en el solsticio de INVIERNO, y no en el de verano, por una
-    // razón que costó un rato entender: en junio el sol culmina a 84,8° sobre
-    // La Palma —a cinco grados de la vertical— y ahí el azimut está mal
-    // condicionado, porque pasa de 149° a 246° en una sola hora. Un sol casi
-    // cenital no está «al sur» de forma medible. En diciembre culmina a 38°,
-    // que es donde la prueba dice algo.
-    // 13:10 UTC, que es el mediodía solar de ese día en esta longitud —no las
-    // 13:20 que usa `breath.test.ts`, donde el sol ya ha corrido tres grados—.
-    // Para la elevación esos diez minutos dan igual (37,90 contra 37,84); para
-    // el azimut son justo lo que se está midiendo.
-    const noon = solarPosition(new Date('2026-12-21T13:10:00Z'), LON, LAT)
-    expect(noon.elevation).toBeGreaterThan(36)
-    expect(Math.abs(noon.azimuth - 180)).toBeLessThan(1)
+  it('cruza el cero en los equinoccios', () => {
+    // El equinoccio de marzo de 2026 cae el día 20; a mediodía de ese día la
+    // declinación tiene que estar a menos de un cuarto de grado del cero.
+    expect(Math.abs(solarGeometry(utc('2026-03-20T12:00:00Z')).declinationDeg)).toBeLessThan(0.25)
+    expect(Math.abs(solarGeometry(utc('2026-09-23T00:00:00Z')).declinationDeg)).toBeLessThan(0.25)
   })
 
-  it('en verano culmina casi en la vertical, y el azimut gira deprisa allí', () => {
-    // El máximo anual: 90 − (28,66 − 23,44) = 84,8°.
-    const noon = solarPosition(new Date('2026-06-21T13:11:00Z'), LON, LAT)
-    expect(noon.elevation).toBeGreaterThan(84)
-    expect(noon.elevation).toBeLessThan(85.5)
+  it('reproduce los dos extremos de la ecuación del tiempo', () => {
+    // Los valores de manual: el sol va 16,4 minutos adelantado a principios de
+    // noviembre y 14,2 minutos atrasado a mediados de febrero. Es la prueba de
+    // que la serie está transcrita entera y no a medias.
+    expect(solarGeometry(utc('2026-11-03T12:00:00Z')).equationOfTimeMin).toBeCloseTo(16.4, 0)
+    expect(solarGeometry(utc('2026-02-11T12:00:00Z')).equationOfTimeMin).toBeCloseTo(-14.2, 0)
   })
+})
 
-  it('el azimut crece a lo largo del día, sin saltos', () => {
-    // Recorre el día de sol y comprueba que el azimut es monótono creciente.
-    // Un fallo en el reflejo de la tarde daría un salto brusco hacia atrás justo
-    // al pasar el meridiano.
-    let prev = -1
-    for (let m = 8 * 60; m <= 19 * 60; m += 10) {
-      const at = new Date(Date.UTC(2026, 5, 21, 0, m))
-      const { azimuth } = solarPosition(at, LON, LAT)
-      expect(azimuth).toBeGreaterThan(prev)
-      prev = azimuth
+describe('el sol sobre la isla', () => {
+  it('al mediodía solar está al sur y a la altura que toca', () => {
+    // En el solsticio de junio la declinación es 23,44° y la latitud 28,68°:
+    // el sol culmina a 90 − (28,68 − 23,44) = 84,8°, alto pero nunca cenital,
+    // porque La Palma está por encima del trópico de Cáncer.
+    let best = { elevationDeg: -90, azimuthDeg: 0 }
+    for (let m = 0; m < 1440; m++) {
+      const p = sunPosition(utc('2026-06-21T00:00:00Z') + m * 60000, LON, LAT)
+      if (p.elevationDeg > best.elevationDeg) best = p
     }
+    expect(best.elevationDeg).toBeCloseTo(84.8, 0)
+    expect(best.azimuthDeg).toBeCloseTo(180, 0)
   })
 
-  it('sigue dando la misma elevación que antes de mudarse de fichero', () => {
-    // `breath.ts` reexporta esto. Si las dos dejaran de coincidir, el reloj de
-    // la brisa y la luz de las nubes describirían dos soles distintos.
-    for (const iso of [
-      '2026-06-21T13:30:00Z',
-      '2026-12-21T13:20:00Z',
-      '2026-08-13T03:00:00Z',
-    ]) {
-      const at = new Date(iso)
-      expect(solarElevation(at, LON, LAT)).toBe(solarPosition(at, LON, LAT).elevation)
+  it('sale por el este y se pone por el oeste', () => {
+    const morning = sunPosition(utc('2026-08-13T09:00:00Z'), LON, LAT)
+    const evening = sunPosition(utc('2026-08-13T19:00:00Z'), LON, LAT)
+    expect(morning.azimuthDeg).toBeGreaterThan(45)
+    expect(morning.azimuthDeg).toBeLessThan(135)
+    expect(evening.azimuthDeg).toBeGreaterThan(225)
+    expect(evening.azimuthDeg).toBeLessThan(315)
+  })
+
+  it('está bajo el horizonte de madrugada', () => {
+    expect(sunPosition(utc('2026-08-13T03:00:00Z'), LON, LAT).elevationDeg).toBeLessThan(0)
+  })
+
+  it('el acimut crece a lo largo del día, sin saltos', () => {
+    // La fórmula del acimut sale de un `acos`, que solo devuelve de 0 a 180, y
+    // hay que reflejarlo después del mediodía. Sin ese reflejo el sol se pone
+    // por donde ha salido, y eso NO da ningún error: sale un número plausible y
+    // la isla se ilumina por la cara que no es.
+    let previous = -1
+    for (let m = 8 * 60; m <= 19 * 60; m += 10) {
+      const { azimuthDeg } = sunPosition(utc('2026-06-21T00:00:00Z') + m * 60000, LON, LAT)
+      expect(azimuthDeg).toBeGreaterThan(previous)
+      previous = azimuthDeg
     }
   })
 
   it('no devuelve NaN en ningún instante del año', () => {
-    // El `acos` del azimut recibe un cociente que el redondeo saca de [-1, 1].
+    // El `acos` del acimut recibe un cociente que el redondeo saca de [−1, 1].
     // Sin el recorte, un puñado de instantes al año darían NaN y la escena se
     // quedaría sin iluminar sin decir por qué.
     for (let d = 0; d < 365; d += 7) {
       for (let h = 0; h < 24; h += 3) {
-        const at = new Date(Date.UTC(2026, 0, 1 + d, h))
-        const { elevation, azimuth } = solarPosition(at, LON, LAT)
-        expect(Number.isFinite(elevation)).toBe(true)
-        expect(Number.isFinite(azimuth)).toBe(true)
+        const p = sunPosition(Date.UTC(2026, 0, 1 + d, h), LON, LAT)
+        expect(Number.isFinite(p.elevationDeg)).toBe(true)
+        expect(Number.isFinite(p.azimuthDeg)).toBe(true)
       }
     }
+  })
+
+  it('la duración del día del solsticio encaja con la fórmula del ángulo horario', () => {
+    // 2·acos(−tan 28,6835°·tan 23,44°)/15 = 13,83 h en junio y 10,17 h en
+    // diciembre: tres horas y tres cuartos de diferencia entre el mar de agosto
+    // y el de Navidad, que en esta latitud es toda la estacionalidad que hay.
+    expect(dayLengthHours(utc('2026-06-21T12:00:00Z'), LAT)).toBeCloseTo(13.83, 1)
+    expect(dayLengthHours(utc('2026-12-21T12:00:00Z'), LAT)).toBeCloseTo(10.17, 1)
+  })
+})
+
+describe('la luna', () => {
+  it('la fase va de cero a uno y vuelve, con el mes sinódico', () => {
+    // Se buscan dos llenas seguidas recorriendo cuarenta días de hora en hora.
+    // Entre una y otra tienen que pasar 29,5 días: el mes sinódico. Si la serie
+    // de Meeus estuviera mal transcrita, este periodo no saldría.
+    const start = utc('2026-01-01T00:00:00Z')
+    const peaks: number[] = []
+    let previous = 0
+    let rising = true
+    for (let h = 0; h < 24 * 70; h++) {
+      const at = start + h * 3600000
+      const f = moonState(at, LON, LAT).illumination
+      if (rising && f < previous) {
+        peaks.push(at)
+        rising = false
+      }
+      if (!rising && f > previous) rising = true
+      previous = f
+    }
+    expect(peaks.length).toBeGreaterThanOrEqual(2)
+    const days = (peaks[1] - peaks[0]) / 86400000
+    expect(days).toBeCloseTo(29.53, 0)
+  })
+
+  it('la luna llena sale cuando se pone el sol', () => {
+    // No es folclore: si está llena, es que está enfrente del sol. Se busca la
+    // llena más cercana y se comprueba que a medianoche solar está alta.
+    const start = utc('2026-01-01T00:00:00Z')
+    let full = start
+    let best = 0
+    for (let h = 0; h < 24 * 40; h++) {
+      const at = start + h * 3600000
+      const f = moonState(at, LON, LAT).illumination
+      if (f > best) {
+        best = f
+        full = at
+      }
+    }
+    expect(best).toBeGreaterThan(0.99)
+    const sun = sunPosition(full, LON, LAT)
+    const moon = moonState(full, LON, LAT)
+    // La llena de este barrido cae el 1 de febrero de 2026 a las 20:00 UTC, con
+    // el sol a −15,6° —recién puesto por el oeste— y la luna a +15,6° saliendo
+    // por el este. Los dos acimutes tienen que estar a media vuelta.
+    const separation = Math.abs(((moon.azimuthDeg - sun.azimuthDeg + 540) % 360) - 180)
+    expect(separation).toBeGreaterThan(145)
+    // Y uno arriba justo cuando el otro está abajo, que es la comprobación que
+    // de verdad distingue una luna llena de una nueva.
+    expect(Math.sign(moon.elevationDeg)).toBe(-Math.sign(sun.elevationDeg))
+  })
+
+  it('la nueva no ilumina nada', () => {
+    const start = utc('2026-01-01T00:00:00Z')
+    let worst = 1
+    for (let h = 0; h < 24 * 40; h++) {
+      worst = Math.min(worst, moonState(start + h * 3600000, LON, LAT).illumination)
+    }
+    expect(worst).toBeLessThan(0.01)
   })
 })
 

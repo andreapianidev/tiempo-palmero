@@ -27,6 +27,8 @@ import { FireRisk } from './FireRisk'
 import { Sky3D } from './Sky3D'
 import { WindAnimation } from './WindAnimation'
 import { SeaMotion } from './SeaMotion'
+import { SunLight } from './SunLight'
+import type { SkyPosition } from '../../lib/sun'
 import type { SkyState } from '../../hooks/useSky'
 import { LayerSwitches, LAYER_COUNT, activeLayerCount } from './LayerSwitches'
 import { PlaceSwitches, PLACE_COUNT, activePlaceCount } from './PlaceSwitches'
@@ -79,6 +81,9 @@ interface Props {
   sky: SkyState
   sky3dOn: boolean
   onSky3d: () => void
+  /** La luz solar sobre el relieve: otra función experimental. */
+  sunLight: { on: boolean; sun: SkyPosition; moon: SkyPosition | null; moonPhase: number }
+  onSunLight: () => void
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
@@ -271,10 +276,19 @@ export function Sidebar(props: Props) {
               (fireOn ? 1 : 0) +
               (props.sky3dOn ? 1 : 0) +
               (props.visible.wind ? 1 : 0) +
-              (props.ocean.on ? 1 : 0)
-            }/4`}
+              (props.ocean.on ? 1 : 0) +
+              (props.sunLight.on ? 1 : 0)
+            }/5`}
           >
             <Sky3D sky={props.sky} on={props.sky3dOn} onToggle={props.onSky3d} />
+            <hr className="sep" />
+            <SunLight
+              on={props.sunLight.on}
+              onToggle={props.onSunLight}
+              sun={props.sunLight.sun}
+              moon={props.sunLight.moon}
+              moonPhase={props.sunLight.moonPhase}
+            />
             <hr className="sep" />
             <WindAnimation
               on={props.visible.wind}

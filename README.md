@@ -1443,8 +1443,8 @@ que una completa, y la forma no puede ser el único aviso.
 Hay un sitio aparte en la barra lateral, **«Experimental»**, plegado y detrás de
 un aviso, para las funciones que no se sostienen igual que el resto de la
 aplicación. Van ahí y no entre las variables normales porque ponerlas al lado de
-la temperatura las igualaría con una medida. Hoy hay **cuatro**, y las cuatro
-tienen en común lo mismo: dibujan más de lo que miden.
+la temperatura las igualaría con una medida. Hoy hay **cinco**, y todas tienen
+en común lo mismo: dibujan más de lo que miden.
 
 Dos de ellas no nacieron aquí, se mudaron:
 
@@ -1613,6 +1613,52 @@ quedarse ahí.
 
 No pide nada mientras está apagada, que es como llega: son 70 puntos con once
 variables cada uno.
+
+### La luz del sol sobre el relieve
+
+El sombreado del relieve llevaba desde el principio una luz **fija en el 315°**,
+el noroeste. Es la convención cartográfica de siempre —se ilumina desde arriba a
+la izquierda porque el ojo humano interpreta al revés un relieve iluminado desde
+abajo, el efecto del cráter— y como convención está bien. El problema es que esta
+aplicación dibuja además un mar con el reflejo del sol en su sitio real y unas
+nubes encendidas por la cara que les da la luz: a las ocho de la mañana el mar
+brillaba por el este, las nubes se iluminaban por el este, y la isla que había en
+medio seguía iluminada desde el noroeste. **Tres soles distintos en la misma
+pantalla.**
+
+Con el interruptor puesto, el relieve se ilumina desde donde está el sol, con las
+mismas efemérides que ya usaban el mar y las nubes.
+
+**Lo que MapLibre puede y lo que no.** Su capa `hillshade` acepta cinco cosas: la
+dirección de la luz, una exageración de 0 a 1 y los colores de luz, sombra y
+acento. **No acepta la altura del sol**, que es la otra mitad de la información,
+así que la altura se traduce a lo que sí hay:
+
+- a la **exageración**, porque un sol rasante alarga las sombras y marca cada
+  barranco mientras uno en la vertical aplana el relieve. Eso es literalmente el
+  coseno de la elevación en un sombreado Lambert, así que la exageración va con
+  el coseno y no con una rampa inventada. El valor fijo de siempre, 0,50, cae en
+  esa escala a unos 54° de elevación: la convención venía a ser un mediodía de
+  primavera permanente;
+- a los **colores**, porque un sol a 5° es naranja y uno a 70° es blanco. Los dos
+  extremos son los mismos que usa el mar para su reflejo — son la misma luz, y
+  verlas de dos colores distintos era parte del problema.
+
+**No dibuja sombras arrojadas.** `hillshade` sabe hacia dónde mira cada ladera,
+pero no sabe que la pared de la Caldera le tapa el sol al barranco de al lado.
+Eso es otra cosa —un mapa de horizonte por posición solar— y no está.
+
+**De noche manda la luna**, y es de verdad: posición y fase de Meeus, las mismas
+efemérides que el mar. Una luna llena alta ilumina desde donde está, con luz fría
+y sombras suaves; una nueva no ilumina nada y queda un relieve apenas insinuado.
+Se le deja un mínimo de sombreado a propósito, porque el mapa se sigue usando de
+noche para leer temperaturas y un relieve sin forma se lee peor.
+
+**Y por eso es experimental y no el comportamiento normal: se ve mejor y se lee
+peor.** La luz fija no es un descuido, es una convención con dos siglos detrás
+que deja el mapa igual de legible a cualquier hora; la real hunde media isla en
+sombra al amanecer. Como esto es primero un instrumento para leer temperaturas y
+después un mapa bonito, la convención se queda de fábrica y la verdad se ofrece.
 
 ### El índice de incendio
 

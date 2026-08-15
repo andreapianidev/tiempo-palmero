@@ -38,7 +38,8 @@ import type { VaporField } from '../lib/vapor/field'
 import { CloudLayer } from './sky/CloudLayer'
 import { RainLayer } from './sky/RainLayer'
 import type { Cloud } from '../lib/sky/scene'
-import { dayFactor, type SolarPosition } from '../lib/sun'
+import { dayFactor, type SkyPosition } from '../lib/sun'
+import { HILLSHADE_DEFAULT, terrainLight } from '../lib/terrain-light'
 import { Terrain3D } from './terrain/Terrain3D'
 import { markerSize } from './markers/size'
 import { silenceDepthProbe } from './markers/depthProbe'
@@ -220,7 +221,18 @@ interface Props {
    * quien lo pinta es una capa de GL, y el panel enseña las mismas cifras que
    * el mapa está usando porque son literalmente el mismo objeto.
    */
-  sky3d: { on: boolean; clouds: Cloud[]; sun: SolarPosition }
+  sky3d: { on: boolean; clouds: Cloud[]; sun: SkyPosition }
+  /**
+   * La luz solar sobre el relieve.
+   *
+   * Va aparte de `sky3d` aunque compartan el sol: son dos funciones que se
+   * encienden por separado —se puede querer la isla iluminada de verdad sin
+   * nubes encima, y al revés— y juntarlas en un interruptor habría obligado a
+   * aceptar las dos para tener una.
+   *
+   * `moon` llega solo cuando hace falta: de día no se calcula.
+   */
+  sunLight: { on: boolean; sun: SkyPosition; moon: SkyPosition | null; moonPhase: number }
   /**
    * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
    * capa más: cambia la cámara, no lo que se dibuja. Ver `lib/terrain.ts`.
@@ -842,6 +854,32 @@ export function MapView(props: Props) {
     }
   }, [ready, props.ocean.depth, props.ocean.seamarks])
 
+  // --- luz del sol sobre el relieve ----------------------------------------
+  //
+  // Se toca el `paint` de la capa `hillshade` que ya existe: no se añade nada al
+  // mapa ni se pide una tesela más. El sombreado es el mismo, con otra luz.
+  //
+  // Al apagar se devuelven los valores del estilo, que vienen de la misma
+  // constante que el estilo usó para ponerlos.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || !map.getLayer('hillshade')) return
+    const light = props.sunLight.on
+      ? terrainLight(props.sunLight.sun, props.sunLight.moon, props.sunLight.moonPhase)
+      : HILLSHADE_DEFAULT
+    map.setPaintProperty('hillshade', 'hillshade-illumination-direction', light.direction)
+    map.setPaintProperty('hillshade', 'hillshade-exaggeration', light.exaggeration)
+    map.setPaintProperty('hillshade', 'hillshade-highlight-color', light.highlight)
+    map.setPaintProperty('hillshade', 'hillshade-shadow-color', light.shadow)
+    map.setPaintProperty('hillshade', 'hillshade-accent-color', light.accent)
+  }, [
+    ready,
+    props.sunLight.on,
+    props.sunLight.sun,
+    props.sunLight.moon,
+    props.sunLight.moonPhase,
+  ])
+
   // --- fondo de mapa -------------------------------------------------------
   //
   // Cambiar de fondo NO reconstruye el estilo. Un `setStyle()` se llevaría por
@@ -1029,7 +1067,7 @@ export function MapView(props: Props) {
   useEffect(() => {
     if (!ready) return
     cloudLayerRef.current?.setSun(props.sky3d.sun)
-    rainLayerRef.current?.setDay(dayFactor(props.sky3d.sun.elevation))
+    rainLayerRef.current?.setDay(dayFactor(props.sky3d.sun.elevationDeg))
   }, [ready, props.sky3d.sun])
 
   // --- capas GeoJSON estáticas --------------------------------------------

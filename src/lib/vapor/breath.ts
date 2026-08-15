@@ -24,20 +24,16 @@
  * la interfaz lo dice donde se enciende.
  */
 
-import { solarPosition } from '../sun'
+import { solarElevation } from '../sun'
 
 /**
  * Elevación del sol sobre el horizonte, en grados. Negativo de noche.
  *
- * El cálculo vive en `lib/sun.ts` desde que la escena 3D necesitó también el
- * azimut para iluminar las nubes: son la misma astronomía y estaba a un paso de
- * quedar copiada en dos ficheros. Se sigue exportando desde aquí porque es
- * donde la busca quien lee el reloj de la brisa, y porque las pruebas de este
- * módulo son las que responden de ella.
+ * El cálculo vive en `lib/sun.ts`, que es el único sitio del repositorio donde
+ * hay astronomía. Se reexporta desde aquí porque es donde la busca quien lee el
+ * reloj de la brisa.
  */
-export function solarElevation(at: Date, lon: number, lat: number): number {
-  return solarPosition(at, lon, lat).elevation
-}
+export { solarElevation }
 
 /**
  * Retraso del suelo respecto al sol, en horas.

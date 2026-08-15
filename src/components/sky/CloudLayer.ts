@@ -39,7 +39,7 @@ import { metersPerPixel } from '../../lib/geo'
 import { mercatorZ } from '../../lib/wind/altitude'
 import { RAIN_HEAVY_MM } from '../../lib/sky/field'
 import { driftClouds, type Cloud } from '../../lib/sky/scene'
-import { dayFactor, type SolarPosition } from '../../lib/sun'
+import { dayFactor, type SkyPosition } from '../../lib/sun'
 import { FRAGMENT_SHADER, VERTEX_SHADER } from './shaders'
 
 export const CLOUD_LAYER_ID = 'sky-clouds'
@@ -186,14 +186,14 @@ function clipW(m: ViewMatrix, x: number, y: number, z: number): number {
  * mira al norte.
  */
 function sunToCamera(
-  sun: SolarPosition,
+  sun: SkyPosition,
   bearingDeg: number,
   pitchDeg: number,
 ): [number, number, number] {
   const b = bearingDeg * RAD
   const p = pitchDeg * RAD
-  const el = sun.elevation * RAD
-  const az = sun.azimuth * RAD
+  const el = sun.elevationDeg * RAD
+  const az = sun.azimuthDeg * RAD
 
   // El sol en la base local: este, norte, arriba.
   const se = Math.cos(el) * Math.sin(az)
@@ -231,7 +231,7 @@ export class CloudLayer implements CustomLayerInterface {
   private visible = false
   private exaggeration = 1
   private lastFrame = 0
-  private sun: SolarPosition = { elevation: 45, azimuth: 180 }
+  private sun: SkyPosition = { elevationDeg: 45, azimuthDeg: 180 }
 
   private vertices = new Float32Array(0)
   /** Índices de nube ordenados de atrás adelante. Se reutiliza el array. */
@@ -288,7 +288,7 @@ export class CloudLayer implements CustomLayerInterface {
     this.map?.triggerRepaint()
   }
 
-  setSun(sun: SolarPosition): void {
+  setSun(sun: SkyPosition): void {
     this.sun = sun
     this.map?.triggerRepaint()
   }
@@ -371,7 +371,7 @@ export class CloudLayer implements CustomLayerInterface {
 
     const [sx, sy, sz] = sunToCamera(this.sun, map.getBearing(), map.getPitch())
     gl.uniform3f(this.uSunDir, sx, sy, sz)
-    gl.uniform1f(this.uDay, dayFactor(this.sun.elevation))
+    gl.uniform1f(this.uDay, dayFactor(this.sun.elevationDeg))
 
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)

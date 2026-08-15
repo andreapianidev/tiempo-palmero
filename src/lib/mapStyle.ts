@@ -14,6 +14,7 @@
  */
 
 import type { StyleSpecification } from 'maplibre-gl'
+import { HILLSHADE_DEFAULT } from './terrain-light'
 import { dataUrl } from './endpoints'
 import { pixelXToLon, pixelYToLat } from './geo'
 import { SKY } from './terrain'
@@ -125,12 +126,16 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
         id: 'hillshade',
         type: 'hillshade',
         source: 'terrain',
+        // Los valores salen de `terrain-light.ts` y no escritos aquí: el
+        // interruptor de luz solar los sustituye y tiene que poder devolverlos.
+        // Con una copia en cada sitio, cambiar el sombreado por defecto dejaría
+        // el «apagado» restituyendo un sombreado que ya no es el de nadie.
         paint: {
-          'hillshade-shadow-color': '#000000',
-          'hillshade-highlight-color': '#8a8274',
-          'hillshade-accent-color': '#2a2622',
-          'hillshade-exaggeration': 0.5,
-          'hillshade-illumination-direction': 315,
+          'hillshade-shadow-color': HILLSHADE_DEFAULT.shadow,
+          'hillshade-highlight-color': HILLSHADE_DEFAULT.highlight,
+          'hillshade-accent-color': HILLSHADE_DEFAULT.accent,
+          'hillshade-exaggeration': HILLSHADE_DEFAULT.exaggeration,
+          'hillshade-illumination-direction': HILLSHADE_DEFAULT.direction,
         },
       },
       {
