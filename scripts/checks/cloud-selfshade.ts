@@ -23,6 +23,7 @@ import { buildCloudScene, puffCount, type Cloud } from '../../src/lib/sky/scene.
 import type { SkySample } from '../../src/lib/sky/model.js'
 import { selfShade, MULTIPLE_SCATTERING } from '../../src/lib/sky/selfshade.js'
 import { crossShade } from '../../src/lib/sky/crossshade.js'
+import { RAIN_HEAVY_MM } from '../../src/lib/sky/field.js'
 import type { SkyPosition } from '../../src/lib/sun.js'
 
 const calm = { u: 0, v: 0 }
@@ -65,7 +66,8 @@ const sun = (elevationDeg: number, azimuthDeg: number): SkyPosition => ({
  */
 const OLD_BASE_SHADE: Record<Cloud['etage'], number> = { low: 0.45, mid: 0.32, high: 0.1 }
 const OLD_SHADE_DEPTH = 0.55
-const OLD_RAIN_HEAVY_MM = 4
+// El de verdad, importado: escribirlo a mano fue el error que se corrigió.
+const OLD_RAIN_HEAVY_MM = RAIN_HEAVY_MM
 
 function oldShade(cloud: Cloud): Float32Array {
   const rain = cloud.precipMm > 0 ? Math.min(1, cloud.precipMm / OLD_RAIN_HEAVY_MM) : 0

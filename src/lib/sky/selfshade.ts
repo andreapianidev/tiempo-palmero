@@ -40,6 +40,7 @@
  */
 
 import { dayFactor, skyVector, type SkyPosition } from '../sun'
+import { RAIN_HEAVY_MM } from './field'
 import { EFFECTIVE_OVERLAP, type Cloud } from './scene'
 
 /**
@@ -57,11 +58,11 @@ import { EFFECTIVE_OVERLAP, type Cloud } from './scene'
  * más manda:
  *
  *   dispersión   lo más oscuro que se ve   cara al sol − contraria
- *   0,00         0,012                     0,780
- *   0,10         0,111                     0,702
- *   0,22         0,230                     0,609   ← el elegido
- *   0,30         0,309                     0,546
- *   0,55         0,556                     0,351
+ *   0,00         0,014                     0,766
+ *   0,10         0,113                     0,690
+ *   0,22         0,231                     0,598   ← el elegido
+ *   0,30         0,310                     0,536
+ *   0,55         0,556                     0,345
  *
  * LA ORILLA DE ABAJO ES NO DEJAR AGUJEROS. El sombreador multiplica el color de
  * la mota por esto, así que con 0 la cara en sombra de una nube se dibuja negra
@@ -95,8 +96,15 @@ export const MULTIPLE_SCATTERING = 0.22
  */
 export const RAIN_DARKEN = 0.55
 
-/** Milímetros por hora a los que la cortina de lluvia oscurece del todo. */
-const RAIN_FULL_MM = 4
+/*
+ * A qué lluvia oscurece del todo la cortina: `RAIN_HEAVY_MM`, de `field.ts`.
+ *
+ * Se importa y no se escribe aquí. La primera versión de este fichero puso un 4
+ * suyo, y son 3,5: la misma cifra con dos valores en dos ficheros es
+ * exactamente la duplicación que este repositorio ya ha pagado dos veces —lo
+ * que la capa dibujaba y lo que la sombra calculaba habrían dejado de coincidir
+ * el día que alguien tocara una de las dos.
+ */
 
 /**
  * La luz que le llega a cada mota, de 0 a 1, en el orden de `cloud.puffs`.
@@ -149,7 +157,7 @@ export function selfShade(
 
   const thickness = cloud.top - cloud.base
   const rain =
-    cloud.precipMm > 0 ? Math.min(1, cloud.precipMm / RAIN_FULL_MM) : 0
+    cloud.precipMm > 0 ? Math.min(1, cloud.precipMm / RAIN_HEAVY_MM) : 0
   const rainFactor = 1 - RAIN_DARKEN * rain
 
   for (let i = 0; i < n; i++) {

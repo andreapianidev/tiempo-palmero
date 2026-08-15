@@ -1618,7 +1618,7 @@ medirlos:
   este número, y con 0 la cara en sombra se dibuja negra, que es el mismo
   argumento con el que el mar tiene su `LIT_FLOOR`—; por arriba, que cada punto
   de suelo se come el contraste que es la razón de ser del cambio. Con 0,22 lo
-  más oscuro que se ve es 0,230 y se conserva el 78 % del contraste direccional.
+  más oscuro que se ve es 0,231 y se conserva el 78 % del contraste direccional.
 
 El barrido es n² por nube —900 operaciones con las 30 motas de una nube baja— y
 **no se hace por fotograma**: solo cuando el sol se mueve medio grado, que son
