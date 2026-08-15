@@ -11,7 +11,7 @@
 
 import { n } from '../../../i18n'
 import { TRACK_STEP_MIN } from '../../../lib/sky/sun-path'
-import { SIN_CIELO } from './DiscNotes'
+import { SkyFix } from './SkyFix'
 
 interface Props {
   on: boolean
@@ -19,9 +19,10 @@ interface Props {
   view3d: boolean
   /** Hasta qué altura del cielo llega la pantalla con el fondo puesto. */
   ceilingDeg: number
+  onPrepareSky: () => void
 }
 
-export function PathNotes({ on, view3d, ceilingDeg }: Props) {
+export function PathNotes({ on, view3d, ceilingDeg, onPrepareSky }: Props) {
   if (!on) {
     return (
       <p className="dim small">
@@ -35,14 +36,7 @@ export function PathNotes({ on, view3d, ceilingDeg }: Props) {
 
   return (
     <>
-      {(!view3d || ceilingDeg <= 0) && (
-        <p className="dim small">
-          <strong>Ahora mismo: </strong>
-          {!view3d
-            ? 'con la vista en plano no hay cielo donde dibujarlo. Enciende la vista 3D e inclina la cámara.'
-            : SIN_CIELO}
-        </p>
-      )}
+      <SkyFix view3d={view3d} ceilingDeg={ceilingDeg} onPrepareSky={onPrepareSky} />
 
       <p className="dim small">
         <strong>La carrera del sol</strong> es el camino que recorre hoy, del

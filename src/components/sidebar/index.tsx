@@ -112,6 +112,12 @@ interface Props {
   onSunShadows: () => void
   onSunDisc: () => void
   onSunPath: () => void
+  /**
+   * Poner la vista en condiciones de ver el cielo: 3D, fondo que deje inclinar,
+   * luz real y cámara arriba. Lo ofrece el propio aviso del panel cuando algo
+   * de eso falta, que es cuando la casilla está marcada y no dibuja nada.
+   */
+  onPrepareSky: () => void
   basemap: BasemapId
   onBasemap: (id: BasemapId) => void
   /** La vista 3D. No es una capa: cambia la cámara, no lo que se dibuja. */
@@ -333,6 +339,7 @@ export function Sidebar(props: Props) {
               basemap={props.basemap}
               view3d={props.terrain.on}
               clouds={props.sky3dOn}
+              onPrepareSky={props.onPrepareSky}
             />
             <hr className="sep" />
             <WindAnimation

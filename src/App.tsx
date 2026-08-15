@@ -494,6 +494,55 @@ export default function App() {
    * casillas se quedaban mudas sin explicar por qué.
    */
   const sunCeilingDeg = useMemo(() => skyCeilingDeg(maxPitchFor(basemap)), [basemap])
+  /**
+   * Dejar la vista en condiciones de ver el cielo, que son cuatro cosas a la vez.
+   *
+   * POR QUÉ NO BASTA CON DECIRLO. El panel ya explicaba que sobre la ortofoto la
+   * cámara solo se inclina 65° y el horizonte no entra en pantalla, y el aviso
+   * estaba escrito, en su sitio y en presente. No sirvió: lo que se ve es una
+   * casilla marcada y un cielo vacío, y nadie lee un párrafo para descubrir que
+   * lo que ha encendido no puede funcionar donde está. Es la misma regla que ya
+   * sigue el mar —encenderlo lleva al satélite, porque sobre la carta
+   * topográfica no se dibujaría—: un interruptor que no hace nada es peor que
+   * uno que hace de más.
+   *
+   * LAS CUATRO: la vista 3D, porque en plano no hay cielo; el fondo de relieve
+   * si el que hay no deja inclinar lo bastante; la luz real, que es de donde el
+   * sol saca su color —sin ella el disco no se dibuja en absoluto—; y la cámara
+   * hasta el tope, que lo hace el mapa porque es quien sabe a cuánto está.
+   *
+   * NINGUNA ES IRREVERSIBLE: las tres primeras son interruptores que siguen
+   * ahí, y quien quiera la ortofoto o la luz de la convención vuelve a
+   * ponerlas. Lo que no se puede es empezar sin verlo.
+   */
+  /**
+   * Hacia dónde hay que mirar para ver algo en el cielo.
+   *
+   * NO ES «hacia el sol», y esa fue la primera respuesta equivocada: el sol
+   * pasa la mayor parte del día por encima del borde de la pantalla, así que
+   * apuntar a él deja en cuadro un trozo de cielo donde no hay nada dibujado. Lo
+   * que se ve del camino son sus dos extremos, los que bajan al horizonte, y
+   * están en el rumbo del orto y del ocaso —a las cuatro de la tarde, mirando al
+   * sol en el OSO, el ocaso del ONO se quedaba 2° fuera del cuadro por la
+   * derecha: medido con el campo de visión de 59,8° a lo ancho—.
+   *
+   * Así que: al sol si está dentro de la ventana en la que se le puede ver, y si
+   * no al extremo del arco que toca —el orto por la mañana, el ocaso por la
+   * tarde, contado desde el mediodía solar—.
+   */
+  const rumboDelCielo = useMemo(() => {
+    if (sun.elevationDeg > 0 && sun.elevationDeg <= sunCeilingDeg) return sun.azimuthDeg
+    const extremo = now < sunDay.transitMs ? sunDay.sunrise : sunDay.sunset
+    return extremo?.azimuthDeg ?? sun.azimuthDeg
+  }, [sun, sunCeilingDeg, now, sunDay])
+
+  const [skyNudge, setSkyNudge] = useState(0)
+  const prepararElCielo = useCallback(() => {
+    setTerrain((s) => ({ ...s, on: true }))
+    if (skyCeilingDeg(maxPitchFor(basemap)) <= 0) setBasemap('relieve')
+    setSunLightOn(true)
+    setSkyNudge((n) => n + 1)
+  }, [basemap, setBasemap, setSunLightOn, setTerrain])
   const sunCeilingMs = useMemo(
     () =>
       sunCeilingDeg > 0
@@ -523,15 +572,24 @@ export default function App() {
    * mediodía de calima saldría lechoso con el océano encendido y limpio con el
    * océano apagado.
    *
-   * La usan dos funciones y por eso se calcula con cualquiera de las dos
-   * encendidas: la cúpula del cielo, y la escena atmosférica —de donde saca el
-   * color al que se desvanece la distancia y la luz que hay de noche—. Con las
-   * dos apagadas no se calcula: `oceanLight` recorre las estaciones para sacar
-   * dos medianas, y quien no encienda nada de esto no lo paga.
+   * La usan cuatro funciones y por eso se calcula con cualquiera de ellas
+   * encendida: la cúpula del cielo, la escena atmosférica —de donde saca el
+   * color al que se desvanece la distancia y la luz que hay de noche—, el disco
+   * del sol y su carrera. Con las cuatro apagadas no se calcula: `oceanLight`
+   * recorre las estaciones para sacar dos medianas, y quien no encienda nada de
+   * esto no lo paga.
+   *
+   * EL DISCO Y LA CARRERA ENTRARON AQUÍ ARREGLANDO UN FALLO, no por simetría.
+   * `SunLayer.render()` se va sin dibujar cuando no hay luz —la necesita para
+   * saber de qué color es el sol a esta altura— así que con la casilla del disco
+   * encendida a solas, esto valía `null` y el sol no se dibujaba NUNCA, ni al
+   * atardecer. La casilla estaba puesta y no hacía nada, y no había manera de
+   * saberlo desde fuera. De qué color es el sol no depende de si el relieve se
+   * ilumina con él: son dos preguntas distintas y ahora se calculan aparte.
    */
   const domeLight = useMemo(
     () =>
-      sunLightOn || sky3dOn
+      sunLightOn || sky3dOn || sunDiscOn || sunPathOn
         ? oceanLight(
             now,
             ISLAND_BREATH_LON,
@@ -539,7 +597,7 @@ export default function App() {
             measuredLight(data.stations, data.air),
           )
         : null,
-    [sunLightOn, sky3dOn, now, data.stations, data.air],
+    [sunLightOn, sky3dOn, sunDiscOn, sunPathOn, now, data.stations, data.air],
   )
 
   const roque = data.roque
@@ -744,6 +802,8 @@ export default function App() {
           disc: sunDiscOn,
           path: sunPathOn,
           track: sunPathTrack,
+          nudge: skyNudge,
+          lookAt: rumboDelCielo,
         }}
         vaporClock={{
           at: breathClock.at,
@@ -916,13 +976,14 @@ export default function App() {
           quedarse ahí.
         */
         onSunDisc={() => {
-          if (!sunDiscOn) setTerrain((s) => ({ ...s, on: true }))
+          if (!sunDiscOn) prepararElCielo()
           setSunDiscOn((v) => !v)
         }}
         onSunPath={() => {
-          if (!sunPathOn) setTerrain((s) => ({ ...s, on: true }))
+          if (!sunPathOn) prepararElCielo()
           setSunPathOn((v) => !v)
         }}
+        onPrepareSky={prepararElCielo}
         sky3dOn={sky3dOn}
         /*
           Encenderla inclina la cámara, y es la misma regla que ya sigue el

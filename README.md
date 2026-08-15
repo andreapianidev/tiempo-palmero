@@ -1819,6 +1819,26 @@ del filo después de haber salido. En el valle de Aridane eso es más de una hor
 entre el orto del almanaque y el amanecer de verdad, y sale dibujado sin calcular
 nada.
 
+**Encenderlas prepara la vista, en vez de explicar por qué no se ve.** Las dos
+casillas que dibujan en el cielo necesitan cuatro cosas a la vez —la vista 3D,
+un fondo que deje inclinar la cámara, la luz real y la cámara arriba— y faltando
+cualquiera de ellas la casilla se queda marcada sin dibujar nada. Sobre la
+ortofoto, además, es imposible: ahí el tope son 65° y el horizonte NO ENTRA en
+pantalla, así que el techo del cielo sale negativo. Estaba escrito en el panel, en
+presente y en su sitio, y no sirvió de nada: lo que se ve es una casilla puesta y
+un cielo vacío, y eso se parece demasiado a una avería como para ponerse a leer.
+Ahora el interruptor lo hace —misma regla que el mar, que se lleva el fondo al
+satélite porque sobre la carta topográfica no se dibujaría— y el aviso trae el
+botón que lo arregla. Ninguna de las cuatro es irreversible: siguen siendo
+interruptores.
+
+Y una de las cuatro tapaba un fallo de verdad: `SunLayer` se va sin dibujar si no
+hay luz calculada —la necesita para saber de qué color es el sol a esta altura—,
+y esa luz solo se calculaba con «Luz del sol real» o la escena atmosférica
+encendidas. O sea que la casilla del disco, marcada a solas, no dibujaba el sol
+**nunca**, ni al atardecer. De qué color es el sol y si el relieve se ilumina con
+él son dos preguntas distintas, y ahora se calculan aparte.
+
 Las horas se comprobaron contra un tercero, porque salen escritas en el panel:
 Open-Meteo para 28,65 N 17,86 O, cuatro días de 2026 —14 de mayo, 21 de junio, 15
 y 30 de agosto—. **Máxima diferencia, 1 minuto**, que es la resolución con la que

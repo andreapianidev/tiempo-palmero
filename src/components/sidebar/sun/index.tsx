@@ -77,6 +77,8 @@ interface Props {
   view3d: boolean
   /** La escena atmosférica: sin ella no hay nubes que echen sombra. */
   clouds: boolean
+  /** Dejar la vista en condiciones de ver el cielo, de un golpe. */
+  onPrepareSky: () => void
 }
 
 export function SunLight(props: Props) {
@@ -129,8 +131,14 @@ export function SunLight(props: Props) {
         ceilingDeg={props.ceilingDeg}
         ceilingMs={props.ceilingMs}
         view3d={props.view3d}
+        onPrepareSky={props.onPrepareSky}
       />
-      <PathNotes on={props.path} view3d={props.view3d} ceilingDeg={props.ceilingDeg} />
+      <PathNotes
+        on={props.path}
+        view3d={props.view3d}
+        ceilingDeg={props.ceilingDeg}
+        onPrepareSky={props.onPrepareSky}
+      />
       <BasemapNote basemap={props.basemap} on={props.on} shadows={props.shadows} />
     </>
   )

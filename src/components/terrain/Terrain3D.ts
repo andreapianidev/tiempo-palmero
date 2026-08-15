@@ -89,16 +89,21 @@ export class Terrain3D {
    * por DEBAJO del horizonte: se enciende el sol y no aparece nada, que es
    * exactamente la queja que trajo todo esto.
    *
-   * NO HACE NADA EN TRES CASOS, y los tres son a propósito: con la 3D apagada
-   * —ahí la cámara está bloqueada en plano—, con un fondo cuyo tope no llega a
-   * enseñar el horizonte —los de GRAFCAN, 65°— y con la vista ya arriba, para no
-   * dar un tirón a quien ya estaba mirando el cielo.
+   * Y GIRA EL NORTE, porque subir no basta. Lo que se dibuja en el cielo está en
+   * UNA dirección —el sol, o el trozo de su camino que baja al horizonte— y con
+   * la cámara mirando al norte queda fuera de cuadro por el lado en vez de por
+   * arriba. Se veía igual de vacío y por un motivo distinto, que es la peor
+   * manera de no ver algo. El giro se deshace con la brújula, que aparece con la
+   * 3D encendida.
+   *
+   * NO HACE NADA EN DOS CASOS, y los dos son a propósito: con la 3D apagada
+   * —ahí la cámara está bloqueada en plano— y con un fondo cuyo tope no llega a
+   * enseñar el horizonte, los de GRAFCAN a 65°.
    */
-  skyward(): void {
+  skyward(bearingDeg: number): void {
     if (!this.on) return
     if (skyCeilingDeg(this.ceiling) <= 0) return
-    if (this.map.getPitch() >= this.ceiling - 0.5) return
-    this.map.easeTo({ pitch: this.ceiling, duration: ENTER_MS })
+    this.map.easeTo({ pitch: this.ceiling, bearing: bearingDeg, duration: ENTER_MS })
   }
 
   private enter(): void {

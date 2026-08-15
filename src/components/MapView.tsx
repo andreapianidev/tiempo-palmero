@@ -287,6 +287,18 @@ interface Props {
      * calcularlo aquí dentro sería tener dos.
      */
     track: readonly TrackPoint[]
+    /**
+     * Un contador que sube cada vez que alguien pide que la vista se ponga en
+     * condiciones de ver el cielo. No es un booleano porque no es un estado: es
+     * un empujón, y dos empujones seguidos tienen que llegar los dos.
+     */
+    nudge: number
+    /**
+     * Hacia dónde mirar cuando llegue ese empujón: el rumbo del sol si está
+     * fuera, y el de por dónde sale si es de noche. Sube desde `App` porque es
+     * quien tiene el orto calculado.
+     */
+    lookAt: number
   }
   /**
    * La vista en tres dimensiones. Es un modo aparte que se enciende, no una
@@ -1325,28 +1337,30 @@ export function MapView(props: Props) {
   }, [ready, props.sunLight.path])
 
   /**
-   * Encender algo que se dibuja EN EL CIELO sube la cámara hasta donde hay
-   * cielo.
+   * El empujón: subir la cámara hasta donde hay cielo.
    *
    * Con la inclinación de entrada —55°— el borde de arriba de la pantalla queda
-   * por debajo del horizonte: se marca la casilla del disco y no aparece nada.
-   * La cuenta y los tres casos en los que esto no hace nada están en
+   * por debajo del horizonte, así que se marca la casilla del disco y no aparece
+   * nada. La cuenta y los tres casos en los que esto no hace nada están en
    * `Terrain3D.skyward()`.
    *
-   * SOLO AL ENCENDER, y solo si lo enciende alguien: la primera vuelta no mueve
-   * nada. Si no, un ajuste guardado de la visita anterior levantaría la cámara
-   * al arrancar, que es justo lo contrario de lo que se quiere —lo primero que
-   * esta aplicación tiene que enseñar es la isla en plano, con su dato encima—.
+   * VA AQUÍ Y NO EN `App` porque la 3D y el fondo se encienden en el mismo
+   * chasquido, y hasta que React no los aplica la cámara sigue bloqueada en
+   * plano: un `skyward()` llamado dentro del manejador del interruptor no movería
+   * un grado. Este efecto corre DESPUÉS del de la vista 3D —está declarado más
+   * abajo— así que para cuando llega, el tope de inclinación ya es el nuevo.
+   *
+   * El contador arranca en cero y ese cero no hace nada: un ajuste guardado de
+   * la visita anterior no levanta la cámara al arrancar. Lo primero que esta
+   * aplicación tiene que enseñar es la isla en plano, con su dato encima.
    */
-  const skyWantedRef = useRef<boolean | null>(null)
   useEffect(() => {
-    if (!ready) return
-    const wanted = props.sunLight.disc || props.sunLight.path
-    const before = skyWantedRef.current
-    skyWantedRef.current = wanted
-    if (before === null || before || !wanted) return
-    terrainRef.current?.skyward()
-  }, [ready, props.sunLight.disc, props.sunLight.path])
+    if (!ready || props.sunLight.nudge === 0) return
+    terrainRef.current?.skyward(props.sunLight.lookAt)
+    // `lookAt` a propósito fuera de las dependencias: el rumbo cambia cada
+    // minuto y esto no es un seguimiento, es un empujón. Con él dentro, la
+    // cámara giraría sola cada vez que el sol se mueve un cuarto de grado.
+  }, [ready, props.sunLight.nudge])
 
   // --- capas GeoJSON estáticas --------------------------------------------
   useEffect(() => {

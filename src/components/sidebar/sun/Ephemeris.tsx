@@ -36,6 +36,20 @@ export function compass(deg: number): string {
   return points[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16]
 }
 
+/**
+ * De horas decimales a «13 h 10 min».
+ *
+ * SE REDONDEA A MINUTOS PRIMERO Y SE PARTE DESPUÉS. Al revés —la parte entera
+ * por un lado y el resto redondeado por otro, que era como estaba— un día de
+ * 10,9947 h se escribe «10 h 60 min». No es una hipótesis: pasa tres días de
+ * 2026 en La Palma —el 7 de febrero, el 27 de septiembre y el 3 de noviembre—,
+ * que son los que caen a menos de medio minuto de la hora entera.
+ */
+export function horasYMinutos(horas: number): string {
+  const total = Math.round(horas * 60)
+  return `${Math.floor(total / 60)} h ${total % 60} min`
+}
+
 export function Ephemeris({ sun, moon, moonPhase, day, shadows, path, light }: Props) {
   const moonUp = moon !== null && moon.elevationDeg > -2
   const horas = day.daylightHours
@@ -78,9 +92,7 @@ export function Ephemeris({ sun, moon, moonPhase, day, shadows, path, light }: P
         {path && horas !== null && (
           <tr>
             <th>Luz</th>
-            <td className="mono">
-              {Math.floor(horas)} h {Math.round((horas % 1) * 60)} min
-            </td>
+            <td className="mono">{horasYMinutos(horas)}</td>
           </tr>
         )}
         {light && (
