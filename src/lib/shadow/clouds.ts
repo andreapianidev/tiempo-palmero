@@ -35,13 +35,21 @@
  * economía — es que una nube que se ve espesa desde abajo tiene que dar una
  * sombra espesa, y con dos números distintos no lo haría.
  *
+ * CUBRE EL MAPA ENTERO Y NO EL RECUADRO DEL DEM, que es más grande de lo que
+ * parece: el modelo de elevación abarca 0,62° de longitud y el mapa se puede
+ * arrastrar por 0,95°. Calculando la mancha solo donde hay montañas, las sombras
+ * terminaban en una raya recta sobre el mar, DENTRO de lo que se ve. Una nube
+ * sobre el agua echa su sombra igual que una sobre tierra; lo que no hay fuera
+ * del DEM es relieve sobre el que aterrizar, y ahí se toma el nivel del mar,
+ * que es lo que hay.
+ *
  * NO DIBUJA NADA. Devuelve la misma malla que `terrain.ts`; quien la pinta es
  * `components/shadow/CloudShadowLayer.ts`.
  */
 
 import type { Dem } from '../dem'
 import { elevationAt } from '../dem'
-import { lonToPixelX, latToPixelY, M_PER_DEG_LAT, M_PER_DEG_LON } from '../geo'
+import { lonToPixelX, latToPixelY, MAP_BBOX, M_PER_DEG_LAT, M_PER_DEG_LON } from '../geo'
 import { EFFECTIVE_OVERLAP, type Cloud } from '../sky/scene'
 import type { SkyPosition } from '../sun'
 import { MIN_SUN_ELEVATION, type ShadowMask } from './terrain'
@@ -76,10 +84,13 @@ export function cloudShadowMask(
 ): ShadowMask | null {
   if (sun.elevationDeg <= MIN_SUN_ELEVATION || !clouds.length) return null
 
-  const width = Math.ceil(dem.width / step)
-  const height = Math.ceil(dem.height / step)
-  const metersPerCell = dem.manifest.metersPerPixel * step
   const { zoom } = dem.manifest
+  // El recuadro es el del MAPA, no el del DEM. Ver la cabecera.
+  const originX = lonToPixelX(MAP_BBOX.west, zoom)
+  const originY = latToPixelY(MAP_BBOX.north, zoom)
+  const width = Math.ceil((lonToPixelX(MAP_BBOX.east, zoom) - originX) / step)
+  const height = Math.ceil((latToPixelY(MAP_BBOX.south, zoom) - originY) / step)
+  const metersPerCell = dem.manifest.metersPerPixel * step
 
   const el = sun.elevationDeg * RAD
   const az = sun.azimuthDeg * RAD
@@ -121,8 +132,8 @@ export function cloudShadowMask(
       const hitLat = groundLat(run)
 
       // A celdas de la malla.
-      const cx = (lonToPixelX(hitLon, zoom) - dem.originX) / step
-      const cy = (latToPixelY(hitLat, zoom) - dem.originY) / step
+      const cx = (lonToPixelX(hitLon, zoom) - originX) / step
+      const cy = (latToPixelY(hitLat, zoom) - originY) / step
       const minor = puff.radiusM / metersPerCell
       const major = minor * stretch
 
@@ -158,5 +169,5 @@ export function cloudShadowMask(
     data[i] = Math.round((1 - Math.exp(-tau[i])) * 255)
   }
 
-  return { data, width, height, step, metersPerCell }
+  return { data, width, height, step, metersPerCell, originX, originY }
 }

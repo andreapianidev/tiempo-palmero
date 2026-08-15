@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Dem, DemManifest } from '../dem'
-import { pixelXToLon, pixelYToLat } from '../geo'
+import { latToPixelY, lonToPixelX, MAP_BBOX, pixelXToLon, pixelYToLat } from '../geo'
 import { EFFECTIVE_OVERLAP, type Cloud, type Puff } from '../sky/scene'
 import { cloudShadowMask } from './clouds'
 
@@ -57,6 +57,14 @@ function cloud(over: Partial<Cloud> = {}): Cloud {
   }
 }
 
+/** Dónde cae un punto del mundo en la malla que ha salido. */
+function cellOf(mask: { originX: number; originY: number; step: number }, lon: number, lat: number) {
+  return {
+    x: (lonToPixelX(lon, ZOOM) - mask.originX) / mask.step,
+    y: (latToPixelY(lat, ZOOM) - mask.originY) / mask.step,
+  }
+}
+
 /** Celda más oscura de la malla, y dónde está. */
 function darkest(mask: { data: Uint8Array; width: number }) {
   let best = -1
@@ -81,9 +89,10 @@ describe('cloudShadowMask', () => {
     const mask = cloudShadowMask(dem, [cloud()], { elevationDeg: 89.5, azimuthDeg: 180 })!
     const dark = darkest(mask)
     expect(dark.value).toBeGreaterThan(0)
-    // El centro de la malla, con una celda de margen.
-    expect(Math.abs(dark.x - mask.width / 2)).toBeLessThan(2)
-    expect(Math.abs(dark.y - mask.height / 2)).toBeLessThan(2)
+    // Justo bajo la nube, con una celda de margen.
+    const under = cellOf(mask, CENTER_LON, CENTER_LAT)
+    expect(Math.abs(dark.x - under.x)).toBeLessThan(2)
+    expect(Math.abs(dark.y - under.y)).toBeLessThan(2)
   })
 
   it('con el sol por el este la mancha se va al oeste, y a la distancia que toca', () => {
@@ -91,20 +100,22 @@ describe('cloudShadowMask', () => {
     // Nube a 1200 m de cota media, sol a 45°: la sombra cae a 1200 m al oeste.
     const mask = cloudShadowMask(dem, [cloud()], { elevationDeg: 45, azimuthDeg: 90 })!
     const dark = darkest(mask)
+    const under = cellOf(mask, CENTER_LON, CENTER_LAT)
     const cells = 1200 / mask.metersPerCell
-    expect(mask.width / 2 - dark.x).toBeGreaterThan(cells - 2)
-    expect(mask.width / 2 - dark.x).toBeLessThan(cells + 2)
+    expect(under.x - dark.x).toBeGreaterThan(cells - 2)
+    expect(under.x - dark.x).toBeLessThan(cells + 2)
     // Sin desplazarse en latitud.
-    expect(Math.abs(dark.y - mask.height / 2)).toBeLessThan(2)
+    expect(Math.abs(dark.y - under.y)).toBeLessThan(2)
   })
 
   it('con el sol por el sur la mancha se va al norte', () => {
     const dem = palmaDem()
     const mask = cloudShadowMask(dem, [cloud()], { elevationDeg: 45, azimuthDeg: 180 })!
     const dark = darkest(mask)
+    const under = cellOf(mask, CENTER_LON, CENTER_LAT)
     // Fila menor = más al norte.
-    expect(dark.y).toBeLessThan(mask.height / 2 - 2)
-    expect(Math.abs(dark.x - mask.width / 2)).toBeLessThan(2)
+    expect(dark.y).toBeLessThan(under.y - 2)
+    expect(Math.abs(dark.x - under.x)).toBeLessThan(2)
   })
 
   it('la mancha se estira en la dirección de la luz con el sol bajo', () => {
@@ -160,6 +171,26 @@ describe('cloudShadowMask', () => {
     expect(darkest(mask).value).toBeGreaterThan(240)
   })
 
+  it('cubre el recuadro del mapa y no el del modelo de elevación', () => {
+    // Es la regresión que se vio en pantalla: calculando la mancha solo donde
+    // hay DEM, las sombras terminaban en una raya recta sobre el mar, dentro de
+    // lo que se ve. El mapa se arrastra por 0,95° de longitud y el DEM abarca
+    // 0,62°.
+    const dem = palmaDem()
+    const mask = cloudShadowMask(dem, [cloud()], { elevationDeg: 45, azimuthDeg: 90 })!
+    const west = pixelXToLon(mask.originX, ZOOM)
+    const east = pixelXToLon(mask.originX + mask.width * mask.step, ZOOM)
+    const north = pixelYToLat(mask.originY, ZOOM)
+    const south = pixelYToLat(mask.originY + mask.height * mask.step, ZOOM)
+    expect(west).toBeLessThanOrEqual(MAP_BBOX.west + 1e-6)
+    expect(east).toBeGreaterThanOrEqual(MAP_BBOX.east - 1e-6)
+    expect(north).toBeGreaterThanOrEqual(MAP_BBOX.north - 1e-6)
+    expect(south).toBeLessThanOrEqual(MAP_BBOX.south + 1e-6)
+    // Y desborda el recuadro del DEM por los cuatro lados.
+    expect(west).toBeLessThan(pixelXToLon(dem.originX, ZOOM))
+    expect(east).toBeGreaterThan(pixelXToLon(dem.originX + dem.width, ZOOM))
+  })
+
   it('las motas de una nube componen una sola mancha, no un racimo de lunares', () => {
     const dem = palmaDem()
     // Tres motas separadas 500 m: con radio 600 se solapan y el hueco entre
@@ -169,8 +200,9 @@ describe('cloudShadowMask', () => {
       density: 0.7,
     })
     const mask = cloudShadowMask(dem, [c], { elevationDeg: 89.5, azimuthDeg: 180 })!
-    const row = mask.height >> 1
-    const between = mask.data[row * mask.width + (mask.width >> 1) + 2]
+    const under = cellOf(mask, CENTER_LON, CENTER_LAT)
+    const row = Math.round(under.y)
+    const between = mask.data[row * mask.width + Math.round(under.x) + 2]
     expect(between).toBeGreaterThan(60)
   })
 })

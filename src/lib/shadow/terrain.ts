@@ -56,6 +56,17 @@ export interface ShadowMask {
   step: number
   /** Metros de suelo por celda de esta malla. */
   metersPerCell: number
+  /**
+   * Esquina noroeste, en píxeles globales de Web Mercator al zoom del DEM.
+   *
+   * Va en la malla y no la deduce quien dibuja porque las dos sombras cubren
+   * recuadros distintos: la del relieve, el del modelo de elevación —fuera no
+   * hay montañas que proyecten—; la de las nubes, el del mapa entero, porque
+   * una nube sobre el mar echa su mancha igual y el recuadro del DEM se queda
+   * corto por dentro de lo que se ve.
+   */
+  originX: number
+  originY: number
 }
 
 /**
@@ -188,7 +199,15 @@ export function terrainShadow(
     cur = swap
   }
 
-  return { data, width, height, step, metersPerCell }
+  return {
+    data,
+    width,
+    height,
+    step,
+    metersPerCell,
+    originX: dem.originX,
+    originY: dem.originY,
+  }
 }
 
 /**

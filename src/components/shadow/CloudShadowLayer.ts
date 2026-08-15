@@ -155,10 +155,10 @@ export class CloudShadowLayer {
     ctx.putImageData(image, 0, 0)
 
     const { zoom } = this.dem.manifest
-    const west = pixelXToLon(this.dem.originX, zoom)
-    const east = pixelXToLon(this.dem.originX + mask.width * mask.step, zoom)
-    const north = pixelYToLat(this.dem.originY, zoom)
-    const south = pixelYToLat(this.dem.originY + mask.height * mask.step, zoom)
+    const west = pixelXToLon(mask.originX, zoom)
+    const east = pixelXToLon(mask.originX + mask.width * mask.step, zoom)
+    const north = pixelYToLat(mask.originY, zoom)
+    const south = pixelYToLat(mask.originY + mask.height * mask.step, zoom)
 
     source.updateImage({
       url: canvas.toDataURL(),

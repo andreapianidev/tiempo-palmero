@@ -159,10 +159,10 @@ export class ShadowLayer {
     // El recuadro se calcula con `width * step` píxeles del DEM y no con el
     // ancho del DEM: si el submuestreo no cabe entero, la malla sobresale, y
     // estirar la imagen sobre el recuadro del modelo la desplazaría.
-    const west = pixelXToLon(this.dem.originX, zoom)
-    const east = pixelXToLon(this.dem.originX + mask.width * mask.step, zoom)
-    const north = pixelYToLat(this.dem.originY, zoom)
-    const south = pixelYToLat(this.dem.originY + mask.height * mask.step, zoom)
+    const west = pixelXToLon(mask.originX, zoom)
+    const east = pixelXToLon(mask.originX + mask.width * mask.step, zoom)
+    const north = pixelYToLat(mask.originY, zoom)
+    const south = pixelYToLat(mask.originY + mask.height * mask.step, zoom)
 
     source.updateImage({
       url: canvas.toDataURL(),
