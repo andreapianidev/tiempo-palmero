@@ -77,17 +77,19 @@ describe('escena de nubes', () => {
   })
 
   it('tapa aproximadamente la fracción de cielo que dice el modelo', () => {
-    // Ésta es la prueba central. Se comprueba en tres coberturas repartidas
-    // porque el modelo booleano se separa de la regla ingenua «N ∝ cobertura»
-    // justo al subir: al 20 % las dos coinciden casi, al 80 % la ingenua se
-    // queda muy corta por el solape.
-    for (const cover of [20, 50, 80]) {
+    // Ésta es la prueba central. Se barre todo el rango porque el modelo
+    // booleano se separa de la regla ingenua «N ∝ cobertura» justo al subir: al
+    // 20 % las dos coinciden casi, al 80 % la ingenua se queda muy corta por el
+    // solape.
+    for (const cover of [10, 20, 50, 80, 95]) {
       const clouds = buildCloudScene(uniform(cover), BAND, 7)
       const measured = measuredCover(clouds)
-      // Tolerancia de 10 puntos: las motas de una nube no llenan su disco
-      // entero —se reparten en una cúpula— así que lo dibujado queda algo por
-      // debajo del disco teórico, y el muestreo tiene su propio ruido.
-      expect(Math.abs(measured * 100 - cover)).toBeLessThan(10)
+      // Cinco puntos de tolerancia. Empezó en diez, con el argumento de que las
+      // motas no llenan su disco entero; luego se midió de verdad —ver
+      // `PUFF_SPREAD` en `scene.ts`, con la tabla— y el peor caso real quedó en
+      // 2,9. Diez puntos dejaban pasar el error de doce que metió el cambio a
+      // motas de dos tamaños, así que la tolerancia era el agujero.
+      expect(Math.abs(measured * 100 - cover)).toBeLessThan(5)
     }
   })
 
@@ -103,10 +105,10 @@ describe('escena de nubes', () => {
 
   it('no se pasa del tope de motas ni con el cielo cerrado', () => {
     // El tope de coste existe para que un dato absurdo no cuelgue la pestaña.
-    // 12 480 es el peor caso declarado en `scene.ts` sumando los tres estratos;
-    // aquí solo hay estrato bajo, así que tiene que quedar muy por debajo.
+    // 15 480 es el peor caso declarado en `scene.ts` sumando los tres estratos;
+    // aquí solo hay estrato bajo, así que su parte son 320 nubes × 30 motas.
     const clouds = buildCloudScene(uniform(100), BAND, 5)
-    expect(puffCount(clouds)).toBeLessThanOrEqual(320 * 22)
+    expect(puffCount(clouds)).toBeLessThanOrEqual(320 * 30)
   })
 
   it('la misma semilla da exactamente la misma escena', () => {
@@ -127,6 +129,65 @@ describe('escena de nubes', () => {
     for (const c of clouds.filter((x) => x.etage === 'low')) {
       expect(c.base).toBe(900)
       expect(c.top).toBe(1400)
+    }
+  })
+
+  it('las motas de una nube no comparten fase de hervido', () => {
+    // Es donde está todo el efecto: con una fase común, la nube entera se
+    // balancearía en bloque, que es justo el defecto de calcomanía arrastrada
+    // que el hervido viene a arreglar, solo que con más pasos.
+    const cloud = buildCloudScene(uniform(40), BAND, 4)[0]
+    const fases = new Set(cloud.puffs.map((p) => p.phase.toFixed(4)))
+    expect(fases.size).toBeGreaterThan(cloud.puffs.length * 0.8)
+    for (const p of cloud.puffs) {
+      expect(p.phase).toBeGreaterThanOrEqual(0)
+      expect(p.phase).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('mezcla dos tamaños de mota, y las pequeñas van por fuera', () => {
+    // Una nube con todas las motas iguales se lee como un racimo de bolas y el
+    // ojo las cuenta. Lo que la convierte en nube es la mezcla de escalas, con
+    // el grano fino en el borde, que es donde lo produce el rozamiento con el
+    // aire seco de alrededor.
+    const cloud = buildCloudScene(uniform(40), BAND, 11)[0]
+    const radios = cloud.puffs.map((p) => p.radiusM).sort((a, b) => a - b)
+    // La más gorda al menos duplica a la más fina: hay dos escalas de verdad.
+    expect(radios[radios.length - 1]).toBeGreaterThan(radios[0] * 2)
+
+    const media = radios.reduce((a, b) => a + b, 0) / radios.length
+    const finas = cloud.puffs.filter((p) => p.radiusM < media)
+    const gordas = cloud.puffs.filter((p) => p.radiusM >= media)
+    const dist = (ps: typeof cloud.puffs) =>
+      ps.reduce((a, p) => a + Math.hypot(p.dx, p.dy), 0) / ps.length
+    expect(dist(finas)).toBeGreaterThan(dist(gordas))
+  })
+
+  it('la nube se queda, de media, dentro del radio que dice tener', () => {
+    // Es lo que mantiene honesta la cuenta de nubes: el modelo booleano promete
+    // discos de radio R, y si cada nube pintara bastante más que eso taparía más
+    // cielo del que el modelo ha dicho. Ver `PUFF_SPREAD`.
+    //
+    // Se mide sobre la MEDIA y sobre el máximo, no exigiendo que ninguna mota
+    // pase de R. Un tope duro por mota sería un test equivocado: la mota crece a
+    // propósito con el aplanado, para que un cielo cubierto cierre sin agujeros,
+    // así que las de fuera SÍ sobresalen y tienen que hacerlo. Medido, el
+    // alcance de una mota en unidades de R:
+    //
+    //   cobertura 10 % → media 0,78 · p90 1,02 · máx 1,20
+    //   cobertura 95 % → media 0,89 · p90 1,17 · máx 1,36
+    //
+    // Lo que no puede pasar es que la MEDIA se vaya por encima de R, porque
+    // entonces la nube entera sería más grande que su disco y la cobertura
+    // dibujada dejaría de ser la que el modelo dijo.
+    for (const cover of [10, 60, 95]) {
+      const clouds = buildCloudScene(uniform(cover), BAND, 21)
+      const reach = clouds.flatMap((c) =>
+        c.puffs.map((p) => (Math.hypot(p.dx, p.dy) + p.radiusM) / c.radiusM),
+      )
+      const media = reach.reduce((a, b) => a + b, 0) / reach.length
+      expect(media).toBeLessThan(1)
+      expect(Math.max(...reach)).toBeLessThan(1.45)
     }
   })
 

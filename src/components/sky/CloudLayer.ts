@@ -80,6 +80,48 @@ const EFFECTIVE_OVERLAP = 5
 const BASE_SHADE: Record<Cloud['etage'], number> = { low: 0.45, mid: 0.32, high: 0.1 }
 
 /**
+ * El hervido: cuánto se mueve cada mota alrededor de su sitio, y a qué ritmo.
+ *
+ * POR QUÉ EXISTE. Una nube arrastrada rígida por el viento se lee como una
+ * calcomanía deslizándose sobre el mapa: la silueta no cambia nunca y el ojo lo
+ * nota enseguida, aunque no sepa decir qué falla. Un cúmulo real tiene
+ * circulación interna —el aire sube por el centro, se desborda por la cima y
+ * baja por los lados— y lo que se ve desde fuera son lóbulos que crecen y se
+ * deshacen mientras la masa entera se desplaza.
+ *
+ * Esto NO es un modelo de esa circulación: es una oscilación de dos senos
+ * desfasados por mota. Es dibujo, y de los descarados. Lo que sí está tomado de
+ * la realidad son las dos escalas:
+ *
+ *   - **AMPLITUD**, el 9 % del radio de la nube. Suficiente para que los lóbulos
+ *     cambien de sitio unos respecto a otros; poco para que la nube no se
+ *     deforme como gelatina ni se salga de la celda de 5 km que la sostiene.
+ *   - **PERIODO**, entre 34 y 90 s según la mota (el reparto lo pone su fase).
+ *     El ciclo de renovación de un cúmulo se cuenta en minutos, pero lo que se
+ *     ve hervir en su borde va mucho más rápido. Por debajo de ~20 s la nube
+ *     vibra, que es peor que estarse quieta; por encima de ~2 min no se aprecia
+ *     movimiento en el tiempo que alguien mira el mapa.
+ *
+ * Las motas de una misma nube NO comparten fase, y ahí está todo el efecto: si
+ * la compartieran, la nube entera se balancearía en bloque —que es exactamente
+ * el defecto que esto viene a arreglar, solo que con más pasos.
+ */
+const BILLOW_AMPLITUDE = 0.09
+const BILLOW_PERIOD_MIN_S = 34
+const BILLOW_PERIOD_MAX_S = 90
+
+/**
+ * Cuánto de ese movimiento es vertical, respecto al horizontal.
+ *
+ * 0,45. La base de una nube es un NIVEL —la cota a la que el aire condensa, que
+ * es la que `decks.ts` calcula— y no un capricho: si las motas subieran y
+ * bajaran tanto como se mueven de lado, la capa dejaría de tener una base
+ * reconocible y se perdería lo que hace legible un mar de nubes, que es
+ * precisamente su corte horizontal contra la ladera.
+ */
+const BILLOW_VERTICAL = 0.45
+
+/**
  * Qué fracción de la nube, desde la base, participa del oscurecimiento.
  *
  * 0,55: la mitad de abajo larga. Por encima de esa altura la mota se dibuja
@@ -202,6 +244,22 @@ export class CloudLayer implements CustomLayerInterface {
    */
   private puffOrder: number[] = []
   private puffDepth: number[] = []
+  /** Desplazamiento del hervido de cada mota, y su pulso de tamaño. */
+  private puffDx: number[] = []
+  private puffDy: number[] = []
+  private puffDz: number[] = []
+  private puffScale: number[] = []
+  /**
+   * Segundos desde que la capa existe. Es el reloj del hervido.
+   *
+   * Se acumula a partir de `dt` en vez de leer `performance.now()` directamente
+   * porque `dt` ya viene acotado por `MAX_DT`: con una pestaña en segundo plano
+   * durante media hora, el reloj absoluto habría dado un salto de 1800 s y las
+   * nubes habrían aparecido con una forma sin ninguna relación con la que
+   * tenían. Acumulando, el hervido se congela mientras nadie mira y continúa por
+   * donde iba, que es lo mismo que ya hace la deriva.
+   */
+  private clockS = 0
 
   setScene(clouds: Cloud[]): void {
     this.clouds = clouds
@@ -280,6 +338,7 @@ export class CloudLayer implements CustomLayerInterface {
     const now = performance.now()
     const dt = this.lastFrame ? Math.min(MAX_DT, (now - this.lastFrame) / 1000) : 0.016
     this.lastFrame = now
+    this.clockS += dt
 
     driftClouds(this.clouds, dt)
 
@@ -380,16 +439,38 @@ export class CloudLayer implements CustomLayerInterface {
       // la escena juntas: veintidós elementos se ordenan en log₂22 ≈ 4,5
       // comparaciones por elemento, contra las 11 de un montón de dos mil.
       const puffs = c.puffs
+      // El hervido, resuelto una sola vez por mota y por fotograma. Tiene que
+      // entrar ANTES de medir la profundidad: si se ordenara por la posición
+      // quieta y luego se dibujara en la movida, el orden de mezcla sería el de
+      // otra escena y volverían los artefactos que ordenar vino a quitar.
+      const amp = BILLOW_AMPLITUDE * c.radiusM
       // Se ajusta la longitud en vez de cortar con `slice`, que crearía un array
       // por nube y por fotograma y dejaría sin sentido tener el búfer aquí.
       this.puffOrder.length = puffs.length
       for (let k = 0; k < puffs.length; k++) {
         const p = puffs[k]
+        const ph = p.phase * Math.PI * 2
+        // Cada mota lleva su propio periodo dentro de la banda. Con uno solo,
+        // toda la escena late a compás y se lee como un latido, no como aire.
+        const w =
+          (Math.PI * 2) /
+          (BILLOW_PERIOD_MIN_S + p.phase * (BILLOW_PERIOD_MAX_S - BILLOW_PERIOD_MIN_S))
+        // Los tres ejes con frecuencias distintas y primas entre sí de hecho: si
+        // compartieran una, la mota describiría un círculo o una recta, que se
+        // reconocen enseguida. Así el recorrido no se repite a la vista.
+        const t = this.clockS
+        this.puffDx[k] = amp * Math.sin(t * w + ph)
+        this.puffDy[k] = amp * Math.cos(t * w * 0.83 + ph * 1.7)
+        this.puffDz[k] = amp * BILLOW_VERTICAL * Math.sin(t * w * 1.21 + ph * 2.3)
+        // Y la mota respira de tamaño: un lóbulo que crece y se deshace. Es lo
+        // que impide que la silueta, aun moviéndose, sea siempre la misma.
+        this.puffScale[k] = 1 + 0.14 * Math.sin(t * w * 0.7 + ph * 3.1)
+
         this.puffDepth[k] = clipW(
           matrix,
-          mercatorX(c.lon + p.dx / mPerDegLon),
-          mercatorY(lat + p.dy / 110_574),
-          mercatorZ((c.base + p.h * thickness) * this.exaggeration, lat),
+          mercatorX(c.lon + (p.dx + this.puffDx[k]) / mPerDegLon),
+          mercatorY(lat + (p.dy + this.puffDy[k]) / 110_574),
+          mercatorZ((c.base + p.h * thickness + this.puffDz[k]) * this.exaggeration, lat),
         )
         this.puffOrder[k] = k
       }
@@ -398,9 +479,9 @@ export class CloudLayer implements CustomLayerInterface {
 
       for (const pi of this.puffOrder) {
         const p = puffs[pi]
-        const lon = c.lon + p.dx / mPerDegLon
-        const plat = lat + p.dy / 110_574
-        const alt = c.base + p.h * thickness
+        const lon = c.lon + (p.dx + this.puffDx[pi]) / mPerDegLon
+        const plat = lat + (p.dy + this.puffDy[pi]) / 110_574
+        const alt = c.base + p.h * thickness + this.puffDz[pi]
 
         out[n++] = mercatorX(lon)
         out[n++] = mercatorY(plat)
@@ -409,7 +490,7 @@ export class CloudLayer implements CustomLayerInterface {
         // capa personalizada. Sin esto, a 1,5× la Cumbre atravesaría una manta
         // que se habría quedado a su altura real.
         out[n++] = mercatorZ(alt * this.exaggeration, plat)
-        out[n++] = p.radiusM
+        out[n++] = p.radiusM * this.puffScale[pi]
         out[n++] = puffAlpha
         // La sombra NO cae linealmente con la altura dentro de la nube: solo
         // oscurece el tercio de abajo, y de ahí para arriba la mota está

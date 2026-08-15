@@ -1473,8 +1473,17 @@ azar sobre un área `A`, la fracción de suelo que tapan es `1 − exp(−λ·π
 tapa un 40 % del cielo **contando el solape**, que es lo que hace que la regla
 ingenua `N ∝ c` se quede corta en cuanto se pasa de la mitad. Hay una prueba que
 lo mide por Monte Carlo —tira 4000 puntos y cuenta en cuántos cae una mota— y
-comprueba que lo dibujado cae a menos de 10 puntos de lo que el modelo dijo, al
-20 %, al 50 % y al 80 %.
+comprueba que lo dibujado cae a menos de **cinco puntos** de lo que el modelo
+dijo, barriendo el 10, el 20, el 50, el 80 y el 95 %. Medido, el peor caso real
+es de 2,9 puntos, y se queda corto por abajo y largo por arriba:
+
+| pedido | 10 % | 20 % | 50 % | 80 % | 95 % |
+|---|---|---|---|---|---|
+| dibujado | 8,4 % | 17,2 % | 48,4 % | 81,3 % | 97,4 % |
+
+Esa tolerancia empezó en diez puntos y era el agujero: cuando las motas pasaron
+a tener dos tamaños, el error real se fue a doce y el test no se enteró. Ahora
+está en cinco, que es lo que la geometría sostiene de verdad.
 
 Y el radio crece con la cobertura, que es la otra mitad de la idea: un cielo al
 10 % son cúmulos sueltos de buen tiempo y uno al 95 % es una **manta**, que es lo
@@ -1533,11 +1542,28 @@ hace que se lea como una cortina que cuelga y no como lluvia de videojuego. Cada
 hilo conoce la cota del terreno bajo él —el mismo DEM que sombrea el mapa— y
 muere al alcanzarla, para que no se vea llover por dentro de la montaña.
 
-**Cómo se dibuja.** Cada nube es un racimo de motas y cada mota es un punto de
+**Las nubes hierven, no solo se desplazan.** Una masa arrastrada rígida por el
+viento se lee como una calcomanía deslizándose sobre el mapa: la silueta no
+cambia nunca y el ojo lo nota, aunque no sepa decir qué falla. Un cúmulo real
+tiene circulación interna —el aire sube por el centro, se desborda por la cima y
+baja por los lados— y lo que se ve desde fuera son lóbulos que crecen y se
+deshacen. Cada mota oscila alrededor de su sitio con una fase propia y estable,
+un 9 % del radio de la nube, con periodos repartidos entre 34 y 90 s. No es un
+modelo de esa circulación —es dibujo, y del descarado—, pero las escalas están
+tomadas de lo real: por debajo de ~20 s la nube vibra en vez de hervir, y por
+encima de ~2 min no se aprecia movimiento en el rato que alguien mira el mapa.
+Las motas de una misma nube **no** comparten fase; si la compartieran, la nube se
+balancearía en bloque, que es el mismo defecto con más pasos.
+
+**Cómo se dibuja.** Cada nube es un racimo de motas de dos tamaños —un cuerpo
+grande y un grano fino hacia el borde, que es la mezcla de escalas que distingue
+una nube de un montón de esferas— y cada mota es un punto de
 `gl.POINTS` al que el fragmento le inventa la normal de una esfera: en el centro
 mira a la cámara, en el borde apunta hacia afuera. Con esa normal se ilumina como
 se iluminaría una esfera —el truco del *impostor*—, y miles de esferas solapadas
-leen como una masa con relieve. La luz **no está falseada**: la dirección del sol
+leen como una masa con relieve. Cuando el sol queda **detrás** de la nube, sus
+bordes se encienden: es el ribete de plata, la luz que atraviesa la parte delgada
+de la masa y sale dispersada hacia adelante. La luz **no está falseada**: la dirección del sol
 sale de su posición astronómica real y se pasa a los ejes de la cámara con el
 rumbo y la inclinación del mapa, lo cual es exacto para una luz direccional. Se
 gire el mapa como se gire, las nubes se encienden por la cara que da al sol.
@@ -1548,6 +1574,16 @@ cortada por las paredes de la Caldera por donde las corta de verdad, y los picos
 de más de 1600 m asoman por encima. Cuando la base de la capa cae por debajo del
 terreno, eso que se ve pegado a la ladera es exactamente lo que en la isla se
 llama niebla.
+
+**Encenderla inclina la cámara.** Es la misma regla que ya sigue el interruptor
+del mar, que se lleva el fondo al satélite porque sobre la carta topográfica no
+se dibujaría: un interruptor que no hace nada es peor que uno que hace de más.
+Aquí la razón es más fuerte todavía — en plano, una nube a 1200 m y el terreno
+que tiene debajo caen en el mismo píxel, y se pierde justo lo que distingue a
+esta capa de una textura: que la nube está a una altura, que la Cumbre la corta y
+que las cimas de más de 1600 m asoman por encima. Apagarla no devuelve la vista
+al plano: para entonces quien mira ya ha visto la isla en relieve y puede querer
+quedarse ahí.
 
 No pide nada mientras está apagada, que es como llega: son 70 puntos con once
 variables cada uno.

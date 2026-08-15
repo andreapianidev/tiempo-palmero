@@ -119,11 +119,30 @@ void main() {
   vec3 night = vec3(0.13, 0.16, 0.24) * (0.55 + 0.45 * v_shade);
   c = mix(night, c, u_day);
 
-  // El borde se deshace y el centro es macizo. smoothstep invertido: opaco
-  // hasta el 45 % del radio y desvanecido de ahí al borde. Un borde duro
-  // convierte la masa en un montón de bolas contables.
   float r = sqrt(r2);
-  float edge = 1.0 - smoothstep(0.45, 1.0, r);
+
+  // EL RIBETE DE PLATA. Cuando el sol está DETRÁS de la nube respecto a quien
+  // mira, sus bordes se encienden: la luz atraviesa la parte delgada de la masa
+  // y sale dispersada hacia adelante. Es el mismo fenómeno por el que una hoja a
+  // contraluz brilla por el canto, y es de las cosas más reconocibles de una
+  // nube de verdad — de las que se echan en falta sin saber decir qué falta.
+  //
+  // u_sunDir.z es la componente hacia el observador: negativa quiere decir que
+  // el sol está al otro lado. Y el ribete solo existe donde la masa es delgada,
+  // o sea en el borde del impostor, que es lo que pone el smoothstep del radio.
+  float backlit = max(0.0, -u_sunDir.z);
+  c += vec3(1.0, 0.97, 0.90) * backlit * smoothstep(0.35, 1.0, r) * 0.8 * u_day;
+
+  // El borde se deshace. Dónde empieza a deshacerse es el único mando que hay
+  // entre dos defectos opuestos, y los dos se han visto:
+  //
+  //   - al 45 %, con el núcleo macizo hasta casi la mitad, cada mota se lee como
+  //     una BOLA y la nube sale como un puñado de bolas contables;
+  //   - al 25 % se funden bien pero la masa pierde el contorno y queda como un
+  //     algodón deshilachado, más niebla suspendida que cúmulo.
+  //
+  // 0,35 es donde se ven los lóbulos sin ver las bolas.
+  float edge = 1.0 - smoothstep(0.35, 1.0, r);
   // Un pelo de variación por mota, para que dos motas superpuestas no den
   // exactamente el mismo tono y la masa no se vea plana.
   float a = edge * v_alpha * (0.92 + 0.16 * v_seed);

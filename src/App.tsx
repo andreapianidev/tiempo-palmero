@@ -695,7 +695,27 @@ export default function App() {
         deck={deck}
         sky={sky}
         sky3dOn={sky3dOn}
-        onSky3d={() => setSky3dOn((v) => !v)}
+        /*
+          Encenderla inclina la cámara, y es la misma regla que ya sigue el
+          interruptor del mar —que se lleva el fondo al satélite porque sobre la
+          carta topográfica no se dibujaría—: un interruptor que no hace nada es
+          peor que uno que hace de más.
+
+          Aquí la razón es más fuerte todavía. En plano, una nube a 1200 m y el
+          terreno que tiene debajo caen en el mismo píxel: se ve una mancha
+          blanca sobre el mapa y se pierde justo lo que distingue a esta capa de
+          una textura —que la nube está A UNA ALTURA, que la Cumbre la corta y
+          que las cimas de más de 1600 m asoman por encima—. Sin inclinar la
+          cámara, la mitad de la función no se ve.
+
+          Apagarla NO devuelve la vista al plano: para entonces quien mira ya ha
+          visto la isla en relieve y puede querer quedarse ahí. Deshacer un
+          cambio que quizá le guste es tan molesto como no hacerlo.
+        */
+        onSky3d={() => {
+          if (!sky3dOn) setTerrain((s) => ({ ...s, on: true }))
+          setSky3dOn((v) => !v)
+        }}
         vapor={{
           field: vaporField,
           breath,

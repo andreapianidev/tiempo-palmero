@@ -118,10 +118,11 @@ export class RainDrops {
       if (cloud.precipMm <= 0) continue
       const share = Math.min(1, cloud.precipMm / FULL_INTENSITY_MM)
       // El radio bajo el que cae es el de la nube: la cortina tiene la anchura
-      // de lo que hay encima, no una anchura de catálogo.
-      let radiusM = 0
-      for (const p of cloud.puffs) radiusM = Math.max(radiusM, Math.hypot(p.dx, p.dy))
-      this.sources.push({ cloud, radiusM: Math.max(300, radiusM), share })
+      // de lo que hay encima, no una anchura de catálogo. Viene en la propia
+      // nube; antes se deducía recorriendo las motas y buscando la más lejana,
+      // que daba un radio distinto —el del reparto que le tocara— para nubes
+      // que el modelo había hecho del mismo tamaño.
+      this.sources.push({ cloud, radiusM: Math.max(300, cloud.radiusM), share })
       this.totalShare += share
     }
     // Las que ya estaban cayendo se apagan: pertenecían a nubes de la escena

@@ -50,6 +50,20 @@ export interface Puff {
   radiusM: number
   /** Semilla estable, 0-1. Rompe la regularidad en el sombreado. */
   seed: number
+  /**
+   * Fase del hervido, 0-1. Estable durante toda la vida de la mota.
+   *
+   * Una nube no se traslada rígida: hierve. Los cúmulos tienen circulación
+   * interna —el aire sube por el centro, se desborda por arriba y baja por los
+   * lados— y a la vista eso son lóbulos que crecen y se deshacen mientras la
+   * masa entera se desplaza. Sin nada de esto la escena se movía como una
+   * calcomanía arrastrada por el viento, que es lo que delataba que no era real.
+   *
+   * Va aquí y no en la capa porque tiene que ser ESTABLE: si la fase se sorteara
+   * en cada fotograma, las motas no hervirían, temblarían. Quien la usa para
+   * animar es `CloudLayer`, que es donde vive el reloj.
+   */
+  phase: number
 }
 
 export interface Cloud {
@@ -60,6 +74,12 @@ export interface Cloud {
   /** Cota de la base y de la cima, m. De `decks.ts`. */
   base: number
   top: number
+  /**
+   * Radio de la nube, m. Es la escala de la que cuelgan las dos cosas que la
+   * necesitan y que si no tendrían que deducirla recorriendo las motas: la
+   * amplitud del hervido y la anchura de la cortina de lluvia.
+   */
+  radiusM: number
   puffs: Puff[]
   /** Lluvia bajo esta nube, mm/h. Solo el estrato bajo puede tenerla. */
   precipMm: number
@@ -90,8 +110,69 @@ const BASE_RADIUS_M: Record<Etage, number> = { low: 2600, mid: 3400, high: 5200 
  */
 const RADIUS_GROWTH = 2
 
-/** Motas por nube. Dibujo: más motas es una silueta más rica y más coste. */
-const PUFFS_PER_CLOUD: Record<Etage, number> = { low: 22, mid: 16, high: 12 }
+/**
+ * Motas por nube. Dibujo: más motas es una silueta más rica y más coste.
+ *
+ * El estrato bajo tiene más que los otros dos porque es el que se mira de cerca
+ * —es el que corta la Cumbre y el que tapa un pueblo— y porque desde que las
+ * motas van a dos tamaños (ver `DETAIL_EVERY`) hace falta cupo para las dos
+ * cosas: el cuerpo de la nube y el grano de su borde.
+ */
+const PUFFS_PER_CLOUD: Record<Etage, number> = { low: 30, mid: 18, high: 12 }
+
+/**
+ * Una de cada cuántas motas es de DETALLE en vez de cuerpo.
+ *
+ * Una nube con todas las motas del mismo tamaño se lee como un racimo de bolas
+ * iguales, y el ojo las cuenta. Un cúmulo real tiene una estructura grande y
+ * encima un grano fino de lóbulos pequeños, y esa mezcla de escalas es
+ * literalmente lo que hace que parezca una nube y no un montón de esferas.
+ *
+ * Una de cada tres, y las de detalle van HACIA EL BORDE de la cúpula —que es
+ * donde están en una nube de verdad, porque el grano fino lo produce el
+ * rozamiento con el aire seco de alrededor, no el interior de la masa.
+ *
+ * Hacia el borde, no EN el borde, y son dos cosas distintas: empujadas del todo
+ * hacia afuera (`rand^0,35`) y con la mitad de radio que el cuerpo, las motas de
+ * detalle salían como una salpicadura de puntos sueltos alrededor de la nube —
+ * grano, sí, pero grano que no tocaba nada—. Con `rand^0,5` y algo más gordas se
+ * apoyan en el cuerpo de la masa y hacen lo que tenían que hacer: romperle el
+ * contorno en lóbulos en vez de rodearla de confeti.
+ */
+const DETAIL_EVERY = 3
+
+/**
+ * Cuánto del radio de la nube ocupa el reparto de sus motas.
+ *
+ * NO es un ajuste estético: es lo que mantiene honesta la cuenta de nubes. El
+ * modelo booleano reparte discos de radio R y promete que taparán la fracción
+ * que dice el modelo, pero eso solo se cumple si cada nube pinta un disco de
+ * radio R —ni más ni menos—. Una mota centrada justo en el borde y con radio
+ * propio de 0,38 R alarga la nube hasta 1,38 R, y con eso el área pintada se va
+ * a casi el doble de la prometida.
+ *
+ * Medido con la prueba de Monte Carlo de `scene.test.ts` justo después de subir
+ * las motas de 22 a 30 y meter las de detalle: pidiendo 50 % se dibujaba un
+ * 61,4 %, y pidiendo 80 % un 92,1 %. Doce puntos de más en mitad del rango, que
+ * es exactamente la clase de error que esta capa no puede permitirse — la cifra
+ * del panel diría una cosa y el mapa enseñaría otra.
+ *
+ * Con 0,76 vuelve a cuadrar. Medido con la misma prueba, pidiendo y dibujando:
+ *
+ *   | pedido | dibujado | error |
+ *   |--------|----------|-------|
+ *   | 10 %   | 8,4 %    | −1,6  |
+ *   | 20 %   | 17,1 %   | −2,9  |
+ *   | 50 %   | 48,3 %   | −1,8  |
+ *   | 80 %   | 80,9 %   | +0,9  |
+ *   | 95 %   | 97,4 %   | +2,4  |
+ *
+ * Queda por debajo en la mitad baja del rango y por encima arriba, y ninguna de
+ * las dos desviaciones llega a tres puntos. El pequeño defecto por abajo es el
+ * lado correcto en el que equivocarse: una nube dibujada de menos deja ver la
+ * isla, una de más la tapa afirmando algo que el modelo no ha dicho.
+ */
+const PUFF_SPREAD = 0.76
 
 /**
  * Tope de nubes por estrato.
@@ -101,7 +182,7 @@ const PUFFS_PER_CLOUD: Record<Etage, number> = { low: 22, mid: 16, high: 12 }
  * tope está en 320. Existe para que un dato absurdo —una cobertura corrupta,
  * un `NaN` que se cuele— no pueda pedir cien mil motas y colgar la pestaña.
  *
- * En el peor caso los tres estratos suman 12 480 motas, del orden de las 14 000
+ * En el peor caso los tres estratos suman 15 480 motas, del orden de las 14 000
  * partículas que ya mueve la capa de vapor sin despeinarse.
  */
 const MAX_CLOUDS: Record<Etage, number> = { low: 320, mid: 220, high: 160 }
@@ -181,10 +262,13 @@ function buildPuffs(etage: Etage, radiusM: number, flat: number, rand: () => num
   const count = PUFFS_PER_CLOUD[etage]
   const puffs: Puff[] = []
   for (let i = 0; i < count; i++) {
+    const detail = i % DETAIL_EVERY === 0
     // `^0.7` en vez de `√`: concentra un poco hacia el centro, que es donde el
     // cúmulo tiene cuerpo. Con raíz cuadrada el reparto es uniforme en área y
     // la nube sale igual de densa en el borde que en el medio, como una galleta.
-    const r = radiusM * Math.pow(rand(), 0.7)
+    // Las de detalle van al revés, empujadas hacia afuera: `^0.35` las lleva al
+    // borde, que es donde el grano fino existe.
+    const r = radiusM * PUFF_SPREAD * Math.pow(rand(), detail ? 0.5 : 0.7)
     const theta = rand() * Math.PI * 2
     const rel = r / radiusM
     const dome = Math.sqrt(Math.max(0, 1 - rel * rel))
@@ -196,8 +280,13 @@ function buildPuffs(etage: Etage, radiusM: number, flat: number, rand: () => num
       dy: Math.sin(theta) * r,
       h: Math.min(1, 0.12 + 0.88 * rand() * shape),
       // Las motas engordan con el aplanado para que la manta cierre sin huecos.
-      radiusM: radiusM * (0.26 + 0.2 * rand()) * (1 + 0.45 * flat),
+      // Las de detalle son la mitad de grandes: son el grano, no el cuerpo.
+      radiusM:
+        radiusM *
+        (detail ? 0.16 + 0.09 * rand() : 0.26 + 0.17 * rand()) *
+        (1 + 0.45 * flat),
       seed: rand(),
+      phase: rand(),
     })
   }
   return puffs
@@ -259,6 +348,7 @@ function placeEtage(
       etage,
       base: deck.base,
       top: deck.top,
+      radiusM,
       puffs: buildPuffs(etage, radiusM, local, rand),
       precipMm: precipMm >= RAIN_MIN_MM ? precipMm : 0,
       // La nube que llueve es más densa y más oscura por debajo: no es un
