@@ -260,7 +260,8 @@ public class TiempoPalmero : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
-        PrivateDependencyModuleNames.AddRange(new string[] { "TPJs", "TPGeo", "TPAtmo" });
+        // Los módulos TPJs/TPGeo/TPAtmo se añaden aquí en sus tareas (5, 8, 11):
+        // PrivateDependencyModuleNames.AddRange(new string[] { "TPJs", "TPGeo", "TPAtmo" });
     }
 }
 ```
@@ -683,6 +684,10 @@ for (const f of ['weather-snapshot.json']) {
   const src = join(root, 'src', 'lib', '__fixtures__', f)
   if (existsSync(src)) copyFileSync(src, join(fxDir, f))
 }
+// El golden lo generan `npm run desktop:golden` y el test de paridad de UE
+// (Task 7) lo lee desde aquí. Copiarlo también si ya existe.
+const golden = join(root, 'desktop', 'Tests', 'golden-interpolation.json')
+if (existsSync(golden)) copyFileSync(golden, join(fxDir, 'golden-interpolation.json'))
 console.log('bundle listo:', join(outDir, 'core.bundle.js'))
 ```
 
@@ -1026,6 +1031,13 @@ En `"Modules"` añadir:
 
 ```json
 { "Name": "TPJs", "Type": "Runtime", "LoadingPhase": "Default" }
+```
+
+Y en `desktop/Source/TiempoPalmero/TiempoPalmero.Build.cs`, sustituir la línea
+comentada por la dependencia real:
+
+```csharp
+PrivateDependencyModuleNames.AddRange(new string[] { "TPJs" });
 ```
 
 - [ ] **Step 8: Compilar y pasar el test**
@@ -1504,6 +1516,7 @@ bool FTPGeoEscala::RunTest(const FString& Parameters)
 - [ ] **Step 5: Registrar TPGeo en el uproject**
 
 En `"Modules"`: `{ "Name": "TPGeo", "Type": "Runtime", "LoadingPhase": "Default" }`.
+Y en `TiempoPalmero.Build.cs`: `PrivateDependencyModuleNames.AddRange(new string[] { "TPJs", "TPGeo" });`
 
 - [ ] **Step 6: Ejecutar tests y commit**
 
@@ -2027,6 +2040,11 @@ public class TPAtmo : ModuleRules
     }
 }
 ```
+
+Registrar el módulo en `"Modules"` del uproject:
+`{ "Name": "TPAtmo", "Type": "Runtime", "LoadingPhase": "Default" }`.
+Y en `TiempoPalmero.Build.cs`:
+`PrivateDependencyModuleNames.AddRange(new string[] { "TPJs", "TPGeo", "TPAtmo" });`
 
 - [ ] **Step 2: `desktop/Source/TPAtmo/ASunController.h`**
 
