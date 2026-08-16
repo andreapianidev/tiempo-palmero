@@ -10,10 +10,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   CALIMA_ONSET,
+  FORWARD_SCATTER_STRENGTH,
   NIGHT_OPACITY,
   calimaFactor,
   clearSkyIrradiance,
   clearnessIndex,
+  forwardScatterGlow,
   oceanLight,
   seaOpacity,
   surfaceLight,
@@ -203,6 +205,62 @@ describe('el color del agua', () => {
     expect(r).toBeCloseTo(0.618, 1)
     expect(g).toBeCloseTo(0.678, 1)
     expect(b).toBeCloseTo(0.772, 1)
+  })
+})
+
+/**
+ * EL BRILLO SEGÚN HACIA DÓNDE SE MIRA.
+ *
+ * El agua no es una lámina: mirando hacia el sol la luz viaja por la columna
+ * y sale hacia la cámara, y el bajío se enciende; dándole la espalda, no
+ * cambia nada. Las dos orillas que importan: que hacia el sol SE NOTE —si no,
+ * no existe el efecto— y que de espaldas, de noche o en mar abierto NO TOQUE
+ * nada —si no, se está pintando un brillo que el agua de verdad no tiene.
+ */
+describe('el brillo hacia el sol', () => {
+  /** Luminancia Rec. 709, la misma cuenta que el resto del fichero. */
+  const lum = (c: readonly number[]) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+  it('hacia el sol el bajío se enciende, y sin reventar', () => {
+    const light = oceanLight(NOON, LON, LAT)
+    const { shallow } = waterColors(light)
+    const boost = forwardScatterGlow(1, 1, light.sunIntensity)
+    expect(boost).toBe(FORWARD_SCATTER_STRENGTH)
+    const lumBoost = boost * lum(shallow)
+    // Medido contra el color del agua de aquí: la luminancia del bajío sube
+    // un 40 %, que se nota —el suelo es la mitad de eso— y no dobla el agua.
+    expect(lumBoost / lum(shallow)).toBeCloseTo(0.4, 1)
+    expect(lumBoost).toBeGreaterThan(0.05)
+    expect(lumBoost).toBeLessThan(0.6 * lum(shallow))
+  })
+
+  it('de espaldas al sol no toca nada, ni a plomo, ni de noche', () => {
+    // La orilla que no se ve: el efecto no puede existir donde el agua de
+    // verdad no lo tiene. Cero en los tres casos.
+    expect(forwardScatterGlow(0, 1, 1)).toBe(0)
+    expect(forwardScatterGlow(-0.8, 1, 1)).toBe(0)
+    expect(forwardScatterGlow(1, 1, 0)).toBe(0)
+  })
+
+  it('el exponente afila: a medio camino queda la quinta parte', () => {
+    expect(forwardScatterGlow(0.5, 1, 1)).toBeCloseTo(FORWARD_SCATTER_STRENGTH * Math.pow(0.5, 2.5), 3)
+    expect(forwardScatterGlow(0.5, 1, 1)).toBeLessThan(forwardScatterGlow(1, 1, 1) * 0.2)
+  })
+
+  it('en mar abierto la claridad lo deja en una décima', () => {
+    // A 60 m de fondo la claridad es 0,102: el brillo del bajío no puede
+    // saltarse al azul marino por la puerta de atrás.
+    expect(forwardScatterGlow(1, 0.1, 1)).toBeLessThan(0.05)
+    expect(forwardScatterGlow(1, 0.1, 1)).toBeLessThan(forwardScatterGlow(1, 1, 1) * 0.15)
+  })
+
+  it('al atardecer se apaga con el sol, que es quien lo enciende', () => {
+    const dusk = oceanLight(utc('2026-08-13T19:40:00Z'), LON, LAT)
+    const noon = oceanLight(NOON, LON, LAT)
+    expect(dusk.sunIntensity).toBeGreaterThan(0)
+    expect(forwardScatterGlow(1, 1, dusk.sunIntensity)).toBeLessThan(
+      forwardScatterGlow(1, 1, noon.sunIntensity),
+    )
   })
 })
 

@@ -184,6 +184,45 @@ export const FOAM_SUN = 0.65
 export const FOAM_MOON = 0.25
 
 /**
+ * Cuánto brilla el agua por DELANTE cuando el sol está al otro lado.
+ *
+ * El agua no es una lámina: la luz que entra por la cara iluminada viaja por
+ * la columna y sale hacia la cámara, y por eso el mismo bajío se enciende
+ * mirando hacia el sol y se queda oscuro dándole la espalda. Es la asimetría
+ * que hace que una costa no se lea igual por la mañana que por la tarde.
+ *
+ * `toward` es −view·sun con sus componentes horizontales, como el término
+ * `through` del sombreador: 1 mirando de frente a un sol rasante, 0 de
+ * espaldas o a plomo. El exponente afila el efecto para que solo exista
+ * mirando de verdad hacia el sol —con 0,5 ya se reduce a la quinta parte—, y
+ * la fuerza está medida por las dos orillas contra el color del agua de aquí
+ * mismo: con el sol del mediodía de agosto y alineación perfecta, la
+ * luminancia del bajío sube un 40 % —se nota sin reventar—; de espaldas al
+ * sol no cambia nada, y en mar abierto la claridad lo deja en una décima.
+ */
+export const FORWARD_SCATTER_STRENGTH = 0.4
+export const FORWARD_SCATTER_POWER = 2.5
+
+/**
+ * El gemelo de TypeScript del término del sombreador. Existe para poder medir
+ * las dos orillas sin abrir un navegador: `toward` entre 0 y 1, `clarity` la
+ * claridad del agua (1 en el bajío, 0,1 a 60 m) y `sunIntensity` la del
+ * momento (0 de noche).
+ */
+export function forwardScatterGlow(
+  toward: number,
+  clarity: number,
+  sunIntensity: number,
+): number {
+  return (
+    FORWARD_SCATTER_STRENGTH *
+    Math.pow(Math.max(0, toward), FORWARD_SCATTER_POWER) *
+    clarity *
+    sunIntensity
+  )
+}
+
+/**
  * La luz que queda en una noche cerrada, respecto a un mediodía despejado.
  *
  * No es cero, y no por gusto: un mar absolutamente negro se ve como un agujero

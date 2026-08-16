@@ -25,7 +25,14 @@
  *     a contraluz se vea verde y encendida.
  */
 
-import { FOAM_MOON, FOAM_SUN, LIT_FLOOR, NIGHT_OPACITY } from '../../../lib/ocean/light'
+import {
+  FOAM_MOON,
+  FOAM_SUN,
+  FORWARD_SCATTER_POWER,
+  FORWARD_SCATTER_STRENGTH,
+  LIT_FLOOR,
+  NIGHT_OPACITY,
+} from '../../../lib/ocean/light'
 import {
   CLIFF_BAND_M,
   CLIFF_RUNUP_SHARE,
@@ -54,6 +61,8 @@ const float CLIFF_BAND_M = ${CLIFF_BAND_M.toFixed(2)};
 // Y los de la luz, de \`lib/ocean/light.ts\`.
 const float LIT_FLOOR = ${LIT_FLOOR.toFixed(4)};
 const float NIGHT_OPACITY = ${NIGHT_OPACITY.toFixed(4)};
+const float FORWARD_SCATTER_STRENGTH = ${FORWARD_SCATTER_STRENGTH.toFixed(4)};
+const float FORWARD_SCATTER_POWER = ${FORWARD_SCATTER_POWER.toFixed(2)};
 
 uniform sampler2D u_detailTex;
 uniform sampler2D u_backgroundTex;
@@ -243,6 +252,17 @@ void main() {
   float through = max(0.0, -dot(view.xy, u_sunDir.xy)) * max(0.0, crest);
   body += vec3(0.10, 0.32, 0.26) * through * through * u_sunIntensity * 1.4;
   body += u_ambient * 0.35;
+
+  // La luz que viaja POR EL AGUA hacia la cámara. Con el sol al otro lado del
+  // punto que se mira, el agua brilla por delante —el mismo bajío se enciende
+  // mirando hacia el sol y se apaga dándole la espalda—, y de espaldas no
+  // cambia nada. Es lo que hace que una costa no se lea igual por la mañana
+  // que por la tarde. Los números son de \`lib/ocean/light.ts\`, donde se
+  // miden las dos orillas: que hacia el sol se note y que de espaldas no
+  // toque nada.
+  float toward = max(0.0, -dot(view.xy, u_sunDir.xy));
+  body += u_shallowColor *
+    (FORWARD_SCATTER_STRENGTH * pow(toward, FORWARD_SCATTER_POWER) * clarity * u_sunIntensity);
 
   // --- 4. lo que se REFLEJA ------------------------------------------------
   float cosTheta = clamp(dot(n, view), 0.0, 1.0);
