@@ -252,10 +252,15 @@ pruebas):
 Fresnel, como cualquier otro reflejo, y no sumado por encima: sumado —que es lo
 habitual en los sombreadores de videojuego— el mar visto desde arriba salía con
 una mancha blanca reventada de varios kilómetros, medida en pantalla a 2,3 veces
-el blanco. Y el plano del agua va **dos metros por encima del cero**: con la
+el blanco. Y el plano del agua va **en la marea y en nada más**: con la
 vista 3D, MapLibre dibuja una malla de terreno que cubre toda la pantalla con el
-fondo marino aplanado a cero, así que a marea baja el mar quedaba por debajo y
-la prueba de profundidad lo descartaba entero.
+fondo marino aplanado a cero, así que a marea baja —hasta 1,18 m, medido sobre
+744 horas frente a Tazacorte— el mar quedaría por debajo y la prueba de
+profundidad lo descartaría entero. Lo que le falta para alcanzar esa lámina lo
+paga el empujón por el rayo del sesgo de profundidad, con su techo de tres
+metros de cota: antes se resolvía levantando el plano dos metros, y eso se
+pagaba en horizontal —L/tg(θ): 23 m con la vista a 5° y 115 m a 1°, justo sobre
+la costa baja de El Remo y La Bombilla.
 
 **Rendimiento.** Tres niveles de calidad que apagan lo que cuesta y no se echa
 de menos, en este orden: la refracción del fondo (una copia de pantalla por
