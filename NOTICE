@@ -84,3 +84,7 @@ siguen siendo estimaciones. Los avisos de riesgo, las alertas meteorológicas y
 las prohibiciones las publican el Cabildo Insular de La Palma y el Gobierno de
 Canarias, y ninguna función de esta aplicación —en particular las de la sección
 «Experimental»— los sustituye.
+
+QuickJS (https://bellard.org/quickjs/) — MIT License
+Copyright (c) 2017-2021 Fabrice Bellard, Charlie Gordon
+Se empaqueta sin modificar dentro del módulo TPJs (desktop/ThirdParty/quickjs/).

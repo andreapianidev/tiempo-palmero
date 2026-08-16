@@ -19,7 +19,9 @@
     "test:watch": "vitest",
     "prepare-data": "tsx scripts/prepare-data.ts",
     "prepare-data:snapshot": "tsx scripts/prepare-data.ts --only=snapshot",
-    "prepare-ocean": "tsx scripts/prepare-ocean.ts"
+    "prepare-ocean": "tsx scripts/prepare-ocean.ts",
+    "desktop:core": "node desktop/scripts/bundle-core.mjs",
+    "desktop:golden": "node desktop/scripts/gen-golden.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^4.7.1",
@@ -31,6 +33,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "esbuild": "^0.25.0",
     "pngjs": "^7.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",

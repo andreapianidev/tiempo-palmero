@@ -29,6 +29,14 @@ con uno—, y como TypeScript era lo único que se quejaba y nadie lo ejecutaba,
 la deriva vivió varios commits sin que nada la delatara. Cuando haya
 actualizaciones por aire, esa misma deriva llegaría a los teléfonos en minutos.
 
+## El escritorio es otra puerta, no un adorno
+
+`desktop/` es la versión macOS (Unreal Engine 5.8) y comparte el mismo motor
+que la web y el móvil: `src/lib`. La puerta completa será
+`desktop/scripts/verify.sh` cuando exista (Task 13 del plan M1); mientras
+tanto, el contrato es: el core no se toca, los golden se regeneran con
+`npm run desktop:golden` y se commitean con el cambio.
+
 ## Nada de archivos monolíticos
 
 **Un archivo, una responsabilidad.** Cuando a un archivo hay que añadirle algo

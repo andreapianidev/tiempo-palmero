@@ -1,0 +1,8 @@
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+Build/
+*.xcodeproj
+.DS_Store
+Content/Core/core.bundle.js
