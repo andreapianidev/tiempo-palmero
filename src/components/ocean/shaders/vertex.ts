@@ -115,10 +115,14 @@ void main() {
   // --- 3. y un pelo hacia la cámara ---------------------------------------
   //
   // El agua compite con la malla del terreno de MapLibre, que sobre el mar está
-  // aplanada a cero y escribe profundidad. Los dos metros de \`SEA_LIFT_M\`
-  // ganan esa carrera en el mundo, pero no siempre en el búfer: a unos
-  // kilómetros de la cámara dos metros no llegan a un escalón y el mar
-  // desaparece de golpe a partir de una línea recta.
+  // aplanada a cero y escribe profundidad. El plano del agua va en la marea, y
+  // con la marea baja —hasta 1,18 m, medido sobre 744 horas frente a Tazacorte,
+  // ver \`LOWEST_TIDE_M\`— queda POR DEBAJO de esa lámina: lo que falta para
+  // alcanzarla lo paga \`need\`, aquí abajo. Y aun ganando la carrera, un búfer
+  // de 16 bits no distingue el empujón a partir de una línea recta —medido,
+  // más allá de 10 km con la marea alta y 12 con la baja—: el término de
+  // escalones y el techo existen para que esa línea quede lo más lejos que ese
+  // búfer permita.
   //
   // EL EMPUJÓN VA POR EL RAYO, y no con \`polygonOffset\` ni restándole una
   // constante a la z de recorte. Las dos alternativas se probaron y las dos

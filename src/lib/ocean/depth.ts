@@ -63,11 +63,13 @@
  * LO QUE CUESTA, Y DÓNDE. Con un búfer de 16 bits las dos cosas no caben:
  * ganarle la profundidad a la lámina plana a 300 km pediría un empujón de 12 km,
  * y 12 km sobre un rayo rasante meten el agua por delante de 500 m de isla. El
- * techo se impone y el mar se apaga —medido— más allá de los 12 km. Es la
- * decisión, no un descuido: entre un mar que se pierde en la distancia y un mar
- * por delante de la Cumbre Nueva, lo primero. Con 24 bits, que es lo que da
- * cualquier GPU de esta década, el mismo cálculo pone ese límite en 1.800 km,
- * seis veces el alcance del propio mar.
+ * techo se impone y el mar se apaga —medido sobre este mismo módulo— más allá
+ * de los 10 km con la marea alta, que es el caso peor, y de los 12 km con la
+ * más baja. Es la decisión, no un descuido: entre un mar que se pierde en la
+ * distancia y un mar por delante de la Cumbre Nueva, lo primero. Con 24 bits,
+ * que es lo que da cualquier GPU de esta década, el mismo cálculo lo retrasa a
+ * 1.800 km con la marea alta —2.500 con la más baja—, seis veces el alcance
+ * del propio mar.
  */
 
 /**
@@ -76,9 +78,10 @@
  * Un metro. Contra la ladera se traduce en `BIAS_M · sen(θ)` metros de cota
  * trepada —34 cm con la vista a 20°—, que sobre una pendiente del 10 % son 3,4 m
  * de suelo: un octavo de píxel a la escala de la vista de isla. El límite por
- * abajo no es la estética sino la lámina plana de MapLibre: `SEA_LIFT_M` la
- * separa 2 m en el mundo, y este metro es el margen que hace que esa separación
- * sobreviva al redondeo del búfer.
+ * abajo no es la estética sino la lámina plana de MapLibre: con la marea alta
+ * el agua y la lámina están a la misma cota —el término \`need\` vale cero— y
+ * este metro es el único margen que gana la carrera contra el redondeo del
+ * búfer.
  */
 export const BIAS_M = 1
 

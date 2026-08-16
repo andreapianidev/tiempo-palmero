@@ -115,17 +115,25 @@ describe('el sesgo por el rayo', () => {
 
 describe('la otra orilla: que el mar siga estando ahí', () => {
   /**
-   * El competidor es la lámina plana que MapLibre pone sobre el mar, separada
-   * `SEA_LIFT_M` = 2 m. Para que el agua le gane, el empujón más los dos metros
-   * tienen que valer más de un escalón del búfer a esa distancia.
+   * El competidor es la lámina plana que MapLibre pone sobre el mar, a cota
+   * cero. El plano del agua va en la marea: con la marea alta están al mismo
+   * nivel y la carrera la gana solo el empujón; con la más baja —`LOWEST_TIDE_M`,
+   * 1,18 m medidos sobre 744 horas frente a Tazacorte— hay que ganar además
+   * `tideGapPush` metros por el rayo.
    */
-  const SEA_LIFT_M = 2
 
-  it('a 300 km los dos metros de la lámina NO bastan, y por eso el término de escalones existe', () => {
+  it('a 300 km ni el metro de suelo ni la marea llegan al margen: por eso el término de escalones existe', () => {
     const r = { distance: 300_000 / ISLA.metersPerUnit, near: ISLA.near, far: ISLA.far }
     const escalon = worldPerNdc(ndcStep(24), r) * ISLA.metersPerUnit
     expect(escalon).toBeCloseTo(12.1, 1)
-    expect(SEA_LIFT_M + BIAS_M).toBeLessThan(escalon)
+    // Con la marea alta, el metro de suelo son 0,08 escalones: nada.
+    expect(BIAS_M).toBeLessThan(escalon)
+    // Y en la bajamar más baja la marea paga 28,4 m: 2,35 escalones, por
+    // debajo del margen de cuatro. Medido sobre este mismo módulo.
+    const sin = 12.46 / 300 // la cámara de la vista de isla, a 12,46 km de altura
+    const need = tideGapPush(LOWEST_TIDE_M, sin)
+    expect(need).toBeCloseTo(28.4, 1)
+    expect(need / escalon).toBeLessThan(BIAS_STEPS)
   })
 
   it('con el término de escalones y 24 bits, sí, y con margen hasta mucho más allá del alcance', () => {
@@ -141,34 +149,40 @@ describe('la otra orilla: que el mar siga estando ahí', () => {
    * CON 16 BITS NO SE PUEDE TENER TODO, y esto mide el precio exacto.
    *
    * A esa precisión, ganarle la profundidad a la lámina plana a 300 km pide un
-   * empujón de 12 km, y un empujón de 12 km sobre un rayo rasante deja al agua
-   * pasar por delante de 500 m de isla. Entre un mar que se apaga a lo lejos y
-   * un mar por delante de la Cumbre Nueva, se elige lo primero: el techo manda
-   * y el agua se apaga.
+   * empujón de 12 km —los cuatro escalones a esa distancia—, y un empujón de
+   * 12 km sobre un rayo rasante deja al agua pasar por delante de 500 m de
+   * isla. Entre un mar que se apaga a lo lejos y un mar por delante de la
+   * Cumbre Nueva, se elige lo primero: el techo manda y el agua se apaga.
    *
-   * Dónde se apaga: donde `SEA_LIFT_M + techo` deja de valer un escalón. Con la
-   * cámara de la vista de isla salen 12 km, y con 24 bits, 1.800 km — o sea
-   * seis veces el alcance del mar, que son 300. Por eso esto solo se ve en una
-   * GPU de 16 bits.
+   * Dónde se apaga, medido sobre este mismo módulo: más allá de 10 km con la
+   * marea alta —el caso peor, porque sin marea que ganar el único empujón es el
+   * sesgo— y de 12 km con la más baja. Con 24 bits el mismo cálculo lo retrasa
+   * a 1.800 km con la marea alta y 2.500 con la baja, o sea por detrás del
+   * alcance del mar, que son 300. Por eso esto solo se ve en una GPU de 16 bits.
    */
-  it('con 16 bits el mar se apaga más allá de 12 km, y es la decisión, no un descuido', () => {
-    const SEA_LIFT_M = 2
-    const apagaA = (bits: number) => {
+  it('con 16 bits el mar se apaga entre los 10 y los 12 km según la marea, y es la decisión, no un descuido', () => {
+    const apagaA = (bits: number, tide: number) => {
       for (let km = 1; km < 2000; km++) {
         const d = (km * 1000) / ISLA.metersPerUnit
         const sin = Math.min(1, ISLA.altitude / d)
         const r = { distance: d, near: ISLA.near, far: ISLA.far }
+        const need = tideGapPush(tide, sin)
         const bias =
           biasWorld({ ...r, depthBits: bits, sinDepression: sin, metersPerUnit: ISLA.metersPerUnit }) *
           ISLA.metersPerUnit
-        if (SEA_LIFT_M + bias < worldPerNdc(ndcStep(bits), r) * ISLA.metersPerUnit) return km
+        if (need + bias < worldPerNdc(ndcStep(bits), r) * ISLA.metersPerUnit) return km
       }
       return Infinity
     }
-    expect(apagaA(16)).toBeGreaterThan(10)
-    expect(apagaA(16)).toBeLessThan(15)
+    // Bajamar: más allá de los 12 km.
+    expect(apagaA(16, LOWEST_TIDE_M)).toBeGreaterThan(10)
+    expect(apagaA(16, LOWEST_TIDE_M)).toBeLessThan(15)
+    // Marea alta: el caso peor, más allá de los 10 km.
+    expect(apagaA(16, 0)).toBeGreaterThan(8)
+    expect(apagaA(16, 0)).toBeLessThan(13)
     // Con 24 bits, muy por detrás del alcance del mar (300 km).
-    expect(apagaA(24)).toBeGreaterThan(1000)
+    expect(apagaA(24, LOWEST_TIDE_M)).toBeGreaterThan(1000)
+    expect(apagaA(24, 0)).toBeGreaterThan(1000)
   })
 
   it('el techo solo aparece donde el búfer es malo, y ahí acota el daño', () => {
