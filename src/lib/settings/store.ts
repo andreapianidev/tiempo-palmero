@@ -32,8 +32,15 @@ import { backend } from './backend'
  * La versión del formato. Se sube SOLO cuando lo guardado deja de poder
  * interpretarse con las reglas de hoy; añadir o quitar un ajuste no lo
  * requiere, porque `revive.ts` ya rellena lo que falta y descarta lo que sobra.
+ *
+ * La 2 existe por la otra razón legítima para descartar lo guardado: dar a
+ * quien ya tenía ajustes los valores de fábrica de hoy, una sola vez. El 16 de
+ * agosto de 2026 la primera visita pasó a enseñar la isla con su atmósfera
+ * entera —3D, mar, viento, vapor y cielo encendidos—, y sin este cambio quienes
+ * ya habían arrancado alguna vez habrían seguido viendo la isla de siempre
+ * para siempre.
  */
-export const SETTINGS_VERSION = 1
+export const SETTINGS_VERSION = 2
 
 /** De dónde se leen y a dónde se escriben. Un archivo por plataforma. */
 export interface SettingsBackend {

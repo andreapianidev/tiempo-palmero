@@ -69,6 +69,19 @@ describe('parseSettings', () => {
     expect(parseSettings(futuro)).toEqual({})
   })
 
+  it('el sobre de la versión 1 —la de antes de la atmósfera entera— se descarta entero', () => {
+    // El 16 de agosto de 2026 los valores de fábrica cambiaron de golpe —la
+    // primera visita pasó a enseñar la 3D, el mar, el viento, el vapor y el
+    // cielo encendidos— y para que quienes ya tenían ajustes los vieran, la
+    // versión subió a 2. Esto fija ese hecho: un sobre de la versión 1 vale lo
+    // mismo que no tener nada.
+    const deAyer = JSON.stringify({
+      v: 1,
+      values: { terrain: { on: false, exaggeration: 1 }, ocean: { on: false } },
+    })
+    expect(parseSettings(deAyer)).toEqual({})
+  })
+
   it('el sobre es de esta versión pero el contenido no es un objeto', () => {
     expect(parseSettings(JSON.stringify({ v: SETTINGS_VERSION }))).toEqual({})
     expect(parseSettings(JSON.stringify({ v: SETTINGS_VERSION, values: [1] }))).toEqual({})
