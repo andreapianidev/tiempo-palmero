@@ -205,7 +205,11 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     // pide la capa de senderos: ahí lo que hace falta saber es la pendiente
     // que viene, no la temperatura.
     note: 'Mapa Topográfico 1:20.000 de Canarias: curvas de nivel, topónimos y sendas. Se pide a la resolución de esta pantalla, no a la mitad.',
-    source: grafcan('MT20', 'MT20', `${GRAFCAN_CREDIT} · Mapa Topográfico 1:20.000`),
+    // Mismo techo que la ortofoto, por la misma medida (16 ago 2026): a cámara
+    // z17 la z16 ampliada da |∇²| 14,0 / 17,1 / 12,3 y la z17 pedida 33,0 /
+    // 41,2 / 28,7 —2,3–2,4× con densidad 2 y 2,7–2,8× con densidad 1—. El z18
+    // no paga (2,1–2,4×, 16 teselas por pantalla).
+    source: grafcan('MT20', 'MT20', `${GRAFCAN_CREDIT} · Mapa Topográfico 1:20.000`, 17),
     labelsFrom: 12.5,
     light: true,
     // Papel. El mar de la carta ya está dibujado, con sus batimetrías y sus
@@ -230,8 +234,7 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     // con densidad 1. El z18 no paga: menos |∇²| por píxel (la foto entra en su
     // resolución de vuelo, 25 cm) y 16 teselas por pantalla. Coste del 17:
     // 4 teselas donde antes 1, ~0,7–1 MB por pantalla al fondo del zoom. No se
-    // descarga más superficie, solo la que se mira, a más píxeles. El MT20 se
-    // queda en 16: no está medido.
+    // descarga más superficie, solo la que se mira, a más píxeles.
     source: grafcan('Ortofoto', 'ortofoto', `${GRAFCAN_CREDIT} · Ortofoto Territorial 2024-2025`, 17),
     // La ortofoto no rotula nada, así que los topónimos son nuestros a todas
     // las escalas. Y sobre imagen aérea el texto blanco con sombra negra es

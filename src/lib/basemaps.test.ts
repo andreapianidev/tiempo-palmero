@@ -145,11 +145,12 @@ describe('catálogo', () => {
     expect(BASEMAPS.satelite.labelsFrom).toBeNull()
   })
 
-  it('la ortofoto pide un nivel de zoom más que la carta, y está medido', () => {
+  it('los dos fondos piden un nivel de zoom más que antes, y está medido', () => {
     // `scripts/checks/detalle-tiles.ts` (16 ago 2026): a cámara z17 la z16
-    // ampliada da |∇²| 11–24 y la z17 pedida da 34–76 —3,2–3,7× con densidad
-    // 2 y 2,8–3,1× con densidad 1—. El z18 no paga y el MT20 no está medido.
+    // ampliada da |∇²| 11–24 y la z17 pedida da 34–76 en la ortofoto
+    // (3,2–3,7× con densidad 2, 2,8–3,1× con densidad 1) y 28–41 en el MT20
+    // (2,3–2,4× / 2,7–2,8×). El z18 no paga en ninguno de los dos.
     expect(BASEMAPS.satelite.source!.maxzoom).toBe(17)
-    expect(BASEMAPS.topografico.source!.maxzoom).toBe(16)
+    expect(BASEMAPS.topografico.source!.maxzoom).toBe(17)
   })
 })

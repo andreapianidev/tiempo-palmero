@@ -62,7 +62,13 @@ const AREAS: Area[] = [
 
 // --- la petición -------------------------------------------------------------
 
-const LAYER_URL = 'https://idecan1.grafcan.es/ServicioWMS/Ortofoto'
+/**
+ * Qué servicio se mide: `Ortofoto` (capas `ortofoto`) o `MT20` (capas `MT20`).
+ * Se elige desde la línea de comandos: `npx tsx .../detalle-tiles.ts MT20`.
+ */
+const SERVICE = process.argv[2] ?? 'Ortofoto'
+const LAYER_URL = `https://idecan1.grafcan.es/ServicioWMS/${SERVICE}`
+const LAYER = SERVICE === 'MT20' ? 'MT20' : 'ortofoto'
 
 /**
  * La ortofoto sobre un recuadro, a un tamaño pedido. El recuadro va en la
@@ -87,7 +93,7 @@ async function ortofoto(
     service: 'WMS',
     version: '1.1.1',
     request: 'GetMap',
-    layers: 'ortofoto',
+    layers: LAYER,
     styles: '',
     srs: 'EPSG:3857',
     format: 'image/jpeg',
