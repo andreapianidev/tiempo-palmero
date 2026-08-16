@@ -75,15 +75,13 @@ export const QUALITY: Record<OceanQuality, QualitySettings> = {
  *
  * El número de núcleos entra como aproximación grosera a la gama del equipo, que
  * es lo único que `navigator` ofrece sin sondear la GPU.
+ *
+ * La regla es UNA para todo dispositivo, a propósito: la web y el móvil
+ * comparten el código y se tienen que ver igual. Antes los punteros táctiles
+ * se quedaban por debajo de «alta» pase lo que pase; esa diferencia se quitó
+ * para que el móvil no enseñara un mar de segunda.
  */
-export function autoQuality(
-  pixels: number,
-  cores = 4,
-  coarsePointer = false,
-): OceanQuality {
-  // En un teléfono nunca se arranca en alta: la pantalla es pequeña pero la GPU
-  // también, y ahí el mar compite con el resto del mapa por la misma batería.
-  if (coarsePointer) return pixels > 2_500_000 ? 'ligera' : 'equilibrada'
+export function autoQuality(pixels: number, cores = 4): OceanQuality {
   if (cores <= 4) return pixels > 4_000_000 ? 'ligera' : 'equilibrada'
   return pixels > 9_000_000 ? 'equilibrada' : 'alta'
 }

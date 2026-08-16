@@ -74,9 +74,11 @@ const EMPTY_TRACK: readonly TrackPoint[] = []
  * capa que lo guardado no reconozca. A partir de la segunda visita manda lo que
  * el usuario dejó encendido, no esta tabla.
  *
- * Por eso los «apagada al llegar» de aquí abajo siguen siendo ciertos y siguen
- * teniendo motivo: son el argumento de qué merece el primer vistazo de alguien
- * que no ha elegido nada, no una opinión sobre lo que ese alguien elija después.
+ * El primer vistazo enseña la isla con su atmósfera —el viento y el vapor
+ * arrancan encendidos, como la vista 3D y el mar—; lo que se apaga al llegar
+ * son las capas que añaden cifras o iconos a una isla que ya enseña su relieve
+ * y su mar. Y sigue mandando la regla de siempre: a partir de la segunda
+ * visita, lo que el usuario dejó encendido, no esta tabla.
  */
 const INITIAL_LAYERS: LayerVisibility = {
   grid: true,
@@ -96,11 +98,11 @@ const INITIAL_LAYERS: LayerVisibility = {
   // sobre una isla que ya llega con estaciones, CO₂ y cámaras de incendios
   // encendidas.
   webcams: false,
-  wind: false,
-  // Apagada la primera vez, como el viento y por el mismo motivo: es una capa
-  // animada, y una animación que arranca sola le quita a la isla el primer
-  // vistazo, que es de lo que se está midiendo.
-  vapor: false,
+  // El viento y el vapor arrancan encendidos: son la atmósfera de la isla, no
+  // capas de datos, y su animación forma parte de cómo se enseña. Quien los
+  // apague conserva su elección en las visitas siguientes.
+  wind: true,
+  vapor: true,
 }
 
 /**
@@ -169,11 +171,10 @@ export default function App() {
     oneOf(BASEMAP_ORDER),
   )
   /**
-   * La vista 3D. Apagada la primera vez, y no por prudencia técnica: en plano se
-   * compara una ladera con otra de un vistazo, y eso es lo que esta aplicación
-   * hace. La 3D es para entender la isla, no para leerla — pero eso es un
-   * argumento sobre por dónde empezar, no sobre dónde quedarse, así que quien la
-   * encienda la conserva.
+   * La vista 3D. Encendida desde la primera visita: la isla se enseña con su
+   * relieve y su mar, que es lo que hay que ver. Quien quiera comparar laderas
+   * la apaga —en plano se comparan de un vistazo—, y apagarla es una elección
+   * que también se conserva.
    *
    * No está en `LayerVisibility` porque no es una capa: no añade nada al mapa,
    * cambia la cámara. Meterla ahí haría que el contador de «capas activas» del
@@ -181,19 +182,19 @@ export default function App() {
    */
   const [terrain, setTerrain] = usePersistentState<{ on: boolean; exaggeration: Exaggeration }>(
     'terrain',
-    { on: false, exaggeration: DEFAULT_EXAGGERATION },
+    { on: true, exaggeration: DEFAULT_EXAGGERATION },
     shape({ on: bool, exaggeration: oneOf(EXAGGERATIONS) }),
   )
   /**
-   * El océano. Apagado la primera vez, y por el mismo motivo que la vista 3D: lo
-   * primero que esta aplicación tiene que enseñar es el dato, y un mar animado
-   * con oleaje real es lo más llamativo de la pantalla —tanto, que se lleva la
-   * mirada por delante de la isla, que es de lo que va esto—. Quien lo quiera,
-   * lo enciende, y entonces sí manda; y a partir de ahí manda también en los
-   * arranques siguientes, porque encenderlo fue una elección y no un descuido.
+   * El océano. Encendido desde la primera visita, como la vista 3D: el mar con
+   * oleaje real forma parte de cómo se enseña la isla, y quien quiera un mapa
+   * sobrio lo apaga —también eso se conserva, porque apagarlo fue una elección
+   * y no un descuido.
    *
-   * La calidad se decide sola mirando cuántos píxeles hay que pintar y qué
-   * equipo hay debajo, y se puede cambiar a mano. Ver `lib/ocean/quality.ts`.
+   * La calidad se decide sola mirando cuántos píxeles hay que pintar y cuántos
+   * núcleos hay debajo, con la MISMA regla en cualquier dispositivo —la web y
+   * el móvil comparten el código y se tienen que ver igual—, y se puede cambiar
+   * a mano. Ver `lib/ocean/quality.ts`.
    *
    * Y aquí hay una cesión consciente: `autoQuality()` solo corre la PRIMERA vez.
    * A partir de ahí manda lo guardado, porque el ajuste no distingue una calidad
@@ -212,13 +213,12 @@ export default function App() {
   }>(
     'ocean',
     () => ({
-      on: false,
+      on: true,
       seamarks: false,
       depth: false,
       quality: autoQuality(
         window.innerWidth * window.innerHeight * (window.devicePixelRatio || 1) ** 2,
         navigator.hardwareConcurrency ?? 4,
-        window.matchMedia('(pointer: coarse)').matches,
       ),
     }),
     shape({
@@ -415,14 +415,15 @@ export default function App() {
   )
 
   /**
-   * La escena atmosférica en 3D. Función experimental, apagada la primera vez.
+   * La escena atmosférica en 3D. Encendida desde la primera visita: sin ella
+   * la vista 3D se queda sin cielo con nubes que echen sombra, que es la mitad
+   * de la escena.
    *
-   * Apagada NO por prudencia estética sino porque cuesta una petición de 70
-   * puntos con once variables cada uno: quien no la use no la paga. Es la misma
-   * regla que el Roque, la ETo o los senderos. Quien sí la use la paga en cada
-   * arranque desde que se guarda el ajuste, que es lo que pidió al encenderla.
+   * Encenderla cuesta una petición de 70 puntos con once variables cada uno,
+   * que ahora paga todo el que llega. Quien la apague deja de pagarla desde
+   * ese momento, que es lo que pidió al apagarla.
    */
-  const [sky3dOn, setSky3dOn] = usePersistentState('sky3d', false, bool)
+  const [sky3dOn, setSky3dOn] = usePersistentState('sky3d', true, bool)
   /**
    * El nivel de condensación medio de la isla, para cuando no hay manta
    * diagnosticada. Se calcula solo con la escena encendida —recorre 576 puntos
