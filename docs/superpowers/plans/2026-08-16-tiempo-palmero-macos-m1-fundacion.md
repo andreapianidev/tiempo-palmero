@@ -18,7 +18,7 @@
 - **`src/lib` no se modifica.** El único código nuevo del motor es `desktop/js-core/entry.ts`, que importa y reexporta. Los umbrales no se tocan: son los mismos archivos.
 - Comentarios, textos y mensajes de commit en **español** (convención del repo).
 - Un archivo, una responsabilidad (CLAUDE.md). Módulos UE con interfaz definida y testeable aislado.
-- Cada task termina con commit + push a `main`. `vercel --prod` cuando el cambio toca la web. Desde la Task 13, `desktop/scripts/verify.sh` entra en la puerta.
+- Cada task termina con commit + push a `main` + `vercel --prod` (regla CLAUDE.md, sin excepciones; decisión del usuario 2026-08-16). Desde la Task 13, `desktop/scripts/verify.sh` entra en la puerta.
 - Licencia Apache-2.0 para nuestro código; QuickJS es MIT → registrar en `NOTICE`.
 - Los números que aparecen en texto se miden y se verifican (CLAUDE.md).
 - Rutas fijas (verificar en Task 1): `UE=/Users/Shared/Epic Games/UE_5.8`, `RUNUAT="$UE/Engine/Build/BatchFiles/RunUAT.sh"`, `UECMD="$UE/Engine/Binaries/Mac/UnrealEditor-Cmd"`.
