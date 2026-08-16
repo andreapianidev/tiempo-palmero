@@ -19,7 +19,6 @@
  * hace la vista humana con el mar de verdad.
  */
 
-import { BIAS_M, MAX_LEAK_M } from '../../../lib/ocean/depth'
 import { CONSTANTS, UNIFORMS, WAVE_FUNCTIONS } from './waves'
 
 export const VERTEX_SHADER = /* glsl */ `
@@ -30,24 +29,8 @@ attribute vec2 a_ndc;
 ${UNIFORMS}
 ${CONSTANTS}
 
-// Los del sesgo de profundidad. Salen de \`lib/ocean/depth.ts\`, que es donde se
-// miden. \`u_depthSlack\` —los escalones del búfer que hay que ganar— viene de
-// allí también, pero por uniforme: depende de la GPU, no del código.
-const float BIAS_M = ${BIAS_M.toFixed(2)};
-const float MAX_LEAK_M = ${MAX_LEAK_M.toFixed(2)};
-
-/**
- * Cuánto se aparta la sonda del sesgo, en fracción de la distancia.
- *
- * Un 2 %. La sonda existe para medir cuánto NDC gana el agua por metro de
- * acercamiento, y se mide restando dos profundidades: si la sonda es corta, esa
- * resta se queda dentro del error de un \`float\` de 32 bits —a 300 km dos
- * puntos separados un metro tienen la misma z hasta el último bit— y el sesgo
- * sale de ruido. Con un 2 % de la distancia la diferencia es cuatro órdenes de
- * magnitud mayor que el épsilon, cerca y lejos, porque la sonda crece con lo
- * mismo que la pérdida de precisión.
- */
-const float PROBE_SHARE = 0.02;
+/** Lo que se acerca el agua a la cámara en el búfer de profundidad. Ver abajo. */
+const float DEPTH_BIAS = 1e-4;
 
 varying vec4 v_posDepth;
 varying vec4 v_normalCrest;
@@ -112,76 +95,26 @@ void main() {
   v_shore = shore;
   v_range = vec2(length(p - u_camera.xy) * u_metersPerMerc, breaking);
 
+  gl_Position = u_matrix * vec4(p + offset, u_seaLevel + height, 1.0);
   // --- 3. y un pelo hacia la cámara ---------------------------------------
   //
   // El agua compite con la malla del terreno de MapLibre, que sobre el mar está
   // aplanada a cero y escribe profundidad. Los dos metros de \`SEA_LIFT_M\`
   // ganan esa carrera en el mundo, pero no siempre en el búfer: a unos
-  // kilómetros de la cámara dos metros no llegan a un escalón y el mar
-  // desaparece de golpe a partir de una línea recta.
+  // kilómetros de la cámara, con un búfer de profundidad de 16 bits —que es lo
+  // que dan bastantes GPU móviles y algún portátil—, dos metros no llegan a un
+  // escalón del búfer y el mar desaparece de golpe a partir de una línea recta.
   //
-  // EL EMPUJÓN VA POR EL RAYO, y no con \`polygonOffset\` ni restándole una
-  // constante a la z de recorte. Las dos alternativas se probaron y las dos
-  // están mal por el mismo motivo, cada una por su lado: \`polygonOffset\`
-  // escala con la pendiente del triángulo, y en una rejilla proyectada los del
-  // horizonte abarcan kilómetros; y una constante en NDC es constante EN EL
-  // BÚFER, que guarda 1/z, o sea que vale cada vez más metros cuanto más lejos
-  // cae el vértice —crece con el cuadrado de la distancia—. Aquella constante
-  // de \`1e-4\` valía 3,6 m con la costa en primer plano y 404 m con la isla
-  // entera en pantalla, y esos 404 m son los que subían el mar 840 m ladera
-  // arriba sobre las plataneras. Está medido en \`lib/ocean/depth.ts\`.
+  // El sesgo se aplica AQUÍ, en coordenadas de recorte, y no con
+  // \`polygonOffset\`: aquel escala con la pendiente del triángulo, y en una
+  // rejilla proyectada los triángulos del horizonte abarcan kilómetros, así que
+  // el sesgo se disparaba y el agua se pintaba por delante de tierra que sí
+  // estaba delante. En NDC no depende ni de la distancia ni del triángulo.
   //
-  // Moviendo el vértice hacia la cámara POR SU PROPIO RAYO, en cambio, el
-  // empujón se mide en metros de mundo y su posición en pantalla no cambia: el
-  // punto sigue estando en la misma línea de visión, solo que un metro más
-  // cerca. Eso es lo que hace que el sesgo signifique lo mismo a 200 m que a
-  // 60 km.
-  vec3 world = vec3(p + offset, u_seaLevel + height);
-  vec4 clipA = u_matrix * vec4(world, 1.0);
-
-  vec3 toCam = u_camera - world;
-  float dist = max(length(toCam), 1e-9);
-  float meter = 1.0 / u_metersPerMerc;
-
-  // La sonda, y la segunda proyección. Como la matriz es afín, la recta que une
-  // las dos proyecciones ES la del rayo: acercarse \`m\` metros equivale a
-  // interpolar \`m / probe\` entre ellas, sin una tercera multiplicación.
-  float probe = max(meter, dist * PROBE_SHARE);
-  vec4 clipB = u_matrix * vec4(world + (toCam / dist) * probe, 1.0);
-
-  // El seno del picado del rayo, que es el cambio de moneda entre «metros de
-  // empujón» y «metros de ladera que el agua puede cubrir».
-  float sinDown = max(abs(toCam.z) / dist, 1e-6);
-
-  // LO QUE LE FALTA AL AGUA PARA ALCANZAR LA LÁMINA PLANA DE MAPLIBRE, que
-  // está en cero y escribe profundidad. Con la marea baja el plano del agua
-  // queda por debajo —hasta 1,18 m, medido sobre 31 días frente a Tazacorte— y
-  // sin ganarle esa diferencia el mar desaparece entero. Se gana AQUÍ, por el
-  // rayo, y no levantando el plano: levantarlo movería el corte del rayo hacia
-  // el mar y con él la consulta del mapa de orilla. Ver \`OceanLayer.ts\`.
-  float need = max(0.0, -u_seaLevel) / sinDown;
-
-  float push = max(BIAS_M * meter, need);
-  if (clipA.w > 0.0 && clipB.w > 0.0) {
-    // Cuánto NDC gana la sonda entera. De ahí salen los metros que hacen falta
-    // para ganar los escalones de búfer que pide \`u_depthSlack\`.
-    float gain = (clipA.z / clipA.w) - (clipB.z / clipB.w);
-    if (gain > 1e-9) {
-      float steps = (u_depthSlack / gain) * probe;
-      // Y el techo, que no se mide en metros de empujón sino en lo único que
-      // importa: cuánta ladera se come. Es mayor que \`need\` por construcción
-      // —\`MAX_LEAK_M\` supera la marea más baja que hay—, así que nunca puede
-      // borrar el mar por apretar el techo.
-      float ceiling = (MAX_LEAK_M * meter) / sinDown;
-      push = min(max(push, steps), max(push, ceiling));
-    }
-  }
-  // Y nunca tanto como para cruzar la cámara.
-  push = min(push, dist * 0.25);
-
-  gl_Position = clipA + (push / probe) * (clipB - clipA);
-  // El \`max\` es para no empujar el vértice por detrás del plano cercano, que
-  // lo recortaría.
-  gl_Position.z = max(gl_Position.z, -gl_Position.w);
+  // 1e-4 sobre el rango [−1, 1] son 3,3 escalones de un búfer de 16 bits y 840
+  // de uno de 24: sobra para ganar y falta muchísimo para saltarse un
+  // acantilado. El \`max\` es para no empujar el vértice por detrás del plano
+  // cercano, que lo recortaría.
+  gl_Position.z = max(gl_Position.z - DEPTH_BIAS * gl_Position.w, -gl_Position.w);
 }
 `
