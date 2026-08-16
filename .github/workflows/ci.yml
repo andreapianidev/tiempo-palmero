@@ -1,0 +1,40 @@
+# La misma puerta que exige CLAUDE.md antes de desplegar, pero automática: los
+# tests del motor, la compilación de la web y el typecheck del móvil, que compila
+# contra el mismo `src/` con el alias `@core/*`. Sin el tercero, cambiar la firma
+# de un hook rompe la aplicación móvil sin que la web ni los tests se enteren —
+# ya pasó, y vivió varios commits.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web:
+    name: Tests y compilación de la web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  movil:
+    name: Typecheck del móvil
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm ci
+        working-directory: mobile
+      - run: npm run typecheck
+        working-directory: mobile

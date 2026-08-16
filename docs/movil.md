@@ -3,6 +3,13 @@
 Expo sobre el mismo motor que la web, sin una sola línea de cálculo duplicada —
 y por qué eso obliga a compilar el móvil en cada cambio.
 
+> **⚠️ En alpha.** Hoy es una sola pantalla, la rotación y la inclinación del
+> mapa están apagadas —así que no hay vista 3D ni escena atmosférica—, Android
+> está bastante menos rodado que iOS, no hay compilación en TestFlight ni en
+> Play, y no hay pruebas propias del móvil: lo único que lo protege es el
+> `typecheck`. Es la parte más verde del proyecto, y donde más falta hacen
+> manos — ver [CONTRIBUTING.md](../CONTRIBUTING.md).
+
 ← Volver al [README](../README.md)
 
 ---

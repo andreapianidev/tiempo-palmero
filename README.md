@@ -1,5 +1,12 @@
 # Tiempo Palmero
 
+[![CI](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml/badge.svg)](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml)
+[![Web en producción](https://img.shields.io/badge/web-en%20producción-2ea44f?logo=vercel&logoColor=white)](https://tiempo-palmero.vercel.app)
+[![Móvil en alpha](https://img.shields.io/badge/iOS%20y%20Android-alpha-e07b39?logo=expo&logoColor=white)](docs/movil.md)
+[![Licencia Apache 2.0](https://img.shields.io/badge/licencia-Apache%202.0-4c6ef5)](LICENSE)
+[![Datos del Cabildo Insular de La Palma](https://img.shields.io/badge/datos-Cabildo%20de%20La%20Palma-005f73)](https://www.opendatalapalma.es)
+[![Se buscan colaboradores en La Palma](https://img.shields.io/badge/se%20buscan-colaboradores%20en%20la%20isla-b5179e)](CONTRIBUTING.md)
+
 **Meteorología interpolada a alta resolución para la isla de La Palma,
 construida sobre los datos abiertos del Cabildo Insular.**
 
@@ -361,6 +368,38 @@ está en cinco documentos. Cada uno se lee solo.
 | **[La sección experimental](docs/experimental.md)** | Las cinco funciones que dibujan más de lo que miden: nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 676 |
 | **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, lo que dura entre visitas — y las trampas de esta API. | 410 |
 | **[La aplicación móvil](docs/movil.md)** | iOS y Android con Expo sobre el mismo `src/`, y por qué eso obliga a compilar el móvil en cada cambio. | 114 |
+
+---
+
+## Se buscan colaboradores, sobre todo en la isla
+
+Esto lo escribe una persona sola, y hay una clase de ayuda que vale más que
+cualquier otra: **la de quien vive aquí**.
+
+El motor se valida contra sí mismo, escondiendo cada estación por turno para ver
+cuánto se equivoca al reconstruirla. Eso mide si el modelo es coherente con la
+red. **No mide si acierta en tu barrio**, y para eso hace falta alguien que esté
+ahí y mire por la ventana.
+
+> Si vives en Garafía, en Puntagorda, en Barlovento, en Tijarafe o en cualquier
+> sitio donde la red del Cabildo llega mal: abre la aplicación, toca tu pueblo y
+> **cuenta en un issue en qué se equivoca**. «A las 8:30 en Las Tricias decía 19°
+> y despejado, y había niebla cerrada.» Ese dato no está en ninguna API, y es lo
+> que separa un modelo elegante de un modelo que sirve.
+
+Valen igual los topónimos que el buscador no encuentra, las webcam que se
+mudaron de URL, y saber dónde está físicamente un sensor — dos estaciones del
+catálogo tienen coordenadas que caen **en el Atlántico**. Para nada de esto hace
+falta saber programar.
+
+**Y la aplicación de iOS y Android está en alpha**: una sola pantalla, la
+rotación y la inclinación del mapa apagadas, Android menos rodado que iOS y
+ninguna compilación en las tiendas. Es la parte más verde del proyecto y donde
+más se nota una mano. Si te mueves con React Native o Expo, hay trabajo de sobra
+y muy visible.
+
+Cómo empezar, las tres reglas que no se saltan y dónde escribir, en
+**[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ---
 
