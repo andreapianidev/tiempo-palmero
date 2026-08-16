@@ -49,6 +49,8 @@ const UNIFORM_NAMES = [
   'u_backgroundTex',
   'u_envTex',
   'u_envOn',
+  'u_foamTex',
+  'u_foamOn',
   'u_geomScale',
   'u_depthSlack',
   'u_resolution',

@@ -42,6 +42,7 @@ import {
 } from '../../../lib/ocean/coverage'
 import { CONSTANTS, UNIFORMS, WAVE_FUNCTIONS } from './waves'
 import { SKY_GLSL } from './sky'
+import { FOAM_SOURCE_GLSL } from './foam'
 
 export const FRAGMENT_SHADER = /* glsl */ `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -72,6 +73,9 @@ uniform float u_metersPerPixel;
 /** El mapa de cielo con las nubes de la escena. 0 = reflejar el cielo analítico. */
 uniform sampler2D u_envTex;
 uniform float u_envOn;
+/** El campo de espuma persistente del mundo. 0 = espuma instantánea. */
+uniform sampler2D u_foamTex;
+uniform float u_foamOn;
 
 uniform vec3 u_deepColor;
 uniform vec3 u_shallowColor;
@@ -92,6 +96,8 @@ varying vec4 v_shore;
 varying vec2 v_range;
 
 ${WAVE_FUNCTIONS}
+
+${FOAM_SOURCE_GLSL}
 
 ${SKY_GLSL}
 
@@ -287,30 +293,24 @@ void main() {
   // Tres espumas distintas y con tres motivos distintos:
   float foam = 0.0;
 
-  // (a) la rompiente, calculada por el vértice con la batimetría de verdad.
-  foam += breaking * smoothstep(-0.15, 0.5, crest);
+  // (a) la rompiente, (c) los borreguillos y (d) los regueros: las que dejan
+  //     huella. Cuando el campo de espuma persistente existe, llegan desde
+  //     él —acumuladas y decayendo, que es lo que hace la espuma de verdad—;
+  //     sin él se calculan aquí, instantáneas, como siempre. Ver \`FoamField\`.
+  if (u_foamOn > 0.5) {
+    foam += inBox(u_shoreBox, p)
+      ? texture2D(u_foamTex, clamp((p - u_shoreBox.xy) / u_shoreBox.zw, 0.0, 1.0)).r
+      : 0.0;
+  } else {
+    foam += foamSource(crest, breaking, windDir, windSpeed, posM, u_time, u_detailMeters, u_detailTex);
+  }
 
   // (b) la orilla: la lengua que sube, y la resaca que baja dejando la arena
-  //     brillando. La franja mide lo que la ola empuja.
+  //     brillando. La franja mide lo que la ola empuja. No se acumula: sigue
+  //     a la lengua del agua y es del instante.
   float band = max(2.5, runup * 2.6);
   float edge = 1.0 - smoothstep(0.0, band, shoreDist + push);
   foam += edge * (0.35 + 0.65 * max(crest, 0.0));
-
-  // (c) borreguillos: la cobertura sale de Monahan y O'Muircheartaigh (1980),
-  //     W = 3,84·10⁻⁶·U^3,41, la misma ley que usa sea-state.ts. A 8 m/s
-  //     es medio por ciento del mar; a 20, un diez por ciento.
-  float whitecap = min(1.0, 3.84e-6 * pow(max(windSpeed, 0.0), 3.41));
-  float speckle = texture2D(u_detailTex, posM / (u_detailMeters * 0.6) - windDir * u_time * 0.9).b;
-  foam += smoothstep(0.62, 0.98, speckle * (0.4 + 0.9 * max(crest, 0.0))) *
-          smoothstep(0.0, 0.06, whitecap) * (0.35 + 3.0 * whitecap);
-
-#ifdef SPINDRIFT
-  // (d) con viento fuerte, el mar deja de tener crestas: las tiene arrancadas.
-  //     Los regueros salen de la cresta y se van a sotavento.
-  float streak = texture2D(u_detailTex,
-    (posM + windDir * (u_time * (2.0 + windSpeed * 0.6))) / (u_detailMeters * 2.6)).b;
-  foam += smoothstep(0.55, 1.0, streak) * smoothstep(0.02, 0.12, whitecap) * 0.55;
-#endif
 
   foam = clamp(foam, 0.0, 1.0);
   // La espuma es aire en agua: dispersa toda la luz que le llega, así que no

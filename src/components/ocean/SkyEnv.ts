@@ -238,6 +238,11 @@ export function renderSkyEnv(
   light: OceanLight,
   clouds: readonly Cloud[],
 ): void {
+  // El viewport de MapLibre se devuelve tal y como estaba: lo puso una vez
+  // para todo el fotograma, y si esto lo dejara en 256 × 128, todo lo que se
+  // dibuja después —las nubes, la lluvia, los marcadores— saldría confinado
+  // en un rincón de la pantalla.
+  const viewport = gl.getParameter(gl.VIEWPORT) as Int32Array
   gl.bindFramebuffer(gl.FRAMEBUFFER, env.fbo)
   gl.viewport(0, 0, ENV_W, ENV_H)
   gl.disable(gl.DEPTH_TEST)
@@ -325,4 +330,5 @@ export function renderSkyEnv(
   }
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3])
 }

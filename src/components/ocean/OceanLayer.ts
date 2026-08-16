@@ -46,6 +46,8 @@ import {
   type OceanTextures,
 } from './OceanResources'
 import { buildSkyEnv, disposeSkyEnv, renderSkyEnv, type SkyEnvResources } from './SkyEnv'
+import { buildFoamField, disposeFoamField, renderFoamField, type FoamFieldResources } from './FoamField'
+import { foamDecay } from '../../lib/ocean/foam'
 import type { Cloud } from '../../lib/sky/scene'
 
 export const OCEAN_LAYER_ID = 'ocean-surface'
@@ -206,6 +208,14 @@ export class OceanLayer implements CustomLayerInterface {
   private clouds: Cloud[] = []
   private envAt = 0
 
+  /**
+   * El campo de espuma persistente. Igual que el mapa de cielo: se construye
+   * la primera vez que hace falta, no se destruye hasta que el mapa muere, y
+   * un contexto que no lo soporte apaga la memoria de la espuma sin apagar
+   * el mar.
+   */
+  private foam: FoamFieldResources | null = null
+
   /** El origen local. Fijo desde la construcción. Ver la cabecera. */
   private readonly origin = {
     x: mercatorBox(MAP_BBOX).x0 + mercatorBox(MAP_BBOX).width / 2,
@@ -336,10 +346,12 @@ export class OceanLayer implements CustomLayerInterface {
     }
     if (this.textures) disposeTextures(gl, this.textures)
     if (this.env) disposeSkyEnv(gl, this.env)
+    if (this.foam) disposeFoamField(gl, this.foam)
     this.program = null
     this.grid = null
     this.textures = null
     this.env = null
+    this.foam = null
     this.gl = null
     this.map = null
   }
@@ -392,6 +404,18 @@ export class OceanLayer implements CustomLayerInterface {
 
     if (settings.refraction) this.captureBackground(gl, textures, now, map)
 
+    // --- la memoria de la espuma --------------------------------------------
+    //
+    // Un paso de ping-pong por fotograma: las fuentes de espuma se acumulan en
+    // una textura del MUNDO y decaen con su vida media. Solo en calidad alta
+    // —es un pase entero de 1024 × 1024—, y solo con la costa ya cargada: sin
+    // ella, no hay dónde romper.
+    const fieldBox = mercatorBox(MAP_BBOX)
+    const detailMeters = 22 + 2.8 * Math.min(Math.max(0, this.inputs.windMs), 16)
+    const foamWanted = settings.spindrift && this.shoreline !== null && this.fade > 0.02
+    if (foamWanted) this.renderFoamPass(gl, now, dt, metersPerMerc, detailMeters, fieldBox)
+    const foamOn = foamWanted && this.foam !== null
+
     gl.useProgram(program.program)
     const u = program.uniforms
     const f32 = (m: Float64Array) => new Float32Array(m)
@@ -413,7 +437,6 @@ export class OceanLayer implements CustomLayerInterface {
       )
     }
 
-    const fieldBox = mercatorBox(MAP_BBOX)
     if (u.u_fieldBox) {
       gl.uniform4f(
         u.u_fieldBox,
@@ -445,8 +468,7 @@ export class OceanLayer implements CustomLayerInterface {
     if (u.u_maxDepth) gl.uniform1f(u.u_maxDepth, this.bathyMaxDepth)
 
     // Escala del rizado fino: con más viento, olas más largas y más marcadas.
-    const wind = Math.max(0, this.inputs.windMs)
-    if (u.u_detailMeters) gl.uniform1f(u.u_detailMeters, 22 + 2.8 * Math.min(wind, 16))
+    if (u.u_detailMeters) gl.uniform1f(u.u_detailMeters, detailMeters)
     if (u.u_detailAmp) gl.uniform1f(u.u_detailAmp, 0.85)
     // Cuánta pendiente queda por debajo del píxel a este zoom. Alimenta el
     // ensanchamiento del brillo del sol: es lo que convierte el destello
@@ -478,6 +500,7 @@ export class OceanLayer implements CustomLayerInterface {
     if (u.u_lit) gl.uniform1f(u.u_lit, water.lit)
     if (u.u_baseReveal) gl.uniform1f(u.u_baseReveal, this.inputs.basePhoto ? 1 : 0)
     if (u.u_envOn) gl.uniform1f(u.u_envOn, envOn ? 1 : 0)
+    if (u.u_foamOn) gl.uniform1f(u.u_foamOn, foamOn ? 1 : 0)
     if (u.u_fade) gl.uniform1f(u.u_fade, this.fade)
 
     const bind = (unit: number, texture: WebGLTexture, location: WebGLUniformLocation | null) => {
@@ -496,6 +519,7 @@ export class OceanLayer implements CustomLayerInterface {
     // sombreador ni la toca con `u_envOn` a cero, pero la unidad tiene que
     // estar atada o algún móvil lee basura.
     bind(7, this.env ? this.env.texture : textures.detail, u.u_envTex)
+    bind(8, this.foam ? (this.foam.current === 0 ? this.foam.texA : this.foam.texB) : textures.detail, u.u_foamTex)
 
     gl.bindBuffer(gl.ARRAY_BUFFER, grid.vertexBuffer)
     gl.enableVertexAttribArray(program.aNdc)
@@ -527,6 +551,54 @@ export class OceanLayer implements CustomLayerInterface {
     // `requestAnimationFrame` propio, para que el ciclo de dibujo siga siendo
     // suyo.
     map.triggerRepaint()
+  }
+
+  /**
+   * Un paso del campo de espuma: acumula lo que rompe y decae lo de antes.
+   *
+   * Si el contexto no da para el bucle de ping-pong, la memoria se apaga y
+   * el océano vuelve a la espuma instantánea sin que se pierda nada más.
+   */
+  private renderFoamPass(
+    gl: Gl,
+    now: number,
+    dt: number,
+    metersPerMerc: number,
+    detailMeters: number,
+    fieldBox: ReturnType<typeof mercatorBox>,
+  ): void {
+    try {
+      if (!this.foam) this.foam = buildFoamField(gl, QUALITY[this.quality].spindrift)
+      const shore = this.shoreline
+      const textures = this.textures
+      if (!shore || !textures) return
+      const local = (b: { x0: number; y0: number; width: number; height: number }): [
+        number,
+        number,
+        number,
+        number,
+      ] => [b.x0 - this.origin.x, b.y0 - this.origin.y, b.width, b.height]
+      renderFoamField(gl, this.foam, {
+        decay: foamDecay(dt),
+        time: (now - this.started) / 1000,
+        fieldBox: local(fieldBox),
+        bathyBox: local(fieldBox),
+        shoreBox: local(shore.box),
+        maxDepth: this.bathyMaxDepth,
+        metersPerMerc,
+        detailMeters,
+        textures: {
+          swell: textures.swell,
+          windSea: textures.windSea,
+          wind: textures.wind,
+          bathymetry: textures.bathymetry,
+          shoreline: textures.shoreline,
+          detail: textures.detail,
+        },
+      })
+    } catch {
+      this.foam = null
+    }
   }
 
   /**
