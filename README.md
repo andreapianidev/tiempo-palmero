@@ -11,10 +11,6 @@ altitud manda sobre la distancia en cualquier variable atmosférica.
 **Probar la aplicación → [tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
 — en marcha, sin registro, sin clave de API y sin nada que instalar.
 
-Proyecto de **Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com).
-Software libre bajo **Apache 2.0 con atribución**: se puede usar, copiar y
-modificar citando al autor y manteniendo las atribuciones de los datos. Ver
-[LICENSE](LICENSE) y [NOTICE](NOTICE).
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 
@@ -2906,8 +2902,10 @@ En corto, para quien reutilice esto:
 
 ## Autor
 
-Proyecto de **Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com) ·
-[andreapiani.dev@gmail.com](mailto:andreapiani.dev@gmail.com)
+Proyecto de **Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com).
+Software libre bajo **Apache 2.0 con atribución**: se puede usar, copiar y
+modificar citando al autor y manteniendo las atribuciones de los datos. Ver
+[LICENSE](LICENSE) y [NOTICE](NOTICE).
 
 Escrito en El Paso, en la isla de La Palma, sobre los datos abiertos de su
 Cabildo.
