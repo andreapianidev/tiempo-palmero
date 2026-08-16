@@ -454,7 +454,8 @@ Tres decisiones que no son de gusto:
 El fichero son 5,2 MB (837 KB por el cable) y se descarga **solo al encender el
 interruptor**. Sale de 20,4 MB de Overpass: los trazados se adelgazan con
 Douglas-Peucker a **1e-5 grados**, que a esta latitud son **1,11 m como mucho**,
-medio píxel a z16 —el zoom máximo de la aplicación, donde un píxel mide 2,10 m—.
+medio píxel a z16 (2,10 m por píxel) y un píxel justo a z17 (1,05 m) —el zoom
+máximo de la aplicación desde el 16 de agosto de 2026—.
 Eso quita el 32 % de los vértices sin que se vea. El umbral está medido, no
 elegido: a 5e-5 (5,5 m, 2,6 px) las curvas de las medianías empiezan a verse
 recortadas.

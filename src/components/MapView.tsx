@@ -454,7 +454,11 @@ export function MapView(props: Props) {
       center: ISLAND_CENTER,
       zoom: 9.6,
       minZoom: 8.5,
-      maxZoom: 16,
+      // Un nivel más que el techo de las fuentes de fondo: es lo que deja
+      // alcanzar las teselas z17 de la ortofoto (ver `basemaps.ts` y
+      // `scripts/checks/detalle-tiles.ts`). Los demás fondos se magnifican a
+      // este nivel, como ya hacían desde el 16 hacia abajo.
+      maxZoom: 17,
       // El plano arranca plano. MapLibre trae el arrastre con el botón derecho
       // activado de fábrica y hasta ahora eso permitía inclinar la vista sin
       // querer, sin relieve debajo: un mapa torcido, que no enseña nada que el
