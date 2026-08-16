@@ -40,6 +40,9 @@ const mercY = (lat: number) =>
 
 const TMP = mkdtempSync(join(tmpdir(), 'detalle-tiles-'))
 
+/** Una petición por recuadro, no una por comparación: z16 y z17 se usan dos veces. */
+const CACHE = new Map<string, { luma: Uint8Array; size: number; bytes: number }>()
+
 // --- los recuadros -----------------------------------------------------------
 //
 // Cada uno contesta una de las preguntas: casas (un pueblo), acantilados (la
@@ -73,6 +76,8 @@ async function ortofoto(
   size: number,
   name: string,
 ): Promise<{ luma: Uint8Array; size: number; bytes: number }> {
+  const hit = CACHE.get(name)
+  if (hit) return hit
   const n = Math.pow(2, z)
   const x0 = (tileX / n) * MERC * 2 - MERC
   const x1 = ((tileX + 1) / n) * MERC * 2 - MERC
@@ -109,7 +114,9 @@ async function ortofoto(
       0.2126 * image.data[i * 4] + 0.7152 * image.data[i * 4 + 1] + 0.0722 * image.data[i * 4 + 2],
     )
   }
-  return { luma, size, bytes: buf.length }
+  const out = { luma, size, bytes: buf.length }
+  CACHE.set(name, out)
+  return out
 }
 
 // --- las medidas -------------------------------------------------------------
@@ -231,6 +238,19 @@ async function main() {
     const magnificada = ampliar(cuadrante, 512, 1024)
     const lapHoy = laplaciano(magnificada, 1024)
 
+    // --- lo mismo a densidad 1: la z16 pedida a 512, cuadrante de 256 -------
+    const z16b = await ortofoto(tx16, ty16, 16, 512, `${area.name}-z16-512`)
+    const cxB = (tx17 % 2) * 256
+    const cyB = (ty17 % 2) * 256
+    const cuadranteB = new Uint8Array(256 * 256)
+    for (let y = 0; y < 256; y++) {
+      for (let x = 0; x < 256; x++) {
+        cuadranteB[y * 256 + x] = z16b.luma[(cyB + y) * 512 + cxB + x]
+      }
+    }
+    const magnificadaB = ampliar(cuadranteB, 256, 512)
+    const lapHoyB = laplaciano(magnificadaB, 512)
+
     // --- lo que se vería con maxzoom 17: la z17 pedida a 1024 -----------------
     const z17 = await ortofoto(tx17, ty17, 17, 1024, `${area.name}-z17-1024`)
     const lapZ17 = laplaciano(z17.luma, 1024)
@@ -263,6 +283,20 @@ async function main() {
     console.log(
       `  → z17 da ${(lapZ17 / lapHoy).toFixed(2)}× el detalle de hoy; ` +
         `z18@512 da ${(lapZ18 / lapHoy).toFixed(2)}×`,
+    )
+    console.log('  --- pantalla, densidad 1 (512 píxeles físicos) ---')
+    console.log(
+      `  HOY (z16 ampliada)   ${lapHoyB.toFixed(1).padStart(6)}   ` +
+        `${String(z16b.bytes).padStart(7)}   (1 tesela)`,
+    )
+    const z17b = await ortofoto(tx17, ty17, 17, 512, `${area.name}-z17-512`)
+    const lapZ17b = laplaciano(z17b.luma, 512)
+    console.log(
+      `  maxzoom 17 (z17 512) ${lapZ17b.toFixed(1).padStart(6)}   ` +
+        `${String(z17b.bytes).padStart(7)}   (×4 teselas = ${z17b.bytes * 4} bytes)`,
+    )
+    console.log(
+      `  → z17 da ${(lapZ17b / lapHoyB).toFixed(2)}× el detalle de hoy`,
     )
   }
   rmSync(TMP, { recursive: true, force: true })

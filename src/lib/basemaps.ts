@@ -223,14 +223,15 @@ export const BASEMAPS: Record<BasemapId, Basemap> = {
     note: 'Ortofoto territorial 2024-2025, a la resolución de esta pantalla y sin la calima del vuelo. La colada de Tajogaite se ve como lo que es: la cicatriz que baja del cono hasta el mar.',
     // El techo de 17 está medido, no elegido: `scripts/checks/detalle-tiles.ts`
     // (16 ago 2026) pide la foto a z16–z18 y mide el laplaciano |∇²| sobre los
-    // MISMOS píxeles de pantalla. A cámara z17 con densidad 2, la z16 de hoy
-    // ampliada da 20,6 / 10,6 / 11,5 (Los Llanos, Caldera, costa oeste) y la
-    // z17 pedida da 76,5 / 34,2 / 40,2: 3,2–3,7× más detalle real. El z18 no
-    // paga: menos |∇²| por píxel (la foto entra en su resolución de vuelo, 25
-    // cm) y 16 teselas por pantalla. Coste del 17: 4 teselas donde antes 1,
-    // ~0,7–1 MB por pantalla al fondo del zoom. No se descarga más superficie,
-    // solo la que se mira, a más píxeles. El MT20 se queda en 16: no está
-    // medido, y es papel que el servicio redibuja fino a cualquier escala.
+    // MISMOS píxeles de pantalla. A cámara z17, la z16 de hoy ampliada da
+    // 20,6 / 10,6 / 11,5 (Los Llanos, Caldera, costa oeste) con densidad 2 y
+    // 23,8 / 12,9 / 14,6 con densidad 1; la z17 pedida da 76,5 / 34,2 / 40,2 y
+    // 73,4 / 37,1 / 40,4: 3,2–3,7× más detalle real con densidad 2 y 2,8–3,1×
+    // con densidad 1. El z18 no paga: menos |∇²| por píxel (la foto entra en su
+    // resolución de vuelo, 25 cm) y 16 teselas por pantalla. Coste del 17:
+    // 4 teselas donde antes 1, ~0,7–1 MB por pantalla al fondo del zoom. No se
+    // descarga más superficie, solo la que se mira, a más píxeles. El MT20 se
+    // queda en 16: no está medido.
     source: grafcan('Ortofoto', 'ortofoto', `${GRAFCAN_CREDIT} · Ortofoto Territorial 2024-2025`, 17),
     // La ortofoto no rotula nada, así que los topónimos son nuestros a todas
     // las escalas. Y sobre imagen aérea el texto blanco con sombra negra es
