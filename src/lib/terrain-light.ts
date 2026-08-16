@@ -23,12 +23,14 @@
  *     inventada;
  *   - a los **colores**, porque un sol a 5° es naranja y uno a 70° es blanco.
  *
- * NO ES UN MODELO DE SOMBRAS ARROJADAS. `hillshade` solo sabe de pendientes:
- * ilumina una ladera según hacia dónde mira, pero no sabe que la pared de la
- * Caldera le tapa el sol al barranco de al lado. Eso es otra cosa —un mapa de
- * horizonte por posición solar— y no está aquí. Lo que hay es la dirección
- * correcta, que ya es la diferencia entre una isla iluminada y una isla con un
- * relieve grabado.
+ * ESTE MÓDULO NO ARROJA SOMBRAS, y ya no hace falta que lo haga. `hillshade`
+ * solo sabe de pendientes: ilumina una ladera según hacia dónde mira, pero no
+ * sabe que la pared de la Caldera le tapa el sol al barranco de al lado. Eso es
+ * otra cosa, y desde agosto de 2026 está resuelta aparte, en
+ * `src/lib/shadow/terrain.ts` —un barrido sobre el DEM en memoria, no un mapa
+ * de horizonte precalculado—, que se dibuja encima con su propio interruptor.
+ * Lo de aquí es la DIRECCIÓN correcta de la luz, que ya es la diferencia entre
+ * una isla iluminada y una isla con un relieve grabado.
  *
  * DE NOCHE MANDA LA LUNA, y es de verdad: sale de las mismas efemérides de
  * `sun.ts` —posición y fase de Meeus— que ya usa el mar. Una luna llena alta

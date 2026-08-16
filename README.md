@@ -1,7 +1,7 @@
 # Tiempo Palmero
 
-**Meteorología interpolada a alta resolución para la isla de La Palma, a partir
-exclusivamente de los datos abiertos del Cabildo Insular.**
+**Meteorología interpolada a alta resolución para la isla de La Palma,
+construida sobre los datos abiertos del Cabildo Insular.**
 
 Tocas cualquier punto del mapa y obtienes una estimación del tiempo **en ese
 punto**, no la lectura de la estación más cercana. Es una distinción que en La
@@ -11,32 +11,26 @@ altitud manda sobre la distancia en cualquier variable atmosférica.
 **Probar la aplicación → [tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
 — en marcha, sin registro, sin clave de API y sin nada que instalar.
 
-Hecho por **Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com)
+Proyecto de **Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com).
+Software libre bajo **Apache 2.0 con atribución**: se puede usar, copiar y
+modificar citando al autor y manteniendo las atribuciones de los datos. Ver
+[LICENSE](LICENSE) y [NOTICE](NOTICE).
 
-![Tiempo Palmero: la isla con la malla interpolada sobre el relieve sombreado, y el panel de un punto consultado](docs/captura-tiempo-palmero.jpg)
+![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 
-En la captura, un punto cualquiera de El Paso a 509 m. La cifra grande es una
-**estimación**, y la interfaz no lo disimula: lleva su margen al lado, el
-municipio calculado por geometría, y las tres estaciones que sostienen el
-cálculo con su distancia y su desnivel. La estación que más pesa está 251 m más
-arriba y a 3,5 km; la segunda, 143 m más abajo. Sin corregir por altitud, esas
-dos se promediarían como si estuvieran en el mismo sitio.
-
-Debajo del margen, **cuándo se midió** lo que sostiene la cifra: «medido hace
-19 min, la más antigua hace 38 min». Es un reloj distinto del de la descarga —
-los datos pueden haberse pedido hace diez segundos y las lecturas ser de hace
-hora y media, y es lo segundo lo que dice si el número sigue valiendo. La
-antigüedad se pondera con el mismo peso que el valor: si el 80 % de la cifra
-sale de una estación, la frescura que se anuncia es la de esa estación.
-
-Abajo a la izquierda, el estado del modelo: **35 de 52 estaciones activas** —el
-denominador real, no el del catálogo—, el gradiente medido en ese instante
-(4,06 °C/km, no los 6,5 del manual), el R² del ajuste y el RMSE de validación.
+La isla entera, con el tiempo que hacía en ese momento. Cada pastilla es un
+punto de la red del Cabildo con su lectura; las nubes y las cortinas de lluvia
+están dibujadas **en volumen sobre el relieve**, a la cota que les toca. En el
+panel de la izquierda se encienden y se apagan las capas: las carreteras del
+Cabildo, el viario completo de OpenStreetMap, los aforos de tráfico y de
+senderos, las cámaras de incendios y las webcam de la isla.
 
 ---
 
 ## Índice
 
+- [Las funciones, en dos minutos](#las-funciones-en-dos-minutos) — qué se ve en
+  pantalla y para qué sirve cada cosa, sin entrar en el motor
 - [Por qué existe](#por-qué-existe) — el problema que resuelve, en números
 - [Qué hace](#qué-hace)
 - [Honestidad de los datos](#honestidad-de-los-datos) — las reglas que no se
@@ -71,6 +65,134 @@ denominador real, no el del catálogo—, el gradiente medido en ese instante
 - [Trampas de esta API](#trampas-de-esta-api-que-ya-están-resueltas-en-el-código)
   — un día de depuración cada una
 - [Puesta en marcha](#puesta-en-marcha) · [Fuentes y licencias](#fuentes-y-licencias)
+
+---
+
+## Las funciones, en dos minutos
+
+Lo que sigue es la aplicación contada por lo que hace, no por cómo lo hace. El
+detalle técnico de cada cosa está más abajo, en su sección; aquí solo está para
+qué sirve y qué hay que creerse de lo que se ve.
+
+### El mapa entero, no las chinchetas
+
+La isla se pinta como una **malla continua de color**: el valor de la variable
+elegida en cada punto, no un puñado de marcas donde hay sensor. Se elige entre
+temperatura, humedad relativa, punto de rocío, déficit de presión de vapor, CO₂
+del suelo y cobertura móvil, y la escala de color se ajusta a lo que hay ese
+día. La malla se puede **apagar**: el mapa se queda con el fondo y las pastillas
+de las estaciones, que es lo cómodo para mirar el relieve o la ortofoto sin
+color encima.
+
+Encima de la malla van las **pastillas**: cada estación de la red del Cabildo
+con su lectura del momento. Verde y naranja no son decoración, son la escala de
+la variable.
+
+### La ficha de un punto
+
+Se toca cualquier sitio del mapa —haya sensor o no— y sale la estimación para
+ese punto concreto, con todo lo que hace falta para juzgarla.
+
+![La ficha de un punto de El Paso: la cifra con su margen, el municipio, las tres estaciones que sostienen el cálculo con distancia y desnivel, y el estado del modelo abajo a la izquierda](docs/captura-tiempo-palmero.jpg)
+
+En la captura, un punto cualquiera de El Paso a 509 m. La cifra grande es una
+**estimación**, y la interfaz no lo disimula: lleva su margen al lado, el
+municipio calculado por geometría, y las tres estaciones que sostienen el
+cálculo con su distancia y su desnivel. La estación que más pesa está 251 m más
+arriba y a 3,5 km; la segunda, 143 m más abajo. Sin corregir por altitud, esas
+dos se promediarían como si estuvieran en el mismo sitio.
+
+Debajo del margen, **cuándo se midió** lo que sostiene la cifra: «medido hace
+19 min, la más antigua hace 38 min». Es un reloj distinto del de la descarga —
+los datos pueden haberse pedido hace diez segundos y las lecturas ser de hace
+hora y media, y es lo segundo lo que dice si el número sigue valiendo. La
+antigüedad se pondera con el mismo peso que el valor: si el 80 % de la cifra
+sale de una estación, la frescura que se anuncia es la de esa estación.
+
+Abajo a la izquierda, el estado del modelo: **35 de 52 estaciones activas** —el
+denominador real, no el del catálogo—, el gradiente medido en ese instante
+(4,06 °C/km, no los 6,5 del manual), el R² del ajuste y el RMSE de validación.
+
+### Las capas que se encienden
+
+Todo lo demás que publica el Cabildo, en interruptores:
+
+- **Carreteras insulares** y **viario completo de OpenStreetMap** — 19.770
+  trazados y 3.373 km frente a los 61 tramos del catálogo del Cabildo. Las
+  14.003 pistas y accesos aparecen al acercarse, porque a vista de isla serían
+  una telaraña. La línea discontinua es pista de tierra.
+- **Aforos de tráfico y de senderos** — los contadores de la isla con su cifra
+  del día.
+- **Cámaras de incendios** y **webcam de la isla**, con enlace a la imagen viva.
+- **Cobertura de TDT**, que es una simulación de propagación de 2018, no una
+  medida — y va dicho donde se enciende.
+- **Sitios de interés**: servicios, patrimonio cultural y patrimonio natural.
+  Se toca el icono y sale su ficha.
+- **La red de guaguas** de TILP, con el horario y la fecha del archivo delante.
+
+### El fondo y la vista en tres dimensiones
+
+Tres fondos: **relieve** sombreado, **topográfico** y **satélite** —la ortofoto
+territorial 2024-2025 de GRAFCAN, pedida a la resolución de la pantalla, en la
+que la colada de Tajogaite se ve como lo que es—. Y un interruptor de **relieve
+en tres dimensiones** que usa el mismo modelo de elevación que ya sombrea el
+mapa: no descarga nada nuevo. Con `Ctrl` y arrastrando se gira 360° y se inclina
+hasta 65°.
+
+### Lo experimental: cinco funciones que dibujan más de lo que miden
+
+Hay una sección aparte, plegada y detrás de un aviso, para las funciones que
+**no se sostienen igual que el resto**. Están separadas a propósito: ponerlas
+junto a la temperatura las igualaría con una medida, y no lo son. Ninguna es un
+aviso oficial ni sustituye a ninguno — las alertas y las prohibiciones las
+publican el Cabildo Insular y el Gobierno de Canarias.
+
+![La cumbre y la Caldera en vista 3D oblicua, con los bancos de nubes en volumen y el panel de la escena atmosférica: nubosidad por pisos, puntos con lluvia y la cota de la capa baja](docs/nubes-y-lluvia-3d.jpg)
+
+En el panel de la captura, la escena atmosférica declarando exactamente lo que
+sabe: 22 % de nubosidad baja, 0 % media y alta, ningún punto con lluvia de los
+70 que mira, y la capa baja entre 950 y 1450 m. Debajo, en letra pequeña, lo
+que no sabe: que la forma concreta de cada nube es una representación de esa
+cifra, no una nube que alguien haya visto.
+
+**Nubes y lluvia en 3D.** Dibuja el tiempo del momento como volumen sobre el
+relieve: bancos de nubes a su cota, moviéndose con el viento de *su* nivel —que
+no es el de superficie—, y cortinas de lluvia colgando hasta el suelo de las que
+llueven. El dato es el porcentaje de nubosidad por piso y los milímetros de la
+última hora; el dibujo es la silueta. No es un radar ni una observación.
+
+**La luz del sol sobre la isla.** Lo último que ha entrado, y lo que más cambia
+la pantalla. Hasta ahora el relieve se iluminaba desde el noroeste fijo —la
+convención de los mapas de toda la vida— mientras el mar reflejaba el sol en su
+sitio real y las nubes se encendían por donde les daba: tres soles distintos a
+la vez. Ahora la isla se ilumina **desde donde está el sol**, y con ello vienen
+cuatro cosas que se encienden por separado:
+
+- **Luz del sol real** — el relieve sigue al sol de verdad, y de noche a la
+  luna, con su fase.
+- **Sombras arrojadas** — la pared de la Caldera le quita el sol al barranco de
+  al lado, que es media escena de cualquier atardecer. Y las nubes proyectan su
+  sombra en el suelo que tienen debajo.
+- **El disco del sol** — dónde está ahora mismo, con su altura y su azimut.
+- **La carrera del sol** — el camino que recorre hoy, con una marca por cada
+  hora en punto, para ver a qué hora le entra el sol a un sitio y a qué hora se
+  lo quita la cumbre.
+
+**El índice de incendio.** Una estimación del peligro a partir del tiempo que
+hace y del modelo de combustible, calibrada contra el clima de 2001-2024 y
+validada escondiendo cada incendio real entero, uno por uno. Dice lo que puede
+decir y lo que no, y no es una alerta.
+
+**El viento animado.** Partículas siguiendo un campo continuo que no existe en
+ningún sensor: se construye mezclando las estaciones que publican dirección con
+una rejilla de modelo donde no llega ninguna. En una isla donde dos puntos a
+5 km pueden soplar al revés, ese relleno es buena parte de lo que se ve. La
+cifra honesta —cuánto es medido y cuánto modelado— sigue en la sección «Viento».
+
+**El mar en movimiento.** La altura de ola, el periodo, la marea y la
+profundidad son dato; la ola que se ve romper en un punto la pone un sombreador.
+Por eso está aquí y no en «Océano», que es donde viven las cartas ajenas y
+publicadas — el balizamiento de OpenSeaMap y la batimetría de EMODnet.
 
 ---
 
@@ -1685,9 +1807,24 @@ así que la altura se traduce a lo que sí hay:
   extremos son los mismos que usa el mar para su reflejo — son la misma luz, y
   verlas de dos colores distintos era parte del problema.
 
-**No dibuja sombras arrojadas.** `hillshade` sabe hacia dónde mira cada ladera,
-pero no sabe que la pared de la Caldera le tapa el sol al barranco de al lado.
-Eso es otra cosa —un mapa de horizonte por posición solar— y no está.
+**`hillshade` no dibuja sombras arrojadas, así que las pone otra capa.** La capa
+de MapLibre sabe hacia dónde mira cada ladera, pero no sabe que la pared de la
+Caldera le tapa el sol al barranco de al lado, y una ladera orientada al sol con
+una montaña por medio le salía iluminada. Eso es media escena de cualquier
+atardecer real, así que **desde agosto de 2026 hay un interruptor propio**,
+«Sombras arrojadas», que lo resuelve encima.
+
+No con un mapa de horizonte precalculado —la idea obvia, y 33 MB de tabla que se
+descartaron antes de escribirla— sino con **un barrido sobre el DEM que ya está
+en memoria**: recorriendo la malla en contra del sol, el horizonte de cada celda
+sale del de su vecina con una resta. Un pase por posición solar, sin marchas.
+Medido sobre el DEM real de 1792 × 2304: **80,6 ms a resolución completa y
+21,0 ms a la mitad**, que es la que se usa, porque la sombra no puede salir más
+afilada que las celdas de 33,54 m que la proyectan y a 67 m el borde se corre
+una celda como mucho.
+
+En el mismo interruptor entran las **sombras de las nubes** sobre el suelo:
+antes flotaban sobre un terreno al que no le quitaban el sol.
 
 **De noche manda la luna**, y es de verdad: posición y fase de Meeus, las mismas
 efemérides que el mar. Una luna llena alta ilumina desde donde está, con luz fría
@@ -2743,17 +2880,40 @@ clave que configurar.
   para los días sin llover y para el clima de 2001–2024 con el que se calibra la
   escala del peligro. Es un modelo, no una medida, y va etiquetado como tal.
 
-El **código** es MIT. Los **datos** conservan las licencias de arriba: quien
-reutilice este repositorio mantiene las atribuciones. Ver [LICENSE](LICENSE).
+### La licencia del código: libre, con atribución
+
+El código es **[Apache License 2.0](LICENSE)**. Es software libre: se puede
+usar, copiar, modificar, redistribuir y usar comercialmente, sin permiso previo
+y sin pagar nada. La condición es **la atribución**, y por eso es Apache y no
+MIT: la cláusula 4(d) obliga a quien redistribuya la obra —o una derivada— a
+conservar el fichero **[NOTICE](NOTICE)**, que es donde están el autor y las
+atribuciones de todos los datos de arriba. Con MIT el aviso también se conserva,
+pero se pierde en la práctica en cuanto el código se empaqueta; el NOTICE de
+Apache está pensado justo para que no ocurra.
+
+En corto, para quien reutilice esto:
+
+1. **Cita al autor** — Andrea Piani, <https://www.andreapiani.com> — y conserva
+   el `NOTICE`.
+2. **Mantén las atribuciones de los datos.** No son mías: son del Cabildo
+   Insular de La Palma, de OpenStreetMap, del Gobierno de Canarias, de Copernicus
+   y de los demás de la lista. La licencia del código no las cubre ni las
+   sustituye.
+3. Di qué has cambiado, si lo has cambiado. Lo pide la cláusula 4(b) y es de
+   sentido común cuando lo que se toca son cifras que alguien va a leer.
 
 ---
 
 ## Autor
 
-**Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com) ·
+Proyecto de **Andrea Piani** — [www.andreapiani.com](https://www.andreapiani.com) ·
 [andreapiani.dev@gmail.com](mailto:andreapiani.dev@gmail.com)
 
+Escrito en El Paso, en la isla de La Palma, sobre los datos abiertos de su
+Cabildo.
+
 Aplicación en marcha: **[tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
+· Código: **[github.com/andreapianidev/tiempo-palmero](https://github.com/andreapianidev/tiempo-palmero)**
 
 © 2026 Tiempo Palmero · Andrea Piani · NIE 02915190306-Z · El Paso, Santa Cruz de
 Tenerife · Islas Canarias

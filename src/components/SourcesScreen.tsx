@@ -146,7 +146,7 @@ const ENTRIES: Entry[] = [
   {
     title: t.sources.codeTitle,
     body: t.sources.codeBody,
-    license: 'MIT',
+    license: 'Apache-2.0',
     href: 'https://github.com/andreapianidev/tiempo-palmero',
     hrefLabel: 'github.com/andreapianidev/tiempo-palmero',
   },

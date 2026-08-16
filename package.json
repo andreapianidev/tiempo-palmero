@@ -3,6 +3,14 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "Meteorología interpolada a alta resolución para la isla de La Palma, construida sobre los datos abiertos del Cabildo Insular.",
+  "license": "Apache-2.0",
+  "author": "Andrea Piani <andreapiani.dev@gmail.com> (https://www.andreapiani.com)",
+  "homepage": "https://tiempo-palmero.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andreapianidev/tiempo-palmero.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

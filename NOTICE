@@ -1,0 +1,86 @@
+Tiempo Palmero
+Copyright 2026 Andrea Piani
+
+Meteorología interpolada a alta resolución para la isla de La Palma, construida
+sobre los datos abiertos del Cabildo Insular.
+
+  Autor:  Andrea Piani — https://www.andreapiani.com
+  Correo: andreapiani.dev@gmail.com
+  Código: https://github.com/andreapianidev/tiempo-palmero
+  Web:    https://tiempo-palmero.vercel.app
+
+Este producto incluye software desarrollado por Andrea Piani.
+
+El código se distribuye bajo la Apache License 2.0 (ver el fichero LICENSE).
+Quien redistribuya esta obra, o una obra derivada de ella, debe conservar este
+fichero NOTICE — es la cláusula 4(d) de la licencia — y con él la atribución al
+autor y las atribuciones de los datos que vienen a continuación.
+
+
+-------------------------------------------------------------------------------
+LOS DATOS NO SON MÍOS, Y TIENEN SUS PROPIAS LICENCIAS
+-------------------------------------------------------------------------------
+
+La licencia del código NO cubre los datos que la aplicación consume ni los
+ficheros precalculados de `public/`. Cada fuente conserva la suya, y quien
+reutilice este repositorio mantiene sus atribuciones:
+
+  · Datos meteorológicos, de calidad del aire, de calidad del cielo, de
+    incendios y del resto de sensores — Cabildo Insular de La Palma, Servicio
+    de Transformación Digital (La Palma Smart Island). CC-BY 4.0.
+    https://www.opendatalapalma.es
+
+  · Límites municipales e insular — Cabildo Insular de La Palma. ODC-BY.
+
+  · Sitios de interés, miradores, puntos de recarga eléctrica y red de
+    carreteras insulares — Cabildo Insular de La Palma. CC-BY 4.0.
+
+  · Cobertura de TDT — Cabildo Insular de La Palma, `Simulaciones_Rep_TDT.kmz`
+    (ArcGIS Online, 2018). CC-BY 4.0. Es una simulación de propagación, no una
+    medida ni una garantía de recepción.
+
+  · Aforos de tráfico y de senderos — Cabildo Insular de La Palma, vertical
+    `count` de la API. CC-BY 4.0.
+
+  · Red de sensores de CO₂ — DEMASE, publicada a través del portal del Cabildo.
+
+  · Transporte público (GTFS) — Transportes Insulares La Palma (TILP),
+    publicado por el Cabildo. CC-BY 4.0. https://www.tilp.es
+
+  · Topónimos y viario completo — © colaboradores de OpenStreetMap, ODbL 1.0.
+    Se extraen en tiempo de compilación vía Overpass; la aplicación no consulta
+    OpenStreetMap en tiempo de ejecución.
+    https://www.openstreetmap.org/copyright
+
+  · Ortofoto territorial y fondos cartográficos — GRAFCAN, Gobierno de
+    Canarias.
+
+  · Modelo de elevación y relieve — Mapzen Terrain Tiles vía AWS Open Data,
+    derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM.
+
+  · Áreas quemadas — Copernicus Emergency Management Service, EFFIS (incendios
+    de 2016, 2020 y 2023). Los perímetros de 2009 y 2012 son del Cabildo
+    Insular de La Palma, CC-BY 4.0.
+    https://forest-fire.emergency.copernicus.eu
+
+  · Modelos de combustible y mapa de cultivos 2002-2008 — Gobierno de Canarias,
+    Consejería de Medio Ambiente.
+
+  · Batimetría — EMODnet. Balizamiento náutico — OpenSeaMap, © colaboradores
+    de OpenStreetMap, ODbL 1.0.
+
+  · Archivo meteorológico y campos de modelo — Open-Meteo (reanálisis ERA5 y
+    modelo ICON). Es un modelo, no una medida, y en la aplicación va etiquetado
+    como tal.
+
+
+-------------------------------------------------------------------------------
+LO QUE ESTA APLICACIÓN NO ES
+-------------------------------------------------------------------------------
+
+Tiempo Palmero no es una fuente oficial. Las estimaciones que publica llevan su
+margen de error al lado y su denominador real de estaciones activas, pero
+siguen siendo estimaciones. Los avisos de riesgo, las alertas meteorológicas y
+las prohibiciones las publican el Cabildo Insular de La Palma y el Gobierno de
+Canarias, y ninguna función de esta aplicación —en particular las de la sección
+«Experimental»— los sustituye.

@@ -1095,7 +1095,7 @@ export const es = {
       'escondiendo uno entero cada vez; lo que llega aquí son 150 árboles en un JSON.',
     fireLicense: 'CC-BY 4.0 · Copernicus EFFIS · Gobierno de Canarias',
     codeTitle: 'Código',
-    codeBody: 'Software libre. El motor de interpolación y sus pruebas son públicos.',
+    codeBody: 'Software libre con atribución. El motor de interpolación y sus pruebas son públicos.',
     noTrackingTitle: 'Sin rastreo',
     noTrackingBody:
       'Sin cookies, sin analítica de terceros y sin publicidad. La pantalla de CO₂ no lleva ni llevará publicidad ni muro de pago.',
