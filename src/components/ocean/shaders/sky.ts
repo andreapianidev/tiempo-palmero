@@ -46,7 +46,9 @@ vec3 skyColor(vec3 dir) {
 
 /** De dirección del mundo a UV equirect 0-1, el gemelo de \`lib/ocean/sky-env.ts\`. */
 vec2 envUv(vec3 dir) {
-  float az = atan(dir.y, dir.x);
+  // Azimut desde el norte hacia el este: el mismo convenio que el resto del
+  // mapa. \`atan(x, y)\` es el ángulo de (y, x) contado desde el norte.
+  float az = atan(dir.x, dir.y);
   float el = asin(clamp(dir.z, -1.0, 1.0));
   return vec2(az / TAU + 0.5, 0.5 - el / PI);
 }

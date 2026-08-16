@@ -1283,7 +1283,11 @@ export function MapView(props: Props) {
     if (!ready) return
     cloudLayerRef.current?.setScene(props.sky3d.clouds)
     rainLayerRef.current?.setScene(props.sky3d.clouds, dem)
-  }, [ready, props.sky3d.clouds, dem])
+    // El mar refleja el MISMO cielo: las nubes que le llegan son las de la
+    // escena, ni una versión de segunda. Con la escena apagada la lista va
+    // vacía y el reflejo vuelve al cielo analítico de siempre.
+    oceanLayerRef.current?.setClouds(props.sky3d.on ? props.sky3d.clouds : [])
+  }, [ready, props.sky3d.clouds, props.sky3d.on, dem])
 
   useEffect(() => {
     if (!ready) return

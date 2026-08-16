@@ -28,7 +28,7 @@ import type { CustomLayerInterface, Map as MlMap } from 'maplibre-gl'
 import { MAP_BBOX } from '../../lib/geo'
 import { mercatorBox, metersPerMercatorUnit } from '../../lib/ocean/mercator'
 import { cameraPosition, invert, multiply, translation } from '../../lib/ocean/mat4'
-import { oceanLight, waterColors, type LightInputs } from '../../lib/ocean/light'
+import { oceanLight, waterColors, type LightInputs, type OceanLight } from '../../lib/ocean/light'
 import { BIAS_STEPS, FALLBACK_DEPTH_BITS, ndcStep } from '../../lib/ocean/depth'
 import { QUALITY, type OceanQuality } from '../../lib/ocean/quality'
 import type { OceanField } from '../../lib/ocean/field'
@@ -45,6 +45,8 @@ import {
   type OceanProgram,
   type OceanTextures,
 } from './OceanResources'
+import { buildSkyEnv, disposeSkyEnv, renderSkyEnv, type SkyEnvResources } from './SkyEnv'
+import type { Cloud } from '../../lib/sky/scene'
 
 export const OCEAN_LAYER_ID = 'ocean-surface'
 
@@ -82,6 +84,9 @@ const MAX_RANGE_M = 300_000
 
 /** Lo que tarda el mar en aparecer y en irse, en milisegundos. */
 const FADE_MS = 700
+
+/** Cada cuánto se repinta el mapa de cielo que refleja el agua. */
+const ENV_REFRESH_MS = 1000
 
 /**
  * Lo que tarda el mar en pasar de un estado a otro cuando llegan datos nuevos.
@@ -189,6 +194,18 @@ export class OceanLayer implements CustomLayerInterface {
   private backgroundAt = 0
   private backgroundKey = ''
 
+  /**
+   * El cielo que el agua refleja, con las nubes de la escena atmosférica.
+   *
+   * Se construye la primera vez que hay nubes que pintar y no se destruye
+   * nunca hasta que el mapa muere —la regla de Safari, ver `SkyEnv.ts`—. Sin
+   * escena atmosférica el reflejo es el cielo analítico de siempre, así que
+   * nadie paga el mapa si no hay nubes que reflejar.
+   */
+  private env: SkyEnvResources | null = null
+  private clouds: Cloud[] = []
+  private envAt = 0
+
   /** El origen local. Fijo desde la construcción. Ver la cabecera. */
   private readonly origin = {
     x: mercatorBox(MAP_BBOX).x0 + mercatorBox(MAP_BBOX).width / 2,
@@ -263,6 +280,19 @@ export class OceanLayer implements CustomLayerInterface {
     this.map?.triggerRepaint()
   }
 
+  /**
+   * Las nubes de la escena atmosférica, las mismas que dibuja `CloudLayer`.
+   *
+   * Con lista vacía el reflejo vuelve al cielo analítico, que es el
+   * comportamiento de cuando la escena está apagada. La escena se deriva
+   * —`CloudLayer` mueve las posiciones—, así que el mapa de cielo lee donde
+   * están AHORA y no las vuelve a mover.
+   */
+  setClouds(clouds: Cloud[]): void {
+    this.clouds = clouds
+    this.map?.triggerRepaint()
+  }
+
   setInputs(inputs: OceanInputs): void {
     this.inputs = inputs
     this.map?.triggerRepaint()
@@ -305,9 +335,11 @@ export class OceanLayer implements CustomLayerInterface {
       gl.deleteBuffer(this.grid.indexBuffer)
     }
     if (this.textures) disposeTextures(gl, this.textures)
+    if (this.env) disposeSkyEnv(gl, this.env)
     this.program = null
     this.grid = null
     this.textures = null
+    this.env = null
     this.gl = null
     this.map = null
   }
@@ -353,6 +385,10 @@ export class OceanLayer implements CustomLayerInterface {
     const light = oceanLight(Date.now(), center.lng, center.lat, this.inputs.light)
     const water = waterColors(light)
     const settings = QUALITY[this.quality]
+
+    const envWanted = settings.refraction && this.clouds.length > 0 && this.fade > 0.02
+    if (envWanted) this.renderEnv(gl, now, light)
+    const envOn = envWanted && this.env !== null
 
     if (settings.refraction) this.captureBackground(gl, textures, now, map)
 
@@ -441,6 +477,7 @@ export class OceanLayer implements CustomLayerInterface {
     // sombreador apaga también la ortofoto que se ve por debajo del agua.
     if (u.u_lit) gl.uniform1f(u.u_lit, water.lit)
     if (u.u_baseReveal) gl.uniform1f(u.u_baseReveal, this.inputs.basePhoto ? 1 : 0)
+    if (u.u_envOn) gl.uniform1f(u.u_envOn, envOn ? 1 : 0)
     if (u.u_fade) gl.uniform1f(u.u_fade, this.fade)
 
     const bind = (unit: number, texture: WebGLTexture, location: WebGLUniformLocation | null) => {
@@ -455,6 +492,10 @@ export class OceanLayer implements CustomLayerInterface {
     bind(4, textures.shoreline, u.u_shoreTex)
     bind(5, textures.detail, u.u_detailTex)
     bind(6, textures.background, u.u_backgroundTex)
+    // Sin mapa de cielo, la unidad 7 lleva cualquier textura válida: el
+    // sombreador ni la toca con `u_envOn` a cero, pero la unidad tiene que
+    // estar atada o algún móvil lee basura.
+    bind(7, this.env ? this.env.texture : textures.detail, u.u_envTex)
 
     gl.bindBuffer(gl.ARRAY_BUFFER, grid.vertexBuffer)
     gl.enableVertexAttribArray(program.aNdc)
@@ -486,6 +527,26 @@ export class OceanLayer implements CustomLayerInterface {
     // `requestAnimationFrame` propio, para que el ciclo de dibujo siga siendo
     // suyo.
     map.triggerRepaint()
+  }
+
+  /**
+   * Pinta el mapa de cielo que refleja el agua: el degradado y las nubes de
+   * la escena atmosférica, una vez por segundo. Las nubes derivan despacio y
+   * el sol se mueve un cuarto de grado por minuto: un reflejo de un segundo
+   * atrás es el reflejo de ahora.
+   *
+   * Un contexto que no dé para el FBO no puede llevarse el mar por delante:
+   * si falla, el reflejo se queda con el cielo analítico de siempre.
+   */
+  private renderEnv(gl: Gl, now: number, light: OceanLight): void {
+    try {
+      if (!this.env) this.env = buildSkyEnv(gl)
+      if (now - this.envAt < ENV_REFRESH_MS) return
+      this.envAt = now
+      renderSkyEnv(gl, this.env, light, this.clouds)
+    } catch {
+      this.env = null
+    }
   }
 
   /**

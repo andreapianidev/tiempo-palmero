@@ -41,6 +41,7 @@ import {
   RUNUP_MIN_M,
 } from '../../../lib/ocean/coverage'
 import { CONSTANTS, UNIFORMS, WAVE_FUNCTIONS } from './waves'
+import { SKY_GLSL } from './sky'
 
 export const FRAGMENT_SHADER = /* glsl */ `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -68,21 +69,15 @@ uniform sampler2D u_detailTex;
 uniform sampler2D u_backgroundTex;
 uniform vec2 u_resolution;
 uniform float u_metersPerPixel;
-
-uniform vec3 u_sunDir;
-uniform vec3 u_sunColor;
-uniform float u_sunIntensity;
-uniform vec3 u_moonDir;
-uniform float u_moonIntensity;
-uniform vec3 u_zenith;
-uniform vec3 u_horizon;
-uniform vec3 u_ambient;
-uniform float u_haze;
+/** El mapa de cielo con las nubes de la escena. 0 = reflejar el cielo analítico. */
+uniform sampler2D u_envTex;
+uniform float u_envOn;
 
 uniform vec3 u_deepColor;
 uniform vec3 u_shallowColor;
 uniform vec3 u_foamColor;
 uniform float u_lit;
+uniform vec3 u_ambient;
 /** 1 si debajo del agua hay una fotografía; 0 si es una tinta lisa. */
 uniform float u_baseReveal;
 
@@ -98,24 +93,18 @@ varying vec2 v_range;
 
 ${WAVE_FUNCTIONS}
 
+${SKY_GLSL}
+
 /**
- * El cielo que el agua refleja.
- *
- * No es una fotografía: es el degradado que ya calcula lib/ocean/light.ts a
- * partir de dónde está el sol, cuánta radiación miden las estaciones y cuánto
- * polvo hay en el aire, más el disco del sol y el de la luna. Con calima el
- * disco se ensancha y pierde fuerza, que es justo lo que hace la calima: no
- * quita luz, la reparte por todo el cielo.
+ * El cielo que refleja esta ola: el mapa con las nubes cuando existe, y el
+ * degradado analítico cuando no —sin escena atmosférica, o en calidad ligera,
+ * donde el mapa no se renderiza. Los dos cielos comparten colores y discos,
+ * así que el cambio no se ve: lo que se ve es que de repente HAY nubes en el
+ * agua.
  */
-vec3 skyColor(vec3 dir) {
-  float up = clamp(dir.z, -1.0, 1.0);
-  vec3 c = mix(u_horizon, u_zenith, pow(max(up, 0.0), 0.42));
-  float s = max(dot(dir, u_sunDir), 0.0);
-  float sharp = mix(600.0, 30.0, u_haze);
-  c += u_sunColor * u_sunIntensity * pow(s, sharp) * (0.6 + 2.2 * (1.0 - u_haze));
-  float m = max(dot(dir, u_moonDir), 0.0);
-  c += vec3(0.72, 0.78, 0.95) * u_moonIntensity * pow(m, 800.0) * 1.6;
-  return c;
+vec3 reflectSky(vec3 dir) {
+  if (u_envOn < 0.5) return skyColor(dir);
+  return texture2D(u_envTex, envUv(dir)).rgb;
 }
 
 /** Pendiente del rizado fino, ya girado hacia el viento y en marcha con él. */
@@ -267,7 +256,7 @@ void main() {
   // --- 4. lo que se REFLEJA ------------------------------------------------
   float cosTheta = clamp(dot(n, view), 0.0, 1.0);
   float fresnel = 0.02 + 0.98 * pow(1.0 - cosTheta, 5.0);
-  vec3 color = mix(body, skyColor(refl), fresnel);
+  vec3 color = mix(body, reflectSky(refl), fresnel);
 
   // El brillo especular del sol. El exponente baja con el viento —más rizado,
   // reflejo más ancho— y también con la varianza de pendiente que a este zoom
