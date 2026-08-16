@@ -39,6 +39,14 @@ uniform sampler2D u_bathyTex;
 uniform sampler2D u_shoreTex;
 
 uniform float u_geomScale;
+
+/**
+ * Lo que hay que ganarle al terreno en el búfer de profundidad, en NDC.
+ *
+ * Son \`BIAS_STEPS\` escalones del búfer que tenga esta GPU, y por eso viene de
+ * fuera: 1,2e-7 con 24 bits y 3,1e-5 con 16. Ver \`lib/ocean/depth.ts\`.
+ */
+uniform float u_depthSlack;
 `
 
 export const CONSTANTS = /* glsl */ `

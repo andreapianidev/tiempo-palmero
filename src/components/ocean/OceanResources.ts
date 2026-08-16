@@ -48,6 +48,7 @@ const UNIFORM_NAMES = [
   'u_detailTex',
   'u_backgroundTex',
   'u_geomScale',
+  'u_depthSlack',
   'u_resolution',
   'u_metersPerPixel',
   'u_sunDir',

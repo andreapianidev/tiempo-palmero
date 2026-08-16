@@ -29,6 +29,7 @@ import { MAP_BBOX } from '../../lib/geo'
 import { mercatorBox, metersPerMercatorUnit } from '../../lib/ocean/mercator'
 import { cameraPosition, invert, multiply, translation } from '../../lib/ocean/mat4'
 import { oceanLight, waterColors, type LightInputs } from '../../lib/ocean/light'
+import { BIAS_STEPS, FALLBACK_DEPTH_BITS, ndcStep } from '../../lib/ocean/depth'
 import { QUALITY, type OceanQuality } from '../../lib/ocean/quality'
 import type { OceanField } from '../../lib/ocean/field'
 import type { ShorelineMap } from '../../lib/ocean/land-mask'
@@ -53,27 +54,31 @@ type Gl = WebGLRenderingContext | WebGL2RenderingContext
 const MAX_RANGE_M = 300_000
 
 /**
- * Cuánto se levanta el plano del agua sobre el cero, en metros. Dos.
+ * EL PLANO DEL AGUA VA EN LA MAREA Y EN NADA MÁS, y esto es lo que costó
+ * entenderlo.
  *
- * NO ES UN AJUSTE FINO: sin esto, en la vista 3D no se ve el mar. Con el
- * terreno encendido MapLibre dibuja una malla que cubre TODA la pantalla —donde
- * no hay teselas de relieve la pone a cero— y esa malla escribe profundidad.
- * El fondo marino está aplanado a cero (ver `prepare-data.ts`), así que el mar
- * de MapLibre y el nuestro quedan exactamente en el mismo plano, y con la marea
- * baja el nuestro queda por DEBAJO: la prueba de profundidad lo descarta entero
- * y lo que se ve es la lámina plana de siempre.
+ * Hasta el 15 de agosto de 2026 se le sumaban dos metros. El motivo era bueno:
+ * con el terreno encendido MapLibre dibuja una malla que cubre toda la pantalla
+ * —donde no hay teselas de relieve la pone a cero— y esa malla escribe
+ * profundidad; como el fondo marino está aplanado a cero (ver
+ * `prepare-data.ts`), los dos mares quedan en el mismo plano y con la marea baja
+ * el nuestro queda por debajo, así que la prueba de profundidad lo borraba
+ * entero. Dos metros ganaban esa carrera.
  *
- * Dos metros es lo mínimo que gana esa carrera con holgura y sigue siendo
- * invisible: al máximo acercamiento del mapa (1 m por píxel) son dos píxeles de
- * desplazamiento sobre una costa cuyo trazado no lo pone este plano, sino el
- * mapa de orilla. Y el desnivel de la marea se sigue viendo, porque lo que
- * cambia con ella es la posición del agua RESPECTO A ESE CERO, no el cero.
+ * PERO UN LEVANTAMIENTO VERTICAL SE PAGA EN HORIZONTAL. El rayo corta un plano
+ * levantado `L` metros antes de llegar a donde habría cortado el cero, y la
+ * diferencia sobre el suelo es `L / tg(θ)`: mirando de canto se dispara. Y como
+ * el mapa de orilla se consulta EN ESE PUNTO, el agua se pintaba sobre tierra
+ * llana hasta 23 m con la vista a 5° y 115 m a 1°. Justo donde más se nota:
+ * en las plataformas costeras bajas —El Remo, La Bombilla, Puerto Naos—, donde
+ * además el DEM ya deja a cero los primeros 200 m de tierra.
  *
- * Va acompañado de un sesgo en el búfer de profundidad —`DEPTH_BIAS`, en el
- * sombreador de vértices— porque a unos kilómetros de la cámara, y en un búfer
- * de 16 bits, la precisión ya no distingue dos metros.
+ * El sesgo por el rayo de `lib/ocean/depth.ts` gana la misma carrera SIN ese
+ * precio, porque mueve el vértice sobre su propia línea de visión: el punto en
+ * pantalla no cambia, el mapa de orilla se consulta donde toca y lo único que
+ * se cede es profundidad. Así que el levantamiento desaparece y el trabajo lo
+ * hace el sesgo, que para eso está.
  */
-const SEA_LIFT_M = 2
 
 /** Lo que tarda el mar en aparecer y en irse, en milisegundos. */
 const FADE_MS = 700
@@ -100,6 +105,22 @@ const BLEND_STEP_MS = 90
  * cambia y un fondo viejo se ve como un arrastre.
  */
 const BACKGROUND_IDLE_MS = 250
+
+/**
+ * Cuántos bits de profundidad da esta GPU.
+ *
+ * Casi siempre 24, a veces 32 y en alguna GPU móvil vieja 16, que es la que
+ * decide de verdad —ver `lib/ocean/depth.ts`—. Si el contexto no lo dice, se
+ * supone el peor caso: un sesgo de más se nota mucho menos que un mar que
+ * desaparece.
+ */
+function depthBitsOf(gl: Gl): number {
+  const bits = gl.getParameter(gl.DEPTH_BITS) as unknown
+  if (typeof bits !== 'number' || !Number.isFinite(bits) || bits < 8 || bits > 32) {
+    return FALLBACK_DEPTH_BITS
+  }
+  return bits
+}
 
 export interface OceanInputs {
   /** Marea sobre el nivel medio, m. */
@@ -152,6 +173,16 @@ export class OceanLayer implements CustomLayerInterface {
   }
   /** La marea se persigue en vez de saltar: el agua sube despacio. */
   private tideNow = 0
+
+  /**
+   * Lo que hay que ganarle al terreno en el búfer, en NDC. Se mide al entrar.
+   *
+   * No cambia nunca —el contexto es el mismo mientras el mapa viva— así que se
+   * pregunta una sola vez: `getParameter` obliga a sincronizar con la GPU, y
+   * hacerlo en cada fotograma es exactamente lo que `lib/occlusion.ts` quitó de
+   * en medio.
+   */
+  private depthSlack = BIAS_STEPS * ndcStep(FALLBACK_DEPTH_BITS)
 
   private backgroundW = 0
   private backgroundH = 0
@@ -255,6 +286,7 @@ export class OceanLayer implements CustomLayerInterface {
   onAdd(map: MlMap, gl: Gl): void {
     this.map = map
     this.gl = gl
+    this.depthSlack = BIAS_STEPS * ndcStep(depthBitsOf(gl))
     this.program = buildProgram(gl, this.quality)
     this.grid = buildGrid(gl, this.quality)
     this.textures = buildTextures(gl)
@@ -331,11 +363,10 @@ export class OceanLayer implements CustomLayerInterface {
     if (u.u_matrix) gl.uniformMatrix4fv(u.u_matrix, false, f32(local))
     if (u.u_invMatrix) gl.uniformMatrix4fv(u.u_invMatrix, false, f32(inverse))
     if (u.u_time) gl.uniform1f(u.u_time, (now - this.started) / 1000)
-    if (u.u_seaLevel) {
-      gl.uniform1f(u.u_seaLevel, (this.tideNow + SEA_LIFT_M) / metersPerMerc)
-    }
+    if (u.u_seaLevel) gl.uniform1f(u.u_seaLevel, this.tideNow / metersPerMerc)
     if (u.u_metersPerMerc) gl.uniform1f(u.u_metersPerMerc, metersPerMerc)
     if (u.u_maxRange) gl.uniform1f(u.u_maxRange, MAX_RANGE_M / metersPerMerc)
+    if (u.u_depthSlack) gl.uniform1f(u.u_depthSlack, this.depthSlack)
     if (u.u_camera) gl.uniform3f(u.u_camera, camera[0], camera[1], camera[2])
     if (u.u_metersPerPixel) gl.uniform1f(u.u_metersPerPixel, metersPerPixel)
     if (u.u_resolution) {
