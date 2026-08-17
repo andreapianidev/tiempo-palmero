@@ -15,7 +15,7 @@ punto**, no la lectura de la estación más cercana. Es una distinción que en L
 Palma no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa escala la
 altitud manda sobre la distancia en cualquier variable atmosférica.
 
-**Probar la aplicación → [tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
+**Probar la aplicación → [tiempopalmero.com](https://tiempopalmero.com)**
 — en marcha, sin registro, sin clave de API y sin nada que instalar.
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
