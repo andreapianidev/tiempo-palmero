@@ -577,8 +577,8 @@ modificar citando al autor y manteniendo las atribuciones de los datos. Ver
 Escrito en El Paso, en la isla de La Palma, sobre los datos abiertos de su
 Cabildo.
 
-Aplicación en marcha: **[tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app)**
+Aplicación en marcha: **[tiempopalmero.com](https://tiempopalmero.com)**
 · Código: **[github.com/andreapianidev/tiempo-palmero](https://github.com/andreapianidev/tiempo-palmero)**
 
-© 2026 Tiempo Palmero · Andrea Piani · NIE 02915190306-Z · El Paso, Santa Cruz de
+© 2026 Tiempo Palmero · Andrea Piani · Tjiarafe, Santa Cruz de
 Tenerife · Islas Canarias
