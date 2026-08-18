@@ -23,8 +23,8 @@ desplegar; no se deja nada colgando en una rama.
 ## Este repositorio es la web, y solo la web
 
 `mobile/` estuvo aquí hasta agosto de 2026 —una app de Expo para iOS y Android
-que importaba `../src` con el alias `@core/*`— y desde entonces vive en su
-propio repositorio, abierto y aparte. **Aquí no vuelve a entrar código nativo.**
+que importaba `../src` con el alias `@core/*`— y salió.
+**Aquí no vuelve a entrar código nativo.**
 La web se ve en un teléfono porque tiene su propia carcasa responsive en
 `src/components/mobile/`, que es HTML y no tiene nada de nativo: ese directorio
 sí es de este repositorio y no se toca al hablar de «quitar el móvil».

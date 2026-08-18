@@ -14,7 +14,12 @@
     },
     {
       "source": "/layers/(.*)",
-      "headers": [{ "key": "cache-control", "value": "public, max-age=86400" }]
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=86400, stale-while-revalidate=2592000"
+        }
+      ]
     },
     {
       "source": "/api/co2",

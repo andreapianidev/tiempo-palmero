@@ -19,9 +19,9 @@ altitud manda sobre la distancia en cualquier variable atmosférica.
 en un teléfono: por debajo de 720 px de ancho la interfaz cambia a su propia
 carcasa, con una hoja que sube desde abajo en vez del panel lateral.
 
-> **Este repositorio es la web.** La aplicación nativa de iOS y Android estuvo
-> aquí, en `mobile/`, hasta agosto de 2026; desde entonces vive en su propio
-> repositorio, también abierto. *(Enlace pendiente de publicar.)*
+> **Este repositorio es la web, y nada más.** Hubo aquí una aplicación nativa de
+> iOS y Android —Expo sobre este mismo motor, en `mobile/`— y salió en agosto de
+> 2026. Lo que se ve en un teléfono es esta misma web.
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 
@@ -371,7 +371,7 @@ está en cuatro documentos. Cada uno se lee solo.
 | **[El motor de interpolación](docs/motor.md)** | Los seis pasos, la corrección altimétrica, el rechazo de valores atípicos, la banda de incertidumbre calibrada y la validación dejando fuera cada estación por turno. | 448 |
 | **[Los datos del Cabildo](docs/datos-del-cabildo.md)** | Los 49 conjuntos del portal, uno por uno: lo integrado, lo que falta, lo que no conviene añadir. Las guaguas, los aforos, las webcam, el viario, la cobertura de TDT. | 783 |
 | **[La sección experimental](docs/experimental.md)** | Las cinco funciones que dibujan más de lo que miden: nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 676 |
-| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 538 |
+| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 583 |
 
 ---
 

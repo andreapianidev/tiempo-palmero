@@ -265,6 +265,51 @@ línea —rechazar con `new Error('AbortError')`, que es literalmente lo que usa
 MapLibre por dentro— y una prueba que la sujeta, porque equivocarla no da
 ningún síntoma que se pueda buscar.
 
+### Las capas del Cabildo no bloquean la segunda visita
+
+Las teselas de GRAFCAN son un extremo —nadie las cachea, así que las cacheamos
+nosotros— y `public/layers/` es el otro: **ahí ya estaba casi todo bien**, y
+conviene dejar escrito por qué, porque la corazonada decía lo contrario.
+
+Un arranque en frío se trae **16 ficheros y 1685 kB** por el cable
+(comprimidos; medido contra producción el 18 ago 2026 con
+`performance.getEntriesByType('resource')`). Casi todo son tres:
+`municipios.geojson` 617 kB, `senderos.geojson` 427 kB y `limite-insular.geojson`
+405 kB. Con `max-age=86400`, la sospecha era que eso se volvía a bajar cada día.
+**No se bajaba.** Vercel sirve esos ficheros con `etag` y `last-modified`, así
+que pasado el día el navegador manda una petición condicional y recibe un **304
+sin cuerpo**. Lo medido: recarga dentro del día, **0 kB y 139 ms**; al día
+siguiente, 12 revalidaciones en paralelo, **232–246 ms de reloj y 0 bytes**.
+
+O sea que lo que costaba no eran megabytes, eran **240 ms de espera bloqueante
+una vez al día** — y en el camino crítico, porque hasta que `limite-insular` no
+se revalida no hay isla que dibujar. Eso se arregla con una palabra:
+
+```
+public, max-age=86400, stale-while-revalidate=2592000
+```
+
+Con `stale-while-revalidate` el navegador sirve su copia **al instante** y
+revalida por detrás, así que el visitante que vuelve al día siguiente ya no
+espera nada y en la visita siguiente tiene lo nuevo. Los 30 días de ventana son
+la vida útil razonable de una cartografía que solo cambia cuando alguien ejecuta
+`prepare-data`, y no cubren nada que varíe con el tiempo: bajo `/layers/` no hay
+ni una lectura: `sensores-co2.geojson` es el inventario de sensores, no sus
+medidas, y `cultivos-resumen.json` es un levantamiento de 2008. Soportado desde
+Chrome 75, Firefox 68, Edge 79 y **Safari 14** — comprobado contra los datos de
+compatibilidad de MDN, no supuesto.
+
+**Y lo que se decidió NO hacer, que aquí cuenta igual.** La idea de colgar una
+versión de cada URL y servirlas `immutable` —lo que ya hace el DEM con
+`demVersion`— se midió y se descartó: con `stale-while-revalidate` ya no queda
+espera que ahorrar, y a cambio traía un complemento de Vite, un registro de
+versiones, siete sitios que tocar y el riesgo de repetir exactamente el fallo
+que `demVersion` existe para evitar —un fichero `immutable` sin versión es un
+fichero que no se corrige en un año—. Tampoco se unificaron los tres `fetch` de
+`limite-insular.geojson` que hay en el arranque (`mapStyle`, `useIslandData` y
+`useOcean`): parecían caros y son **14 ms de parseo repetido** en total, medidos
+con `JSON.parse` sobre los ficheros de verdad. Se quedan como están.
+
 ### Las líneas cambian de color con el fondo, conservando su jerarquía
 
 Los colores de las carreteras, los senderos, las guaguas y los canales se
