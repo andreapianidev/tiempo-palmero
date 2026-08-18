@@ -254,6 +254,17 @@ dos había terminado de guardar cuando el otro preguntó al inventario, así que
 los dos salieron a la red. Ahora las descargas simultáneas de la misma tesela se
 juntan en una, y quien cancela se desengancha sin cortársela al otro.
 
+Y la segunda cosa que destapó, esta contra la web ya desplegada: **una tesela
+cancelada se estaba marcando como rota**. MapLibre distingue «ya no hace falta»
+de «ha fallado» comparando `error.message === 'AbortError'` —el mensaje, no el
+`name`—, y el `DOMException` que produce `AbortController.abort()` trae de
+mensaje «signal is aborted without reason». No casaba, así que cada tesela que
+salía de la vista antes de llegar quedaba en estado `errored`: no se volvía a
+pedir y dejaba un hueco, además de un error en consola. La corrección es una
+línea —rechazar con `new Error('AbortError')`, que es literalmente lo que usa
+MapLibre por dentro— y una prueba que la sujeta, porque equivocarla no da
+ningún síntoma que se pueda buscar.
+
 ### Las líneas cambian de color con el fondo, conservando su jerarquía
 
 Los colores de las carreteras, los senderos, las guaguas y los canales se

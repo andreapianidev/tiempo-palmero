@@ -20,9 +20,13 @@
  *      todo esto — hoy, sin caché, es el mismo de la primera.
  *   3. El inventario de IndexedDB: cuántas teselas quedaron guardadas.
  *
- * CÓMO SE USA. Necesita Playwright y el servidor de desarrollo, igual que
- * `occlusion-margin.ts` y por el mismo motivo: se ejecuta a mano, cuando se
- * toca la caché, y Playwright no es dependencia de esta aplicación.
+ * CÓMO SE USA. Necesita Playwright y **el servidor de desarrollo**, igual que
+ * `occlusion-margin.ts`. Playwright, porque se ejecuta a mano y no es
+ * dependencia de esta aplicación. El servidor de desarrollo, porque el asidero
+ * `window.__map` que hace falta para saber cuándo ha terminado de cargar el
+ * mapa solo existe con `import.meta.env.DEV`: en el paquete de producción esa
+ * línea no se compila, y apuntar esto a tiempopalmero.com solo da un tiempo de
+ * espera agotado. Lo que se mide aquí es el código, que es el mismo.
  *
  *   npm i --no-save playwright
  *   npx playwright install chromium
@@ -74,12 +78,24 @@ async function pasada(page: Page, primera: boolean): Promise<Pasada> {
   // `MapView` cuelga el mapa de `window.__map` (misma puerta que usa
   // `occlusion-margin.ts`). Esperar al lienzo no basta: existe antes de que el
   // DEM esté descargado, y hasta entonces no se pide una sola tesela de fondo.
-  await page.waitForFunction(() => !!(window as never as { __map?: unknown }).__map, {
-    timeout: 90_000,
-  })
+  // El tercer argumento, no el segundo: `waitForFunction(fn, arg, options)`.
+  // Puesto en el segundo, Playwright lo toma por el argumento de la función y
+  // aplica su espera de 30 s por defecto — que llega en local y no contra
+  // producción, donde el DEM viaja por la red.
+  try {
+    await page.waitForFunction(() => !!(window as never as { __map?: unknown }).__map, null, {
+      timeout: 120_000,
+    })
+  } catch {
+    throw new Error(
+      `${URL_APP} no expone window.__map. Esto necesita \`npm run dev\`: en el ` +
+        'paquete de producción ese asidero no existe (ver la cabecera).',
+    )
+  }
   await page.waitForFunction(
     () => (window as never as { __map: { loaded: () => boolean } }).__map.loaded(),
-    { timeout: 90_000 },
+    null,
+    { timeout: 120_000 },
   )
   // Reposo: sin peticiones nuevas durante cinco segundos seguidos. Cinco y no
   // tres porque la mediana de GRAFCAN medida es 556 ms pero su cola llega a

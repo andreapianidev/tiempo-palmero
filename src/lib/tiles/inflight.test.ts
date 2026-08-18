@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchTileOnce, inflightCount, raceAbort } from './inflight'
+import { ABORT_MESSAGE, fetchTileOnce, inflightCount, raceAbort } from './inflight'
 
 /**
  * Esto existe por una medida, no por una intuición.
@@ -79,8 +79,8 @@ describe('una tesela, una descarga', () => {
     const quienCancela = raceAbort(compartida, ctl.signal)
     const quienEspera = compartida
 
-    ctl.abort(new Error('MapLibre ya no la necesita'))
-    await expect(quienCancela).rejects.toThrow('ya no la necesita')
+    ctl.abort()
+    await expect(quienCancela).rejects.toThrow(ABORT_MESSAGE)
 
     responder()
     await expect(quienEspera).resolves.toMatchObject({ type: 'image/jpeg' })
@@ -89,9 +89,30 @@ describe('una tesela, una descarga', () => {
 
   it('si ya estaba cancelado antes de empezar, no se espera a nada', async () => {
     const ctl = new AbortController()
-    ctl.abort(new Error('desmontado'))
+    ctl.abort()
     const p = fetchTileOnce('k', 'https://grafcan/x')
-    await expect(raceAbort(p, ctl.signal)).rejects.toThrow('desmontado')
+    await expect(raceAbort(p, ctl.signal)).rejects.toThrow(ABORT_MESSAGE)
+    responder()
+    await p
+  })
+
+  /**
+   * El mensaje ES el contrato con MapLibre, y equivocarlo no da error: la
+   * tesela cancelada se marca `errored`, deja de pedirse y se queda un hueco
+   * en el mapa. Es exactamente lo que pasaba antes de esta línea.
+   */
+  it('cancela con el mensaje que MapLibre reconoce, no con el del DOMException', async () => {
+    const ctl = new AbortController()
+    ctl.abort()
+    const p = fetchTileOnce('k', 'https://grafcan/x')
+    await raceAbort(p, ctl.signal).then(
+      () => expect.fail('tenía que rechazar'),
+      (e: Error) => {
+        // `AbortController.abort()` sin motivo da un DOMException cuyo mensaje
+        // es «signal is aborted without reason». MapLibre compara el MENSAJE.
+        expect(e.message).toBe('AbortError')
+      },
+    )
     responder()
     await p
   })

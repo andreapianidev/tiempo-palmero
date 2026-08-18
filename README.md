@@ -371,7 +371,7 @@ está en cuatro documentos. Cada uno se lee solo.
 | **[El motor de interpolación](docs/motor.md)** | Los seis pasos, la corrección altimétrica, el rechazo de valores atípicos, la banda de incertidumbre calibrada y la validación dejando fuera cada estación por turno. | 448 |
 | **[Los datos del Cabildo](docs/datos-del-cabildo.md)** | Los 49 conjuntos del portal, uno por uno: lo integrado, lo que falta, lo que no conviene añadir. Las guaguas, los aforos, las webcam, el viario, la cobertura de TDT. | 783 |
 | **[La sección experimental](docs/experimental.md)** | Las cinco funciones que dibujan más de lo que miden: nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 676 |
-| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 527 |
+| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 538 |
 
 ---
 

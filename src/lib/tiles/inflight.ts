@@ -48,19 +48,33 @@ export function fetchTileOnce(key: string, url: string): Promise<FetchedTile> {
 }
 
 /**
- * Deja de esperar una descarga si la cancelan, sin cancelarla para los demás.
+ * EL MENSAJE ES LITERALMENTE `AbortError`, Y NO ES UN CAPRICHO.
  *
- * Rechaza con el motivo del `AbortSignal`, que es lo que MapLibre espera para
- * distinguir «esta tesela ya no hace falta» de «esta tesela ha fallado» — un
- * error de verdad lo pinta como fuente rota.
+ * Así es como MapLibre distingue «esta tesela ya no hace falta» de «esta tesela
+ * ha fallado»: su comprobación es `error.message === 'AbortError'` —el mensaje,
+ * no el `name`— y su propio helper es un `new Error('AbortError')` pelado. Un
+ * `DOMException` de `AbortController.abort()` tiene el `name` correcto pero de
+ * mensaje trae «signal is aborted without reason», así que **no casa**: MapLibre
+ * lo toma por un fallo de verdad, marca la tesela `errored` y no la vuelve a
+ * pedir. La tesela se queda en blanco hasta que algo obligue a recargarla, y de
+ * paso el error sale por consola.
+ *
+ * Se vio en la comprobación contra producción del 18 de agosto de 2026: dos
+ * «AbortError: The user aborted a request.» en la consola de una sesión normal,
+ * que es lo que pasa cada vez que se arrastra el mapa y una tesela sale de la
+ * vista antes de llegar.
  */
+export const ABORT_MESSAGE = 'AbortError'
+
+/** Deja de esperar una descarga si la cancelan, sin cancelarla para los demás. */
 export function raceAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   if (!signal) return promise
   return Promise.race([
     promise,
     new Promise<never>((_, reject) => {
-      if (signal.aborted) return reject(signal.reason)
-      signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+      const cortar = () => reject(new Error(ABORT_MESSAGE))
+      if (signal.aborted) return cortar()
+      signal.addEventListener('abort', cortar, { once: true })
     }),
   ])
 }
