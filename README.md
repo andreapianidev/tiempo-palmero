@@ -40,12 +40,16 @@ Palma, cada uno con su día y su campo de temperatura medido, y el relieve se
 repinta con el que toque. La gracia es que los cuatro no se parecen en nada,
 midiéndolos con el mismo motor de la aplicación sobre la red del Cabildo:
 
-| Régimen | Día medido | Gradiente | R² | Lo que se ve |
+| Régimen | Día medido | Gradiente de una recta | R² | Lo que pinta el relieve |
 |---|---|---|---|---|
-| Alisio | 6 nov 2025 | 8,0 °C/km | 0,89 | mar de nubes contra el nordeste, seco encima |
-| Temporal del suroeste | 21 mar 2026 | 7,9 °C/km | 0,96 | isla dentro de la nube, lluvia torcida del OSO |
-| Noche despejada | 7 dic 2025 | 6,0 °C/km | 0,60 | luna, y la costa en ámbar por la Ley del Cielo |
-| Calima | 8 ago 2026 | **−2,4 °C/km** | 0,11 | polvo, y la isla que se CALIENTA al subir |
+| Alisio | 6 nov 2025 | 8,0 °C/km | 0,89 | esa recta — mar de nubes contra el nordeste, seco encima |
+| Temporal del suroeste | 21 mar 2026 | 7,9 °C/km | 0,96 | esa recta — isla dentro de la nube, lluvia torcida del OSO |
+| Noche despejada | 7 dic 2025 | 6,0 °C/km | 0,60 | dos capas (R² 0,77): −4,9 °C al cruzar los 750 m |
+| Calima | 8 ago 2026 | **−2,4 °C/km** | 0,11 | dos capas (R² 0,25): +3,6 °C al cruzar los 650 m |
+
+La columna del R² es la de **una sola recta**, para que los cuatro se comparen con
+la misma vara. Donde una recta no da —la calima y la noche— el relieve se pinta
+con dos capas, y es ese segundo R² el que sale en la etiqueta de la pantalla.
 
 El gradiente altitudinal no es una constante de la isla: es la huella del
 régimen. Con temporal una sola recta explica la isla entera; con calima la

@@ -38,23 +38,41 @@
      propio: sin él, la nota en `--fg-faint` cae por debajo del mínimo legible
      cuando por detrás pasa una ladera a plena luz.
 
-     EL DESVANECIDO TIENE QUE ACABAR DENTRO DE LA CAJA. Con la primera versión
-     —`inset` de una pulgada y el degradado llegando al 82 %— la placa se veía
-     como un rectángulo oscuro pegado encima del relieve: el degradado se cortaba
-     de golpe en el borde del elemento en vez de haberse apagado antes. Ahora la
-     caja es holgada y el negro se agota sobre el 62 %, así que lo que se ve es
-     una sombra sin forma y no una tarjeta. */
+     EL DESVANECIDO TIENE QUE ACABAR DENTRO DE LA CAJA, o la placa se ve como un
+     rectángulo pegado encima del relieve en vez de como una sombra.
+
+     Y TIENE QUE SER DENSA A LO ANCHO DE TODA LA LÍNEA. La versión anterior
+     centraba el degradado y se apagaba demasiado pronto hacia la izquierda:
+     medido con el mar de nubes detrás, la nota daba **2,90:1** con alisio y
+     3,81:1 con temporal, contra un mínimo de 4,5. La cuenta de cuánto hace
+     falta: `--fg-faint` (#a49d92) pide un fondo que no pase de rgb(54,54,54), y
+     debajo de la nota hay nube a rgb(150,150,150) larga, así que la placa tiene
+     que poner **0,70 de alfa** ahí. Por eso ahora el degradado se ancla al canto
+     derecho —que es hacia donde se alinea el texto—, se mantiene por encima de
+     0,9 hasta pasada la línea entera y solo entonces se abre hacia la izquierda,
+     donde ya no hay letras. */
   .isla3d-ok .regimen::before {
     content: '';
     position: absolute;
-    inset: -3.2rem -2.6rem -2.6rem -6rem;
-    background: radial-gradient(
-      88% 92% at 82% 58%,
-      rgba(13, 12, 11, 0.93),
-      rgba(13, 12, 11, 0.72) 34%,
-      rgba(13, 12, 11, 0.28) 50%,
-      rgba(13, 12, 11, 0) 62%
+    /* La caja se sale de la pantalla por la derecha y por abajo a propósito: por
+       esos dos lados no hay borde que desvanecer porque no se ve. Los que sí se
+       ven —izquierda y arriba— los apaga el degradado y la máscara. */
+    inset: -3.6rem -4rem -5rem -13rem;
+    /* UN EJE POR LADO, y no un degradado radial. Con el radial no salían las dos
+       condiciones a la vez: para que la nota tuviera 0,7 de alfa a lo largo de
+       sus 30 caracteres, la elipse tenía que ser tan grande que no llegaba a
+       cero dentro de la caja, y volvía a verse el canto recto cruzando el
+       relieve. Separados, cada uno hace lo suyo: el degradado da la densidad a
+       lo ancho de la línea y la máscara la apaga por arriba y por abajo. */
+    background: linear-gradient(
+      to left,
+      rgba(13, 12, 11, 0.96) 0 46%,
+      rgba(13, 12, 11, 0.78) 60%,
+      rgba(13, 12, 11, 0.3) 78%,
+      rgba(13, 12, 11, 0) 94%
     );
+    mask-image: linear-gradient(to bottom, transparent 0, #000 26%, #000 72%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 26%, #000 72%, transparent 100%);
     z-index: -1;
   }
 

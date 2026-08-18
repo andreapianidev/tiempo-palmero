@@ -64,7 +64,7 @@ export function fsTerreno(exageracion) {
     'uniform vec3 uSol; uniform vec3 uOjo;\n' +
     'uniform vec4 uCampo; uniform float uCampoArriba;\n' +
     'uniform vec3 uLuz; uniform float uLuzFuerza; uniform vec3 uAmbiente;\n' +
-    'uniform vec3 uExtincion; uniform vec2 uNiebla; uniform float uEspesor;\n' +
+    'uniform vec3 uExtincion; uniform float uNiebla; uniform float uEspesor;\n' +
     'uniform float uMojado; uniform float uLuces;\n' +
     'uniform float uNubeY; uniform float uNubeSombra;\n' +
     RAMPA +
@@ -114,9 +114,9 @@ export function fsTerreno(exageracion) {
     // —el polvo de la calima, la lluvia del temporal— y el borde donde la malla
     // se acaba sin que se vea el corte. La primera tiñe, la segunda desvanece.
     '  float d = length(uOjo - vPos);\n' +
-    '  float f = clamp(d / (uNiebla.x * 1.6), 0.0, 1.0);\n' +
+    '  float f = clamp(d / (uNiebla * 1.6), 0.0, 1.0);\n' +
     '  col = mix(col, uExtincion * max(uLuzFuerza, 0.25), f * f * uEspesor);\n' +
-    '  float a = 1.0 - smoothstep(uNiebla.x, uNiebla.x * 1.9, d);\n' +
+    '  float a = 1.0 - smoothstep(uNiebla, uNiebla * 1.9, d);\n' +
     '  gl_FragColor = vec4(col * a, a);\n' +
     '}'
   )

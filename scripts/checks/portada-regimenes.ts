@@ -25,6 +25,13 @@
  *    momento después: lo que cambie entre esas dos es movimiento, no texto, y se
  *    descuenta. Un glifo es lo que cambia al apagar el color Y se queda quieto.
  *
+ *    SE MIDE TODA LA LETRA QUE SE VE, incluida la que va `aria-hidden`. La
+ *    primera versión de este script saltaba los subárboles `aria-hidden` —parecía
+ *    razonable: son adornos— y el resultado fue que la etiqueta del régimen, el
+ *    ÚNICO texto nuevo de este cambio, era el único que no se medía. Y es el que
+ *    va encima de la parte más iluminada del relieve, con una placa ajustada a
+ *    ojo. `aria-hidden` dice que no se lee en voz alta, no que no se lea.
+ *
  *    Hace falta CADA VEZ que se toca el brillo de la atmósfera, y este cambio lo
  *    toca: los cuatro regímenes traen sus propias luces —la calima sube el ámbar,
  *    la lluvia añade rayas claras, las luces de los pueblos meten ámbar en la
@@ -117,9 +124,15 @@ async function textos(page: Page) {
       if (txt.length < 2) continue
       const padre = nodo.parentElement
       if (!padre) continue
-      if (padre.closest('[aria-hidden="true"]')) continue
       const est = getComputedStyle(padre)
       if (est.visibility === 'hidden' || est.display === 'none' || Number(est.opacity) < 0.35) continue
+      // SIN RELLENO NO HAY CONTRASTE QUE MEDIR. Los numerales gigantes de cada
+      // sección (`.ord`) son `color:transparent` con un contorno de 1 px: el
+      // glifo no pinta nada. `getComputedStyle` los devuelve como
+      // «rgba(0, 0, 0, 0)», que leído sin mirar el alfa es negro puro sobre
+      // fondo oscuro — 1,10:1 y cuatro fallos inventados.
+      const alfa = /rgba\(\s*\d+,\s*\d+,\s*\d+,\s*([\d.]+)\s*\)/.exec(est.color)
+      if (alfa && Number(alfa[1]) < 0.2) continue
       const rango = document.createRange()
       rango.selectNodeContents(nodo)
       for (const r of Array.from(rango.getClientRects())) {
@@ -131,12 +144,29 @@ async function textos(page: Page) {
         // comprobarlo se le atribuían los píxeles de lo que hay encima: seis
         // fallos de contraste, los seis con el ámbar del botón «Abrir el mapa»
         // de la barra superior. Un texto tapado no necesita contraste ninguno.
-        // El velo y el lienzo de la isla no estorban aquí: los dos son
-        // `pointer-events:none` y el impacto los atraviesa.
-        const cx = Math.min(window.innerWidth - 1, Math.max(0, r.left + r.width / 2))
-        const cy = Math.min(window.innerHeight - 1, Math.max(0, r.top + r.height / 2))
-        const arriba = document.elementFromPoint(cx, cy)
-        if (!arriba || !(arriba === padre || padre.contains(arriba) || arriba.contains(padre))) continue
+        // PERO EL IMPACTO NO SIRVE PARA TODO. Un elemento `pointer-events:none`
+        // no lo devuelve `elementFromPoint` nunca: el impacto lo atraviesa y
+        // contesta lo que hay detrás. Con la comprobación a secas, la etiqueta
+        // del régimen —que es `pointer-events:none` para no comerse los clics del
+        // relieve— se descartaba SIEMPRE, y con ella el altímetro entero. Eso
+        // dejaba sin medir justo el texto nuevo de este cambio.
+        //
+        // Así que a lo que no se puede impactar se le da por visible. Es el lado
+        // seguro del error: mide de más —un texto tapado por un panel opaco
+        // entraría—, no de menos.
+        let atravesable = false
+        for (let e: Element | null = padre; e; e = e.parentElement) {
+          if (getComputedStyle(e).pointerEvents === 'none') {
+            atravesable = true
+            break
+          }
+        }
+        if (!atravesable) {
+          const cx = Math.min(window.innerWidth - 1, Math.max(0, r.left + r.width / 2))
+          const cy = Math.min(window.innerHeight - 1, Math.max(0, r.top + r.height / 2))
+          const arriba = document.elementFromPoint(cx, cy)
+          if (!arriba || !(arriba === padre || padre.contains(arriba) || arriba.contains(padre))) continue
+        }
         salida.push({
           x: Math.max(0, r.left),
           y: Math.max(0, r.top),

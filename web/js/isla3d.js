@@ -456,6 +456,7 @@ function arrancar(lienzo) {
     // por qué deducir uno del otro dejaba la calima sin isla.
     var niebla = cam.radio * 1.15 * reg.alcance
     var nubeY = reg.nubeKm * EXAGERACION
+    var densidad = densidadNube(asc, reg)
 
     gl.viewport(0, 0, ancho, alto)
     gl.clearColor(0, 0, 0, 0)
@@ -506,17 +507,16 @@ function arrancar(lienzo) {
     gl.uniform1f(progTerreno.u.uLuzFuerza, reg.luzFuerza)
     gl.uniform3fv(progTerreno.u.uAmbiente, reg.ambiente)
     gl.uniform3fv(progTerreno.u.uExtincion, reg.extincion)
-    gl.uniform2f(progTerreno.u.uNiebla, niebla, 0)
+    gl.uniform1f(progTerreno.u.uNiebla, niebla)
     gl.uniform1f(progTerreno.u.uEspesor, reg.espesor)
     gl.uniform1f(progTerreno.u.uMojado, reg.mojado)
     gl.uniform1f(progTerreno.u.uLuces, reg.luces)
     gl.uniform1f(progTerreno.u.uNubeY, nubeY)
-    gl.uniform1f(progTerreno.u.uNubeSombra, reg.nubeSombra * densidadNube(asc, reg))
+    gl.uniform1f(progTerreno.u.uNubeSombra, reg.nubeSombra * densidad)
     gl.drawElements(gl.TRIANGLES, nIndices, gl.UNSIGNED_INT, 0)
 
     /* ── la tapa de nubes, sin escribir profundidad para que no se recorte
           contra sí misma cuando la cámara la atraviesa ── */
-    var densidad = densidadNube(asc, reg)
     if (densidad > 0.01) {
       gl.useProgram(progNubes.id)
       gl.depthMask(false)
