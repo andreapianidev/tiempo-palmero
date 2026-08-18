@@ -165,6 +165,32 @@ html:not(.isla3d-ok) .velo-lectura{display:none}
 }
 .top-in{display:flex;align-items:center;gap:1.2rem;min-height:58px}
 
+/* LA BARRA SE SALE DE LA SANGRÍA DE LA BANDA, y no es un capricho de encuadre.
+   `.piel` reserva la banda de la isla con `padding-right`, y la barra estaba
+   dentro: a 1440 px le quedaban 696 px de hueco para un contenido que mide 695,
+   así que iba justa por un píxel y por debajo de esa anchura los cuatro enlaces
+   del menú se partían en dos líneas —medido en los tres motores, no era cosa de
+   Safari—. La barra es cromo, como el altímetro: puede cruzar por encima de la
+   banda, que va detrás y desenfocada.
+
+   El margen negativo cancela la sangría; el `margin-inline:0` mantiene la marca
+   alineada con la columna de texto en vez de recentrarla 105 px a la derecha; y
+   la tinta sube del 78 al 95 % porque ahí detrás ya no hay fondo oscuro sino
+   relieve iluminado: medido sobre el recorrido entero, con el 90 % los enlaces
+   del menú se quedaban en 3,6:1. Sigue teniendo desenfoque y un 5 % de
+   transparencia, así que la isla se sigue intuyendo pasar por debajo. */
+@media (min-width:1180px){
+  .top{margin-right:calc(var(--banda) * -1);background:color-mix(in srgb,var(--ink) 95%,transparent)}
+  /* `100%` aquí es el ancho de la barra ya ensanchada, así que `100% − banda`
+     vuelve a ser el ancho de la columna: el mismo cálculo de centrado que hace
+     `.wrap` dentro de `main`. Sin esto, en pantallas muy anchas la marca se
+     quedaba 19 px a la izquierda del titular. */
+  .top .wrap{
+    margin-left:max(0px,calc((100% - var(--banda) - var(--max)) / 2));
+    margin-right:0;
+  }
+}
+
 .marca{
   display:flex;align-items:center;gap:.6rem;
   font-family:var(--mono);font-size:.8rem;font-weight:600;
@@ -178,7 +204,7 @@ html:not(.isla3d-ok) .velo-lectura{display:none}
 @media (min-width:860px){.top nav{display:flex}}
 .top nav a{
   position:relative;font-family:var(--mono);font-size:.68rem;font-weight:500;
-  letter-spacing:.13em;text-transform:uppercase;color:var(--fg-faint);
+  letter-spacing:.13em;text-transform:uppercase;color:var(--fg-dim);
   padding-block:.35rem;transition:color .25s;
 }
 .top nav a::after{
