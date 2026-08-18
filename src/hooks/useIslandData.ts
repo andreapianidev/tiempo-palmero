@@ -22,8 +22,8 @@ import {
   type GazetteerEntry,
 } from '../lib/api'
 import { elevationAt, type Dem } from '../lib/dem'
-// Sin extensión a propósito: Vite coge `dem-loader.ts` (canvas) y Metro
-// `dem-loader.native.ts` (Skia). El hook no sabe en qué plataforma corre.
+// Sin extensión a propósito: el hook no sabe en qué plataforma corre, y quien
+// empaquete elige el cargador. En la web es `dem-loader.ts`, con `<canvas>`.
 import { loadDem } from '../lib/dem-loader'
 import {
   fetchAnchors,

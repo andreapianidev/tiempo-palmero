@@ -3,14 +3,13 @@
  * interés.
  *
  * Vivían dentro de `lib/places.ts` y `lib/poi.ts`, junto a los catálogos. Eso
- * ataba dos ficheros compartidos —trazos, colores y taxonomía, que las tres
- * plataformas necesitan— a `maplibre-gl`, a `new Image()` y a `img.decode()`,
- * que solo existen aquí. La app nativa no puede ni importarlos, porque dibuja
- * los mismos iconos con Skia.
+ * ataba dos ficheros compartidos —trazos, colores y taxonomía, que necesita
+ * cualquier plataforma— a `maplibre-gl`, a `new Image()` y a `img.decode()`, que
+ * solo existen aquí. Quien no tenga navegador no puede ni importarlos.
  *
  * Así que el catálogo se queda en `lib/` y el registro está aquí, que es donde
- * hay un navegador. Las dos plataformas dibujan los mismos trazos; cada una los
- * mete en su mapa como sabe.
+ * hay un navegador. Todas las plataformas dibujan los mismos trazos; cada una
+ * los mete en su mapa como sabe.
  *
  * Hay que esperar a que las imágenes estén decodificadas ANTES de añadir la
  * capa que las usa: si no, MapLibre pinta la capa sin icono y avisa por consola

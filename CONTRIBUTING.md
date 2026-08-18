@@ -49,44 +49,24 @@ contando lo que viste, es una contribución de pleno derecho.
 
 ---
 
-## La aplicación de iOS y Android está en alpha
-
-**Es la parte más verde del proyecto y la que más manos necesita.** Hoy es una
-sola pantalla —el mapa, con sus fichas y sus hojas— sobre el mismo motor que la
-web, sin una línea de cálculo duplicada. Funciona, pero le falta bastante de lo
-que la web ya hace.
-
-Lo que está flojo, dicho sin adornos:
-
-- **Una sola pantalla.** No hay navegación: todo cuelga de `MapScreen`.
-- **La rotación y la inclinación del mapa están apagadas**, así que no hay vista
-  3D, ni relieve, ni escena atmosférica.
-- **Android está menos rodado que iOS.** El directorio `ios/` se ha usado más;
-  `android/` se regenera con `expo prebuild` y ha recibido bastante menos cariño.
-- **No hay compilación en las tiendas.** Ni TestFlight ni Play. Se compila en
-  local.
-- **No hay pruebas propias del móvil.** Lo único que lo protege hoy es el
-  `typecheck`, que sí es obligatorio (ver más abajo).
-
-Si te mueves con React Native o Expo, aquí hay trabajo de sobra y muy visible.
-El detalle de cómo está montado está en [docs/movil.md](docs/movil.md).
-
-### Ponerlo en marcha
+## Ponerlo en marcha
 
 ```bash
 git clone https://github.com/andreapianidev/tiempo-palmero.git
 cd tiempo-palmero
 npm install
-npm run dev                 # la web, en localhost:5173
-
-cd mobile
-npm install
-npx expo run:ios            # o run:android
+npm run dev                 # localhost:5173
 ```
 
-**Expo Go no sirve**: MapLibre, Skia y Reanimated son módulos nativos y hace
-falta una compilación de desarrollo. `ios/` y `android/` no están versionados —
-los regenera `expo prebuild` desde `app.json`.
+No hace falta ninguna clave de API ni ningún servicio de pago: todo lo que la
+aplicación pide es público. Las funciones de `api/` se ejecutan de verdad en
+desarrollo —las monta `dev/edgeApi.ts`—, así que lo que pruebas es lo que se
+despliega, con su caché delante.
+
+**Este repositorio es la web y solo la web.** La aplicación de iOS y Android
+vivió aquí hasta agosto de 2026 y tiene desde entonces su propio repositorio,
+también abierto. Que la web se vea bien en un teléfono no es aquello: es la
+carcasa responsive de `src/components/mobile/`, que es HTML.
 
 ---
 
@@ -103,14 +83,15 @@ borrar un dato bueno?»**. Una invasión de aire sahariano hizo subir una estaci
 6 °C en quince minutos: cualquier detector que marque eso como avería está mal,
 por mucho que también cace la avería de verdad.
 
-**2. El móvil compila, y no es opcional.** `mobile/` importa `../src` con el
-alias `@core/*`. Cambiar la firma de un hook rompe la app aunque la web compile y
-los tests pasen — ya ocurrió, y vivió varios commits sin que nada lo delatara.
-Antes de abrir un PR:
+**2. El núcleo no arrastra el navegador.** Nada de lo que cuelga de
+`src/lib/mapStyle.ts` puede importar `maplibre-gl` en tiempo de ejecución: el
+escritorio de UE5 monta ese mismo estilo dentro de QuickJS, donde la librería no
+existe. Lo vigila `mapStyle.portable.test.ts`, y por eso la caché de teselas
+registra su protocolo en `tiles/protocol.ts` y no en el estilo. Antes de abrir
+un PR:
 
 ```bash
 npm test && npm run build
-(cd mobile && npm run typecheck)
 ```
 
 **3. Nada de archivos monolíticos.** Cuando a un fichero hay que añadirle algo

@@ -3,11 +3,11 @@
  * mapas.
  *
  * Vivían dentro de `components/guagua/GuaguaLayer.ts`, que es el fichero que
- * habla con `maplibre-gl`. Mientras la única app era la web eso no molestaba;
- * con la app nativa sí, porque allí las capas se declaran con el binding de
- * React Native y ese fichero no se puede ni importar. Y son cosas que las dos
- * plataformas necesitan idénticas: a qué zoom aparecen las paradas, cómo se
- * marca cada parada con sus líneas y qué rectángulo ocupa un recorrido.
+ * habla con `maplibre-gl`. Mientras la única app era la web eso no molestaba; en
+ * cuanto hubo una segunda, sí, porque allí ese fichero no se puede ni importar.
+ * Y son cosas que cualquier plataforma necesita idénticas: a qué zoom aparecen
+ * las paradas, cómo se marca cada parada con sus líneas y qué rectángulo ocupa
+ * un recorrido.
  *
  * Duplicarlas habría sido peor que moverlas: un zoom mínimo distinto en cada
  * plataforma es la misma capa contando dos historias.

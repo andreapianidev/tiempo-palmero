@@ -1,8 +1,13 @@
 # La misma puerta que exige CLAUDE.md antes de desplegar, pero automática: los
-# tests del motor, la compilación de la web y el typecheck del móvil, que compila
-# contra el mismo `src/` con el alias `@core/*`. Sin el tercero, cambiar la firma
-# de un hook rompe la aplicación móvil sin que la web ni los tests se enteren —
-# ya pasó, y vivió varios commits.
+# tests del motor y la compilación de la web.
+#
+# Hubo un tercer trabajo, el `typecheck` de la app de iOS y Android, porque
+# `mobile/` compilaba contra este mismo `src/` y cambiar la firma de un hook la
+# rompía sin que la web ni los tests se enteraran —ya pasó, y vivió varios
+# commits—. Esa app vive desde agosto de 2026 en su propio repositorio, así que
+# aquí ya no hay nada que compilar por ella. La misma trampa la hereda el
+# escritorio de UE5, y quien la vigila hoy es `mapStyle.portable.test.ts`, que
+# corre dentro de `npm test`.
 name: CI
 
 on:
@@ -24,17 +29,3 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-
-  movil:
-    name: Typecheck del móvil
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm ci
-        working-directory: mobile
-      - run: npm run typecheck
-        working-directory: mobile

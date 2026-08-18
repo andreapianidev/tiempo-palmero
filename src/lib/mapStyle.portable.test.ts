@@ -4,19 +4,25 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 /**
- * `mapStyle.ts` lo comparten la web y la app nativa.
+ * `mapStyle.ts` no lo usa solo la web.
  *
- * `mobile/src/map/IslandMap.tsx` llama a `buildStyle()` con el mismo
- * manifiesto, y allí la librería del mapa es `@maplibre/maplibre-react-native`:
- * **`maplibre-gl` no está instalada**. Basta con que un módulo de esta cadena
- * la importe en tiempo de ejecución para que Metro no resuelva el paquete y la
- * app de iOS y Android deje de compilar.
+ * El escritorio de UE5 monta el mismo estilo desde `desktop/js-core`, dentro de
+ * QuickJS: ahí no hay DOM, no hay `window` y **`maplibre-gl` no está ni puede
+ * estar**. Basta con que un módulo de esta cadena la importe en tiempo de
+ * ejecución para que el núcleo deje de cargar fuera del navegador.
  *
  * Y no se entera nadie: `npm test` y `npm run build` solo miran la web, donde
  * esa importación es perfectamente válida. Ya pasó una vez —un sombreado propio
  * que se declaraba dentro de `buildStyle`, y con él entraba
- * `maplibre.addProtocol`— y de ahí sale este test. Ese sombreado ya no está,
- * pero el estilo lo sigue compartiendo la app nativa y la trampa sigue abierta.
+ * `maplibre.addProtocol`— y de ahí sale este test. Entonces quien se rompía era
+ * la app de iOS y Android, que empaquetaba con Metro; esa app se mudó a su
+ * repositorio en agosto de 2026 y la trampa se quedó, porque el que la pisa
+ * ahora es el escritorio.
+ *
+ * La caché de teselas de agosto de 2026 es el caso vivo: `tiles/protocol.ts`
+ * llama a `maplibre.addProtocol` de verdad, y por eso cuelga de `MapView` y no
+ * de esta cadena. Sus otros cuatro ficheros —rejilla, claves, presupuesto y
+ * almacén— no importan la librería, y este test es lo que lo mantiene así.
  *
  * Las importaciones `import type` no cuentan: TypeScript las borra al compilar
  * y nunca llegan al empaquetado.

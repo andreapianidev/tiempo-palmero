@@ -17,15 +17,12 @@
     "types": ["vite/client"]
   },
   "include": ["src", "scripts", "api", "vite.config.ts"],
-  // Los `*.native.ts` son la mitad móvil de un par (ver `dem-loader.ts`): los
-  // compila Metro con las dependencias de `mobile/`, no Vite.
-  //
-  // Y `occlusion-margin.ts` queda fuera por el mismo motivo, con otra
-  // dependencia: necesita Playwright para abrir un navegador de verdad y
+  // `occlusion-margin.ts` y `tile-cache.ts` quedan fuera por una dependencia
+  // que no es de este proyecto: necesitan Playwright para abrir un navegador de verdad y
   // preguntarle a MapLibre qué considera tapado. Playwright NO es dependencia
   // de este proyecto y no tiene por qué serlo —se ejecuta a mano, una vez cada
   // vez que se toca el umbral, y no entra en el paquete—, pero sin excluirlo
   // `tsc --noEmit` lo busca y el despliegue se cae. Cómo ejecutarlo está en la
   // cabecera del propio script.
-  "exclude": ["src/**/*.native.ts", "scripts/checks/occlusion-margin.ts"]
+  "exclude": ["scripts/checks/occlusion-margin.ts", "scripts/checks/tile-cache.ts"]
 }

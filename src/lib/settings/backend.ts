@@ -1,10 +1,11 @@
 /**
  * Dónde se guardan los ajustes en el navegador: `localStorage`.
  *
- * Es la mitad web de un par; la otra es `backend.native.ts`, que Metro prefiere
- * en iOS y Android. El mismo reparto que `dem-loader.native.ts`: la lógica de
- * `store.ts` es una sola y lo único que cambia por plataforma es quién sabe
- * abrir el cajón.
+ * Fue la mitad web de un par: la otra, `backend.native.ts`, guardaba en un
+ * archivo del directorio de documentos de iOS y Android, y se fue con la app
+ * nativa a su propio repositorio en agosto de 2026. El reparto sigue en pie para
+ * quien venga detrás —el escritorio—: la lógica de `store.ts` es una sola y lo
+ * único que cambia por plataforma es quién sabe abrir el cajón.
  *
  * Los dos `try` no son prudencia decorativa. `localStorage` **lanza al
  * tocarlo** en Safari con navegación privada y con cookies de terceros

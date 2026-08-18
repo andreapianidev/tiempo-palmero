@@ -4,9 +4,12 @@
  * Las 63 teselas se pintan sobre un único `<canvas>` y se leen de una vez:
  * `getImageData` es la parte cara y hacerla 63 veces cuesta más que hacerla una.
  *
- * El gemelo de este fichero es `dem-loader.native.ts`, que hace lo mismo con
- * Skia en iOS y Android. Metro prefiere el `.native.ts`; Vite, este. Ninguno de
- * los dos tiene un `if (Platform...)` dentro, que es justo la gracia.
+ * Este fichero es la mitad web de la descarga, y el `<canvas>` es lo único que
+ * tiene de navegador. Tuvo un gemelo —`dem-loader.native.ts`, que hacía lo mismo
+ * con Skia— hasta que la app de iOS y Android se mudó a su propio repositorio en
+ * agosto de 2026. Lo que se conserva es el reparto, no el gemelo: aquí dentro no
+ * hay un solo `if` de plataforma, y quien traiga los píxeles de otra manera —el
+ * escritorio de UE5— pone su cargador al lado en vez de una rama aquí.
  */
 
 import { blitTerrarium, demTilePath, demTiles, emptyDem, type Dem, type DemManifest } from './dem'

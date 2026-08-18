@@ -167,11 +167,10 @@ export function poiIconDataUrl(icon: string, size = ICON_SIZE): string {
 /**
  * Las dos piezas del icono, sueltas: el trazo y el color de su familia.
  *
- * El SVG de arriba solo sirve donde hay un navegador que lo decodifique. La app
- * nativa dibuja estos mismos iconos con Skia, y para eso necesita el trazo, no
- * una cadena `<svg>` que en iOS y en Android nadie sabe leer. Salen de aquí y
- * no de una copia en el móvil: un icono que se dibuja distinto en cada
- * plataforma deja de ser el mismo icono.
+ * El SVG de arriba solo sirve donde hay un navegador que lo decodifique. Quien
+ * dibuje fuera de uno necesita el trazo, no una cadena `<svg>`. Sale de aquí y
+ * no de una copia en cada plataforma: un icono que se dibuja distinto en cada
+ * sitio deja de ser el mismo icono.
  */
 export function poiGlyph(icon: string): string {
   return GLYPH[icon] ?? GLYPH.senal

@@ -1,9 +1,9 @@
 /**
  * La malla, montada en un `<canvas>`.
  *
- * Es lo único de `grid.ts` que necesita el navegador, y por eso vive aparte: el
- * móvil importa `rasterizeGrid` y convierte los mismos píxeles en un PNG con
- * Skia, sin arrastrar el DOM detrás.
+ * Es lo único de `grid.ts` que necesita el navegador, y por eso vive aparte:
+ * quien no tenga DOM importa `rasterizeGrid` y convierte los mismos píxeles a su
+ * manera, sin arrastrar el navegador detrás.
  */
 
 import { rasterizeGrid, type GridOptions, type GridRaster } from './grid'

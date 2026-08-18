@@ -1,8 +1,7 @@
 # Tiempo Palmero
 
 [![CI](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml/badge.svg)](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml)
-[![Web en producción](https://img.shields.io/badge/web-en%20producción-2ea44f?logo=vercel&logoColor=white)](https://tiempo-palmero.vercel.app)
-[![Móvil en alpha](https://img.shields.io/badge/iOS%20y%20Android-alpha-e07b39?logo=expo&logoColor=white)](docs/movil.md)
+[![Web en producción](https://img.shields.io/badge/web-en%20producción-2ea44f?logo=vercel&logoColor=white)](https://tiempopalmero.com)
 [![Licencia Apache 2.0](https://img.shields.io/badge/licencia-Apache%202.0-4c6ef5)](LICENSE)
 [![Datos del Cabildo Insular de La Palma](https://img.shields.io/badge/datos-Cabildo%20de%20La%20Palma-005f73)](https://www.opendatalapalma.es)
 [![Se buscan colaboradores en La Palma](https://img.shields.io/badge/se%20buscan-colaboradores%20en%20la%20isla-b5179e)](CONTRIBUTING.md)
@@ -16,7 +15,13 @@ Palma no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa escala la
 altitud manda sobre la distancia en cualquier variable atmosférica.
 
 **Probar la aplicación → [tiempopalmero.com](https://tiempopalmero.com)**
-— en marcha, sin registro, sin clave de API y sin nada que instalar.
+— en marcha, sin registro, sin clave de API y sin nada que instalar. Se ve igual
+en un teléfono: por debajo de 720 px de ancho la interfaz cambia a su propia
+carcasa, con una hoja que sube desde abajo en vez del panel lateral.
+
+> **Este repositorio es la web.** La aplicación nativa de iOS y Android estuvo
+> aquí, en `mobile/`, hasta agosto de 2026; desde entonces vive en su propio
+> repositorio, también abierto. *(Enlace pendiente de publicar.)*
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 
@@ -44,7 +49,7 @@ senderos, las cámaras de incendios y las webcam de la isla.
 - [Puesta en marcha](#puesta-en-marcha) · [Fuentes y licencias](#fuentes-y-licencias)
   · [La licencia del código](#la-licencia-del-código-libre-con-atribución)
 
-**En los cinco documentos largos** — la tabla completa está
+**En los cuatro documentos largos** — la tabla completa está
 [más abajo](#la-documentación-larga):
 
 - [**El motor de interpolación**](docs/motor.md) — los seis pasos y las
@@ -72,10 +77,10 @@ senderos, las cámaras de incendios y las webcam de la isla.
   [el océano](docs/arquitectura.md#el-océano), dos trenes de olas sobre
   batimetría real ·
   [lo elegido dura](docs/arquitectura.md#lo-elegido-dura) ·
+  [las teselas que se quedan](docs/arquitectura.md#las-teselas-que-se-quedan),
+  la cartografía de GRAFCAN guardada en el navegador ·
   [las trampas de esta API](docs/arquitectura.md#trampas-de-esta-api-que-ya-están-resueltas-en-el-código),
   un día de depuración cada una
-- [**La aplicación de iOS y Android**](docs/movil.md) — Expo sobre el mismo
-  motor, sin una línea de cálculo duplicada
 
 ---
 
@@ -359,15 +364,14 @@ escrita para fallar en cerrado:
 ## La documentación larga
 
 Lo que sigue del proyecto no cabe aquí sin volver esta página ilegible, así que
-está en cinco documentos. Cada uno se lee solo.
+está en cuatro documentos. Cada uno se lee solo.
 
 | Documento | De qué va | Líneas |
 |---|---|---:|
 | **[El motor de interpolación](docs/motor.md)** | Los seis pasos, la corrección altimétrica, el rechazo de valores atípicos, la banda de incertidumbre calibrada y la validación dejando fuera cada estación por turno. | 448 |
-| **[Los datos del Cabildo](docs/datos-del-cabildo.md)** | Los 49 conjuntos del portal, uno por uno: lo integrado, lo que falta, lo que no conviene añadir. Las guaguas, los aforos, las webcam, el viario, la cobertura de TDT. | 782 |
+| **[Los datos del Cabildo](docs/datos-del-cabildo.md)** | Los 49 conjuntos del portal, uno por uno: lo integrado, lo que falta, lo que no conviene añadir. Las guaguas, los aforos, las webcam, el viario, la cobertura de TDT. | 783 |
 | **[La sección experimental](docs/experimental.md)** | Las cinco funciones que dibujan más de lo que miden: nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 676 |
-| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, lo que dura entre visitas — y las trampas de esta API. | 410 |
-| **[La aplicación móvil](docs/movil.md)** | iOS y Android con Expo sobre el mismo `src/`, y por qué eso obliga a compilar el móvil en cada cambio. | 114 |
+| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 527 |
 
 ---
 
@@ -391,12 +395,6 @@ Valen igual los topónimos que el buscador no encuentra, las webcam que se
 mudaron de URL, y saber dónde está físicamente un sensor — dos estaciones del
 catálogo tienen coordenadas que caen **en el Atlántico**. Para nada de esto hace
 falta saber programar.
-
-**Y la aplicación de iOS y Android está en alpha**: una sola pantalla, la
-rotación y la inclinación del mapa apagadas, Android menos rodado que iOS y
-ninguna compilación en las tiendas. Es la parte más verde del proyecto y donde
-más se nota una mano. Si te mueves con React Native o Expo, hay trabajo de sobra
-y muy visible.
 
 Cómo empezar, las tres reglas que no se saltan y dónde escribir, en
 **[CONTRIBUTING.md](CONTRIBUTING.md)**.
@@ -430,6 +428,14 @@ náutica, y es deliberado: el mar abierto es justamente su contenido. Los fondos
 de GRAFCAN sí lo llevan, porque son cartografía de las islas y pedirles océano
 sería pedir teselas vacías a un servicio cuya licencia prohíbe la descarga
 masiva.
+
+Y a GRAFCAN **se le pide cada tesela una vez**: desde agosto de 2026 las que ya
+se han mirado se guardan 30 días en el navegador, porque el servicio no manda
+ninguna cabecera de caché y sin eso el mismo trozo de isla se descarga entero
+cada vez que vuelve a la pantalla. El balance con el servicio es a la baja —se
+le piden 17 teselas de la isla de lejos al encender un fondo, y se le dejan de
+pedir todas las que hoy se repiten—. Los números y el reparto están en
+[las teselas que se quedan](docs/arquitectura.md#las-teselas-que-se-quedan).
 
 - **Open-Meteo sí se llama en runtime**, en dos sitios: las anclas por encima
   del techo de la red y el fondo del mapa de viento. Este apartado llegó a
@@ -499,6 +505,17 @@ Para refrescar solo una parte:
 ```bash
 npm run prepare-data -- --only=dem        # dem | layers | gazetteer | snapshot
 npm run prepare-data:snapshot             # nueva lectura congelada para los tests
+```
+
+```bash
+# Comprobaciones que piden datos en vivo y se ejecutan a mano, no en CI:
+npx tsx scripts/checks/grafcan-cache.ts   # qué cuesta hoy cada tesela de GRAFCAN
+npx tsx scripts/checks/detalle-tiles.ts   # cuánto detalle da cada nivel de zoom
+
+# Y la que necesita un navegador de verdad (Playwright, que no es dependencia):
+npm i --no-save playwright && npx playwright install chromium
+npm run dev &
+npx tsx scripts/checks/tile-cache.ts      # que la caché no pida nada dos veces
 ```
 
 El despliegue es un proyecto de Vercel sin variables de entorno: no hay ninguna
@@ -580,5 +597,5 @@ Cabildo.
 Aplicación en marcha: **[tiempopalmero.com](https://tiempopalmero.com)**
 · Código: **[github.com/andreapianidev/tiempo-palmero](https://github.com/andreapianidev/tiempo-palmero)**
 
-© 2026 Tiempo Palmero · Andrea Piani · Tjiarafe, Santa Cruz de
+© 2026 Tiempo Palmero · Andrea Piani · Tijarafe, Santa Cruz de
 Tenerife · Islas Canarias

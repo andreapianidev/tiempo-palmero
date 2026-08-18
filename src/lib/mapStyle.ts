@@ -68,15 +68,18 @@ export const COLORS = {
 } as const
 
 /**
- * ESTE FICHERO LO COMPARTEN LA WEB Y LA APP NATIVA. `mobile/src/map/IslandMap`
- * llama a `buildStyle()` con el mismo manifiesto, y ahí la librería del mapa es
- * `@maplibre/maplibre-react-native`, no `maplibre-gl`. De aquí solo pueden
- * salir tipos e importaciones que no arrastren `maplibre-gl` en tiempo de
- * ejecución — si una lo hace, el empaquetador de la app nativa no resuelve el
- * módulo y la app deja de compilar, sin que ninguna prueba de la web se entere.
+ * ESTE FICHERO NO LO USA SOLO LA WEB. El escritorio de UE5 monta el mismo
+ * estilo desde `desktop/js-core`, dentro de QuickJS, donde no hay DOM y
+ * `maplibre-gl` no está ni puede estar. De aquí solo pueden salir tipos e
+ * importaciones que no arrastren `maplibre-gl` en tiempo de ejecución — si una
+ * lo hace, el núcleo deja de cargar fuera del navegador sin que ninguna prueba
+ * de la web se entere. La regla la estrenó la app de iOS y Android, que
+ * empaquetaba con Metro y se rompía igual; esa app vive desde agosto de 2026 en
+ * su propio repositorio, y la trampa sigue abierta para quien queda.
  *
  * Por eso los fondos de GRAFCAN no se declaran aquí: sus fuentes y sus capas las
- * añade `MapView` al cargar, que es solo de la web.
+ * añade `MapView` al cargar, que es solo de la web. Y por eso la caché de
+ * teselas registra su protocolo en `tiles/protocol.ts`, fuera de esta cadena.
  */
 export function buildStyle(dem: DemManifest): StyleSpecification {
   // Límites exactos de la cobertura descargada. Sin esto MapLibre pide las

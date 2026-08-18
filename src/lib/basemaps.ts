@@ -14,13 +14,26 @@
  *     puede pedir tesela a tesela con `{bbox-epsg-3857}`;
  *   - los dos responden `Access-Control-Allow-Origin: *`, que es lo que
  *     permite usarlos desde el navegador sin proxy;
- *   - los dos pintan a cualquier escala de las que usa la app (z8,5–16): no
+ *   - los dos pintan a cualquier escala de las que usa la app (z8,5–17): no
  *     son capas que se vacíen al alejarse.
  *
  * `Fees: none` y, en el propio Abstract del servicio, «esta información es
  * libre y gratuita». La misma frase sigue: «se prohíbe la descarga masiva de
  * información» — de ahí que esto sea un fondo que se pide mientras se mira y
- * nada más. No se cachea, no se descarga la isla entera, no se reempaqueta.
+ * nada más: no se descarga la isla entera y no se reempaqueta.
+ *
+ * SÍ SE CACHEA, desde agosto de 2026, y eso va en la misma dirección y no en la
+ * contraria. GRAFCAN no manda una sola cabecera de caché —ni `cache-control`,
+ * ni `etag`, ni `last-modified`—, así que sin guardarla nosotros cada tesela se
+ * vuelve a descargar entera cada vez que vuelve a la pantalla. Guardarla 30 días
+ * en el navegador le pide MENOS al servicio, no más. Lo único que se adelanta
+ * son 17 teselas de la isla de lejos al encender un fondo. Está en
+ * `tiles/budget.ts`, con lo que cuesta cada cosa medido.
+ *
+ * El prefijo `palmero://` que hace pasar la tesela por esa caché NO se pone
+ * aquí: lo añade `MapView` con `tiles/key.ts` al declarar la fuente. Este
+ * fichero lo comparte el escritorio de UE5, que no tiene ni MapLibre ni
+ * IndexedDB y no sabría qué hacer con ese protocolo.
  *
  * NO se piden teselas de un fondo apagado: MapLibre solo carga las fuentes que
  * tengan alguna capa visible, así que quien no toque este selector no gasta ni

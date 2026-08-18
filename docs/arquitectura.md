@@ -143,6 +143,117 @@ de daño y devuelve el croma medio de 0,149 a 0,173 sin tocar la saturación.
 Cabía subir más color —con +0,30 el daño seguía por debajo del presupuesto—,
 pero ahí ya no se recupera lo que el velo quitó, se pinta encima.
 
+### Las teselas que se quedan
+
+GRAFCAN **no manda ninguna cabecera de caché**. Ni `cache-control`, ni `etag`,
+ni `last-modified`, ni `expires`, ni `age`: ninguna de las cinco, comprobado
+servicio por servicio el 18 de agosto de 2026 con
+`scripts/checks/grafcan-cache.ts`. Eso no es un descuido menor. Sin frescura
+declarada el navegador no puede guardar nada por su cuenta —la heurística del
+RFC 9111 se calcula sobre el `last-modified`, y no hay—, y sin validador tampoco
+puede preguntar «¿sigue valiendo?»: no hay petición condicional que hacer. Así
+que **cada tesela que sale de la vista y vuelve se descarga entera otra vez**, y
+cada recarga de la página empieza de cero.
+
+Lo que eso cuesta, medido con el mismo script sobre 30 teselas de 1024 px
+repartidas en cinco niveles de zoom y tres sitios de la isla: **mediana 556 ms,
+p90 1183 ms, máximo 2269 ms**. Y esa tabla salió un día bueno — una sonda hora y
+media antes, contra el mismo servicio, se comió **12 873 ms** en una sola tesela
+de la Caldera. Cada tesela de tierra pesa 230 kB de mediana (67 kB la más
+liviana, 373 kB la más pesada), así que una pantalla a z16 son unos 2,8 MB que
+hoy se piden tantas veces como se pase por encima.
+
+Desde agosto de 2026 se guardan en **IndexedDB**, con `TILE_TTL_MS` de 30 días.
+Ni `localStorage`, que solo admite texto y se llena a los 5 MB —una pantalla de
+ortofoto—, ni la Cache Storage API, que sería el sitio natural para respuestas
+HTTP pero no sabe decir cuánto ocupa ni cuándo se usó cada cosa: purgar por
+tamaño obligaría a abrir cada respuesta para medirla, o sea a leer los 150 MB
+que se están intentando recortar. Por eso hay **dos almacenes**, `meta` y
+`body`: el inventario se recorre entero y son unos bytes por tesela; las
+imágenes se leen de una en una y solo cuando se piden.
+
+El techo son **150 MB**, y sale de contar las teselas que tocan tierra contra la
+línea de costa del Cabildo: la isla entera cabe en 54 teselas a z13 (12,4 MB),
+188 a z14 (43,2 MB) y 690 a z15 (158,7 MB). Con 150 MB entran los dos fondos
+completos a z13 y z14 —111 MB— y quedan 39 MB para el detalle que uno mire de
+verdad. La isla completa a z15 no cabe, y es a propósito: son 159 MB de un solo
+fondo, y nadie los mira enteros. Además nunca se pasa de **la cuarta parte de la
+cuota** que declare `navigator.storage.estimate()`, porque esto no es espacio
+nuestro: es el disco de quien abre la página.
+
+Los 30 días no son redondeo. Al otro lado hay la Ortofoto Territorial
+**2024-2025**, un producto anual, y un topográfico que se revisa por hojas y por
+años: releerlo doce veces al año es de sobra. Y no es infinito por lo que enseñó
+`demVersion` en `dem.ts`, donde una tesela corregida no le llegaba nunca a quien
+ya tenía la anterior y el arreglo se veía bien en incógnito y roto en la ventana
+de siempre. Aquí ese remedio no existe —GRAFCAN no publica ninguna versión que
+colgar de la URL—, así que lo único que impide repetir aquel fallo es que la
+copia caduque sola.
+
+**Cómo se engancha, sin tocar el núcleo.** MapLibre permite registrar un
+protocolo propio, y `tiles/protocol.ts` registra `palmero://`: al declarar la
+fuente, `MapView` antepone ese prefijo a la plantilla de GRAFCAN y desde ahí
+cada petición pasa por la caché. La vuelta tiene su detalle: se devuelve un
+`ImageBitmap` ya decodificado y no el `ArrayBuffer`, porque MapLibre envuelve
+los búferes en un `Blob` con el tipo `image/png` escrito a fuego y con JPEG eso
+solo funciona mientras los navegadores sigan olfateando los bytes en vez de
+creerse la etiqueta.
+
+El prefijo lo pone `MapView` y **no `basemaps.ts`**, que es la parte que importa:
+ese fichero lo comparte el escritorio de UE5, donde no hay ni IndexedDB ni
+MapLibre y una URL con un protocolo desconocido no la sabría resolver nadie. Por
+lo mismo, de los seis ficheros de `src/lib/tiles/` solo `protocol.ts` menciona
+`maplibre-gl`; lo vigila `mapStyle.portable.test.ts`.
+
+**Y lo que se pide por delante, que es poco a propósito.** La licencia de
+GRAFCAN dice «se prohíbe la descarga masiva de información», así que la precarga
+son dos casos contados y ninguno recorre la isla:
+
+- **Al encender un fondo externo por primera vez**, 17 teselas de z9 a z11 que
+  cubren La Palma entera: 838 kB la ortofoto, 1154 kB el topográfico, medidos.
+  Con ellas MapLibre tiene una tesela padre que ampliar en cuanto se pulsa el
+  selector, en vez de un hueco, y eso vale hasta z14 largo. El z12 se queda
+  fuera porque son 35 teselas más y **triplican la factura** (3,3 y 4,7 MB) para
+  un nivel que el ampliado del z11 ya tapa. Y solo al encenderlo: la promesa de
+  que quien no toque el selector no gasta ni una petición fuera de casa sigue en
+  pie.
+- **Al pararse el mapa después de un arrastre**, las teselas del borde por el
+  que se venía saliendo, con un tope de 8. No el anillo entero, que serían 18:
+  se pide la dirección en la que el usuario ya iba, no un colchón por si acaso.
+  Son 1,8 MB en el peor caso y solo la primera vez que se pasa por ahí.
+
+Con dos peticiones en paralelo como mucho —MapLibre se reserva hasta 16 para lo
+que está en pantalla, y la precarga no puede quitarle sitio a lo que sí se está
+mirando—, saltándose lo que ya esté guardado, y sin pedir nada si
+`navigator.connection` dice `saveData` o una red por debajo de 4G.
+
+El balance para GRAFCAN es a la baja, y por eso esto es defendible además de
+útil: se le piden 17 teselas de más una vez cada 30 días por fondo, y se le
+dejan de pedir todas las que hoy se repiten en cada recarga, en cada vuelta
+atrás y en cada cambio de fondo.
+
+**Y está medido de punta a punta, no razonado.** `scripts/checks/tile-cache.ts`
+abre la aplicación en un Chromium de verdad con la ortofoto encendida y cuenta lo
+que sale por el cable. El 18 de agosto de 2026, sobre la vista inicial:
+
+| | peticiones a GRAFCAN | en IndexedDB |
+|---|---:|---:|
+| primera visita | 23 | 23 teselas, 223 kB |
+| recarga | **0** | 23 teselas, 223 kB |
+
+Los ceros de la segunda fila son la prueba que no se puede hacer desde Node: si
+el precargador escribiera las URL con un decimal distinto del que escribe
+MapLibre por dentro, lo guardado no le serviría a quien lo pide y la recarga
+volvería a pedirlo todo — sin fallar, sin avisar y pidiéndole a GRAFCAN el doble.
+
+La primera pasada de esa comprobación **salió mal, y por eso existe
+`tiles/inflight.ts`**: eran 25 peticiones con dos repetidas byte a byte. Al
+encender la ortofoto, el precargador pide la vista de lejos y MapLibre pide a la
+vez las teselas de la pantalla, que a zoom 9,6 son del mismo z10; ninguno de los
+dos había terminado de guardar cuando el otro preguntó al inventario, así que
+los dos salieron a la red. Ahora las descargas simultáneas de la misma tesela se
+juntan en una, y quien cancela se desengancha sin cortársela al otro.
+
 ### Las líneas cambian de color con el fondo, conservando su jerarquía
 
 Los colores de las carreteras, los senderos, las guaguas y los canales se
@@ -331,12 +442,13 @@ con el fondo de satélite y el mar encendido, lo volvía a encender cada vez.
 Ahora se guardan **todos** los ajustes: las capas, los sitios, la variable, el
 fondo, la vista 3D con su exageración, el océano con sus tres opciones, la
 escena atmosférica, la luz solar y sus sombras, y qué secciones del panel están
-desplegadas. En la web van a `localStorage`; en el móvil, a un archivo del
-directorio de documentos —`expo-file-system`, que ya estaba en el proyecto para
-el caché del DEM, en vez de un módulo nativo más—. Las dos lecturas son
-**síncronas**, y eso no es un detalle de implementación: hidratar después del
-primer render obliga a pintar la malla en temperatura y corregirla al fotograma
-siguiente, y ese salto se ve.
+desplegadas. Van a `localStorage`, y la lectura es **síncrona**, que no es un
+detalle de implementación: hidratar después del primer render obliga a pintar la
+malla en temperatura y corregirla al fotograma siguiente, y ese salto se ve. Por
+eso `settings/backend.ts` es un fichero aparte de `settings/store.ts` —la lógica
+es una y el cajón cambia con la plataforma—: así lo estrenó la app nativa, que
+guardaba en un archivo del directorio de documentos, y así lo hereda el
+escritorio.
 
 Lo que **no** se guarda es el estado de la sesión: el punto consultado, la ficha
 abierta, la ubicación, si el zoom da ya para ver las paradas. Son respuestas a

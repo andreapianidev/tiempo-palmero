@@ -14,6 +14,9 @@ import {
   type BasemapId,
 } from '../lib/basemaps'
 import { BASEMAP_LEVELS } from '../lib/realce/levels'
+import { cachedSource } from '../lib/tiles/key'
+import { registerTileCache } from '../lib/tiles/protocol'
+import { useTileCache } from '../hooks/useTileCache'
 import { applyOverlayContrast } from './contrast/OverlayContrast'
 import { isBundleVariable, pinLabel, type MapVariable } from '../lib/variables'
 import { place, pillRank, RANK, type Box, type DeclutterItem } from '../lib/declutter'
@@ -444,6 +447,10 @@ export function MapView(props: Props) {
   const handlers = useRef(props)
   handlers.current = props
 
+  // Precarga y purga de las teselas de GRAFCAN. Todo lo que hace cuelga de que
+  // el mapa esté quieto; ver `hooks/useTileCache.ts`.
+  useTileCache(ready ? mapRef.current : null, props.basemap)
+
   // --- inicialización ------------------------------------------------------
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !dem) return
@@ -525,9 +532,15 @@ export function MapView(props: Props) {
       //
       // Se insertan delante de `municipal-boundaries`. Orden final: relleno
       // insular, hillshade, GRAFCAN, líneas.
+      // La caché de teselas se registra ANTES de declarar las fuentes: es un
+      // protocolo global de MapLibre y tiene que estar puesto antes de la
+      // primera petición. `cachedSource` es lo que antepone `palmero://` a la
+      // plantilla; `basemaps.ts` no lo sabe, porque ese fichero lo comparte el
+      // escritorio y allí este protocolo no existe.
+      registerTileCache()
       for (const b of EXTERNAL_BASEMAPS) {
         const realce = BASEMAP_LEVELS[b.id]
-        map.addSource(basemapSourceId(b.id), b.source)
+        map.addSource(basemapSourceId(b.id), cachedSource(b.source))
         map.addLayer(
           {
             id: basemapLayerId(b.id),

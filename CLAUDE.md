@@ -11,7 +11,6 @@ El orden:
 
 ```bash
 npm test && npm run build      # los umbrales del motor NO se relajan
-(cd mobile && npm run typecheck)   # el móvil compila contra el mismo `src/`
 git add -A && git commit
 git push origin main           # main es la rama de producción
 vercel --prod                  # despliegue, proyecto tiempo-palmero
@@ -21,21 +20,27 @@ Después, comprobar que el despliegue está `Ready` y que la URL de producción
 responde. Si el trabajo se hizo en una rama, se mergea a `main` antes de
 desplegar; no se deja nada colgando en una rama.
 
-**El móvil entra en la puerta, y no es opcional.** `mobile/` importa `../src`
-con el alias `@core/*`: cambiar la firma de un hook o de una función de `lib/`
-rompe la app aunque la web compile y los tests pasen. Ya ocurrió —`useRoque()`
-perdió su parámetro, la web se actualizó y `MapScreen.tsx` se quedó llamándolo
-con uno—, y como TypeScript era lo único que se quejaba y nadie lo ejecutaba,
-la deriva vivió varios commits sin que nada la delatara. Cuando haya
-actualizaciones por aire, esa misma deriva llegaría a los teléfonos en minutos.
+## Este repositorio es la web, y solo la web
+
+`mobile/` estuvo aquí hasta agosto de 2026 —una app de Expo para iOS y Android
+que importaba `../src` con el alias `@core/*`— y desde entonces vive en su
+propio repositorio, abierto y aparte. **Aquí no vuelve a entrar código nativo.**
+La web se ve en un teléfono porque tiene su propia carcasa responsive en
+`src/components/mobile/`, que es HTML y no tiene nada de nativo: ese directorio
+sí es de este repositorio y no se toca al hablar de «quitar el móvil».
+
+Lo que dejó escrito el reparto sigue valiendo, y no por nostalgia: el núcleo de
+`src/lib` **no puede importar `maplibre-gl` en tiempo de ejecución**. Quien pisa
+hoy esa trampa es el escritorio, y quien la vigila es
+`mapStyle.portable.test.ts`.
 
 ## El escritorio es otra puerta, no un adorno
 
-`desktop/` es la versión macOS (Unreal Engine 5.8) y comparte el mismo motor
-que la web y el móvil: `src/lib`. La puerta completa será
-`desktop/scripts/verify.sh` cuando exista (Task 13 del plan M1); mientras
-tanto, el contrato es: el core no se toca, los golden se regeneran con
-`npm run desktop:golden` y se commitean con el cambio.
+`desktop/` es la versión macOS (Unreal Engine 5.8) y comparte el mismo motor que
+la web: `src/lib`. La puerta completa será `desktop/scripts/verify.sh` cuando
+exista (Task 13 del plan M1); mientras tanto, el contrato es: el core no se
+toca, los golden se regeneran con `npm run desktop:golden` y se commitean con el
+cambio.
 
 ## Nada de archivos monolíticos
 

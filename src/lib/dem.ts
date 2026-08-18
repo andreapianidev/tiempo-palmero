@@ -10,9 +10,8 @@
  * Decodificación terrarium:  altura_m = (R · 256 + G + B / 256) − 32768
  *
  * Este fichero no descarga nada: quién trae los píxeles depende de la
- * plataforma —`<canvas>` en el navegador, Skia en el móvil— y vive en
- * `dem-loader.ts` / `dem-loader.native.ts`. Aquí queda lo que es igual en las
- * dos, que es todo lo demás.
+ * plataforma —`<canvas>` en el navegador— y vive en `dem-loader.ts`. Aquí queda
+ * lo que no cambia de una plataforma a otra, que es todo lo demás.
  */
 
 import { lonToPixelX, latToPixelY } from './geo'

@@ -1,9 +1,9 @@
 /**
  * El DEM de `public/dem/`, leído desde el disco en Node.
  *
- * `src/lib/dem-loader.ts` hace lo mismo en el navegador con un `<canvas>`, y
- * `dem-loader.native.ts` en Expo. Esta es la tercera puerta al mismo modelo: la
- * de los scripts, que no tienen DOM y sí tienen sistema de ficheros.
+ * `src/lib/dem-loader.ts` hace lo mismo en el navegador con un `<canvas>`. Esta
+ * es la otra puerta al mismo modelo: la de los scripts, que no tienen DOM y sí
+ * tienen sistema de ficheros.
  *
  * Existe como fichero propio porque la función estaba copiada literalmente en
  * los cuatro scripts de `scripts/checks/`. Mientras solo comprobaban cotas daba
