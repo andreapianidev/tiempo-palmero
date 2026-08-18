@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/atmosfera.css">
 <link rel="stylesheet" href="/css/chrome.css">
+<link rel="stylesheet" href="/css/regimen.css">
 <link rel="stylesheet" href="/css/secciones.css">
 <link rel="stylesheet" href="/css/motion.css">
 <noscript><link rel="stylesheet" href="/css/sin-js.css"></noscript>
@@ -73,7 +74,10 @@
      Dos veces la misma isla y el mismo modelo de elevación.
 
      El lienzo la levanta en tres dimensiones y la gira con el desplazamiento
-     (`js/isla3d.js`, malla de `img/relieve.png`). El SVG de debajo son sus
+     (`js/isla3d.js`, malla de `img/relieve.png`), y mientras gira le cambia el
+     tiempo: cuatro regímenes reales de la isla —calima, alisio, temporal del
+     suroeste y noche despejada— con SU campo de temperatura medido pintando el
+     relieve. Las cifras, en `js/isla3d/regimenes.js`. El SVG de debajo son sus
      curvas de nivel cada 300 m, y es lo que queda cuando no hay WebGL, cuando
      el sistema pide no animar o cuando el relieve no carga.
 
@@ -81,6 +85,13 @@
      editan a mano. -->
 <canvas class="isla3d" data-isla3d aria-hidden="true"></canvas>
 <div class="velo-lectura" aria-hidden="true"></div>
+
+<!-- La lectura del relieve: qué régimen está pintado, de qué día y con qué
+     cifra medida. La rellena `js/isla3d/etiqueta.js`; sin JavaScript o sin
+     WebGL se queda vacía y no ocupa nada. Va `aria-hidden` por lo mismo que el
+     altímetro: acompaña a un lienzo decorativo y cambia de texto al rodar la
+     página, así que leerla en voz alta sería una letanía sobre el contenido. -->
+<p class="regimen" data-regimen aria-hidden="true"></p>
 <div class="isla-fija" aria-hidden="true"><!--isla:inicio-->
 <svg class="isla" viewBox="0 0 1000 1615" preserveAspectRatio="xMidYMid meet"
      fill="none" aria-hidden="true" focusable="false">
@@ -542,7 +553,10 @@
 </div>
 
 <script src="/js/ascenso.js" defer></script>
-<script src="/js/isla3d.js" defer></script>
+<!-- Módulo, no script suelto: la isla son tres ficheros —el renderizador, los
+     regímenes medidos y los sombreadores— y la alternativa era un global
+     compartido a mano. `script-src 'self'` los admite sin tocar la CSP. -->
+<script src="/js/isla3d.js" type="module"></script>
 <script src="/js/revelar.js" defer></script>
 <script src="/js/viento.js" defer></script>
 

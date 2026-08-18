@@ -1,0 +1,146 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LA LECTURA DEL RÉGIMEN · el pie de foto del relieve
+
+   Al pie de la banda derecha, en el mismo sitio en el que la isla gira: qué
+   régimen está pintado, de qué día es y con qué cifra medida. Es la pieza que
+   distingue un relieve que cambia de color de un relieve que dice algo.
+
+   ES EL HERMANO DEL ALTÍMETRO, y se compone como tal. El altímetro manda en el
+   raíl de la izquierda y contesta «a qué altura vas»; esto manda en la banda de
+   la derecha y contesta «qué tiempo estás mirando». Misma familia mono, mismo
+   ámbar para la cifra que importa, misma alineación hacia el canto de pantalla.
+
+   SOLO DONDE HAY BANDA. Por debajo de 1180 px la isla es un telón al 30 % detrás
+   del texto —no hay flanco libre— y un pie de foto ahí no sería una lectura, sería
+   un estorbo encima de un párrafo. Se apaga y no se dibuja.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.regimen {
+  display: none;
+}
+
+@media (min-width: 1180px) {
+  /* Solo cuando el relieve está en pie: sin WebGL no hay régimen que leer. */
+  .isla3d-ok .regimen {
+    display: block;
+    position: fixed;
+    z-index: 2;
+    right: clamp(1.1rem, 2.4vw, 2.8rem);
+    bottom: clamp(1.5rem, 5vh, 3.4rem);
+    /* Cabe dentro de la banda y no la desborda: la nota más larga —«+3,6 °C al
+       cruzar los 650 m · R² 0,25»— pide 30 caracteres mono. */
+    width: min(calc(var(--banda) - 3rem), 30ch);
+    text-align: right;
+    pointer-events: none;
+  }
+
+  /* LA PLACA. El texto va sobre el relieve iluminado, así que necesita fondo
+     propio: sin él, la nota en `--fg-faint` cae por debajo del mínimo legible
+     cuando por detrás pasa una ladera a plena luz.
+
+     EL DESVANECIDO TIENE QUE ACABAR DENTRO DE LA CAJA. Con la primera versión
+     —`inset` de una pulgada y el degradado llegando al 82 %— la placa se veía
+     como un rectángulo oscuro pegado encima del relieve: el degradado se cortaba
+     de golpe en el borde del elemento en vez de haberse apagado antes. Ahora la
+     caja es holgada y el negro se agota sobre el 62 %, así que lo que se ve es
+     una sombra sin forma y no una tarjeta. */
+  .isla3d-ok .regimen::before {
+    content: '';
+    position: absolute;
+    inset: -3.2rem -2.6rem -2.6rem -6rem;
+    background: radial-gradient(
+      88% 92% at 82% 58%,
+      rgba(13, 12, 11, 0.93),
+      rgba(13, 12, 11, 0.72) 34%,
+      rgba(13, 12, 11, 0.28) 50%,
+      rgba(13, 12, 11, 0) 62%
+    );
+    z-index: -1;
+  }
+
+  /* El filete: corto, ámbar y arriba a la derecha. Es el mismo gesto que la
+     marca del hito encendido del altímetro, del otro lado de la pantalla. */
+  .regimen b {
+    display: block;
+    padding-top: 0.62rem;
+    border-top: 1px solid var(--amber);
+    font-family: var(--sans);
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+    color: var(--fg);
+  }
+
+  .regimen .reg-fecha {
+    display: block;
+    margin-top: 0.34rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+
+  .regimen .reg-nota {
+    display: block;
+    margin-top: 0.42rem;
+    font-family: var(--mono);
+    font-size: 0.605rem;
+    line-height: 1.5;
+    letter-spacing: 0.03em;
+    color: var(--fg-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* EL CRUCE. Los números del relieve se mezclan poco a poco en el sombreador,
+     pero el texto no puede: «8,0 °C/km» a medio camino de «−2,4 °C/km» sería una
+     cifra que nadie ha medido. Así que la etiqueta cambia de golpe cuando el
+     régimen nuevo pasa a mandar, y lo único que se interpola es este
+     desvanecido. El filete entra por delante, que es lo que hace que se note el
+     cambio sin necesidad de mover nada más. */
+  .regimen.viva b {
+    animation: reg-filete 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .regimen.viva .reg-fecha {
+    animation: reg-entra 0.6s ease 0.06s both;
+  }
+  .regimen.viva .reg-nota {
+    animation: reg-entra 0.6s ease 0.14s both;
+  }
+
+  @keyframes reg-filete {
+    from {
+      opacity: 0;
+      clip-path: inset(0 0 0 100%);
+    }
+    to {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @keyframes reg-entra {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 0.4rem, 0);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Sin movimiento no hay isla —`isla3d.js` no arranca—, así que esto no llega a
+   dibujarse nunca. La regla está de todas formas: si algún día el relieve se
+   quedara quieto en vez de apagarse, el texto tiene que aparecer sin animación en
+   lugar de quedarse en `opacity: 0` para siempre. */
+@media (prefers-reduced-motion: reduce) {
+  .regimen.viva b,
+  .regimen.viva .reg-fecha,
+  .regimen.viva .reg-nota {
+    animation: none;
+  }
+}

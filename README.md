@@ -29,11 +29,30 @@ petición a un tercero: las dos tipografías de la aplicación van servidas desd
 
 La página se lee como una subida de la costa al Roque, y **la isla está
 levantada en tres dimensiones a un lado**: una malla de 209×333 cotas que gira
-con el desplazamiento mientras la cámara baja hacia la cumbre, el sol cruza el
-cielo y el mar de nubes se queda por debajo. Sale del mismo modelo de elevación
-con el que la aplicación corrige la temperatura —`npm run web:terreno` escribe
-la malla, `web/js/isla3d.js` la dibuja con WebGL a pelo, sin biblioteca— y va
-coloreada con la escala de temperatura de la aplicación.
+con el desplazamiento mientras la cámara baja hacia la cumbre y el sol cruza el
+cielo hasta ponerse. Sale del mismo modelo de elevación con el que la aplicación
+corrige la temperatura —`npm run web:terreno` escribe la malla,
+`web/js/isla3d.js` la dibuja con WebGL a pelo, sin biblioteca— y va coloreada
+con la escala de temperatura de la aplicación.
+
+Y **mientras gira le cambia el tiempo**: pasa por cuatro regímenes reales de La
+Palma, cada uno con su día y su campo de temperatura medido, y el relieve se
+repinta con el que toque. La gracia es que los cuatro no se parecen en nada,
+midiéndolos con el mismo motor de la aplicación sobre la red del Cabildo:
+
+| Régimen | Día medido | Gradiente | R² | Lo que se ve |
+|---|---|---|---|---|
+| Alisio | 6 nov 2025 | 8,0 °C/km | 0,89 | mar de nubes contra el nordeste, seco encima |
+| Temporal del suroeste | 21 mar 2026 | 7,9 °C/km | 0,96 | isla dentro de la nube, lluvia torcida del OSO |
+| Noche despejada | 7 dic 2025 | 6,0 °C/km | 0,60 | luna, y la costa en ámbar por la Ley del Cielo |
+| Calima | 8 ago 2026 | **−2,4 °C/km** | 0,11 | polvo, y la isla que se CALIENTA al subir |
+
+El gradiente altitudinal no es una constante de la isla: es la huella del
+régimen. Con temporal una sola recta explica la isla entera; con calima la
+temperatura sube con la altura y ninguna recta explica nada. Las cifras las mide
+`scripts/checks/regimenes.ts` contra el archivo público del Cabildo, y están
+comentadas una a una en `web/js/isla3d/regimenes.js`. No son el tiempo de ahora
+y la página no lo insinúa: cada régimen lleva su fecha escrita al lado.
 
 Si no hay WebGL, si la tarjeta no da para ello o si el sistema pide no animar,
 queda un plano de curvas de nivel de la misma isla y del mismo modelo

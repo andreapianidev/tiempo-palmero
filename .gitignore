@@ -19,6 +19,11 @@ __pycache__/
 # lleva 19 MB y los tests del árbol ajeno al commit.
 .claude/worktrees
 
+# Lo que escupen los scripts de comprobación: capturas de la portada y sus
+# medidas de contraste. Se regeneran con `scripts/checks/portada-regimenes.ts`
+# y son megabytes de PNG que no dicen nada que no diga el informe.
+.tmp/
+
 # Scripts de captura usa y tira
 _shot.mjs
 web/.vercel

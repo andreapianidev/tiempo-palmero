@@ -32,6 +32,7 @@
   "exclude": [
     "scripts/checks/occlusion-margin.ts",
     "scripts/checks/tile-cache.ts",
-    "scripts/checks/precarga-intencion.ts"
+    "scripts/checks/precarga-intencion.ts",
+    "scripts/checks/portada-regimenes.ts"
   ]
 }
