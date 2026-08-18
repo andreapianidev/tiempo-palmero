@@ -253,9 +253,15 @@ GRAFCAN dice «se prohíbe la descarga masiva de información», así que la pre
 son dos casos contados y ninguno recorre la isla:
 
 - **Al encender un fondo externo por primera vez**, 17 teselas de z9 a z11 que
-  cubren La Palma entera: 838 kB la ortofoto, 1154 kB el topográfico, medidos.
-  Con ellas MapLibre tiene una tesela padre que ampliar en cuanto se pulsa el
-  selector, en vez de un hueco, y eso vale hasta z14 largo. El z12 se queda
+  cubren La Palma entera: 718 y 739 kB la ortofoto, 901 y 1037 kB el
+  topográfico, en dos pasadas cada uno el 18 de agosto de 2026 —van en pares
+  porque el WMS recomprime el JPEG en cada petición y el MT20 se mueve un 15 %
+  entre pasada y pasada—. Con ellas MapLibre tiene una tesela padre que ampliar
+  en vez de un hueco, y eso vale hasta z14 largo. Lo que **no** es cierto es que
+  el fondo aparezca completo al pulsar el selector: las 17 solas tardan 2,9-3,4 s
+  y dentro del navegador bastante más, porque van detrás de lo que MapLibre pide
+  para la pantalla sobre las seis conexiones que da HTTP/1.1. Es el orden
+  correcto —primero lo que se mira—, pero no es instantáneo. El z12 se queda
   fuera porque son 35 teselas más y **triplican la factura** (3,3 y 4,7 MB) para
   un nivel que el ampliado del z11 ya tapa. Y solo al encenderlo: la promesa de
   que quien no toque el selector no gasta ni una petición fuera de casa sigue en

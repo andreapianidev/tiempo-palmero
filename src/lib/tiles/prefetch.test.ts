@@ -19,7 +19,8 @@ describe('la vista de lejos', () => {
   it('son las 17 teselas medidas, ni una más', () => {
     const tiles = overviewTiles(ISLAND_BBOX)
     // 1 (z9) + 4 (z10) + 12 (z11), medido el 18 ago 2026 con
-    // `scripts/checks/grafcan-cache.ts`: 838 kB la ortofoto, 1154 kB el MT20.
+    // `scripts/checks/grafcan-cache.ts`: unos 720-740 kB la ortofoto y unos
+    // 900-1040 kB el MT20, que el WMS recomprime en cada petición.
     expect(tiles).toHaveLength(17)
     expect(new Set(tiles.map((t) => t.z))).toEqual(new Set(OVERVIEW_ZOOMS))
   })

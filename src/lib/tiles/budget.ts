@@ -52,12 +52,23 @@ export const TILE_TTL_MS = 30 * 24 * 3600 * 1000
  *   z14     188 teselas    43,2 MB
  *   z15     690 teselas   158,7 MB
  *   z16   2 612 teselas   601 MB
+ *   z17  10 175 teselas   2,3 GB
  *
  * Con 1 GB cabe **la isla entera hasta z15 en los dos fondos** —214 MB cada uno,
  * 429 MB los dos— y quedan casi 600 MB para el z16 y el z17 de los sitios que
  * uno mire de verdad, que son unas 2.600 teselas más. Es deliberado que NO quepa
  * la isla completa a z16 en los dos fondos (1,2 GB): eso ya no sería la caché de
  * lo que alguien ha mirado.
+ *
+ * Y POR ESO NO SE BAJA LA ISLA AL ZOOM MÁXIMO, aunque sea lo primero que se
+ * ocurre al ver un techo de 1 GB. La fila del z17 está ahí para que la cifra no
+ * haya que imaginarla: son **10 175 teselas de tierra, 2,3 GB por fondo** —el
+ * doble contando los dos—, que a dos peticiones en paralelo y con la mediana de
+ * 556 ms son **47 minutos** seguidos pidiéndole cosas a GRAFCAN. No cabe en el
+ * techo (se iría expulsando a sí misma mientras baja), no cabe en la paciencia
+ * de nadie y es exactamente la «descarga masiva de información» que la licencia
+ * del servicio prohíbe. Lo que sí es defendible al zoom máximo es guardar lo
+ * que alguien ha mirado, y eso ya lo hace la caché.
  *
  * ESTO ES UN TECHO DE LO QUE SE CONSERVA, NO DE LO QUE SE DESCARGA. Subirlo no
  * pide ni una tesela más a GRAFCAN: solo hace que lo ya visto —incluido el zoom
@@ -90,11 +101,26 @@ export function cacheCapBytes(quota: number | undefined): number {
 /**
  * LOS NIVELES QUE SE PRECARGAN AL ENCENDER UN FONDO: z9, z10 y z11.
  *
- * Son **17 teselas** que cubren la isla entera —838 kB la ortofoto, 1154 kB el
- * topográfico, medidos— y con ellas el fondo aparece completo en cuanto se
- * pulsa el selector, a cualquier escala: MapLibre dibuja la tesela padre
- * ampliada mientras bajan las hijas, así que tener z11 es tener un fondo
- * inmediato hasta z14 largo.
+ * Son **17 teselas** que cubren la isla entera —z9:1, z10:4, z11:12— y con
+ * ellas MapLibre tiene siempre una tesela padre que ampliar mientras bajan las
+ * hijas, así que tener el z11 es tener fondo a cualquier escala hasta z14 largo.
+ *
+ * LO QUE PESAN, medido el 18 de agosto de 2026 con dos pasadas por servicio:
+ * **718 y 739 kB la ortofoto, 901 y 1037 kB el topográfico**. Van en pares
+ * porque no es un número fijo: el WMS vuelve a dibujar y a comprimir el JPEG en
+ * cada petición, así que las mismas 17 teselas pesan distinto dos veces
+ * seguidas —un 3 % de diferencia en la ortofoto, un 15 % en el MT20—. Cualquier
+ * cifra suelta de estas es la mitad de un rango, y aquí antes había dos (838 y
+ * 1154 kB) escritas como si fueran una medida exacta.
+ *
+ * Y NO APARECE COMPLETO «EN CUANTO SE PULSA EL SELECTOR», que es lo que decía
+ * este comentario y no es verdad. Las 17 solas, con los dos obreros y sin nadie
+ * compitiendo, tardan **2,9-3,4 s**; dentro del navegador tardan bastante más,
+ * porque van en fila detrás de las teselas que MapLibre está pidiendo para la
+ * pantalla y GRAFCAN habla HTTP/1.1 —seis conexiones por servidor, repartidas
+ * entre las dos cosas—. Eso es lo correcto y no un defecto: primero baja lo que
+ * se está mirando y la vista de lejos rellena por detrás. Lo que no se puede es
+ * contarlo como si fuera instantáneo.
  *
  * EL z12 SE QUEDA FUERA, y esa es la decisión que hay que justificar: son 35
  * teselas más y **triplican la factura** (3,3 MB la ortofoto, 4,7 MB el MT20)

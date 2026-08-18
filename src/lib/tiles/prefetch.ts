@@ -5,8 +5,10 @@
  *
  *  1. **La vista de lejos**, al encender un fondo por primera vez. Diecisiete
  *     teselas de z9 a z11 que cubren La Palma entera; con ellas MapLibre tiene
- *     algo que ampliar en cuanto se pulsa el selector, en vez de un hueco. El
- *     coste está medido en `budget.ts`: 838 kB la ortofoto, 1154 kB el MT20.
+ *     algo que ampliar a cualquier escala, en vez de un hueco. El
+ *     coste está medido en `budget.ts`: unos 720-740 kB la ortofoto y unos
+ *     900-1040 kB el MT20, que tardan tres segundos si nadie compite por la red
+ *     y bastante más dentro del navegador, donde no la tienen para ellas.
  *  2. **El borde por el que se está saliendo**, cuando el mapa se para. No el
  *     anillo entero: solo el lado hacia el que el usuario ya venía moviéndose,
  *     que es la diferencia entre adelantarse y acaparar.
