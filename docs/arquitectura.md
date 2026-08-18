@@ -45,21 +45,17 @@ web/                      El sitio de tiempopalmero.com, aparte de la aplicació
   └── img/                Capturas en 900 y 1800 px, y relieve.png: la malla del DEM
 ```
 
-Lo que **no** está en este árbol y conviene saber que existe: la aplicación de
-macOS, un gemelo digital en 3D de la isla hecho con Unity 6 HDRP, que vive en
-[su propio repositorio](https://github.com/andreapianidev/tiempo-palmero-unity).
-Y no comparte este `src/lib`: lleva **una copia**. Aquí hubo un intento anterior
-con Unreal Engine 5 —un `desktop/` con el núcleo empaquetado para QuickJS— que
-nunca pasó del andamiaje y salió en agosto de 2026, con los dos scripts de
-`package.json` que llevaban meses invocando ficheros que no existían.
+Lo que **no** está en este árbol, porque no existe: una versión de escritorio.
+Hubo un intento con Unreal Engine 5 —un `desktop/` con el núcleo empaquetado
+para QuickJS— que nunca pasó del andamiaje y salió en agosto de 2026, con los
+dos scripts de `package.json` que llevaban meses invocando ficheros que no
+existían. Tiempo Palmero es la aplicación web y el sitio que la explica.
 
-Que sea una copia y no una referencia tiene una factura, y está mejor escrita
-que escondida: **un arreglo del motor aquí no llega allí solo.** Cuando el
-cambio toca la interpolación, el control de calidad o un umbral, o se lleva a
-mano o quedan dos aplicaciones diciendo dos temperaturas para el mismo punto.
-Lo que sí sigue valiendo para las dos es la regla de portabilidad: `src/lib`
-tiene que poder importarse sin navegador, y eso lo vigila
-`mapStyle.portable.test.ts`.
+De aquel intento queda en pie una regla, y no por herencia sino porque tiene su
+propia razón: **`src/lib` tiene que poder importarse sin navegador.** Los
+scripts de `scripts/` y `npm test` corren en Node, donde no hay DOM, y ahí una
+importación de `maplibre-gl` en tiempo de ejecución rompe el núcleo sin que
+ninguna prueba de la web se entere. Lo vigila `mapStyle.portable.test.ts`.
 
 **Son dos despliegues, y no es una complicación gratuita.** La aplicación vive
 en `app.tiempopalmero.com` y el sitio que la explica en `tiempopalmero.com`: uno
@@ -244,9 +240,9 @@ solo funciona mientras los navegadores sigan olfateando los bytes en vez de
 creerse la etiqueta.
 
 El prefijo lo pone `MapView` y **no `basemaps.ts`**, que es la parte que importa:
-de ese fichero hay una copia en la aplicación de macOS, donde no hay ni
-IndexedDB ni MapLibre y una URL con un protocolo desconocido no la sabría
-resolver nadie. Por lo mismo, de los siete ficheros de `src/lib/tiles/` solo
+ese fichero es del núcleo, y el núcleo se lee también donde no hay ni IndexedDB
+ni MapLibre, o sea donde una URL con ese protocolo no la sabría resolver nadie.
+Por lo mismo, de los diez ficheros de `src/lib/tiles/` solo
 `protocol.ts` menciona `maplibre-gl`; lo vigila `mapStyle.portable.test.ts`.
 
 **Y lo que se pide por delante, que es poco a propósito.** La licencia de

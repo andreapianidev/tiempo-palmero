@@ -31,9 +31,9 @@
  * `tiles/budget.ts`, con lo que cuesta cada cosa medido.
  *
  * El prefijo `palmero://` que hace pasar la tesela por esa caché NO se pone
- * aquí: lo añade `MapView` con `tiles/key.ts` al declarar la fuente. De este
- * fichero hay una copia en la aplicación de macOS, que no tiene ni MapLibre ni
- * IndexedDB y no sabría qué hacer con ese protocolo.
+ * aquí: lo añade `MapView` con `tiles/key.ts` al declarar la fuente. Este
+ * fichero es del núcleo, y el núcleo se lee también donde no hay ni MapLibre ni
+ * IndexedDB que sepan qué hacer con ese protocolo.
  *
  * NO se piden teselas de un fondo apagado: MapLibre solo carga las fuentes que
  * tengan alguna capa visible, así que quien no toque este selector no gasta ni

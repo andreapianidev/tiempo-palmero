@@ -2,13 +2,11 @@
 
 > ## ⛔ DOCUMENTO OBSOLETO — no se sigue
 >
-> **Este plan no se ejecutó y su enfoque quedó descartado.** El escritorio de
-> macOS no se hizo con Unreal Engine 5 ni ejecuta el core dentro de QuickJS:
-> se hizo con **Unity 6 HDRP**, vive en su propio repositorio
-> —<https://github.com/andreapianidev/tiempo-palmero-unity>— y lleva una
-> **copia** de `src/lib`, no una referencia. El andamiaje `desktop/` que este
-> documento describe salió de este repositorio el 18 de agosto de 2026, junto
-> con dos scripts de `package.json` que invocaban ficheros inexistentes.
+> **Este plan no se ejecutó y su enfoque quedó descartado.** No hay versión de
+> escritorio en este repositorio ni se ejecuta el core dentro de QuickJS: el
+> andamiaje `desktop/` que este documento describe salió de aquí el 18 de agosto
+> de 2026, junto con dos scripts de `package.json` que invocaban ficheros
+> inexistentes. Tiempo Palmero es la aplicación web y el sitio, y nada más.
 >
 > Se conserva porque es un registro fechado de una decisión y de por qué se
 > abandonó, no porque describa nada de lo que hay hoy.

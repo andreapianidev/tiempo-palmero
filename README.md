@@ -3,7 +3,6 @@
 [![CI](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml/badge.svg)](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml)
 [![La aplicación](https://img.shields.io/badge/app-app.tiempopalmero.com-2ea44f?logo=vercel&logoColor=white)](https://app.tiempopalmero.com)
 [![El sitio](https://img.shields.io/badge/web-tiempopalmero.com-8b9a63)](https://www.tiempopalmero.com)
-[![La aplicación de macOS](https://img.shields.io/badge/macOS-Unity%206%20HDRP-000000?logo=unity&logoColor=white)](https://github.com/andreapianidev/tiempo-palmero-unity)
 [![Licencia Apache 2.0](https://img.shields.io/badge/licencia-Apache%202.0-4c6ef5)](LICENSE)
 [![Datos del Cabildo Insular de La Palma](https://img.shields.io/badge/datos-Cabildo%20de%20La%20Palma-005f73)](https://www.opendatalapalma.es)
 [![Se buscan colaboradores en La Palma](https://img.shields.io/badge/se%20buscan-colaboradores%20en%20la%20isla-b5179e)](CONTRIBUTING.md)
@@ -40,15 +39,6 @@ Si no hay WebGL, si la tarjeta no da para ello o si el sistema pide no animar,
 queda un plano de curvas de nivel de la misma isla y del mismo modelo
 (`npm run web:island`). Y todo —el cielo, el altímetro, la cámara— cuelga de una
 sola variable CSS que el desplazamiento va reescribiendo.
-
-> **Hay una tercera pieza, y no está aquí.**
-> [**Tiempo Palmero para macOS**](https://github.com/andreapianidev/tiempo-palmero-unity)
-> es un gemelo digital en 3D de la isla, hecho con Unity 6 HDRP y movido por
-> esta misma meteorología: el mar de nubes a la cota que le toca, la lluvia
-> donde las estaciones dicen que llueve, el Atlántico con el viento que se está
-> midiendo. Está en desarrollo, es gratis y su código también es abierto.
-> Lleva **una copia** de este `src/lib`, no una referencia — lo que significa
-> que un arreglo del motor hay que llevarlo a los dos sitios.
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 

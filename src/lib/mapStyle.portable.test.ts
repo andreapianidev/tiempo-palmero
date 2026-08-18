@@ -6,12 +6,9 @@ import { describe, expect, it } from 'vitest'
 /**
  * `mapStyle.ts` no lo lee solo un navegador.
  *
- * Dos sitios sin DOM dependen de que esta cadena se pueda importar: los scripts
- * de `scripts/`, que corren en Node, y la aplicación de macOS
- * —<https://github.com/andreapianidev/tiempo-palmero-unity>— que lleva una
- * COPIA de este `src/lib` y no trae este test consigo. Basta con que un módulo
- * de la cadena importe `maplibre-gl` en tiempo de ejecución para romper a los
- * dos.
+ * Los scripts de `scripts/` corren en Node y dependen de que esta cadena se
+ * pueda importar. Basta con que un módulo de ella importe `maplibre-gl` en
+ * tiempo de ejecución para romperlos.
  *
  * Y no se entera nadie: `npm test` y `npm run build` solo miran la web, donde
  * esa importación es perfectamente válida. Ya pasó una vez —un sombreado propio

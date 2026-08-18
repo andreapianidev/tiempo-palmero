@@ -3,8 +3,8 @@
  *
  * ESTE ES EL ÚNICO FICHERO DE `tiles/` QUE IMPORTA `maplibre-gl`, y no es
  * casualidad. La cadena que cuelga de `mapStyle.ts` tiene que poder importarse
- * sin navegador —lo hacen los scripts de Node de aquí y la copia de `src/lib`
- * que lleva la aplicación de macOS— y `mapStyle.portable.test.ts` lo comprueba.
+ * sin navegador —lo hacen los scripts de Node de aquí— y
+ * `mapStyle.portable.test.ts` lo comprueba.
  * Por eso el protocolo se registra desde `MapView`, que es solo de la web, y los
  * otros ficheros de este directorio —rejilla, claves, presupuesto, almacén,
  * descargas en vuelo— no la mencionan.

@@ -543,8 +543,8 @@ export function MapView(props: Props) {
       // La caché de teselas se registra ANTES de declarar las fuentes: es un
       // protocolo global de MapLibre y tiene que estar puesto antes de la
       // primera petición. `cachedSource` es lo que antepone `palmero://` a la
-      // plantilla; `basemaps.ts` no lo sabe, porque de ese fichero hay una copia
-      // en la aplicación de macOS y allí este protocolo no existe.
+      // plantilla; `basemaps.ts` no lo sabe, porque ese fichero es del núcleo y
+      // el núcleo tiene que poder leerse sin MapLibre — ver `mapStyle.ts`.
       registerTileCache()
       for (const b of EXTERNAL_BASEMAPS) {
         const realce = BASEMAP_LEVELS[b.id]

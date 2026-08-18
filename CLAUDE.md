@@ -27,31 +27,20 @@ Que la web se vea en un teléfono es cosa de `src/components/mobile/`, que es su
 carcasa responsive en HTML: ese directorio SÍ es de este repositorio y no se
 toca al hablar de «quitar el móvil».
 
-## La aplicación de macOS tampoco está aquí
+## Tampoco hay versión de escritorio
 
-Es un gemelo digital en 3D de la isla hecho con **Unity 6 HDRP**, y vive en su
-propio repositorio: <https://github.com/andreapianidev/tiempo-palmero-unity>.
+Este repositorio es la web. Hubo aquí un intento de escritorio con Unreal
+Engine 5 —un directorio `desktop/` con el núcleo empaquetado para QuickJS— que
+nunca pasó del andamiaje y salió en agosto de 2026. Con él se fueron `npm run
+desktop:core` y `npm run desktop:golden`, dos scripts que llevaban tiempo
+invocando ficheros inexistentes.
 
-Hubo aquí un intento anterior con Unreal Engine 5 —un directorio `desktop/` con
-el núcleo empaquetado para QuickJS— que nunca pasó del andamiaje y salió en
-agosto de 2026. Con él se fueron `npm run desktop:core` y `npm run
-desktop:golden`, dos scripts que llevaban tiempo invocando ficheros
-inexistentes.
-
-**LO QUE HAY QUE SABER ANTES DE TOCAR `src/lib`.** Ese repositorio lleva una
-COPIA de este `src/lib`, no una referencia: no hay alias, no hay paquete
-publicado y no hay nada que avise cuando una de las dos se mueve. De ahí salen
-dos obligaciones:
-
-1. **Un arreglo del motor aquí NO llega allí solo.** Si el cambio toca la
-   interpolación, el control de calidad o cualquier umbral, o se lleva a mano al
-   otro repositorio o quedan dos aplicaciones diciendo dos temperaturas
-   distintas para el mismo punto de la misma isla.
-2. **`src/lib` tiene que seguir funcionando sin navegador**, porque allí no hay
-   DOM y aquí tampoco lo hay en `scripts/` ni durante `npm test`. En concreto:
-   nada de lo que cuelga de `mapStyle.ts` puede importar `maplibre-gl` en tiempo
-   de ejecución. Lo vigila `mapStyle.portable.test.ts`, y por eso la caché de
-   teselas registra su protocolo en `tiles/protocol.ts` y no en el estilo.
+**`src/lib` tiene que funcionar sin navegador.** No es una precaución teórica ni
+depende de que exista otra aplicación: `scripts/` y `npm test` corren en Node,
+donde no hay DOM. En concreto, nada de lo que cuelga de `mapStyle.ts` puede
+importar `maplibre-gl` en tiempo de ejecución. Lo vigila
+`mapStyle.portable.test.ts`, y por eso la caché de teselas registra su protocolo
+en `tiles/protocol.ts` y no en el estilo.
 
 ## Nada de archivos monolíticos
 
