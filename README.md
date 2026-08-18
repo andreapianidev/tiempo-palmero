@@ -28,11 +28,18 @@ petición a un tercero: las dos tipografías de la aplicación van servidas desd
 `web/fonts/`, y la CSP del sitio es `default-src 'none'` con todo lo demás en
 `'self'`.
 
-La página se lee como una subida de la costa al Roque: el fondo, el altímetro
-de la izquierda y la curva de nivel encendida cuelgan todos de una sola variable
-CSS que el desplazamiento va reescribiendo. Las curvas de nivel de la isla no
-son una ilustración — salen del mismo modelo de elevación con el que la
-aplicación corrige la temperatura, y se regeneran con `npm run web:island`.
+La página se lee como una subida de la costa al Roque, y **la isla está
+levantada en tres dimensiones a un lado**: una malla de 209×333 cotas que gira
+con el desplazamiento mientras la cámara baja hacia la cumbre, el sol cruza el
+cielo y el mar de nubes se queda por debajo. Sale del mismo modelo de elevación
+con el que la aplicación corrige la temperatura —`npm run web:terreno` escribe
+la malla, `web/js/isla3d.js` la dibuja con WebGL a pelo, sin biblioteca— y va
+coloreada con la escala de temperatura de la aplicación.
+
+Si no hay WebGL, si la tarjeta no da para ello o si el sistema pide no animar,
+queda un plano de curvas de nivel de la misma isla y del mismo modelo
+(`npm run web:island`). Y todo —el cielo, el altímetro, la cámara— cuelga de una
+sola variable CSS que el desplazamiento va reescribiendo.
 
 > **Hay una tercera pieza, y no está aquí.**
 > [**Tiempo Palmero para macOS**](https://github.com/andreapianidev/tiempo-palmero-unity)

@@ -34,6 +34,11 @@
    en los `calc()` en vez de una cadena. */
 @property --asc{syntax:'<number>';initial-value:0;inherits:true}
 
+/* Registrada por lo mismo, y además porque `isla3d.js` la LEE: sin registrar,
+   `getComputedStyle` devuelve el `clamp(...)` sin resolver y `parseFloat` da
+   NaN. Con ella devuelve los píxeles ya calculados. */
+@property --banda{syntax:'<length>';initial-value:0px;inherits:true}
+
 :root{
   --asc:0;
 
@@ -72,8 +77,24 @@
      etiqueta más larga del altímetro— necesita 110 con la marca encendida. Se
      salía por la izquierda de la pantalla. */
   --rail:clamp(0px,11vw,150px);
-  --max:1180px;
+
+  /* La banda de la derecha, reservada para la isla. Es la simétrica del raíl:
+     el altímetro manda en la izquierda y el relieve en la derecha, y el texto
+     vive entre los dos SIN pisar ninguno.
+
+     Existe porque no hay manera de tener las dos cosas en el mismo sitio. Con
+     la isla iluminada por detrás del texto, el fondo bajo un pie de foto subía
+     a rgb(119,117,94) y el contraste caía a 1,7:1; para bajarlo al mínimo hacía
+     falta apagar el relieve hasta dejarlo en un manchón. Apartándolo, se puede
+     encender del todo. */
+  --banda:0px;
+  /* 1080 y no 1180: la columna de lectura tiene que dejarle sitio a la isla en
+     el flanco derecho, y de paso las líneas del panel del modelo bajan de 790 a
+     700 px, que es una medida de lectura y no un renglón de hoja de cálculo. */
+  --max:1080px;
 }
+
+@media (min-width:1180px){:root{--banda:clamp(300px,34vw,700px)}}
 
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}

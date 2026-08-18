@@ -8,6 +8,67 @@
 
 .piel{position:relative;z-index:2}
 
+/* ── la isla en tres dimensiones ─────────────────────────────────────────── */
+/* El lienzo NO ocupa la ventana entera: ocupa la mitad derecha y se desvanece
+   por su canto izquierdo. La primera versión iba a pantalla completa con la
+   cámara descentrada, y la isla se paseaba por encima del titular — bonita y
+   ilegible. Recortar el lienzo es lo único que garantiza que la columna de
+   lectura no la pise NUNCA, en ningún punto del recorrido, sin tener que
+   perseguir la cámara con la medida del contraste.
+
+   Sale con fundido: aparece cuando la malla está construida, no antes. */
+.isla3d{
+  position:fixed;top:0;right:0;bottom:0;z-index:1;
+  /* Más ancho que la banda: la isla se sale por debajo del velo, que es lo que
+     le da profundidad en vez de dejarla dentro de una caja. */
+  width:calc(var(--banda) + 12vw);height:100%;
+  pointer-events:none;opacity:0;transition:opacity 1.6s ease .2s;
+}
+.isla3d.viva{opacity:.95}
+
+/* En el móvil no hay mitad derecha que valga: el texto ocupa todo el ancho, así
+   que la isla se queda de telón muy bajo y con el pie desvanecido. */
+@media (max-width:1079px){
+  .isla3d{
+    width:100%;
+    mask-image:linear-gradient(180deg,#000 0,#000 46%,transparent 88%);
+    -webkit-mask-image:linear-gradient(180deg,#000 0,#000 46%,transparent 88%);
+  }
+  .isla3d.viva{opacity:.3}
+}
+
+/* EL VELO DE LECTURA. Una sola capa entre la isla y el contenido: tinta densa
+   sobre el flanco izquierdo, que se abre hacia la derecha. Es lo que permite
+   que el relieve esté iluminado de verdad sin que el texto que le pasa por
+   delante pierda contraste — los valores salen de medirlo, no de mirarlo.
+   Va después del lienzo en el marcado: mismo z-index, y pinta encima. */
+.velo-lectura{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  /* El corte no es estético: la parte densa acaba EXACTAMENTE donde acaba la
+     columna de texto, `100% − --banda`, y todo el desvanecido cae dentro de la
+     banda, donde no hay una sola letra. Así el relieve puede ir a plena luz sin
+     que ningún párrafo pierda contraste. */
+  background:linear-gradient(90deg,
+    rgba(13,12,11,.97) 0 calc(100% - var(--banda)),
+    rgba(13,12,11,.55) calc(100% - var(--banda) * .86),
+    transparent calc(100% - var(--banda) * .68));
+}
+@media (max-width:1079px){
+  /* Sin flanco despejado, el velo se vuelve horizontal: la isla asoma por
+     arriba y el texto baja sobre tinta. */
+  .velo-lectura{
+    background:linear-gradient(180deg,
+      rgba(13,12,11,.35) 0 22%,
+      rgba(13,12,11,.86) 46%,
+      rgba(13,12,11,.95) 62%);
+  }
+}
+.isla3d-ok ~ .velo-lectura,.velo-lectura{display:block}
+html:not(.isla3d-ok) .velo-lectura{display:none}
+
+/* Cuando el relieve está en pie, el plano de curvas de nivel sobra. */
+.isla3d-ok .isla-fija{display:none}
+
 /* ── la isla, al fondo y a la derecha ────────────────────────────────────── */
 /* Las curvas de nivel salen del DEM de la aplicación (`scripts/web-island.ts`).
    Se quedan fijas mientras la página pasa por delante, y la cota que toca a la

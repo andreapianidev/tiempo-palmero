@@ -6,7 +6,7 @@
    filete fino y el ámbar reservado para lo que es un dato.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.piel{padding-left:var(--rail)}
+.piel{padding-left:var(--rail);padding-right:var(--banda)}
 
 section{position:relative;padding-block:clamp(4.5rem,11vh,8rem)}
 section+section{border-top:1px solid var(--line-soft)}

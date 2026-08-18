@@ -20,7 +20,8 @@
     "prepare-data": "tsx scripts/prepare-data.ts",
     "prepare-data:snapshot": "tsx scripts/prepare-data.ts --only=snapshot",
     "prepare-ocean": "tsx scripts/prepare-ocean.ts",
-    "web:island": "tsx scripts/web-island.ts"
+    "web:island": "tsx scripts/web-island.ts",
+    "web:terreno": "tsx scripts/web-terreno.ts"
   },
   "dependencies": {
     "maplibre-gl": "^4.7.1",
