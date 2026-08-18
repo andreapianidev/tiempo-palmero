@@ -167,18 +167,24 @@ Desde agosto de 2026 se guardan en **IndexedDB**, con `TILE_TTL_MS` de 30 días.
 Ni `localStorage`, que solo admite texto y se llena a los 5 MB —una pantalla de
 ortofoto—, ni la Cache Storage API, que sería el sitio natural para respuestas
 HTTP pero no sabe decir cuánto ocupa ni cuándo se usó cada cosa: purgar por
-tamaño obligaría a abrir cada respuesta para medirla, o sea a leer los 150 MB
-que se están intentando recortar. Por eso hay **dos almacenes**, `meta` y
+tamaño obligaría a abrir cada respuesta para medirla, o sea a leer el gigabyte
+que se está intentando recortar. Por eso hay **dos almacenes**, `meta` y
 `body`: el inventario se recorre entero y son unos bytes por tesela; las
 imágenes se leen de una en una y solo cuando se piden.
 
-El techo son **150 MB**, y sale de contar las teselas que tocan tierra contra la
+El techo es **1 GB**, y sale de contar las teselas que tocan tierra contra la
 línea de costa del Cabildo: la isla entera cabe en 54 teselas a z13 (12,4 MB),
-188 a z14 (43,2 MB) y 690 a z15 (158,7 MB). Con 150 MB entran los dos fondos
-completos a z13 y z14 —111 MB— y quedan 39 MB para el detalle que uno mire de
-verdad. La isla completa a z15 no cabe, y es a propósito: son 159 MB de un solo
-fondo, y nadie los mira enteros. Además nunca se pasa de **la cuarta parte de la
-cuota** que declare `navigator.storage.estimate()`, porque esto no es espacio
+188 a z14 (43,2 MB), 690 a z15 (158,7 MB) y 2.612 a z16 (601 MB). Con 1 GB
+entran los dos fondos completos hasta z15 —429 MB— y quedan casi 600 MB para el
+z16 y el z17 de los sitios que uno mire de verdad, que es donde está el detalle
+que se quiere conservar y lo primero que se perdía con un techo corto.
+
+Conviene tener clara la distinción, porque es la que decide si esto es
+razonable: **el techo limita lo que se CONSERVA, no lo que se descarga.**
+Subirlo no le pide ni una tesela más a GRAFCAN —solo hace que lo ya visto siga
+ahí mañana—; quien le pide cosas es la precarga, y esa son 17 teselas por fondo
+y 8 por parada, y no se ha tocado. Aun así nunca se pasa de **la cuarta parte de
+la cuota** que declare `navigator.storage.estimate()`, porque esto no es espacio
 nuestro: es el disco de quien abre la página.
 
 Los 30 días no son redondeo. Al otro lado hay la Ortofoto Territorial

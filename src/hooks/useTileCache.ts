@@ -23,7 +23,7 @@ import { ISLAND_BBOX } from '../lib/geo'
 import { rasterTileZoom } from '../lib/tiles/grid'
 import { leadingEdgeTiles, overviewTiles } from '../lib/tiles/prefetch'
 import { sweep } from '../lib/tiles/store'
-import { stopWarming, warmTiles } from '../lib/tiles/warm'
+import { warmTiles } from '../lib/tiles/warm'
 
 /** Cada cuánto se purga, como mucho: una vez por sesión y cada media hora. */
 const SWEEP_EVERY_MS = 30 * 60 * 1000
@@ -80,17 +80,26 @@ export function useTileCache(map: MapLibreMap | null, basemap: BasemapId): void 
       map.off('idle', onIdle)
     }
   }, [map, basemap])
-
-  /**
-   * Cortar las descargas es cosa DEL DESMONTAJE Y DE NADIE MÁS, y por eso está
-   * en su propio efecto con la lista de dependencias vacía.
-   *
-   * Estuvo en la limpieza del efecto de arriba, que depende de `basemap`, y ahí
-   * hacía algo que nadie pidió: cambiar de fondo vaciaba la fila entera, así que
-   * la vista de lejos del fondo anterior se quedaba a medias. Y no se recupera
-   * sola —`warmed` ya lo daba por precargado—, de modo que ese fondo se quedaba
-   * con agujeros hasta la siguiente recarga de la página. Es justo lo que los
-   * canales de `warm.ts` existen para evitar, anulado desde fuera.
-   */
-  useEffect(() => stopWarming, [])
 }
+
+/**
+ * AQUÍ NO SE CORTA LA PRECARGA AL DESMONTAR, y las dos veces que se intentó
+ * salió mal, cada una a su manera. Queda escrito para no intentarlo una tercera.
+ *
+ * El primer intento la cortaba en la limpieza del efecto que depende de
+ * `basemap`: cambiar de fondo vaciaba la fila entera, la vista de lejos del
+ * fondo anterior se quedaba a medias y no se recuperaba sola —`warmed` ya lo
+ * daba por precargado—, así que ese fondo arrastraba agujeros hasta recargar la
+ * página. Justo lo que los canales de `warm.ts` existen para evitar, anulado
+ * desde fuera.
+ *
+ * El segundo intento la movió a un efecto propio con dependencias vacías, que
+ * parece lo correcto y sigue siendo un pie en una trampa: en `StrictMode` React
+ * monta, limpia y vuelve a montar, así que esa limpieza se ejecuta en desarrollo
+ * nada más arrancar, sobre la fila que el efecto de al lado acaba de llenar.
+ *
+ * Y sobre todo, no hace falta para nada: el mapa vive lo que vive la página, la
+ * fila está acotada a 25 teselas y lo que se baje acaba en la caché de todos
+ * modos. `stopWarming()` se queda exportada para las pruebas y para quien algún
+ * día monte dos mapas en la misma página.
+ */

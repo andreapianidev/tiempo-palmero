@@ -1103,7 +1103,8 @@ export const es = {
     storageBody:
       'Nada de esto sale de tu navegador ni llega a ningún servidor, pero se guarda y conviene decirlo. ' +
       'Primero, tus ajustes: qué capas tienes encendidas, qué variable miras, qué fondo usas. ' +
-      'Y segundo, la cartografía que ya has mirado —hasta 150 MB durante 30 días—, para que volver a ' +
+      'Y segundo, la cartografía que ya has mirado —hasta 1 GB durante 30 días, y nunca más de la '
+      + 'cuarta parte del espacio que tu navegador ofrezca—, para que volver a ' +
       'esta página no cueste descargarla otra vez. Lo segundo es la caché del navegador hecha a mano: ' +
       'el servicio que sirve esos mapas no manda ninguna cabecera que permita conservarlos, así que sin ' +
       'esto cada trozo de isla se descargaría entero cada vez que vuelve a la pantalla. Se borra todo ' +

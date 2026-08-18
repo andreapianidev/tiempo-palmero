@@ -5,14 +5,14 @@
  * de ortofoto—. NO la Cache Storage API, que sería el sitio natural para
  * respuestas HTTP pero no sabe decir cuánto ocupa ni en qué orden se usó nada:
  * para purgar por tamaño habría que abrir cada respuesta y medirla, que es
- * justamente leer los 150 MB para decidir qué borrar.
+ * justamente leer un gigabyte de imágenes para decidir qué borrar.
  *
  * DOS ALMACENES Y NO UNO, y esta es la decisión que sostiene todo lo demás. En
  * IndexedDB, recorrer un índice te da la clave y el valor indexado, pero para
  * saber el tamaño de una entrada hay que leer la entrada **entera** — con su
  * JPEG dentro. Con los metadatos aparte, sumar lo que ocupa la caché y decidir
  * la purga cuesta un recorrido sobre unos kilobytes; con un solo almacén,
- * costaría cargar en memoria los 150 MB que se están intentando recortar.
+ * costaría cargar en memoria el gigabyte que se está intentando recortar.
  *
  *   meta   clave → { size, storedAt, usedAt }   se recorre entero, es diminuto
  *   body   clave → { body: ArrayBuffer, type }  solo se lee la que se pide

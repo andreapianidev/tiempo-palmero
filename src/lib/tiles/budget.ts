@@ -42,7 +42,7 @@
 export const TILE_TTL_MS = 30 * 24 * 3600 * 1000
 
 /**
- * EL TECHO DE LA CACHÉ: 150 MB.
+ * EL TECHO DE LA CACHÉ: 1 GB.
  *
  * Medido contra la línea de costa del Cabildo, contando las teselas que tocan
  * tierra (`scripts/checks/grafcan-cache.ts`, bloque 4) y multiplicando por la
@@ -53,16 +53,22 @@ export const TILE_TTL_MS = 30 * 24 * 3600 * 1000
  *   z15     690 teselas   158,7 MB
  *   z16   2 612 teselas   601 MB
  *
- * Con 150 MB caben **la isla entera a z13 y z14 en los dos fondos** —55,6 MB
- * cada fondo, 111 MB los dos— y quedan 39 MB para el detalle que uno mire de
- * verdad, que son otras 170 teselas de cualquier nivel. La isla completa a z15
- * no cabe, y es a propósito: eso serían 159 MB de un fondo solo, y nadie los
- * mira enteros.
+ * Con 1 GB cabe **la isla entera hasta z15 en los dos fondos** —214 MB cada uno,
+ * 429 MB los dos— y quedan casi 600 MB para el z16 y el z17 de los sitios que
+ * uno mire de verdad, que son unas 2.600 teselas más. Es deliberado que NO quepa
+ * la isla completa a z16 en los dos fondos (1,2 GB): eso ya no sería la caché de
+ * lo que alguien ha mirado.
  *
- * Ojo con la tentación de subirlo. Esto no es espacio nuestro: es el disco de
- * quien abre la página.
+ * ESTO ES UN TECHO DE LO QUE SE CONSERVA, NO DE LO QUE SE DESCARGA. Subirlo no
+ * pide ni una tesela más a GRAFCAN: solo hace que lo ya visto —incluido el zoom
+ * máximo, que es lo que más pesa y lo primero que se perdía— siga ahí mañana. Lo
+ * que sí toca a GRAFCAN es la precarga, y esa sigue en 17 teselas por fondo y 8
+ * por parada, que es otro número y está más abajo.
+ *
+ * Aun así es el disco de quien abre la página, así que manda siempre el menor de
+ * los dos: este techo o la cuarta parte de la cuota que declare el navegador.
  */
-export const MAX_CACHE_BYTES = 150 * 1024 * 1024
+export const MAX_CACHE_BYTES = 1024 * 1024 * 1024
 
 /**
  * Y NUNCA MÁS DE LA CUARTA PARTE DE LO QUE EL NAVEGADOR OFREZCA.
