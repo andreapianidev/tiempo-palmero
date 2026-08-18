@@ -12,10 +12,13 @@
  * pidiendo para la pantalla, que son las que alguien está mirando de verdad.
  *
  * Y LOS CANALES NO SE PISAN IGUAL. Un arrastre nuevo deja sin sentido el borde
- * que se estaba precargando —el usuario ya va hacia otro lado—, así que lo que
- * quede pendiente de `borde` se tira. La vista de lejos no: se pide una vez
- * cada 30 días y abandonarla a medias dejaría el fondo con agujeros que nadie
- * volvería a rellenar, porque nadie vuelve a pedirla.
+ * que se estaba precargando —el usuario ya va hacia otro lado— y un puntero que
+ * se va del chip deja sin sentido ese encuadre, así que lo que quede pendiente
+ * de esos dos se tira. La vista de lejos no: se pide una vez cada 30 días y
+ * abandonarla a medias dejaría el fondo con agujeros que nadie volvería a
+ * rellenar, porque nadie vuelve a pedirla. La regla está en el tipo, unas
+ * líneas más abajo, y no en un `if` con el nombre de un canal escrito a mano:
+ * así el compilador es quien impide tirar `lejos` por descuido.
  *
  * TRES FRENOS más, y los tres importan:
  *
@@ -34,9 +37,20 @@ import { hasTile, writeTile } from './store'
 
 /**
  * `lejos` es la vista de la isla al encender un fondo; `borde`, lo que viene
- * detrás de un arrastre. Solo el segundo se descarta cuando llega otro igual.
+ * detrás de un arrastre; `intención`, el encuadre del fondo sobre cuyo chip
+ * está el puntero.
+ *
+ * LOS DOS ÚLTIMOS SE DESCARTAN Y EL PRIMERO NO, y la línea que los separa es si
+ * alguien va a volver a pedirlos. Un arrastre nuevo deja sin sentido el borde
+ * anterior y el puntero que se va del chip deja sin sentido ese encuadre: los
+ * dos se vuelven a pedir solos la próxima vez que hagan falta. La vista de
+ * lejos se pide UNA vez cada 30 días, así que abandonarla a medias dejaría el
+ * fondo con agujeros que nadie volvería a rellenar.
  */
-export type WarmChannel = 'lejos' | 'borde'
+export type WarmChannel = 'lejos' | 'borde' | 'intención'
+
+/** Los que se pueden tirar sin que nadie los eche de menos. Ver arriba. */
+export type DiscardableChannel = Exclude<WarmChannel, 'lejos'>
 
 interface Job {
   channel: WarmChannel
@@ -55,7 +69,7 @@ let controller: AbortController | null = null
  */
 export function warmTiles(channel: WarmChannel, template: string, tiles: TileXY[]): void {
   if (!tiles.length || !prefetchAllowed()) return
-  if (channel === 'borde') queue = queue.filter((j) => j.channel !== 'borde')
+  if (channel !== 'lejos') queue = queue.filter((j) => j.channel !== channel)
   queue.push(...tiles.map((tile) => ({ channel, template, tile })))
   pump()
 }
@@ -99,6 +113,20 @@ async function worker(ctl: AbortController): Promise<void> {
   running--
   if (controller === ctl && !running && !queue.length) controller = null
   pump()
+}
+
+/**
+ * Tira lo que quede pendiente de un canal descartable, sin tocar el resto.
+ *
+ * NO CORTA LO QUE YA VA POR EL CABLE, y es la misma decisión que toma
+ * `warmTiles` al reemplazar un canal: una petición a medio camino son 230 kB de
+ * mediana que ya se le pidieron a GRAFCAN, y abandonarla los tira sin ahorrarle
+ * nada al servicio. Terminan y se guardan. Por eso el coste de una intención
+ * equivocada —un puntero que roza un chip y sigue— está acotado en dos teselas
+ * y no en cero: está medido y escrito en `INTENT_DELAY_MS`.
+ */
+export function dropWarmChannel(channel: DiscardableChannel): void {
+  queue = queue.filter((j) => j.channel !== channel)
 }
 
 /** Corta lo que haya en vuelo y vacía la fila. Se llama al desmontar el mapa. */

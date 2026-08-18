@@ -8,9 +8,17 @@
  *
  * El catálogo NO vive aquí: está en `lib/basemaps.ts`, junto a las fuentes que
  * el mapa declara. Este archivo solo lo dibuja.
+ *
+ * Y PRECARGA EL FONDO QUE EL PUNTERO ESTÁ TOCANDO, que es lo único que hace
+ * aquí además de dibujar. Con el mapa a z15, encender la ortofoto era esperar a
+ * que GRAFCAN sirviera una pantalla entera; pedirla mientras la mano va hacia
+ * el chip la tiene guardada antes del clic. La decisión y sus cifras están en
+ * `lib/tiles/intent.ts`, no aquí: esto solo dice cuándo empieza y cuándo se
+ * cancela.
  */
 
 import { BASEMAPS, BASEMAP_ORDER, type BasemapId } from '../../lib/basemaps'
+import { cancelBasemapIntent, warmBasemapIntent } from '../../lib/tiles/intent'
 
 interface Props {
   basemap: BasemapId
@@ -32,6 +40,14 @@ export function BasemapPicker({ basemap, onBasemap, gridOn, onToggleGrid }: Prop
             className="chip-btn"
             aria-pressed={basemap === b.id}
             onClick={() => onBasemap(b.id)}
+            // El fondo puesto no se precarga: sus teselas llevan en la caché
+            // desde que se pintó. `onFocus`/`onBlur` no son adorno de
+            // accesibilidad — quien llega al selector con el tabulador merece
+            // el mismo adelanto que quien llega con el ratón.
+            onPointerEnter={() => b.id !== basemap && warmBasemapIntent(b.id)}
+            onFocus={() => b.id !== basemap && warmBasemapIntent(b.id)}
+            onPointerLeave={cancelBasemapIntent}
+            onBlur={cancelBasemapIntent}
           >
             {b.label}
           </button>

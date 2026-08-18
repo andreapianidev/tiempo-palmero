@@ -16,6 +16,7 @@ import {
 import { BASEMAP_LEVELS } from '../lib/realce/levels'
 import { cachedSource } from '../lib/tiles/key'
 import { registerTileCache } from '../lib/tiles/protocol'
+import { pendingWarmups } from '../lib/tiles/warm'
 import { useTileCache } from '../hooks/useTileCache'
 import { applyOverlayContrast } from './contrast/OverlayContrast'
 import { isBundleVariable, pinLabel, type MapVariable } from '../lib/variables'
@@ -486,6 +487,13 @@ export function MapView(props: Props) {
     // esta línea no existe.
     if (import.meta.env.DEV) {
       ;(window as unknown as Record<string, unknown>).__map = map
+      // Y la fila de la precarga, por lo mismo: sin ella,
+      // `scripts/checks/precarga-intencion.ts` no puede saber si la precarga ha
+      // terminado o solo está entre dos teselas. Su primera versión lo deducía
+      // de «no salen peticiones nuevas», y eso confunde una fila vacía con dos
+      // obreros esperando a IndexedDB: contaba 2 teselas donde había 12 y
+      // acusaba al código de un fallo que no existía.
+      ;(window as unknown as Record<string, unknown>).__precarga = pendingWarmups
     }
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')

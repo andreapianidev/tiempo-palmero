@@ -1,7 +1,9 @@
 /**
  * Qué teselas se piden por delante. Solo la decisión: aquí no se descarga nada.
  *
- * Dos casos, y ninguno de los dos es «bajarse la isla»:
+ * Cuatro casos, y ninguno de los cuatro es «bajarse la isla». Los cuatro
+ * responden a la misma pregunta —¿hacia dónde va ya el usuario?— y ninguno
+ * inventa una dirección que el usuario no haya empezado a tomar:
  *
  *  1. **La vista de lejos**, al encender un fondo por primera vez. Diecisiete
  *     teselas de z9 a z11 que cubren La Palma entera; con ellas MapLibre tiene
@@ -12,14 +14,20 @@
  *  2. **El borde por el que se está saliendo**, cuando el mapa se para. No el
  *     anillo entero: solo el lado hacia el que el usuario ya venía moviéndose,
  *     que es la diferencia entre adelantarse y acaparar.
+ *  3. **El encuadre de un fondo que se está a punto de encender**, mientras el
+ *     puntero está encima de su chip. Una pantalla, del centro hacia afuera.
+ *  4. **El paso siguiente del zoom**, y solo cuando el usuario ACABA de subir
+ *     un nivel de tesela. Cuatro teselas, las hijas de la del centro.
  *
  * La licencia de GRAFCAN prohíbe la descarga masiva, y por eso lo que no está
  * aquí importa tanto como lo que está: no se recorre la isla, no se bajan los
- * niveles finos y no se pide nada de un fondo que no se esté mirando.
+ * niveles finos y no se pide nada de un fondo que no se esté mirando ni a punto
+ * de mirar. El peor caso de una parada del mapa son 8 + 4 teselas; el de un
+ * roce en el selector, 12. Ninguno crece con el tiempo que uno pase delante.
  */
 
-import { PREFETCH_MAX_TILES, OVERVIEW_ZOOMS } from './budget'
-import { tilesInBbox, type Bbox, type TileXY } from './grid'
+import { INTENT_MAX_TILES, OVERVIEW_ZOOMS, PREFETCH_MAX_TILES } from './budget'
+import { tileAt, tilesInBbox, type Bbox, type TileXY } from './grid'
 
 /**
  * Las teselas de la isla de lejos, de la más gruesa a la más fina.
@@ -100,4 +108,68 @@ export function leadingEdgeTiles(
   }
 
   return out.slice(0, cap)
+}
+
+/**
+ * Las teselas del encuadre en el que está el mapa, del centro hacia afuera.
+ *
+ * Es lo que se pide cuando el puntero se posa sobre un fondo del selector: lo
+ * que va a hacer falta en cuanto suelte el clic, no la isla de lejos. Ver
+ * `INTENT_MAX_TILES` en `budget.ts`, donde está la diferencia entre las dos y
+ * por qué solo esta quita la espera.
+ *
+ * EL ORDEN ES LA MITAD DE LA FUNCIÓN. Con un tope de 12 y una pantalla que pida
+ * más —un monitor grande, una ventana apaisada—, lo que se quede fuera tiene
+ * que ser el borde y nunca el centro: es donde está mirando quien va a pulsar.
+ * Se ordena por distancia de Chebyshev a la tesela central, que en una rejilla
+ * cuadrada es «cuántos anillos hacia afuera», y los empates por coordenada para
+ * que dos ejecuciones con los mismos datos den la misma lista.
+ */
+export function viewTiles(
+  view: Bbox & { zoom: number },
+  cap = INTENT_MAX_TILES,
+): TileXY[] {
+  const tiles = tilesInBbox(view, view.zoom)
+  if (tiles.length <= cap) return tiles
+  const c = tileAt((view.west + view.east) / 2, (view.south + view.north) / 2, view.zoom)
+  const anillo = (t: TileXY) => Math.max(Math.abs(t.x - c.x), Math.abs(t.y - c.y))
+  return tiles
+    .slice()
+    .sort((a, b) => anillo(a) - anillo(b) || a.y - b.y || a.x - b.x)
+    .slice(0, cap)
+}
+
+/**
+ * Las cuatro hijas de la tesela del centro: lo que se ve al acercarse un paso.
+ *
+ * SOLO SE LLAMA CUANDO EL USUARIO ACABA DE SUBIR UN NIVEL, y esa condición vive
+ * en `useTileCache`, no aquí: se compara el nivel de tesela de antes del
+ * movimiento con el de después, así que no hace falta ningún umbral sobre el
+ * zoom de la cámara —que es continuo y tiembla— sino un escalón que ya ocurrió.
+ * Quien acaba de pasar de z14 a z15 casi siempre va a z16; quien arrastró en
+ * plano no, y a ese no se le pide nada por aquí.
+ *
+ * CUATRO Y NO UNA PANTALLA. Un paso de zoom deja en pantalla el centro del
+ * encuadre anterior, y las cuatro hijas de la tesela central son exactamente
+ * esa superficie: 0,9 MB a la mediana de 230 kB, contra los 2,8 de precargar la
+ * pantalla entera del nivel siguiente. Lo que quede fuera lo pide MapLibre por
+ * el camino de siempre, ya con el centro puesto.
+ *
+ * Y NADA EN EL TECHO. Con la cámara en el `maxzoom` de la fuente —17 en los dos
+ * fondos de GRAFCAN— no hay nivel siguiente que pedir, y pedir el 18 sería
+ * bajarse teselas que el estilo no va a dibujar nunca.
+ */
+export function zoomInTiles(view: Bbox & { zoom: number }, maxzoom: number): TileXY[] {
+  if (view.zoom >= maxzoom) return []
+  const c = tileAt((view.west + view.east) / 2, (view.south + view.north) / 2, view.zoom)
+  const z = view.zoom + 1
+  const n = 2 ** z
+  return [
+    [0, 0],
+    [1, 0],
+    [0, 1],
+    [1, 1],
+  ]
+    .map(([dx, dy]) => ({ z, x: 2 * c.x + dx, y: 2 * c.y + dy }))
+    .filter((t) => t.x < n && t.y < n)
 }

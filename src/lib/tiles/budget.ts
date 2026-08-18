@@ -185,3 +185,72 @@ export function prefetchAllowed(): boolean {
   if (c.saveData) return false
   return c.effectiveType === undefined || c.effectiveType === '4g'
 }
+
+/**
+ * CUÁNTAS TESELAS SE PIDEN AL PASAR POR ENCIMA DE UN FONDO EN EL SELECTOR: 24.
+ *
+ * Es una pantalla entera, y el número sale de contarlas
+ * (`scripts/checks/pantalla-teselas.ts`, tres sitios de la isla y siete niveles
+ * de zoom, para que la cuenta no dependa de dónde caiga la rejilla):
+ *
+ *   portátil 1440 × 900            12 teselas
+ *   MacBook Pro 16" 1728 × 1117    20 teselas
+ *   iMac 27" 2560 × 1440           24 teselas
+ *   4K 3840 × 2160                 54 teselas
+ *
+ * EL PRIMER NÚMERO QUE SE PUSO AQUÍ FUE 12, y estaba mal por una razón que vale
+ * la pena dejar escrita: 12 es el «4 × 3» que cuenta `PREFETCH_MAX_TILES` aquí
+ * arriba, y ese 4 × 3 son las teselas ENTERAS. Una ventana casi nunca cae
+ * alineada con la rejilla, así que se piden además la columna y la fila de los
+ * bordes. El propio fixture de `prefetch.test.ts` —la ventana de Los Llanos a
+ * z14— son 20 teselas, y con el tope en 12 la precarga por intención habría
+ * dejado fuera un tercio de la pantalla en el portátil de cualquiera.
+ *
+ * 24 CUBRE ENTERA HASTA LA PANTALLA DEL iMac y recorta solo el 4K, donde la
+ * cuenta salta a 54 —12,4 MB a la mediana de 230 kB— y pedirlos por si alguien
+ * va a pulsar ya no es adelantarse, es acaparar. Ahí se piden las 24 del centro
+ * y el resto llega por el camino de siempre. A 24 el peor caso son 5,5 MB, y
+ * los paga quien iba a pedirlos de todos modos 150 ms después.
+ *
+ * Y PIDE LA VISTA, NO LA ISLA DE LEJOS. Son dos cosas distintas y solo una hace
+ * instantáneo el cambio de fondo: con el mapa a z15, la vista de lejos de
+ * `OVERVIEW_ZOOMS` deja un z11 ampliado 16 veces —algo que enseñar mientras
+ * baja lo bueno, no lo bueno—. Lo que quita la espera son las teselas del
+ * encuadre en el que está el mapa ahora mismo, y esas son estas.
+ *
+ * Se piden del centro hacia afuera, para que el tope se lo coman los bordes y
+ * no el sitio al que se está mirando.
+ */
+export const INTENT_MAX_TILES = 24
+
+/**
+ * CUÁNTO HAY QUE QUEDARSE ENCIMA DE UN CHIP PARA QUE CUENTE: 150 ms.
+ *
+ * LO QUE ESTÁ MEDIDO ES EL COSTE DE EQUIVOCARSE, y es lo que hace que este
+ * número no tenga que ser fino. El canal `intención` es descartable como
+ * `borde`: al salir el puntero se tira la fila entera, así que lo que cuesta un
+ * roce no son las 24 teselas, sino las que hayan dado tiempo a bajar. Con dos
+ * obreros y la mediana de 556 ms eso son **3,6 teselas por segundo de espera**,
+ * o unos 830 kB/s, empezando a contar a los 150 ms:
+ *
+ *   se va enseguida        2 teselas   460 kB   (las que ya iban en vuelo)
+ *   se queda un segundo    ~6          1,3 MB
+ *   se queda dos          ~10          2,2 MB
+ *
+ * Y a los dos segundos eso ya no es un roce, es alguien leyendo el chip. La
+ * primera versión de este comentario decía «2 teselas como mucho», que es lo
+ * que cuesta el instante de irse y no lo que cuesta quedarse: la cota crece con
+ * el tiempo que uno pase encima, y así escrita se leía como si no.
+ *
+ * LO QUE ACOTA POR EL OTRO LADO es la mediana de espera del servicio, 556 ms:
+ * por debajo de unos 150 ms de adelanto se estaría ganando menos de un tercio
+ * de una tesela, o sea nada que nadie note. Ese es el suelo.
+ *
+ * LO QUE NO ESTÁ MEDIDO, y se dice porque en este repositorio un umbral sin su
+ * cifra al lado es una corazonada: cuánto se queda un dedo o un puntero encima
+ * de un chip antes de pulsarlo de verdad. Eso pide un navegador con una persona
+ * delante y aquí no lo hay. El 150 se apoya en las dos cotas de arriba —cuesta
+ * poco pasarse, no vale la pena quedarse corto—, no en una medida de esa
+ * espera. Si algún día se mide, este comentario es el que hay que corregir.
+ */
+export const INTENT_DELAY_MS = 150

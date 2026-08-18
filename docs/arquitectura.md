@@ -251,7 +251,8 @@ resolver nadie. Por lo mismo, de los siete ficheros de `src/lib/tiles/` solo
 
 **Y lo que se pide por delante, que es poco a propósito.** La licencia de
 GRAFCAN dice «se prohíbe la descarga masiva de información», así que la precarga
-son dos casos contados y ninguno recorre la isla:
+son cuatro casos contados, todos responden a la misma pregunta —¿hacia dónde va
+ya el usuario?— y ninguno recorre la isla:
 
 - **Al encender un fondo externo por primera vez**, 17 teselas de z9 a z11 que
   cubren La Palma entera: 718 y 739 kB la ortofoto, 901 y 1037 kB el
@@ -271,6 +272,25 @@ son dos casos contados y ninguno recorre la isla:
   que se venía saliendo, con un tope de 8. No el anillo entero, que serían 18:
   se pide la dirección en la que el usuario ya iba, no un colchón por si acaso.
   Son 1,8 MB en el peor caso y solo la primera vez que se pasa por ahí.
+- **Al subir un nivel de tesela**, las cuatro hijas de la del centro: 0,9 MB, el
+  trozo de pantalla que queda al acercarse un paso. No se compara el zoom de la
+  cámara —que es continuo y tiembla— sino el nivel de tesela de un reposo al
+  siguiente, así que da igual si el mapa se movió con la rueda, con los botones
+  o de un salto.
+- **Mientras el puntero está sobre el chip de un fondo apagado**, su encuadre:
+  una pantalla, hasta 24 teselas, del centro hacia afuera. Es la única de las
+  cuatro que no la dispara el mapa sino el panel lateral, y por eso el encuadre
+  se apunta a un lado (`tiles/intent.ts`). A los 150 ms de posarse, y se tira
+  entera en cuanto el puntero se va: un roce cuesta 2 teselas, no 24.
+
+  El número que la justifica está medido en un navegador de verdad
+  (`scripts/checks/precarga-intencion.ts`, 18 ago 2026): con el mapa a z15 sobre
+  Los Llanos, al pulsar «Satélite» solo salen **2 peticiones nuevas de las 26**
+  que necesita la pantalla — el 92 % ya estaba guardado. Ese porcentaje es
+  además la prueba de que el nivel que calcula la precarga (`rasterTileZoom`) es
+  el mismo que elige MapLibre por dentro: si difiriera en uno, el ahorro sería
+  exactamente 0 y GRAFCAN recibiría el doble de peticiones sin que fallara
+  nada visible.
 
 Con dos peticiones en paralelo como mucho —MapLibre se reserva hasta 16 para lo
 que está en pantalla, y la precarga no puede quitarle sitio a lo que sí se está

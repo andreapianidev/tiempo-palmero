@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { OVERVIEW_ZOOMS, PREFETCH_MAX_TILES } from './budget'
+import { INTENT_MAX_TILES, OVERVIEW_ZOOMS, PREFETCH_MAX_TILES } from './budget'
 import { ISLAND_BBOX } from '../geo'
-import { leadingEdgeTiles, overviewTiles } from './prefetch'
+import { leadingEdgeTiles, overviewTiles, viewTiles, zoomInTiles } from './prefetch'
 import { cachedUrl, cacheKey, plainUrl } from './key'
-import { tileUrl } from './grid'
+import { tileAt, tilesInBbox, tileUrl } from './grid'
 
 /**
  * Lo que se pide por delante tiene DOS orillas, y la segunda es la que se
@@ -114,6 +114,93 @@ describe('el borde por el que se sale', () => {
     const tiles = leadingEdgeTiles(desde, VISTA)
     const claves = tiles.map((t) => `${t.z}/${t.x}/${t.y}`)
     expect(new Set(claves).size).toBe(claves.length)
+  })
+})
+
+/**
+ * El peor caso medido: una pantalla 4K a z11 sobre el Roque, 54 teselas. Sale
+ * de `scripts/checks/pantalla-teselas.ts`, que imprime este bbox para no tener
+ * que recalcularlo aquí.
+ */
+const ANCHA = {
+  west: -18.5441796875,
+  south: 28.42842742785921,
+  east: -17.2258203125,
+  north: 29.078560614343502,
+  zoom: 11,
+}
+const centroDe = (v: typeof ANCHA) =>
+  tileAt((v.west + v.east) / 2, (v.south + v.north) / 2, v.zoom)
+const anilloDe = (v: typeof ANCHA) => {
+  const c = centroDe(v)
+  return (t: { x: number; y: number }) => Math.max(Math.abs(t.x - c.x), Math.abs(t.y - c.y))
+}
+
+describe('el encuadre que se precarga al rozar un chip del selector', () => {
+  it('la ventana de un portátil cabe entera y se pide tal cual', () => {
+    // 20 teselas, por debajo del cupo de 24: en el portátil de cualquiera la
+    // precarga por intención trae la pantalla completa y no un recorte.
+    expect(tilesInBbox(VISTA, VISTA.zoom)).toHaveLength(20)
+    expect(viewTiles(VISTA)).toEqual(tilesInBbox(VISTA, VISTA.zoom))
+  })
+
+  it('una pantalla 4K sí se recorta: 54 teselas no se piden por si acaso', () => {
+    expect(tilesInBbox(ANCHA, ANCHA.zoom)).toHaveLength(54)
+    expect(viewTiles(ANCHA)).toHaveLength(INTENT_MAX_TILES)
+  })
+
+  it('lo que se cae es el borde, nunca el centro', () => {
+    // Es la mitad de la función: quien va a pulsar está mirando el centro, así
+    // que el recorte tiene que comerse los anillos de fuera. Se comprueba que
+    // ninguna descartada esté más cerca del centro que la más lejana que entra.
+    const dentro = viewTiles(ANCHA)
+    const anillo = anilloDe(ANCHA)
+    const c = centroDe(ANCHA)
+    expect(dentro.some((t) => t.x === c.x && t.y === c.y)).toBe(true)
+    const fuera = tilesInBbox(ANCHA, ANCHA.zoom).filter(
+      (t) => !dentro.some((d) => d.x === t.x && d.y === t.y),
+    )
+    expect(Math.min(...fuera.map(anillo))).toBeGreaterThanOrEqual(
+      Math.max(...dentro.map(anillo)),
+    )
+  })
+
+  it('dos llamadas con los mismos datos dan la misma lista', () => {
+    // Un recorte que dependa del orden en que salieron las teselas es
+    // imposible de probar y llena la caché de cosas distintas en cada sesión.
+    expect(viewTiles(ANCHA)).toEqual(viewTiles(ANCHA))
+  })
+
+  it('no repite teselas', () => {
+    const claves = viewTiles(ANCHA).map((t) => `${t.z}/${t.x}/${t.y}`)
+    expect(new Set(claves).size).toBe(claves.length)
+  })
+})
+
+describe('el paso siguiente del zoom', () => {
+  it('son las cuatro hijas de la tesela del centro, y nada más', () => {
+    const tiles = zoomInTiles(VISTA, 17)
+    expect(tiles).toHaveLength(4)
+    const c = tileAt(CENTRO.lon, CENTRO.lat, VISTA.zoom)
+    for (const t of tiles) {
+      expect(t.z).toBe(VISTA.zoom + 1)
+      expect(Math.floor(t.x / 2)).toBe(c.x)
+      expect(Math.floor(t.y / 2)).toBe(c.y)
+    }
+    expect(new Set(tiles.map((t) => `${t.x}/${t.y}`)).size).toBe(4)
+  })
+
+  it('no crece con la ventana: son cuatro también en una 4K', () => {
+    // Es la diferencia con precargar la pantalla del nivel siguiente, que en
+    // una 4K serían 54. Cuatro teselas son 0,9 MB a la mediana de 230 kB.
+    expect(zoomInTiles(ANCHA, 17)).toHaveLength(4)
+  })
+
+  it('en el techo de la fuente no pide nada', () => {
+    // Los dos fondos de GRAFCAN declaran maxzoom 17: pedir el z18 sería bajarse
+    // teselas que el estilo no va a dibujar nunca.
+    expect(zoomInTiles({ ...VISTA, zoom: 17 }, 17)).toEqual([])
+    expect(zoomInTiles({ ...VISTA, zoom: 18 }, 17)).toEqual([])
   })
 })
 

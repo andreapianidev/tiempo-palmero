@@ -34,6 +34,20 @@
  *   npx tsx scripts/checks/tile-cache.ts
  *
  * Pide teselas a GRAFCAN en vivo: una pantalla, dos veces.
+ *
+ * LO QUE TIENE QUE SALIR: 23 peticiones en la primera visita, 0 repetidas, 0 en
+ * la segunda. Pero la línea de las repetidas **no es determinista**: el 18 de
+ * agosto de 2026 una pasada de cada cinco salió con 25 peticiones y 2 repetidas
+ * byte a byte, y las otras cuatro con 23 y ninguna. `inflight.ts` junta las
+ * descargas que se solapan EN VUELO, y queda una ventana que no cubre: entre
+ * que una descarga termina y su escritura llega a IndexedDB, quien pregunte al
+ * inventario no la encuentra y sale a por ella otra vez. Esa es la explicación
+ * más probable, no una comprobada.
+ *
+ * Importa saberlo antes de acusar a un cambio: aquí se dio por regresión de la
+ * precarga del zoom un 25/2 que volvió a salir 23/0 tres veces seguidas con esa
+ * precarga puesta. Ante un 25/2, repetir la pasada tres veces antes de tocar
+ * nada.
  */
 
 import { chromium, type Browser, type Page } from 'playwright'
