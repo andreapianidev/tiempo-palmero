@@ -17,12 +17,21 @@
     "types": ["vite/client"]
   },
   "include": ["src", "scripts", "api", "vite.config.ts"],
-  // `occlusion-margin.ts` y `tile-cache.ts` quedan fuera por una dependencia
-  // que no es de este proyecto: necesitan Playwright para abrir un navegador de verdad y
-  // preguntarle a MapLibre qué considera tapado. Playwright NO es dependencia
-  // de este proyecto y no tiene por qué serlo —se ejecuta a mano, una vez cada
-  // vez que se toca el umbral, y no entra en el paquete—, pero sin excluirlo
-  // `tsc --noEmit` lo busca y el despliegue se cae. Cómo ejecutarlo está en la
-  // cabecera del propio script.
-  "exclude": ["scripts/checks/occlusion-margin.ts", "scripts/checks/tile-cache.ts"]
+  // Los tres scripts que abren un navegador de verdad quedan fuera por una
+  // dependencia que no es de este proyecto: necesitan Playwright para
+  // preguntarle a MapLibre qué considera tapado, o para contar lo que sale por
+  // el cable. Playwright NO es dependencia de este proyecto y no tiene por qué
+  // serlo —se ejecutan a mano, una vez cada vez que se toca lo que miden, y no
+  // entran en el paquete—, pero sin excluirlos `tsc --noEmit` los busca y el
+  // despliegue se cae. Cómo ejecutarlos está en la cabecera de cada uno.
+  //
+  // ESTA LISTA HAY QUE ACTUALIZARLA AL AÑADIR UNO, y se olvida: el despliegue
+  // de `precarga-intencion.ts` se cayó por no estar aquí, con un `npm run
+  // build` que en local pasaba porque Playwright sí estaba instalado. En local
+  // no se nota nunca; solo se nota en Vercel.
+  "exclude": [
+    "scripts/checks/occlusion-margin.ts",
+    "scripts/checks/tile-cache.ts",
+    "scripts/checks/precarga-intencion.ts"
+  ]
 }
