@@ -1,5 +1,8 @@
 <!doctype html>
-<html lang="es">
+<!-- `mov` enciende los estados escondidos de `motion.css`. El <noscript> de más
+     abajo la desactiva con una hoja aparte: sin JavaScript la página se ve
+     entera y quieta, que es como tiene que fallar. -->
+<html lang="es" class="mov">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -20,412 +23,189 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0d0c0b">
 
-<style>
-/* ═══════════════════════════════════════════════════════════════════
-   TIEMPO PALMERO · boletín
-   Sin una sola petición fuera de este fichero: ni tipografías, ni CDN,
-   ni analítica. Las tres imágenes viven en /img.
-   ═══════════════════════════════════════════════════════════════════ */
+<!-- Las dos que se leen antes de que baje nadie: el titular y los rótulos. -->
+<link rel="preload" href="/fonts/barlow-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/ibm-plex-mono-500.woff2" as="font" type="font/woff2" crossorigin>
 
-:root{
-  /* La tinta y el ámbar salen del propio icono de la aplicación. */
-  --ink:#0d0c0b;
-  --ink-2:#131211;
-  --paper:#efe7d9;
-  --paper-dim:#a49b8c;
-  --paper-faint:#6e675d;
-  --amber:#e2b45c;
-  --amber-deep:#c1873a;
-  --olive:#8b9a63;
-  --rule:rgba(239,231,217,.13);
-  --rule-soft:rgba(239,231,217,.07);
-
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
-  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
-
-  --gut:clamp(1.25rem,4vw,3.5rem);
-  --rail:clamp(0px,9vw,146px);
-  --max:1240px;
-}
-
-*,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-
-body{
-  margin:0;
-  background:var(--ink);
-  color:var(--paper);
-  font-family:var(--serif);
-  font-size:clamp(1.02rem,.62rem+.72vw,1.18rem);
-  line-height:1.66;
-  -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
-}
-
-/* Grano: un SVG en línea a pantalla completa, no una imagen. */
-.grain{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
-  opacity:.4;mix-blend-mode:soft-light;
-}
-
-a{color:inherit}
-:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:2px}
-
-.skip{
-  position:absolute;left:-9999px;top:0;z-index:99;
-  background:var(--amber);color:var(--ink);padding:.7rem 1.1rem;
-  font-family:var(--mono);font-size:.8rem;text-decoration:none;
-}
-.skip:focus{left:.5rem;top:.5rem}
-
-/* ── la regla de altitud, que es el hilo de toda la página ────────── */
-.rail{
-  position:fixed;left:0;top:0;bottom:0;width:var(--rail);z-index:3;
-  display:none;pointer-events:none;
-  border-right:1px solid var(--rule-soft);
-}
-@media (min-width:1080px){.rail{display:block}}
-.rail::after{
-  content:"";position:absolute;right:-1px;top:0;bottom:0;width:1px;
-  background:linear-gradient(180deg,transparent,var(--amber-deep) 12%,var(--amber-deep) 88%,transparent);
-  opacity:.28;
-}
-.rail-marks{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:9vh 0}
-.mark{display:flex;align-items:center;justify-content:flex-end;gap:.55rem;padding-right:.8rem;overflow:hidden}
-.mark span{
-  display:flex;flex-direction:column;align-items:flex-end;gap:.1rem;text-align:right;
-  font-family:var(--mono);font-size:.56rem;letter-spacing:.07em;
-  color:var(--paper-faint);white-space:nowrap;
-}
-.mark span b{
-  font-size:.68rem;font-weight:600;letter-spacing:.02em;
-  color:var(--paper-dim);transition:color .45s ease;
-}
-.mark i{display:block;height:1px;width:10px;background:var(--rule);transition:all .45s ease;flex:none}
-.mark.on span{color:var(--paper-dim)}
-.mark.on span b{color:var(--amber)}
-.mark.on i{width:24px;background:var(--amber)}
-
-.shell{position:relative;z-index:1;padding-left:var(--rail)}
-.wrap{max-width:var(--max);margin:0 auto;padding-inline:var(--gut)}
-
-/* ── barra superior ───────────────────────────────────────────────── */
-.top{
-  position:sticky;top:0;z-index:6;
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  background:color-mix(in srgb,var(--ink) 86%,transparent);
-  border-bottom:1px solid var(--rule-soft);
-}
-.top-in{display:flex;align-items:center;gap:1.4rem;min-height:60px}
-.brand{
-  font-family:var(--mono);font-size:.83rem;letter-spacing:.16em;
-  text-transform:uppercase;text-decoration:none;font-weight:600;
-  display:flex;align-items:center;gap:.6rem;
-}
-.brand svg{display:block;flex:none}
-.top nav{margin-left:auto;display:none;gap:1.6rem}
-@media (min-width:820px){.top nav{display:flex}}
-.top nav a{
-  font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--paper-dim);text-decoration:none;padding-block:.3rem;
-  border-bottom:1px solid transparent;transition:color .2s,border-color .2s;
-}
-.top nav a:hover{color:var(--paper);border-bottom-color:var(--amber)}
-
-.cta{
-  display:inline-flex;align-items:center;gap:.6rem;
-  font-family:var(--mono);font-size:.74rem;letter-spacing:.11em;text-transform:uppercase;
-  text-decoration:none;font-weight:600;
-  background:var(--amber);color:#17130c;white-space:nowrap;
-  padding:.66rem 1.15rem;border:1px solid var(--amber);
-  transition:background .2s,transform .2s,box-shadow .2s;
-}
-.cta:hover{background:#f0c877;transform:translateY(-1px);box-shadow:0 8px 26px -12px var(--amber)}
-.cta--ghost{background:transparent;color:var(--paper);border-color:var(--rule)}
-.cta--ghost:hover{background:rgba(239,231,217,.06);border-color:var(--paper-dim);box-shadow:none}
-.top .cta{margin-left:auto;padding:.5rem .8rem;font-size:.64rem;letter-spacing:.08em}
-@media (min-width:820px){.top .cta{margin-left:0;padding:.52rem .9rem;font-size:.68rem}}
-@media (max-width:430px){
-  .brand{font-size:.72rem;letter-spacing:.1em;gap:.45rem}
-  .brand svg{width:19px;height:19px}
-  .top-in{gap:.7rem}
-}
-
-/* ── héroe ────────────────────────────────────────────────────────── */
-.hero{position:relative;padding-block:clamp(3.5rem,9vw,7.5rem) 0;overflow:hidden}
-.hero-kicker{
-  font-family:var(--mono);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;
-  color:var(--amber);margin:0 0 1.6rem;display:flex;align-items:center;gap:.75rem;
-}
-.hero-kicker::after{content:"";height:1px;flex:1;max-width:190px;background:var(--rule)}
-
-h1{
-  font-family:var(--mono);font-weight:600;
-  font-size:clamp(2.1rem,1.1rem+4.1vw,4.5rem);
-  line-height:1.04;letter-spacing:-.035em;margin:0 0 1.5rem;max-width:19ch;text-wrap:balance;
-}
-h1 em{font-style:normal;color:var(--amber);display:block}
-
-.lede{
-  font-size:clamp(1.1rem,.85rem+.75vw,1.42rem);
-  line-height:1.55;max-width:46ch;color:var(--paper);margin:0 0 .9rem;
-}
-.lede b{font-weight:600;color:var(--amber)}
-.sub{max-width:52ch;color:var(--paper-dim);margin:0 0 2.3rem;font-size:1rem}
-
-.hero-acts{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center;margin-bottom:3.4rem}
-
-/* la tira de cifras */
-.strip{
-  display:grid;gap:1px;background:var(--rule-soft);
-  border-block:1px solid var(--rule-soft);
-  grid-template-columns:repeat(2,1fr);
-}
-@media (min-width:760px){.strip{grid-template-columns:repeat(4,1fr)}}
-.strip div{background:var(--ink);padding:1.15rem 1.2rem}
-.strip dt{
-  font-family:var(--mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--paper-faint);margin:0 0 .45rem;
-}
-.strip dd{
-  margin:0;font-family:var(--mono);font-size:clamp(1.15rem,.9rem+.7vw,1.5rem);
-  font-weight:600;letter-spacing:-.02em;color:var(--paper);
-}
-.strip dd small{font-size:.62em;font-weight:400;color:var(--paper-dim);letter-spacing:0}
-
-.shot{
-  position:relative;margin-top:clamp(2.5rem,6vw,4.5rem);
-  border:1px solid var(--rule);background:var(--ink-2);
-}
-.shot img{display:block;width:100%;height:auto}
-.shot figcaption{
-  font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;line-height:1.6;
-  color:var(--paper-faint);padding:.8rem 1rem;border-top:1px solid var(--rule-soft);
-}
-.shot figcaption b{color:var(--paper-dim);font-weight:400}
-.hero .shot{box-shadow:0 40px 90px -50px #000}
-
-/* ── secciones ────────────────────────────────────────────────────── */
-section{padding-block:clamp(4rem,9vw,7.5rem);position:relative}
-section + section{border-top:1px solid var(--rule-soft)}
-
-.head{display:flex;align-items:baseline;gap:1.1rem;margin-bottom:2.6rem;flex-wrap:wrap}
-.num{
-  font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;color:var(--amber-deep);
-  padding-top:.35rem;
-}
-h2{
-  font-family:var(--mono);font-weight:600;
-  font-size:clamp(1.45rem,1.05rem+1.5vw,2.3rem);
-  line-height:1.14;letter-spacing:-.03em;margin:0;max-width:22ch;
-}
-.head p{margin:.4rem 0 0;color:var(--paper-dim);max-width:54ch;flex-basis:100%}
-
-/* qué hace */
-.feats{display:grid;gap:clamp(2.5rem,5vw,4rem)}
-.feat{display:grid;gap:clamp(1.3rem,3vw,2.6rem);align-items:center}
-@media (min-width:900px){
-  .feat{grid-template-columns:1fr 1.25fr}
-  .feat:nth-child(even) .feat-txt{order:2}
-}
-.feat h3{
-  font-family:var(--mono);font-size:1.02rem;font-weight:600;letter-spacing:-.01em;
-  margin:0 0 .75rem;color:var(--paper);
-}
-.feat h3::before{
-  content:"";display:inline-block;width:16px;height:1px;background:var(--amber);
-  vertical-align:middle;margin-right:.7rem;
-}
-.feat p{margin:0 0 .8rem;color:var(--paper-dim)}
-.feat p:last-child{margin-bottom:0}
-.feat strong{color:var(--paper);font-weight:600}
-
-/* la hoja de datos */
-.sheet{border:1px solid var(--rule);background:linear-gradient(180deg,rgba(239,231,217,.035),transparent 60%)}
-.sheet-hd{
-  display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;
-  padding:1rem 1.25rem;border-bottom:1px solid var(--rule);
-  font-family:var(--mono);font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--paper-faint);
-}
-.sheet-hd b{color:var(--amber);font-weight:600}
-.rows{margin:0}
-.row{
-  display:grid;gap:.3rem 1.5rem;padding:1.05rem 1.25rem;
-  border-bottom:1px solid var(--rule-soft);
-}
-@media (min-width:720px){.row{grid-template-columns:minmax(0,15rem) 1fr;align-items:baseline}}
-.row:last-child{border-bottom:0}
-.row dt{font-family:var(--mono);font-size:.82rem;color:var(--amber);letter-spacing:-.01em}
-.row dd{margin:0;color:var(--paper-dim);font-size:.98rem}
-.row dd b{color:var(--paper);font-weight:600;font-family:var(--mono);font-size:.94em}
-
-.warn{
-  margin-top:1.6rem;border:1px solid rgba(226,180,92,.3);
-  background:rgba(226,180,92,.06);padding:1.2rem 1.35rem;
-}
-.warn h3{
-  font-family:var(--mono);font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--amber);margin:0 0 .6rem;
-}
-.warn p{margin:0;color:var(--paper-dim);font-size:.98rem}
-.warn p + p{margin-top:.6rem}
-
-/* datos y licencias */
-.srcs{display:grid;gap:1px;background:var(--rule-soft);border:1px solid var(--rule-soft)}
-@media (min-width:680px){.srcs{grid-template-columns:1fr 1fr}}
-.src{background:var(--ink);padding:1.25rem 1.3rem;display:flex;flex-direction:column;gap:.5rem}
-.src h3{
-  font-family:var(--mono);font-size:.88rem;font-weight:600;margin:0;letter-spacing:-.01em;
-}
-.src p{margin:0;color:var(--paper-dim);font-size:.93rem;flex:1}
-.lic{
-  font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--olive);
-}
-.src a{color:var(--paper-dim);text-decoration:none;border-bottom:1px solid var(--rule);font-size:.82rem;font-family:var(--mono);align-self:flex-start}
-.src a:hover{color:var(--amber);border-bottom-color:var(--amber)}
-
-/* repos */
-.repos{display:grid;gap:1.1rem}
-@media (min-width:800px){.repos{grid-template-columns:1fr 1fr}}
-.repo{
-  border:1px solid var(--rule);padding:1.5rem 1.5rem 1.35rem;
-  display:flex;flex-direction:column;gap:.7rem;text-decoration:none;
-  transition:border-color .25s,background .25s,transform .25s;
-}
-.repo:hover{border-color:var(--amber);background:rgba(226,180,92,.045);transform:translateY(-2px)}
-.repo .tag{
-  font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);
-}
-.repo h3{font-family:var(--mono);font-size:1rem;margin:0;font-weight:600;word-break:break-word}
-.repo p{margin:0;color:var(--paper-dim);font-size:.94rem;flex:1}
-.repo .go{font-family:var(--mono);font-size:.72rem;color:var(--paper-faint);letter-spacing:.06em}
-.repo:hover .go{color:var(--amber)}
-
-/* sin rastreo */
-.plain{display:grid;gap:1.4rem}
-@media (min-width:820px){.plain{grid-template-columns:repeat(3,1fr)}}
-.plain div{border-top:1px solid var(--amber);padding-top:1rem}
-.plain h3{font-family:var(--mono);font-size:.8rem;margin:0 0 .5rem;font-weight:600}
-.plain p{margin:0;color:var(--paper-dim);font-size:.93rem}
-
-/* cierre */
-.close-cta{text-align:center;padding-block:clamp(4rem,10vw,8rem)}
-.close-cta h2{margin:0 auto 1.4rem;max-width:20ch}
-.close-cta p{color:var(--paper-dim);max-width:44ch;margin:0 auto 2.2rem}
-
-footer{border-top:1px solid var(--rule);padding-block:2.8rem 3.4rem;font-size:.9rem}
-.legal{
-  font-family:var(--mono);font-size:.68rem;line-height:1.9;letter-spacing:.02em;
-  color:var(--paper-faint);
-}
-.legal a{color:var(--paper-dim);text-decoration:none;border-bottom:1px solid var(--rule)}
-.legal a:hover{color:var(--amber)}
-.foot-grid{display:flex;flex-wrap:wrap;gap:1.6rem 2.5rem;justify-content:space-between;align-items:flex-end}
-
-/* entrada escalonada */
-@media (prefers-reduced-motion:no-preference){
-  .rise{opacity:0;transform:translateY(14px);animation:rise .85s cubic-bezier(.2,.7,.3,1) forwards}
-  @keyframes rise{to{opacity:1;transform:none}}
-  .d1{animation-delay:.05s}.d2{animation-delay:.14s}.d3{animation-delay:.23s}
-  .d4{animation-delay:.32s}.d5{animation-delay:.42s}.d6{animation-delay:.54s}
-}
-</style>
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/atmosfera.css">
+<link rel="stylesheet" href="/css/chrome.css">
+<link rel="stylesheet" href="/css/secciones.css">
+<link rel="stylesheet" href="/css/motion.css">
+<noscript><link rel="stylesheet" href="/css/sin-js.css"></noscript>
 </head>
 <body>
 
-<a class="skip" href="#main">Saltar al contenido</a>
+<a class="saltar" href="#main">Saltar al contenido</a>
 
-<svg class="grain" aria-hidden="true" focusable="false">
+<svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
+  <symbol id="fl" viewBox="0 0 20 12">
+    <path d="M0 6h16.5M11.8 1.2 16.8 6l-5 4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</svg>
+
+<!-- ═══ ATMÓSFERA ═══════════════════════════════════════════════════════════
+     Seis capas fijas que solo cambian opacidad y desplazamiento, todas colgadas
+     de `--asc`. El mar de nubes cruza la pantalla una sola vez, a la altura de
+     la sección en la que el modelo cuenta su propio error. -->
+<div class="cielo" aria-hidden="true">
+  <div class="c-costa"></div>
+  <div class="c-alto"></div>
+  <div class="c-estrellas">
+    <svg viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid slice">
+  <g><circle cx="537" cy="413" r="1.35"/><circle cx="499" cy="433" r="1.35"/><circle cx="188" cy="280" r="1.35"/><circle cx="487" cy="311" r="1.35"/><circle cx="369" cy="230" r="1.35"/><circle cx="840" cy="284" r="1.35"/><circle cx="920" cy="121" r="1.35"/><circle cx="918" cy="372" r="1.35"/><circle cx="819" cy="219" r="1.35"/><circle cx="16" cy="344" r="1.35"/><circle cx="708" cy="387" r="1.35"/><circle cx="815" cy="167" r="1.35"/><circle cx="636" cy="80" r="1.35"/><circle cx="511" cy="280" r="1.35"/><circle cx="84" cy="430" r="1.35"/><circle cx="154" cy="251" r="1.35"/><circle cx="881" cy="499" r="1.35"/><circle cx="198" cy="81" r="1.35"/><circle cx="205" cy="145" r="1.35"/><circle cx="527" cy="440" r="1.35"/><circle cx="962" cy="407" r="1.35"/><circle cx="724" cy="544" r="1.35"/><circle cx="628" cy="269" r="1.35"/><circle cx="392" cy="175" r="1.35"/><circle cx="390" cy="275" r="1.35"/><circle cx="987" cy="82" r="1.35"/></g>
+  <g><circle cx="549" cy="534" r="0.95"/><circle cx="444" cy="425" r="0.95"/><circle cx="596" cy="411" r="0.95"/><circle cx="127" cy="231" r="0.95"/><circle cx="717" cy="203" r="0.95"/><circle cx="276" cy="44" r="0.95"/><circle cx="733" cy="330" r="0.95"/><circle cx="472" cy="222" r="0.95"/><circle cx="835" cy="88" r="0.95"/><circle cx="708" cy="50" r="0.95"/><circle cx="322" cy="24" r="0.95"/><circle cx="956" cy="72" r="0.95"/><circle cx="706" cy="540" r="0.95"/><circle cx="425" cy="209" r="0.95"/><circle cx="92" cy="469" r="0.95"/><circle cx="910" cy="419" r="0.95"/><circle cx="833" cy="563" r="0.95"/><circle cx="290" cy="217" r="0.95"/><circle cx="285" cy="412" r="0.95"/><circle cx="258" cy="198" r="0.95"/><circle cx="597" cy="273" r="0.95"/><circle cx="169" cy="267" r="0.95"/><circle cx="675" cy="283" r="0.95"/><circle cx="495" cy="341" r="0.95"/><circle cx="685" cy="213" r="0.95"/><circle cx="100" cy="207" r="0.95"/><circle cx="282" cy="406" r="0.95"/><circle cx="814" cy="427" r="0.95"/><circle cx="961" cy="257" r="0.95"/><circle cx="997" cy="524" r="0.95"/><circle cx="892" cy="404" r="0.95"/><circle cx="942" cy="394" r="0.95"/><circle cx="597" cy="347" r="0.95"/><circle cx="633" cy="244" r="0.95"/></g>
+  <g><circle cx="828" cy="220" r="0.65"/><circle cx="899" cy="32" r="0.65"/><circle cx="247" cy="428" r="0.65"/><circle cx="198" cy="567" r="0.65"/><circle cx="811" cy="220" r="0.65"/><circle cx="144" cy="379" r="0.65"/><circle cx="64" cy="397" r="0.65"/><circle cx="605" cy="393" r="0.65"/><circle cx="969" cy="556" r="0.65"/><circle cx="128" cy="270" r="0.65"/><circle cx="532" cy="357" r="0.65"/><circle cx="988" cy="277" r="0.65"/><circle cx="819" cy="425" r="0.65"/><circle cx="899" cy="445" r="0.65"/><circle cx="280" cy="314" r="0.65"/><circle cx="796" cy="236" r="0.65"/><circle cx="993" cy="585" r="0.65"/><circle cx="962" cy="72" r="0.65"/><circle cx="740" cy="217" r="0.65"/><circle cx="816" cy="113" r="0.65"/><circle cx="195" cy="105" r="0.65"/><circle cx="863" cy="241" r="0.65"/><circle cx="827" cy="311" r="0.65"/><circle cx="292" cy="238" r="0.65"/><circle cx="738" cy="187" r="0.65"/><circle cx="524" cy="561" r="0.65"/><circle cx="32" cy="278" r="0.65"/><circle cx="998" cy="607" r="0.65"/><circle cx="438" cy="597" r="0.65"/><circle cx="519" cy="259" r="0.65"/><circle cx="571" cy="10" r="0.65"/><circle cx="609" cy="291" r="0.65"/><circle cx="24" cy="275" r="0.65"/><circle cx="859" cy="261" r="0.65"/><circle cx="670" cy="583" r="0.65"/><circle cx="100" cy="120" r="0.65"/><circle cx="410" cy="534" r="0.65"/><circle cx="585" cy="417" r="0.65"/><circle cx="468" cy="591" r="0.65"/><circle cx="561" cy="147" r="0.65"/><circle cx="550" cy="291" r="0.65"/><circle cx="173" cy="167" r="0.65"/><circle cx="585" cy="529" r="0.65"/><circle cx="331" cy="55" r="0.65"/><circle cx="399" cy="73" r="0.65"/><circle cx="949" cy="305" r="0.65"/></g>
+    </svg>
+  </div>
+  <div class="c-nubes"><i></i><i></i><i></i></div>
+  <div class="c-nubes c-nubes--densa"><i></i><i></i></div>
+  <div class="c-velo"></div>
+  <div class="c-mar"></div>
+</div>
+
+<svg class="grano" aria-hidden="true" focusable="false">
   <filter id="g"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
   <rect width="100%" height="100%" filter="url(#g)" opacity=".55"/>
 </svg>
 
-<!-- La regla de altitud: 0 m en la costa, 2426 m en el Roque. Es el motivo
-     por el que esta aplicación existe, así que vertebra la página. -->
-<div class="rail" aria-hidden="true">
-  <div class="rail-marks">
-    <div class="mark" data-for="hero"><span><b>0 m</b>el mar</span><i></i></div>
-    <div class="mark" data-for="hace"><span><b>400 m</b>medianías</span><i></i></div>
-    <div class="mark" data-for="honesto"><span><b>1561 m</b>mar de nubes</span><i></i></div>
-    <div class="mark" data-for="datos"><span><b>2000 m</b>cumbre</span><i></i></div>
-    <div class="mark" data-for="codigo"><span><b>2426 m</b>el Roque</span><i></i></div>
-  </div>
-</div>
+<!-- ═══ LA ISLA ═════════════════════════════════════════════════════════════
+     Curvas de nivel cada 300 m sacadas del mismo modelo de elevación con el que
+     la aplicación corrige la temperatura por altitud. Se dibujan solas al
+     cargar, y la cota que corresponde a la altura de lectura se enciende.
+     Se regenera con `npm run web:island`; no se edita a mano. -->
+<div class="isla-fija" aria-hidden="true"><!--isla:inicio-->
+<svg class="isla" viewBox="0 0 1000 1615" preserveAspectRatio="xMidYMid meet"
+     fill="none" aria-hidden="true" focusable="false">
+<g class="iso" data-cota="costa"><path d="M333 4.1L346.1 3.6L356.1 11.2L367 14.8L374 25.5L377.4 43.4L389 47.7L409.4 64.9L421.2 68.7L439.1 64.9L449.8 75.7L471.2 79.9L489.1 87.3L510.6 87.4L531.4 97.1L540.6 97.1L564.2 87.5L592.8 89.1L635.7 79.2L657.2 70.5L677.7 72L700.1 58L721.5 61.5L735.8 59.2L750.1 63L768 60.1L780.9 68.5L808.9 75.6L826.8 114.9L827.4 129.2L840.5 136.4L843 161.4L853.6 172.1L876.1 218.6L885.6 279.4L898.1 300.9L907.5 335.7L929.6 361.7L936.1 380L963.8 401L968.2 419.5L977.9 433.2L982.5 452.7L993.3 460.6L996.4 468.9L996.1 486.8L988.5 504.7L975.4 522.2L969.9 551.2L950.4 574.7L921.8 592.2L896.7 619.5L878.9 649.7L874.5 683.5L845.2 722.8L846.7 759.1L853.8 772.1L867.3 783.6L871.1 794.3L871.7 814.5L885.1 830.1L884 865.8L892.8 883.7L896.4 915.9L905.8 940.9L902.9 955.2L889.2 976.7L892.3 1008.8L888.1 1044.6L889.8 1058.9L883.3 1083.9L875.3 1095.8L871.2 1116.1L870.4 1144.7L848.3 1184L782.3 1255.1L769.8 1294.9L745.7 1348.5L735.3 1355.7L705 1416.5L689.2 1430.8L675 1452.3L664.3 1475.1L645.4 1534.5L625.7 1563.1L619.9 1591.7L592.8 1611.1L585.7 1611.4L532 1582.9L521.3 1566.8L504.3 1552.3L490.9 1530.9L487.2 1520.2L485.1 1488L464.6 1448.6L458.1 1402.2L463 1380.7L461.3 1341.4L451.6 1327.1L446.2 1269.4L436.6 1255.6L431.9 1234.1L404.2 1201.9L386.7 1166.2L378.5 1141.1L364 1135.2L357.2 1126.8L339.2 1083.9L291.5 1044.6L289.4 1030.3L294.2 1019.6L296 997.9L285.3 965.9L274.6 944.8L265.1 933.8L256.7 912L247.7 898L242.4 871.3L227.5 855.1L218.1 830.1L201.8 822.9L186 805L174.5 779.1L154.3 762.1L156.6 729.8L144.6 712.1L145.8 690.7L129.6 647.7L128.3 633.4L118 619.1L117.2 594L97.1 561.9L92.2 525.4L78.1 508.3L65.8 501.1L49.3 464.1L28.3 447.5L24.3 433.1L11.3 418.9L5.9 404.6L7 393.8L13.6 380.4L7.5 365.2L3.6 340.2L7.5 304.4L11.4 293.7L20.7 283.7L31.7 279.4L38.6 272.9L49.3 247.8L68 247.2L77.9 235.3L86.6 232.9L95.3 225.8L106.5 208.2L106.2 186.4L120.8 179.7L128 172.2L131.8 154.3L142.3 145.9L141.1 132.8L145.1 125.7L171 118.5L190.8 104.2L203.1 90.7L207.6 75.6L220.9 63.8L256.7 61.5L277.1 50.6L292.5 37.1L293.5 22L306.8 5.2L317.5 4.6L324.6 7.7Z" pathLength="1"/></g>
+<g class="iso" data-cota="300 m"><path d="M315.8 61.3L321.1 58.3L335.4 66.3L342.5 59.3L349.7 58.6L364 64.5L381.8 81L392.6 80L417.6 87.8L431.9 88.3L438.5 97.1L435.3 122.1L439.1 123.7L446.2 120.7L464.1 103.6L471.2 135.6L478.4 125.7L492.3 122.1L494.1 114.9L499.8 111.1L546.3 115.9L557.4 125.7L564.2 139.5L589.2 114.9L600 116.4L607.1 128.2L610.7 128.8L621.4 114.7L639.3 118.7L642.2 104.2L650 102.3L660.7 90L678.6 88.3L700.1 81.7L721.5 82L740.8 89.9L774.6 122.1L771.2 140L786.5 179.3L780 204.3L807.3 211.5L816.2 225.8L784.5 247.2L807.3 248.3L819.3 254.4L828.7 283L822.5 297.3L823.8 304.4L839.5 304.4L843.1 306.9L852.2 325.9L853.3 336.6L844.5 350.9L845.9 354.5L853.8 357.1L875.3 349.7L885.6 354.5L889 365.2L876.1 379.5L876.4 390.3L893.2 390.7L899.8 393.8L917.4 415.3L924.4 433.2L938.5 443.9L943 451L940.3 472.5L945.1 490.4L932.1 519L917.2 533.3L920.6 551.2L917.3 561.9L889.6 582.1L884.7 579.8L875.2 565.5L864.6 561.4L866.6 579.8L864.6 587.1L839.5 610.5L808.5 622.7L803.8 638.5L789.5 645L780.4 654.9L792.7 672.7L789.5 690.9L803.8 698.1L803.3 722.8L813.6 744.2L778.1 794.3L790.3 808.6L796.6 822.9L807.2 833.6L814.5 848L822.3 883.7L823.1 937.3L819.9 965.9L838 998.1L829.5 1030.3L829.9 1076.8L818.6 1141.1L786.9 1216.2L778.7 1226.4L759.2 1241.3L749 1259.1L732.3 1278.8L724.6 1312.8L707.2 1354.2L691.2 1380.7L681.3 1391.4L621.4 1499.3L606 1516.6L587.4 1530.9L557 1545.8L549.9 1543.8L541.6 1534.5L517.7 1473.7L487.8 1334.2L481.8 1312.8L465.3 1280.6L447.4 1198.4L440.6 1184L424.7 1163.6L405.4 1119.7L392.6 1101.8L383.8 1066.1L374.6 1051.8L374.2 1033.9L367.3 1016L363.6 965.9L352.9 937.3L352.3 908.7L346.5 890.8L349.5 873L328.2 841.4L310.3 836.8L307.9 830.1L311.3 819.3L308 808.6L288.9 796.7L285.3 791.4L298 744.2L328.2 714.6L346.1 701.3L359.8 676.3L353.2 675.7L328.2 695L313.9 699.6L306.9 715.6L288.2 729.9L233.5 797.9L220.9 803.6L213.8 801.1L205.2 790.7L186.5 747.8L178 720L173.8 690.6L160.2 669.2L153 644.1L153.8 637L168.1 619.1L163.7 615.7L149.4 617.9L142.3 609L127.2 579.8L117.4 554.7L115.1 536.9L96.3 497.5L83 486.8L80.2 458.2L61.9 443.9L38.6 408.1L29 368.8L29.9 354.5L22.4 340.2L23.7 318.7L34.6 300.9L74.3 269L88.6 266.1L100.5 268.7L100.6 247.2L128 214.1L138.7 206.3L153 206L156.5 193.6L166.2 182.9L167.3 168L170.9 162.4L180.8 157.8L185.5 140L199.3 129.2L213.8 110.9L224.5 107L231.7 93.7L246 86.3L288.9 80.9L299.6 68.8L310.3 66.6Z" pathLength="1"/></g>
+<g class="iso" data-cota="600 m"><path d="M310.3 97.1L364 101.6L385.4 127.9L392.6 114.8L399.7 115.9L411.4 125.7L410.8 150.7L417.6 158.7L431.9 142.5L449.8 135.1L455.6 140L459.4 157.8L467.7 169.2L471.2 170L482 157.6L499.8 147.2L539.2 155.9L549.1 165L549.1 179.3L553.5 191.2L561.8 179.3L578.5 165.5L589.2 169.1L607.1 166.2L614.3 173.1L621.4 188.3L625 187.8L630.9 161.4L635.7 156L664.3 167.1L666.4 165L669 140L675 132.4L689.3 131.6L707.2 135.1L715.7 140L721.5 144.3L724.8 154.3L734.3 161.4L735.2 175.7L747.2 197.2L745.7 204.3L725.1 217.2L714.9 229.4L735.8 241.4L750.1 240L753 243.7L749 250.8L731.6 261.5L718.5 275.8L725.1 278.5L764.4 269.4L775.2 275.6L789.9 297.3L787.3 311.6L789 322.3L784.1 336.6L789.5 339.9L805.6 340.2L796.8 361.7L810.9 370.8L805.2 386.7L826.2 393.8L830 404.6L828.8 421.6L843.1 425.1L850.8 436.7L861 443.8L875.3 441.4L878.9 454.6L889.8 468.9L879.2 490.4L891 504.7L868.1 511.7L848.5 526.1L837.2 526.1L840.4 547.6L816.7 583.3L803.8 591.3L789.5 587.9L782.3 589.8L779.1 608.4L775.2 610L757.2 601.2L750.8 601.2L755.8 615.5L753.7 622.1L734.4 619.1L733.3 622.7L745.4 640.6L744.6 647.7L737.9 654.9L744.5 672.7L740.2 697.8L728.6 722.8L733.1 737.1L732.2 751.4L719.7 758.5L718.8 762.1L725.2 794.3L715.2 826.5L724.4 858.7L739.4 880.8L749.3 912.3L775.2 942.6L782.2 980.2L788 994.5L785.9 1037.4L789.9 1076.8L780.5 1119.7L781.4 1134L760.9 1158.3L749.7 1176.9L743 1207.1L715.7 1230.5L703.6 1248.4L691.8 1284.2L693.2 1305.6L659.1 1387.9L607.3 1445.1L579.8 1480.8L564.2 1489.3L558.5 1488L557.4 1466.5L538.6 1434.3L535.6 1408.9L507 1351.8L497.8 1309.2L487.6 1287.7L479.3 1234.1L478.4 1209.2L469 1187.6L467.8 1134L456.2 1119.7L446.1 1094.7L453.3 1048.2L447.5 1030.3L445.8 1008.8L450.3 987.4L450.8 948.1L448.5 926.6L433.8 869.4L435.9 837.2L433 819.3L435.6 805L431.5 780L417.6 770.4L392.6 759.9L381.8 749.1L371.1 744.2L353.8 726.4L354.8 719.2L374.4 687L391.3 672.7L408.3 651.3L414 633.4L423.8 619.1L446.2 606.5L475.4 597.6L478.4 590.1L467.7 588L460.5 581L449.8 584.7L442.6 571.2L428.3 597.1L403.3 605.3L385.4 622.9L378.3 636.5L364 645.8L349.7 648.8L328.2 658.8L317.5 671.9L304.5 679.9L296 700.6L274.6 716.5L253.1 740.3L242.4 744.1L237.6 708.5L218.6 672.7L202.9 626.3L203.2 619.1L209.1 608.4L207.9 604.8L192.3 599.9L182.7 590.5L170.4 558.3L125.1 504.7L123.3 490.4L110.6 479.7L109.4 461.8L120.6 454.6L121.7 447.5L99.9 436.7L99.7 426L62.9 390.3L66.9 368.8L89.8 340.2L94.8 322.3L102 311.6L110.1 303.1L128 313L135.1 313.6L136.9 311.6L131.4 297.3L131.5 284.9L149.4 271.2L167.2 250.8L188.8 240.3L180.9 229.4L184 222.2L202 218.6L206.4 204.3L224.5 187.2L236.5 182.9L236 175.7L229.9 168.6L233.4 157.8L271 129.7L292.5 123.1L303.9 111.4Z" pathLength="1"/></g>
+<g class="iso" data-cota="900 m"><path d="M309.5 154.3L328.2 160.5L357.6 154.3L361.1 157.8L360.4 173.4L385.4 171.2L396.1 184.7L406.9 192.3L414 209L435.5 188.6L441.3 190L471.2 212.5L489.1 196.6L503.4 194.4L517.7 200.6L528.4 200.4L531.5 204.3L532.8 225.8L539.2 232.1L553.5 219.3L567.8 212.9L574.9 203.2L585.7 199.9L603.5 197.3L609.9 200.8L613.6 222.2L610.7 236.5L614.3 238.7L624.1 229.4L631.6 215.1L642.9 206L653.6 208.3L664.3 206.6L671.5 210.9L683.3 225.8L675.1 250.8L675.1 265.1L682.2 267L692.9 260L699.3 265.1L692.3 297.3L681.7 311.6L682.2 318.5L710.8 311.5L728.7 294.7L735.8 294.8L748.3 315.2L747.5 325.9L753.9 336.6L753.7 350.4L764.3 358.1L754.4 376L753.7 385.3L768 383.2L773.5 386.7L768.2 404.6L769.4 429.6L778.7 431.2L793 427L795.4 429.6L789.2 440.3L789.5 445.9L810.2 454.6L812.1 465.3L824.7 486.8L823.3 494L814.5 504.6L795.8 508.3L805 529.7L801 540.4L802.1 554.7L796.6 562.9L789.5 567.4L771.6 570L753.7 566.9L750.5 569L754.4 579.8L751.7 583.3L707.2 573.8L703.7 576.2L705.5 579.8L727.9 601.2L727.2 604.8L689.3 604.3L684.4 615.5L673.6 622.7L675 627L696.5 629.1L725.7 637L725.1 640.7L701.9 651.3L703.3 658.4L716.7 669.2L716 672.7L710.2 690.6L695.5 704.9L693.2 715.6L697.6 729.9L680.1 740.7L679.7 776.4L684.3 794.3L678.2 822.9L684.1 840.8L686 865.8L684.2 883.7L677.4 905.2L682.2 914.8L721.5 948.2L731.8 962.4L742.9 1012.4L734.7 1041L744.3 1051.8L746.1 1058.9L735.6 1076.8L739.7 1101.8L736.4 1119.7L724.6 1137.6L717.3 1162.6L702.8 1194.8L681.7 1216.2L667.9 1238.3L658.6 1269.9L659.6 1298.5L644 1345L612.6 1387.9L600 1398.8L589.2 1403.4L574.9 1403L559.8 1395L545 1370L528.4 1324.5L519.4 1312.8L520 1294.9L509.6 1262.7L508.9 1241.3L512.8 1227L512.9 1209.1L495.4 1169.7L486.6 1094.7L496.7 1037.4L497.9 1005.3L494 983.8L494.4 962.4L503 937.3L508.3 898L514.1 889.7L536.8 876.5L553.1 855.1L564.5 847.9L571.3 838L596.4 824.1L601.5 812.2L600.2 801.5L578.5 761.9L564.2 752.6L557 754.4L549.9 762.3L528.4 765.7L499.8 760.5L492.7 766.5L478.4 767.2L470 762.1L468.6 744.2L464.1 739L453.4 736L439.1 741.3L417.6 735.8L403.3 724.5L384 719.2L380.7 712.1L391 694.2L435.5 637.2L440.7 622.7L460.5 615.9L489.1 626.3L494.5 622.7L499.8 610.5L521.3 610L518.2 590.5L527.3 579.8L527.9 572.6L507 562.7L492.7 560.3L502.3 536.9L482 529.3L480.6 522.6L489 504.7L474.8 500.1L460.5 521.3L435.4 540.4L410.4 554.7L403.8 572.6L389 580.5L383.3 597.6L370.1 601.2L360.4 619L346.1 624.7L281.7 689.8L276 683.5L264.6 637L251.3 615.5L260.1 597.6L258.5 590.5L246.8 583.3L240.4 572.6L231.7 570.1L220.9 561.2L216.3 544L206.6 529.5L192.3 523.9L174.5 509.1L161.6 486.8L162 476.1L147.6 461.8L149.1 440.3L141.3 426L145.2 408.1L134.9 397.4L135.7 393.8L146.2 383.1L156.6 356.8L177.1 350.9L179.9 347.4L182.4 325.9L194.1 286.6L210.2 271.3L224.5 274.3L231.5 243.7L259.2 229.4L278.6 215.1L272.5 204.3L274.1 200.8L288.9 205.2L304.3 197.2L307.3 190L295.9 182.9L291.4 172.1Z" pathLength="1"/></g>
+<g class="iso" data-cota="1200 m"><path d="M563.9 243.7L571.3 241.2L589.2 247.8L597.6 265.1L603.5 291.7L610.9 286.6L617.4 265.1L623.2 258L635.7 251.9L645.8 258L640.4 279.4L653.9 286.6L653.2 308L659.7 315.2L654.6 333L645.8 343.8L652.9 354.5L655.3 368.8L660.7 369.4L667.2 365.2L678.6 344.1L692.9 332.1L700.1 331.3L706.7 340.2L716.3 343.8L720.7 365.2L717.7 379.5L728.6 386.7L709.5 408.1L710.7 411.7L740.8 411.7L735.7 429.6L744.5 436.7L747.5 447.5L754.7 454.6L754.7 465.3L775.2 468.2L778.9 472.5L774.5 483.2L752 504.7L753.7 510.6L767.5 519L768.8 522.6L753.7 544.2L750.1 546.8L730.1 547.6L729 561.9L725.1 565.6L700.1 557.4L682.2 557.6L680 561.9L692.8 583.3L692.9 590L675 588.3L667.9 601.3L638.5 608.4L655.9 626.3L660.7 639.7L682.2 644.4L684.8 665.6L682.4 683.5L672.1 694.2L674 708.5L658.4 726.4L652 758.5L656.4 794.3L655.5 830.1L661 855.1L653.5 912.3L643.1 930.2L655.5 955.2L680.9 980.2L689.6 994.5L703.3 1041L693.9 1098.2L697.1 1116.1L689.6 1134L682.9 1162.6L674.5 1180.5L653.6 1207.6L647.7 1230.5L623 1294.9L608.3 1316.3L608 1341.4L600 1346.9L589.2 1339.9L574.9 1339.3L567.8 1335.5L549.1 1298.5L541.4 1244.8L545.1 1209.1L533.1 1166.2L518.2 1137.6L517.9 1094.7L525.4 1051.8L524.8 1041L531.6 1023.1L527 991L542.7 944.8L554.7 930.2L553.2 912.3L557 911.7L571.3 922.4L589.2 918.2L600 921.5L614.3 915.8L627.3 898L634.5 869.4L627.9 837.2L632.9 812.2L625.1 765.7L600.7 726.4L596.8 712.1L578.1 687L572.8 672.7L549.9 655L546.9 665.6L554.5 697.8L551.9 704.9L542.7 709.5L521.3 708.3L496.3 712.7L474.8 709.5L449.8 699.4L435.5 708.4L428.3 709.3L405.6 697.8L420.7 672.7L454.8 633.4L463.5 633.4L474.8 642.7L489.1 642.6L499.8 651.3L504.7 647.7L507 632.3L510.6 629.9L524.9 633.4L532 628.4L542.2 608.4L542.3 586.9L557 558.3L552.8 551.2L531.9 536.9L532 525.7L542.7 518.6L544.7 511.8L535.6 502.2L514.1 506.9L513.3 501.1L523.1 483.2L523.4 476.1L492.7 460.7L478.4 446.6L453.4 488.1L435.5 492.3L424.7 504.5L417.6 529.6L385.8 551.2L374.2 565.5L368 583.3L328.2 629.7L303.2 649.7L299.4 647.7L297.4 637L301.5 622.7L301.1 586.9L291.6 576.2L285.3 551.8L271 553.3L263.8 543.8L253.1 540.8L237.7 526.1L233.4 511.8L215.1 494L205.6 465.3L206.3 454.6L212.4 440.3L212.4 393.8L217.8 386.7L242.4 369.1L237.9 354.5L244.7 333L256.7 316.9L271 308.1L274.7 297.3L317.5 273L338.9 273.8L396.1 265.3L421.2 269.2L435.5 258.6L467.7 261.5L478.4 271.2L482 270.4L492.7 256.1L514.1 256.4L528.4 271.8L539.2 259.8L549.9 259.4Z" pathLength="1"/></g>
+<g class="iso" data-cota="1500 m"><path d="M567.2 286.6L582.5 290.1L585.6 311.6L592.2 325.9L600 323.7L617.8 307.9L621.4 308.2L625.9 318.7L637.9 325.9L635.7 332.9L627.3 340.2L615.5 358.1L617.3 365.2L625.2 372.4L625.4 386.7L639.3 386.9L653.6 393.8L667.9 380.4L678.6 376L682.2 378.4L692.3 401L685 415.3L685.2 422.4L707.2 432.2L716.6 447.5L708.1 458.2L717.2 476.1L709.6 486.8L718.7 504.7L716.5 519L707.1 522.6L700.1 534L657.2 550.4L655.9 558.3L664.9 569L657.7 576.2L653.4 586.9L605.7 601.2L605.2 604.8L617.8 621.5L635.7 628.4L639.9 644.1L651.7 658.4L651.7 676.3L645.7 687L648.8 701.3L636.3 722.8L632.1 736.4L621.4 728.6L613.2 708.5L600.8 694.2L584 665.6L550.4 629.8L558.4 590.5L571.6 565.5L564.8 536.9L572.8 519L571.3 501.9L557 494.8L551.2 476.1L542.7 472.7L535 461.8L516.8 458.2L507 439.7L478.4 424.3L471.2 423.6L467.2 429.6L460.5 459.6L446.6 468.9L438.4 479.7L422.9 486.8L415.1 501.1L410.4 518.8L374.7 544L365.4 558.3L356.1 583.3L346.1 595.7L335.4 603L331.8 601.7L329.8 594.1L331.2 572.6L307.9 554.7L311 547.6L323.5 540.4L328 533.3L306.8 525.1L286.4 526.1L263.8 508.8L262.4 497.5L255 483.2L265.2 454.6L262.9 422.4L267.4 409.5L271 404.9L285.3 404.5L290.4 401L285.8 372.4L290.3 350.9L300.4 340.2L310.3 336.4L314 325.9L321.1 318.7L360.4 305L378.3 315.1L392.6 300.5L406.9 302.2L417.6 312.1L428.3 310.1L442.6 312.3L448.5 297.3L456.9 296.3L466.9 300.9L478.4 319.9L489.1 299L499.8 293.1L507 297.3L517.7 315.5L521.3 317L532 308.4L542.7 306.3L550.5 297.3Z" pathLength="1"/><path d="M454.3 651.3L464.1 649.9L478.4 659.2L489.1 671.2L501.4 676.3L474.8 685.6L446.2 672.6L442.6 670.6L443.3 665.6Z" pathLength="1"/><path d="M521.3 658.4L525.5 658.4L527 665.6L521.3 670.3L514.1 671.1L511.9 669.2Z" pathLength="1"/><path d="M579.1 983.8L585.7 981.3L610.7 982L616.9 987.4L622.4 1001.7L630.4 1012.4L646.4 1018.3L646.1 1048.2L659.3 1069.6L650.5 1094.7L655.8 1134L640.3 1169.7L638 1198.4L628.6 1223.2L611.4 1241.3L601.4 1262.7L599.6 1277L589.2 1283.9L570.1 1262.7L573.6 1248.4L572.8 1230.5L570.4 1209.1L564.5 1191.2L564.6 1159L551.7 1112.5L562.8 1062.5L555.9 1048.2L557.4 1019.6L552.6 1001.7L557 994.4Z" pathLength="1"/></g>
+<g class="iso" data-cota="1800 m"><path d="M559.5 322.3L564.2 319.4L570.2 322.3L574.9 354L592.8 343.8L600 343.8L600.7 376L610 386.7L610.7 406.2L621.4 407.9L639.3 404L648.8 415.3L657.1 433.2L657.6 465.3L662.2 483.2L672.2 497.5L671.3 504.7L658.4 519L643.2 529.7L639.3 537.6L626.5 547.6L630.7 565.5L624.9 579.8L614.3 585.6L592.8 581.8L587.5 586.9L589.2 614.1L600 628.8L615.8 640.6L620.4 647.7L622.5 672.7L617.8 688.2L594.1 654.9L580 644.1L561 622.7L564.2 609.8L580.1 579.8L582.2 569L581.4 536.9L585.9 522.6L583.6 504.7L585.8 483.2L582.1 480.9L567.8 484.9L564.9 479.7L569 465.3L567.2 461.8L546.3 460.3L507 420.5L485.5 418.6L474.8 410.1L467.7 412.3L460.7 422.4L453.4 450.3L439.1 453.4L431.9 470.8L414 474.4L406.9 500.9L396.1 510.3L390.1 522.6L368.9 536.9L349.7 557L342.8 554.7L341.9 551.2L352.1 536.9L346.5 522.6L350.9 511.8L349.7 506.4L338.9 503.9L317.5 510.8L310.3 506.7L306.1 497.5L303.7 465.3L306.5 436.7L308.5 433.2L327.3 426L320.7 404.6L324.3 379.5L349.7 343.1L360.4 338.1L378.3 343.7L403.3 332L414 340.2L421.2 341.5L431.9 332.9L449.8 349.7L467.7 342.5L492.7 354.8L503.4 342.6L517.7 350.9L524.9 349.7L546.3 328.2Z" pathLength="1"/><path d="M596 1066.1L600 1063.5L602.7 1076.8L617.8 1089.1L622.3 1098.2L617.8 1109.6L605.8 1119.7L612.5 1159L610.9 1169.7L614.2 1201.9L610.7 1206.2L607.1 1204.7L597.3 1187.6L597.6 1173.3L588.8 1159L586.1 1148.3L587.6 1123.3L584.7 1109L590.6 1098.2L590 1087.5Z" pathLength="1"/></g>
+<g class="iso" data-cota="2100 m"><path d="M424.7 361.7L431.9 360.9L446.2 369.3L471.2 363.5L475.2 365.2L482 377.2L489.1 379.4L510.6 367.2L544.5 365.2L546.3 377.7L566.1 386.7L571.3 404.1L585.7 421.8L615.5 429.6L620.7 479.7L616.5 494L619.6 511.8L614.3 522.1L607.1 525.4L603.5 521L599.5 508.3L602.2 494L600.3 476.1L588 465.3L582.1 451.1L552.4 443.9L535.6 426.7L528.9 415.3L510.6 403.6L499.8 400.7L489.1 407.2L471.2 397.7L453.7 411.7L449.8 435.3L431.9 439.1L424.7 456.5L410.4 454.9L399.5 461.8L395.7 468.9L399.7 489.7L382 497.5L378.3 510.2L374.7 513.6L371.9 511.8L366.1 494L355.5 483.2L355.5 479.7L358.4 458.2L364.2 447.5L376 436.7L381 415.3L378.4 401L386.3 390.3L392.6 373.6Z" pathLength="1"/></g>
+</svg>
+<!--isla:fin--></div>
 
-<div class="shell">
+<!-- ═══ ALTÍMETRO ═══════════════════════════════════════════════════════════ -->
+<aside class="altimetro" aria-hidden="true">
+  <p class="alt-lectura"><b data-altimetro>0</b><small>m s. n. m.</small></p>
+  <div class="alt-escala">
+    <div class="hito" data-tramo="hero"><span><b>0 m</b>el mar</span><i></i></div>
+    <div class="hito" data-tramo="hace"><span><b>400 m</b>medianías</span><i></i></div>
+    <div class="hito" data-tramo="modelo"><span><b>1200 m</b>mar de nubes</span><i></i></div>
+    <div class="hito" data-tramo="datos"><span><b>2000 m</b>cumbre</span><i></i></div>
+    <div class="hito" data-tramo="codigo"><span><b>2426 m</b>el Roque</span><i></i></div>
+  </div>
+  <p class="alt-pie rot">Ascenso</p>
+</aside>
+
+<div class="piel">
 
 <header class="top">
   <div class="wrap top-in">
-    <a class="brand" href="/">
+    <a class="marca" href="/">
       <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
         <rect width="32" height="32" rx="7" fill="#17150f"/>
         <path d="M6 25 L13 9 L17 17 L21 12 L26 25 Z" fill="none" stroke="#e2b45c" stroke-width="2" stroke-linejoin="round"/>
-        <circle cx="13" cy="9" r="2" fill="#e2b45c"/>
+        <circle class="rayo" cx="13" cy="9" r="2" fill="#e2b45c"/>
       </svg>
       Tiempo&nbsp;Palmero
     </a>
     <nav>
       <a href="#hace">Qué hace</a>
-      <a href="#honesto">El modelo</a>
+      <a href="#modelo">El modelo</a>
       <a href="#datos">Los datos</a>
       <a href="#codigo">Código</a>
     </nav>
-    <a class="cta" href="https://app.tiempopalmero.com">Abrir el mapa</a>
+    <p class="cota-movil"><b data-altimetro>0</b> m</p>
+    <a class="btn" href="https://app.tiempopalmero.com">
+      <span class="larga">Abrir el mapa</span>
+      <span class="corta">El mapa</span>
+      <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
+    </a>
   </div>
+  <i class="progreso"></i>
 </header>
 
 <main id="main">
 
-<!-- ═══ HÉROE ═══════════════════════════════════════════════════════ -->
+<!-- ═══ HÉROE · 0 m ═════════════════════════════════════════════════════════ -->
 <section class="hero" id="hero">
+  <canvas class="viento" data-viento aria-hidden="true"></canvas>
   <div class="wrap">
-    <p class="hero-kicker rise d1">Isla de La Palma · Canarias</p>
-    <h1 class="rise d2">El tiempo en tu barranco,<em>no en el pueblo de al lado.</em></h1>
-    <p class="lede rise d3">
-      Tocas cualquier punto del mapa y obtienes una estimación <b>en ese punto</b>,
-      no la lectura de la estación más cercana.
-    </p>
-    <p class="sub rise d3">
-      En La Palma eso no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa
-      escala la altitud manda sobre la distancia en cualquier variable atmosférica.
-      Dos puntos a cinco kilómetros pueden tener el viento al revés.
-    </p>
-    <div class="hero-acts rise d4">
-      <a class="cta" href="https://app.tiempopalmero.com">Abrir el mapa &rarr;</a>
-      <a class="cta cta--ghost" href="#honesto">Cómo se calcula</a>
+
+    <div class="hero-txt">
+      <p class="hero-rot entra e1">
+        <span class="punto" aria-hidden="true"></span>
+        <span class="rot">Isla de La Palma · Canarias · 0 m sobre el mar</span>
+      </p>
+
+      <h1>
+        <span class="titular"><span>El tiempo en tu barranco,</span></span>
+        <span class="titular"><span><em>no en el pueblo de al lado.</em></span></span>
+      </h1>
+
+      <p class="lede entra e3">
+        Tocas cualquier punto del mapa y obtienes una estimación <b>en ese punto</b>,
+        no la lectura de la estación más cercana.
+      </p>
+      <p class="sub entra e4">
+        En La Palma eso no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa
+        escala la altitud manda sobre la distancia en cualquier variable atmosférica.
+        Dos puntos a cinco kilómetros pueden tener el viento al revés.
+      </p>
+
+      <div class="hero-actos entra e5">
+        <a class="btn" href="https://app.tiempopalmero.com">
+          <span>Abrir el mapa</span>
+          <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
+        </a>
+        <a class="btn btn--fino" href="#modelo"><span>Cómo se calcula</span></a>
+      </div>
     </div>
 
-    <dl class="strip rise d5">
-      <div><dt>Red del Cabildo</dt><dd>52 <small>estaciones</small></dd></div>
-      <div><dt>Desnivel de la isla</dt><dd>2426 <small>m en 42 km</small></dd></div>
-      <div><dt>Datos abiertos</dt><dd>49 <small>conjuntos</small></dd></div>
-      <div><dt>Coste para ti</dt><dd>0 <small>· sin registro</small></dd></div>
+    <dl class="tira entra e6">
+      <div><dt>Red del Cabildo</dt><dd><b data-cuenta="52">52</b><small>estaciones</small></dd></div>
+      <div><dt>Desnivel de la isla</dt><dd><b data-cuenta="2426">2426</b><small>m en 42 km</small></dd></div>
+      <div><dt>Datos abiertos</dt><dd><b data-cuenta="49">49</b><small>conjuntos</small></dd></div>
+      <div><dt>Coste para ti</dt><dd>0<small>sin registro</small></dd></div>
     </dl>
 
-    <figure class="shot rise d6">
-      <img src="/img/isla-completa.jpg" width="1800" height="1180" fetchpriority="high" decoding="async"
-           alt="La isla de La Palma en vista tridimensional, con las nubes y la lluvia del momento dibujadas en volumen sobre el relieve y pastillas con la temperatura de cada estación repartidas por la costa y la cumbre. En el panel lateral, el estado del modelo: 35 de 52 estaciones activas, gradiente medido 7,24 °C/km, RMSE de validación 1,24 °C.">
-      <figcaption><b>La isla, ahora mismo.</b> Las nubes y las cortinas de lluvia se dibujan en volumen sobre el relieve, a la cota que les toca. A la izquierda, el modelo enseñando su propio error.</figcaption>
+    <figure class="captura sube" data-par>
+      <div class="marco">
+        <div class="marco-hd">
+          <span>La isla · ahora mismo</span>
+          <span class="en-vivo"><i aria-hidden="true"></i>en marcha</span>
+        </div>
+        <img src="/img/isla-completa-1800.jpg"
+             srcset="/img/isla-completa-900.jpg 900w, /img/isla-completa-1800.jpg 1800w"
+             sizes="(min-width:1240px) 1040px, 100vw"
+             width="1800" height="1180" fetchpriority="high" decoding="async"
+             alt="La isla de La Palma en vista tridimensional, con las nubes y la lluvia del momento dibujadas en volumen sobre el relieve y pastillas con la temperatura de cada estación repartidas por la costa y la cumbre. En el panel lateral, el estado del modelo: 35 de 52 estaciones activas, gradiente medido 7,24 °C/km, RMSE de validación 1,24 °C.">
+      </div>
+      <figcaption><b>Las nubes y las cortinas de lluvia se dibujan en volumen</b> sobre el relieve, a la cota que les toca. A la izquierda, el modelo enseñando su propio error.</figcaption>
     </figure>
+
   </div>
 </section>
 
-<!-- ═══ 01 QUÉ HACE ═════════════════════════════════════════════════ -->
+<!-- ═══ 01 · 400 m ══════════════════════════════════════════════════════════ -->
 <section id="hace">
   <div class="wrap">
-    <div class="head">
-      <span class="num">01</span>
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">01</span>
+      <span class="rot">400 m · medianías</span>
       <h2>Lo que se ve en pantalla</h2>
-      <p>Contado por lo que hace, no por cómo lo hace. Todo lo que sigue está en marcha ahora mismo, gratis y sin instalar nada.</p>
+      <p class="entrada">Contado por lo que hace, no por cómo lo hace. Todo lo que sigue está en marcha ahora mismo, gratis y sin instalar nada.</p>
     </div>
 
-    <div class="feats">
+    <div class="rasgos">
 
-      <article class="feat">
-        <div class="feat-txt">
+      <article class="rasgo sube">
+        <div class="rasgo-txt">
+          <span class="rot">Malla interpolada</span>
           <h3>Una malla, no unos cuantos puntos</h3>
           <p>La red del Cabildo publica lecturas en 52 emplazamientos. Entre ellos hay
              barrancos, medianías y caras de sotavento donde no mide nadie — y donde vive
@@ -434,16 +214,46 @@ footer{border-top:1px solid var(--rule);padding-block:2.8rem 3.4rem;font-size:.9
              elevación</strong>, corrigiendo por altitud con el gradiente que la propia red
              mide en ese instante. Temperatura, humedad, punto de rocío y déficit de vapor.</p>
         </div>
-        <figure class="shot">
-          <img src="/img/estacion-detalle.jpg" width="1800" height="1180" loading="lazy" decoding="async"
-               alt="Vista cercana de la Caldera de Taburiente sobre ortofoto, con la ficha de la estación de Los Llanos abierta: temperatura 23,4 °C, humedad 73 %, punto de rocío calculado 18,3 °C, y una curva de las últimas 24 horas.">
-          <figcaption><b>Cada punto trae su ficha</b> con la última lectura, su antigüedad y la curva de las 24 h — y dice cuánto del intervalo transmitió de verdad.</figcaption>
+        <figure class="captura">
+          <div class="marco">
+            <div class="marco-hd"><span>Punto consultado · El Paso</span><span class="en-vivo"><i aria-hidden="true"></i>estimado</span></div>
+            <img src="/img/punto-consultado-1800.jpg"
+                 srcset="/img/punto-consultado-900.jpg 900w, /img/punto-consultado-1800.jpg 1800w"
+                 sizes="(min-width:980px) 600px, 100vw"
+                 width="1800" height="1311" loading="lazy" decoding="async"
+                 alt="La isla sobre la malla interpolada en tonos cálidos, con las pastillas de temperatura de cada estación. A la derecha, la ficha del punto tocado en El Paso a 509 m: 23,2 °C estimados con un margen de ±2,1 °C, humedad 78 %, punto de rocío 19,1 °C, y la lista de las tres estaciones que más han contribuido con su distancia y su desnivel.">
+          </div>
+          <figcaption><b>Cada estimación lleva su margen y su procedencia:</b> ±2,1 °C en este punto, y las tres estaciones que más pesan, con la distancia y el desnivel de cada una.</figcaption>
         </figure>
       </article>
 
-      <article class="feat">
-        <div class="feat-txt">
-          <h3>Las capas de la isla, encima</h3>
+      <article class="rasgo sube">
+        <div class="rasgo-txt">
+          <span class="rot">Ficha de estación</span>
+          <h3>Cada sensor enseña lo que transmitió</h3>
+          <p>La ficha de una estación trae su última lectura, cuánto hace que llegó y la
+             curva de las 24 horas — y dice <strong>cuánto del intervalo transmitió de
+             verdad</strong>, que no es lo mismo que estar dada de alta.</p>
+          <p>Sobre la ortofoto de GRAFCAN a la resolución real de tu pantalla, porque el
+             barranco del que hablas se reconoce mejor visto que nombrado.</p>
+        </div>
+        <figure class="captura">
+          <div class="marco">
+            <div class="marco-hd"><span>Estación · Los Llanos</span><span class="en-vivo"><i aria-hidden="true"></i>24 h</span></div>
+            <img src="/img/estacion-detalle-1800.jpg"
+                 srcset="/img/estacion-detalle-900.jpg 900w, /img/estacion-detalle-1800.jpg 1800w"
+                 sizes="(min-width:980px) 600px, 100vw"
+                 width="1800" height="1180" loading="lazy" decoding="async"
+                 alt="Vista cercana de la Caldera de Taburiente sobre ortofoto, con la ficha de la estación de Los Llanos abierta: temperatura 23,4 °C, humedad 73 %, punto de rocío calculado 18,3 °C, y una curva de las últimas 24 horas.">
+          </div>
+          <figcaption><b>La curva de las 24 h,</b> la antigüedad de la lectura y el porcentaje del intervalo que la estación llegó a transmitir.</figcaption>
+        </figure>
+      </article>
+
+      <article class="rasgo sube">
+        <div class="rasgo-txt">
+          <span class="rot">Capas de la isla</span>
+          <h3>Todo lo demás, encima</h3>
           <p>Senderos y sus puntos de interés, la red de guaguas, las carreteras insulares
              y el viario completo, los aforos de tráfico, las cámaras de incendios, las
              webcam, los miradores, el patrimonio, la recarga eléctrica.</p>
@@ -451,10 +261,37 @@ footer{border-top:1px solid var(--rule);padding-block:2.8rem 3.4rem;font-size:.9
              1:20.000</strong> y la <strong>ortofoto 2024-2025</strong> de GRAFCAN, pedidas
              a la resolución real de tu pantalla.</p>
         </div>
-        <figure class="shot">
-          <img src="/img/tazacorte-mar.jpg" width="1800" height="1190" loading="lazy" decoding="async"
-               alt="Puerto de Tazacorte visto desde arriba sobre ortofoto de alta resolución, con el mar simulado en movimiento frente a la playa y el panel de capas abierto a la izquierda mostrando estaciones, sensores de CO₂, senderos, carreteras y webcam.">
-          <figcaption><b>El mar se mueve de verdad:</b> dos trenes de olas sobre la batimetría real, con la marea a su altura. Donde el fondo sube, la ola crece y rompe.</figcaption>
+        <figure class="captura">
+          <div class="marco">
+            <div class="marco-hd"><span>Fondo satélite · vista 3D</span><span class="en-vivo"><i aria-hidden="true"></i>GRAFCAN</span></div>
+            <img src="/img/capas-satelite-1800.jpg"
+                 srcset="/img/capas-satelite-900.jpg 900w, /img/capas-satelite-1800.jpg 1800w"
+                 sizes="(min-width:980px) 600px, 100vw"
+                 width="1800" height="1139" loading="lazy" decoding="async"
+                 alt="La isla en vista tridimensional sobre la ortofoto territorial, con nubes en volumen alrededor y las pastillas de temperatura repartidas. El panel lateral muestra las capas encendidas: carreteras insulares, viario completo de OpenStreetMap, cobertura TDT, aforos de tráfico y senderos, cámaras de incendios y webcam de la isla.">
+          </div>
+          <figcaption><b>El viario completo de OpenStreetMap</b> —19.770 trazados y 3.373 km— frente a los 61 tramos que publica el Cabildo, y la colada de Tajogaite bajando hasta el mar sobre la ortofoto.</figcaption>
+        </figure>
+      </article>
+
+      <article class="rasgo sube">
+        <div class="rasgo-txt">
+          <span class="rot">Estado del mar</span>
+          <h3>El mar se mueve de verdad</h3>
+          <p>Dos trenes de olas sobre la <strong>batimetría real</strong>, con la marea a su
+             altura. Donde el fondo sube, la ola crece y rompe: no es una textura que se
+             desplaza, es el oleaje del momento leído sobre la profundidad de ese sitio.</p>
+        </div>
+        <figure class="captura">
+          <div class="marco">
+            <div class="marco-hd"><span>Puerto de Tazacorte</span><span class="en-vivo"><i aria-hidden="true"></i>oleaje</span></div>
+            <img src="/img/tazacorte-mar-1800.jpg"
+                 srcset="/img/tazacorte-mar-900.jpg 900w, /img/tazacorte-mar-1800.jpg 1800w"
+                 sizes="(min-width:980px) 600px, 100vw"
+                 width="1800" height="1191" loading="lazy" decoding="async"
+                 alt="Puerto de Tazacorte visto desde arriba sobre ortofoto de alta resolución, con el mar simulado en movimiento frente a la playa y el panel de capas abierto a la izquierda mostrando estaciones, sensores de CO2, senderos, carreteras y webcam.">
+          </div>
+          <figcaption><b>Donde el fondo sube, la ola crece y rompe.</b> La batimetría sale de EMODnet; el oleaje y la marea, del modelo del momento.</figcaption>
         </figure>
       </article>
 
@@ -462,62 +299,88 @@ footer{border-top:1px solid var(--rule);padding-block:2.8rem 3.4rem;font-size:.9
   </div>
 </section>
 
-<!-- ═══ 02 EL MODELO ════════════════════════════════════════════════ -->
-<section id="honesto">
+<!-- ═══ 02 · 1200 m · el mar de nubes ═══════════════════════════════════════ -->
+<section id="modelo">
   <div class="wrap">
-    <div class="head">
-      <span class="num">02</span>
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">02</span>
+      <span class="rot">1200 m · mar de nubes</span>
       <h2>El modelo enseña dónde se equivoca</h2>
-      <p>Una estimación sin su error al lado es una cifra bonita sin procedencia. Esto es lo que la aplicación pone en pantalla, en directo, sin que haya que pedirlo.</p>
+      <p class="entrada">Una estimación sin su error al lado es una cifra bonita sin procedencia. Esto es lo que la aplicación pone en pantalla, en directo, sin que haya que pedirlo.</p>
     </div>
 
-    <div class="sheet">
-      <div class="sheet-hd">
+    <div class="modelo">
+      <div class="modelo-hd">
         <span>Panel «Modelo» · valores en directo</span>
-        <span><b>lo que se ve en la aplicación</b></span>
+        <span class="der"><b>lo que se ve en la aplicación</b></span>
       </div>
-      <dl class="rows">
-        <div class="row">
+      <dl>
+        <div class="fila">
           <dt>Estaciones activas</dt>
-          <dd>El denominador de verdad, no el del catálogo: <b>35 de 52</b> el día de la captura. Las que llevan sin transmitir salen de la cuenta y se dice cuántas son.</dd>
+          <dd>
+            El denominador de verdad, no el del catálogo:
+            <span class="cifra"><b data-cuenta="35">35</b> de 52</span> el día de la captura.
+            Las que llevan sin transmitir salen de la cuenta y se dice cuántas son.
+            <span class="medida"><span class="barra" aria-hidden="true"><i data-barra="67.3"></i></span><small>67 % de la red transmitiendo</small></span>
+          </dd>
         </div>
-        <div class="row">
+        <div class="fila">
           <dt>Gradiente medido</dt>
-          <dd><b>7,24 °C/km</b> en ese instante — no los 6,5 del manual. Se recalcula con cada pasada, porque en una isla con inversión del alisio el del libro no vale.</dd>
+          <dd><span class="cifra"><b data-cuenta="7,24">7,24</b> °C/km</span> en ese instante — no los 6,5 del manual. Se recalcula con cada pasada, porque en una isla con inversión del alisio el del libro no vale.</dd>
         </div>
-        <div class="row">
+        <div class="fila">
           <dt>R² del ajuste</dt>
-          <dd><b>0,778</b>. Cuánto de lo que se ve lo explica la altitud. Cuando cae, la aplicación lo enseña caer.</dd>
+          <dd>
+            <span class="cifra"><b data-cuenta="0,778">0,778</b></span>. Cuánto de lo que se ve lo explica la altitud. Cuando cae, la aplicación lo enseña caer.
+            <span class="medida"><span class="barra" aria-hidden="true"><i data-barra="77.8"></i></span><small>77,8 % de lo que se ve lo explica la altitud</small></span>
+          </dd>
         </div>
-        <div class="row">
+        <div class="fila">
           <dt>RMSE de validación</dt>
-          <dd><b>1,24 °C</b>, calculado <strong>escondiendo cada estación por turno</strong> y reconstruyéndola con las demás. Es el error contra datos que el modelo no ha visto.</dd>
+          <dd><span class="cifra"><b data-cuenta="1,24">1,24</b> °C</span>, calculado <strong>escondiendo cada estación por turno</strong> y reconstruyéndola con las demás. Es el error contra datos que el modelo no ha visto.</dd>
         </div>
-        <div class="row">
+        <div class="fila">
           <dt>Margen calibrado</dt>
-          <dd><b>±1,02 °C</b>. La banda que acompaña a cada estimación está calibrada contra esa validación, no elegida a ojo.</dd>
+          <dd><span class="cifra">±<b data-cuenta="1,02">1,02</b> °C</span>. La banda que acompaña a cada estimación está calibrada contra esa validación, no elegida a ojo.</dd>
         </div>
-        <div class="row">
+        <div class="fila">
           <dt>Fuera del techo de la red</dt>
           <dd>Por encima de la estación más alta no se extrapola a ciegas: entran anclas de modelo global y la medida real del observatorio del Roque, a 2.387 m.</dd>
         </div>
       </dl>
     </div>
 
-    <div class="warn">
+    <figure class="captura sube" data-par>
+      <div class="marco">
+        <div class="marco-hd">
+          <span>Nubes y lluvia en 3D · experimental</span>
+          <span class="en-vivo"><i aria-hidden="true"></i>modelo global</span>
+        </div>
+        <img src="/img/nubes-lluvia-1800.jpg"
+             srcset="/img/nubes-lluvia-900.jpg 900w, /img/nubes-lluvia-1800.jpg 1800w"
+             sizes="(min-width:1240px) 1040px, 100vw"
+             width="1800" height="1137" loading="lazy" decoding="async"
+             alt="La isla vista casi a ras de horizonte, con nubes en volumen a la cota que les corresponde y cortinas de lluvia cayendo sobre la vertiente. El panel lateral explica la capa experimental de nubes y lluvia en 3D y advierte de que no es un radar ni una observación, sino un porcentaje de nubosidad por piso del modelo global.">
+      </div>
+      <figcaption><b>La propia aplicación se desmiente cuando toca:</b> «no es un radar ni una observación», dice el panel de esta capa. Lo que se ve es el porcentaje de nubosidad por piso del modelo global, en celdas de 5 km sobre la isla y de 25 km sobre el mar — la forma concreta de cada nube es una representación, no una nube que alguien haya visto.</figcaption>
+    </figure>
+
+    <div class="aviso sube">
+      <p class="rot"><i aria-hidden="true"></i>Control de calidad de la red</p>
       <h3>Un sensor descalibrado envenena el mapa entero</h3>
       <p>Hay uno a 1561 m que en agosto marcaba 9,7 °C. Pasa cualquier filtro de
          plausibilidad —a esa altitud no es un valor absurdo— pero arrastra la pendiente
          del ajuste y con ella la estimación de toda la isla. Detectarlo y descartarlo
-         mejora el RMSE un <strong>43,7 %</strong>.</p>
+         mejora el RMSE un <strong><span data-cuenta="43,7">43,7</span> %</strong>.</p>
       <p>Por eso el descarte no se hace en silencio: la aplicación lleva el censo de qué
          estaciones ha apartado y por qué. Y el detector se prueba por las dos orillas —
          una invasión de aire sahariano hizo subir una estación 6 °C en quince minutos, y
          eso no es una avería.</p>
     </div>
 
-    <div class="warn" style="border-color:rgba(200,80,60,.4);background:rgba(200,80,60,.07)">
-      <h3 style="color:#e08a6e">La capa de CO₂ falla en cerrado</h3>
+    <div class="aviso aviso--rojo sube">
+      <p class="rot"><i aria-hidden="true"></i>Dato de seguridad · caché de 30 s</p>
+      <h3>La capa de CO<sub>2</sub> falla en cerrado</h3>
       <p>La red DEMASE de Puerto Naos y La Bombilla mide gas volcánico del suelo, y sus
          sensores llegan a marcar concentraciones letales. Eso no es una capa más: es un
          dato de seguridad para la vida.</p>
@@ -528,104 +391,105 @@ footer{border-top:1px solid var(--rule);padding-block:2.8rem 3.4rem;font-size:.9
   </div>
 </section>
 
-<!-- ═══ 03 LOS DATOS ════════════════════════════════════════════════ -->
+<!-- ═══ 03 · 2000 m ═════════════════════════════════════════════════════════ -->
 <section id="datos">
   <div class="wrap">
-    <div class="head">
-      <span class="num">03</span>
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">03</span>
+      <span class="rot">2000 m · cumbre</span>
       <h2>Todo sale de datos abiertos</h2>
-      <p>La procedencia de cada byte importa, así que está escrita — aquí y dentro de la propia aplicación, fuente por fuente y con su licencia.</p>
+      <p class="entrada">La procedencia de cada byte importa, así que está escrita — aquí y dentro de la propia aplicación, fuente por fuente y con su licencia.</p>
     </div>
 
-    <div class="srcs">
-      <div class="src">
+    <div class="fuentes escalona">
+      <div class="fuente">
         <h3>Cabildo Insular de La Palma</h3>
         <p>Meteorología, calidad del aire, calidad del cielo, cámaras de incendios, senderos,
            aforos, sitios de interés, miradores y carreteras. Los 49 conjuntos del portal de
            datos abiertos, revisados uno por uno.</p>
         <span class="lic">CC-BY 4.0</span>
-        <a href="https://www.opendatalapalma.es" rel="noopener">opendatalapalma.es &rarr;</a>
+        <a href="https://www.opendatalapalma.es" rel="noopener">opendatalapalma.es <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
-      <div class="src">
+      <div class="fuente">
         <h3>IDECanarias · GRAFCAN</h3>
         <p>Cartografía oficial canaria: el Mapa Topográfico 1:20.000 y la Ortofoto
            Territorial 2024-2025, pedidas tesela a tesela y solo mientras se miran.</p>
         <span class="lic">Libre y gratuita</span>
-        <a href="https://www.idecanarias.es" rel="noopener">idecanarias.es &rarr;</a>
+        <a href="https://www.idecanarias.es" rel="noopener">idecanarias.es <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
-      <div class="src">
+      <div class="fuente">
         <h3>Open-Meteo</h3>
         <p>Las anclas por encima del techo de la red, el fondo del mapa de viento y el estado
            del mar. Plan gratuito de uso no comercial: esta aplicación no cobra, no tendrá
            suscripción y no mostrará publicidad.</p>
         <span class="lic">CC-BY 4.0</span>
-        <a href="https://open-meteo.com" rel="noopener">open-meteo.com &rarr;</a>
+        <a href="https://open-meteo.com" rel="noopener">open-meteo.com <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
-      <div class="src">
+      <div class="fuente">
         <h3>OpenStreetMap</h3>
         <p>El viario completo de la isla —19.770 trazados y 3.373 km— y los topónimos que el
            buscador entiende.</p>
         <span class="lic">ODbL 1.0</span>
-        <a href="https://www.openstreetmap.org/copyright" rel="noopener">openstreetmap.org &rarr;</a>
+        <a href="https://www.openstreetmap.org/copyright" rel="noopener">openstreetmap.org <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
-      <div class="src">
+      <div class="fuente">
         <h3>Copernicus EFFIS · EMODnet</h3>
         <p>El histórico de incendios con el que se valida el índice de riesgo, y la batimetría
            real sobre la que se calcula el oleaje.</p>
         <span class="lic">CC-BY 4.0</span>
-        <a href="https://forest-fire.emergency.copernicus.eu" rel="noopener">copernicus.eu &rarr;</a>
+        <a href="https://forest-fire.emergency.copernicus.eu" rel="noopener">copernicus.eu <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
-      <div class="src">
+      <div class="fuente">
         <h3>Mapzen Terrain Tiles · AWS</h3>
         <p>El modelo de elevación sobre el que se corrige la altitud, se dibuja el relieve y
-           se levanta la vista tridimensional. Un solo modelo para las tres cosas.</p>
+           se levanta la vista tridimensional. Un solo modelo para las tres cosas — y el
+           mismo del que salen las curvas de nivel de esta página.</p>
         <span class="lic">Dominio público / CC-BY</span>
-        <a href="https://registry.opendata.aws/terrain-tiles/" rel="noopener">registry.opendata.aws &rarr;</a>
+        <a href="https://registry.opendata.aws/terrain-tiles/" rel="noopener">registry.opendata.aws <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══ 04 CÓDIGO ═══════════════════════════════════════════════════ -->
+<!-- ═══ 04 · 2426 m · el Roque ══════════════════════════════════════════════ -->
 <section id="codigo">
   <div class="wrap">
-    <div class="head">
-      <span class="num">04</span>
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">04</span>
+      <span class="rot">2426 m · el Roque de los Muchachos</span>
       <h2>Todo el código es libre</h2>
-      <p>Apache 2.0 con atribución. El motor de interpolación, sus umbrales y las pruebas que los sostienen son públicos: cualquiera puede comprobar de dónde sale cada número.</p>
+      <p class="entrada">Apache 2.0 con atribución. El motor de interpolación, sus umbrales y las pruebas que los sostienen son públicos: cualquiera puede comprobar de dónde sale cada número.</p>
     </div>
 
-    <div class="repos">
+    <div class="repos escalona">
       <a class="repo" href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener">
-        <span class="tag">Aplicación web</span>
+        <span class="etiq">Aplicación web</span>
         <h3>andreapianidev/tiempo-palmero</h3>
         <p>El motor de interpolación, el control de calidad de la red, las capas y la escena
            tridimensional. React y MapLibre GL, sin proveedor de mapas de pago y sin clave de
-           API. Es lo que corre en <span style="color:var(--paper)">app.tiempopalmero.com</span>.</p>
-        <span class="go">Apache-2.0 &nbsp;·&nbsp; ver en GitHub &rarr;</span>
+           API. Es lo que corre en <strong>app.tiempopalmero.com</strong>.</p>
+        <span class="ir">Apache-2.0 · ver en GitHub <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></span>
       </a>
       <a class="repo" href="https://github.com/andreapianidev/tiempo-palmero-unity" rel="noopener">
-        <span class="tag">Gemelo digital · macOS · en desarrollo</span>
+        <span class="etiq">Gemelo digital · macOS</span>
         <h3>andreapianidev/tiempo-palmero-unity</h3>
-        <p>La isla reconstruida en tres dimensiones con Unity 6 HDRP, movida por esta misma
-           meteorología: el mar de nubes a la cota que le toca y el Atlántico con el viento
-           que se está midiendo. <strong style="color:var(--paper)">Todavía no está
-           terminada</strong> — el repositorio dice en qué punto va y sus imágenes están
-           marcadas como bocetos, no como capturas.</p>
-        <span class="go">Apache-2.0 &nbsp;·&nbsp; ver en GitHub &rarr;</span>
+        <p>La isla reconstruida en tres dimensiones con Unity 6 HDRP, alimentada por la misma
+           meteorología interpolada de la red del Cabildo. Gratis y de código abierto.</p>
+        <span class="ir">Apache-2.0 · ver en GitHub <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></span>
       </a>
     </div>
   </div>
 </section>
 
-<!-- ═══ 05 SIN RASTREO ══════════════════════════════════════════════ -->
+<!-- ═══ 05 ══════════════════════════════════════════════════════════════════ -->
 <section id="privacidad">
   <div class="wrap">
-    <div class="head">
-      <span class="num">05</span>
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">05</span>
+      <span class="rot">Sin contrapartida</span>
       <h2>Sin cookies, sin analítica, sin publicidad</h2>
     </div>
-    <div class="plain">
+    <div class="llano escalona">
       <div>
         <h3>No hay cuentas</h3>
         <p>No se pide un correo, no hay registro y no se puede pagar por nada. No hay
@@ -646,24 +510,28 @@ footer{border-top:1px solid var(--rule);padding-block:2.8rem 3.4rem;font-size:.9
   </div>
 </section>
 
-<section class="close-cta">
-  <div class="wrap">
+<section class="cierre">
+  <div class="wrap sube">
+    <p class="rot">2426 m · aquí se acaba la isla</p>
     <h2>Mira qué tiempo hace<br>donde estás tú.</h2>
     <p>En marcha, sin registro, sin clave de API y sin nada que instalar.</p>
-    <a class="cta" href="https://app.tiempopalmero.com">Abrir el mapa &rarr;</a>
+    <a class="btn" href="https://app.tiempopalmero.com">
+      <span>Abrir el mapa</span>
+      <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
+    </a>
   </div>
 </section>
 
 </main>
 
 <footer>
-  <div class="wrap foot-grid">
-    <p class="legal" style="margin:0">
-      <a href="https://app.tiempopalmero.com">app.tiempopalmero.com</a> &nbsp;·&nbsp;
-      <a href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener">Código</a> &nbsp;·&nbsp;
+  <div class="wrap pie">
+    <p>
+      <a href="https://app.tiempopalmero.com">app.tiempopalmero.com</a> ·
+      <a href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener">Código</a> ·
       <a href="mailto:andreapiani.dev@gmail.com">andreapiani.dev@gmail.com</a>
     </p>
-    <p class="legal" style="margin:0;text-align:right">
+    <p class="der">
       © 2026 Tiempo Palmero · Andrea Piani<br>
       NIE 02915190306-Z · Tijarafe, Santa Cruz de Tenerife · Islas Canarias<br>
       Datos del Cabildo Insular de La Palma (CC-BY) · Código Apache-2.0
@@ -673,40 +541,9 @@ footer{border-top:1px solid var(--rule);padding-block:2.8rem 3.4rem;font-size:.9
 
 </div>
 
-<script>
-/* La regla de altitud se ilumina con la sección que se está leyendo.
-   Es una mejora progresiva: sin JavaScript la página se lee igual. */
-(function () {
-  var marks = document.querySelectorAll('.mark')
-  if (!marks.length || !('IntersectionObserver' in window)) return
-  var byId = {}
-  marks.forEach(function (m) { byId[m.dataset.for] = m })
-  var obs = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-      var m = byId[e.target.id]
-      if (m) m.classList.toggle('on', e.isIntersecting)
-    })
-  }, { rootMargin: '-40% 0px -40% 0px' })
-  Object.keys(byId).forEach(function (id) {
-    var el = document.getElementById(id)
-    if (el) obs.observe(el)
-  })
-})()
-</script>
+<script src="/js/ascenso.js" defer></script>
+<script src="/js/revelar.js" defer></script>
+<script src="/js/viento.js" defer></script>
 
 </body>
 </html>
-<!--isla:inicio-->
-<svg class="isla" viewBox="0 0 1000 1622" preserveAspectRatio="xMidYMid meet"
-     fill="none" aria-hidden="true" focusable="false">
-<g class="iso" data-level="costa" style="--lv:0"><path d="M339 3.6L344.4 3.6L351.7 13.8L362.4 14.4L369.8 25.2L373.2 46.9L384.1 47.6L402 64.9L422.7 72.1L434.6 62.1L448.8 79.3L463.4 79.5L487.5 90.1L510.3 87.2L531.9 100L550.4 97.4L568 87.7L600.5 90.2L635.2 82.9L654.5 72.4L687 72.2L705 54.2L711.5 61.3L726 61.3L721 64.9L737.5 59.6L757.2 64.9L769.9 58.4L777.1 68.7L806 72.9L825.6 111.8L823.9 129.8L838 133.4L838.4 159.1L852.8 173.1L856.4 187.5L862 187.5L876.9 220L884.9 274L881.7 284.9L885.3 282.1L891.8 288.5L903.3 335.4L926.8 360.6L935.8 385.8L953.8 393.8L967.2 407.5L964.6 419.5L977.7 436.3L979.1 454.4L996.4 465.1L993 494L975.5 515.3L975.1 526.4L968.2 534L970.1 548.1L946.6 576L935.2 576.9L921 587.7L885.3 630.7L874.5 658.4L873.8 685.1L843.1 724.8L845.6 764.9L855.5 778.9L865.2 782.5L870.8 800.5L867.3 814.2L884.5 832.9L881.5 872.6L891.6 883.4L896.1 923.2L906 944.7L899.1 966.4L886.3 984.4L891.7 1016.8L885.1 1052.9L890.9 1060.1L881.7 1076.9L884.2 1089L874.5 1095.9L870.9 1106L870.7 1150.2L830.6 1207.9L780.7 1256.8L746.8 1352.2L730.3 1362.6L704.2 1420.7L683.4 1438.3L661.7 1477.9L646.5 1532.5L622.1 1571.6L617.5 1601L589.6 1618.5L531.9 1588.1L524.7 1573.4L509.1 1561.3L493.6 1539.7L488.7 1493.4L467.7 1456.7L460.9 1409.9L467.1 1395.4L463.7 1359.4L467.1 1345L452.9 1330.5L456.2 1307.5L449 1269.2L439.6 1262L438.2 1243.5L404.6 1204.3L402.2 1189.9L388.2 1168.3L384.1 1146.5L362.9 1135.8L340.9 1085.3L292.3 1049.3L288.9 1034.9L297.6 1025.9L297.6 994.2L279.5 948.3L266.1 933.9L248.6 897.8L247.1 875.9L232.7 857.1L229.1 860.9L223.6 858.2L218.2 828.6L207.4 825.5L190.2 807.7L175 776.8L153.9 757.2L158.8 739.2L156.9 724.4L144.3 710.3L149.9 699.5L142.6 674.3L137.1 670.7L138.9 659.7L132.2 649L131.7 633.5L117.5 616.6L121 605.8L116.8 587.7L97.2 558.9L95.6 526.4L66.9 497.6L52.4 462.6L27.4 443.5L21.6 425.5L5.7 403.8L12.2 382.2L16.3 382.2L4.2 346.2L3.6 320.9L9.1 314.1L9.5 299.3L19.9 285.6L41.6 274.1L48.8 249.1L70.4 248.9L77.6 238.1L95.6 227.8L110.1 203.4L103.6 187.5L125.7 176.7L133.8 151.4L142.5 151.5L146.1 144.4L140.9 129.8L149.7 123L165.6 122.6L193.3 104.6L203.9 93.8L210.3 72.1L221.8 61.8L232.7 68.4L236.3 61.8L255.2 64.9L268.7 54.3L276.5 54.1L283.1 43.8L297.6 36.1L294.3 21.6L308.4 3.7L315.6 4.3L322.8 16.1L330 4.2Z" pathLength="1"/></g>
-<g class="iso" data-level="300 m" style="--lv:1"><path d="M319.2 50.5L333.6 66.8L344.4 52.3L373.3 67L384.1 81.3L391.3 72.7L416.6 84.6L434.6 84.6L439.5 101L431 124.4L446.9 119L459.8 97.9L467 97.7L470.6 101L464.7 111.8L470.6 142.3L477.9 120.5L492.3 125.2L492.3 107.8L513.9 106.3L535.5 114.4L550.5 108.2L564.4 141.1L575.2 119.6L578.8 122L586 111.9L603.8 111.8L611.3 138.8L618.5 110.5L625.7 109.2L643.7 123L638.6 101L640.1 97.7L654.5 102L654 90.1L661.7 84.7L683.4 83.4L701.4 76.1L712.2 81.5L719.4 75.2L741.1 83.5L748.3 94.7L759.1 99.8L761.3 108.2L777 119L771.8 137L781.8 147.8L777.5 151.4L789.9 180.3L782.3 198.3L769.9 209.3L802.4 205.5L814.2 212.7L821.6 227.2L795.2 240L778.9 241.6L788 249.4L809.6 244.5L822.8 252.4L822.8 266.8L831.7 281.3L831 288.5L819.6 295.7L824.1 299.3L824 310.1L842 300.6L855.7 324.5L857.6 338.9L842 353.4L856.5 357.3L874.5 348.2L888.9 351.7L894.1 364.2L880.4 375L878.1 396.6L888.9 388.6L903.3 391.3L906.9 402.3L921.1 414.7L924.6 432.7L943.2 443.5L947.5 457.9L954.6 461.5L942.9 465.1L944.1 476L951.1 483.2L941.6 508.4L934.3 522.8L916.7 537.3L923.9 544.5L925.2 555.3L918.2 566.1L888.9 586L878.1 563.7L863.7 556.6L870.9 587.9L849.5 602.2L845.6 612L813.2 622.2L806 620.3L809.7 631L804.3 645.4L790.6 641.8L788 652.5L777.4 656.3L796.8 670.7L790.1 688.7L792.3 695.9L807.7 699.5L806.3 724.8L819.1 746.4L777.2 796.9L790.6 807.7L797 825.7L816.9 847.4L825.6 887L826.4 944.7L821.2 970L826.7 984.4L838.1 991.6L842.6 1002.4L831.5 1034.9L832.7 1081.7L822.8 1143L787.4 1226L760.7 1247.6L751.3 1265.6L733.9 1283.7L726.8 1319.7L706.7 1366.6L681.8 1399L623 1507.2L578.8 1546.1L557.2 1555L546.4 1550.6L535.5 1533.9L525.4 1496.4L513.9 1476.9L509.3 1435.1L499.7 1409.9L499.4 1384.6L481.8 1319.7L463.2 1287.3L446.8 1204.3L423.8 1171.9L403.4 1125L391.3 1109.3L381.7 1067.3L372.1 1056.5L374.9 1042.1L365.3 1024L363.4 970L350.2 941.1L351 912.3L343.9 890.6L349 872.6L337.7 865.4L326.4 842.1L304.4 840.2L310.7 822.1L304.8 806.7L280.4 796.9L291.3 771.6L295.5 742.8L345.9 703.1L367.6 670.7L358.9 670.5L322.8 699.6L308.4 700.8L305.2 717.6L282.1 735.6L261.5 769.4L247.1 774.6L232.7 801.5L213.5 807.7L194.3 778.9L169.7 703.1L171.6 688.7L156.2 670.7L155.9 656.3L148 641.8L169.8 616.6L146.1 621.3L140.8 616.6L113 558.9L112.3 537.3L92 504.8L94 494L79.6 490.4L77.7 454.3L63.2 451.4L34.3 408.9L21.9 367.8L27.3 353.4L15.4 338.9L17.7 313.7L34.3 294.6L41.6 294L48.8 280.5L81.2 263.1L88.4 262.8L99.2 274.3L94.9 245.2L110.1 230.9L119.6 212.7L135.3 202.2L150.9 209.1L152 187.5L164.3 180.3L158.9 173.1L166.9 155L178.6 159.5L178.8 140.6L197.1 126.2L210.2 104.6L224.2 104.6L223.1 93.8L243.5 81.9L283.1 77.6L286.7 81.3L293.5 64.9L312 64.2Z" pathLength="1"/><path d="M320.9 908.7L329.7 912.3L326.4 919L319.5 915.9Z" pathLength="1"/><path d="M329.4 962.7L338.4 970L330 972.2Z" pathLength="1"/></g>
-<g class="iso" data-level="600 m" style="--lv:2"><path d="M304.3 93.8L322.8 95.6L330 91.7L337.2 98.2L344.4 94.6L366.1 99.6L384.1 130.7L389.4 122.6L388.6 111.8L394.9 108.2L411.5 122.6L413.6 133.4L408.1 147.8L420.2 161.3L422 147.8L449 129.1L459.8 139.8L456.2 151.4L467 171.6L481.5 151.4L488.7 155.7L499.5 142.4L521.1 151.5L542.8 153.7L551.9 162.3L548.1 180.3L553.6 199.4L559.6 194.7L560.7 176.7L575.2 160.9L589.6 168.3L611.3 163.3L618.5 186.1L625.7 191.3L629.3 158.6L635.5 151.4L658.1 160.3L665.4 169.7L669 166.9L666.9 155L673.9 151.4L668.7 137L672.6 129.7L708.6 131.4L724.7 140.6L723.3 151.4L738.6 162.3L733.5 173.1L741.1 177.5L750.3 194.7L748 201.9L712.6 227.2L737.5 240.9L755.5 234.4L758.3 238L744.7 255.3L730.3 261.1L719.4 273.5L711.9 274L708 284.9L762.7 265.2L777.1 271.2L781.2 284.9L794.4 295.7L787.3 310.1L792.8 320.9L783.5 338.9L807.9 335.3L810.2 342.6L794.5 360.6L817.2 371.4L806 380.3L804.5 389.4L827.6 391L834.6 407.5L827.6 423.9L845.6 420.9L856.1 439.9L867.3 445.6L879.4 439.9L880.2 454.3L896.1 468.8L879.2 490.4L901.8 504.8L878.1 508.1L867.1 512L868.1 519.2L849.3 522.1L860.1 535.4L842 524L833.7 526.4L845 551.7L835 555.3L836.8 562.5L822.8 573.3L822 584.1L805.1 591.4L802.4 599.2L801 591.4L784.3 587.9L780.7 612.1L748.3 596.8L760.4 620.2L759.1 626.9L737.5 617.6L714.8 620.2L737.5 625.3L749.4 645.4L745.1 652.6L733.7 656.3L746 667.1L746.6 677.9L739.6 685.1L745.3 695.9L735.2 710.3L734.4 721.2L725.5 724.8L736 735.6L736.1 753.6L726.7 759.8L717.1 757.2L727.8 793.3L716.1 829.3L725.4 861.8L745.4 894.2L748.3 912.7L762.7 933.9L779.1 944.7L790.7 1002.4L786.9 1038.5L792.1 1085.3L781.4 1132.2L786.4 1143L773.5 1149.3L750.3 1182.7L744.7 1214.1L716.3 1236.8L704.6 1254.8L692.4 1290.9L695.3 1312.5L661 1395.4L585.4 1478.4L582.4 1489.8L560.8 1503.4L553.1 1500L560.1 1496.4L555.9 1489.2L558 1474.8L536.8 1438.7L535.8 1413.5L505.9 1359.4L496.5 1326.9L498.8 1316.1L484.8 1287.3L477.7 1211.5L467.4 1193.5L468.5 1139.4L455.1 1125L451.7 1107L440.7 1099.8L447.2 1092.6L454.1 1052.9L447.2 1038.5L444.2 1009.6L450.5 991.6L450.1 944.7L432 869L435.6 840.2L431.4 822.1L436.9 804.1L429.7 796.9L433.2 778.9L391.3 763.4L380.5 749.3L369.5 746.4L362.5 733.8L355.3 735.6L350.4 728.4L372.3 688.7L392.1 674.3L404.6 656.3L420.1 620.2L463.4 599.8L481.5 598.8L478.6 591.4L485.2 584.1L463.4 589.7L463.4 569.4L449 591.7L444.4 580.5L447.3 573.3L437 566.1L437.2 580.5L427.4 600.2L416.6 599.8L396.3 609.4L391.3 621.3L380.5 623.9L380.5 636L362.5 649.3L351.7 649L322.8 661.4L315.6 674.2L300.7 681.5L297.6 700.7L268.7 720.5L239.9 753.9L235.3 706.7L220.4 685.1L198.6 623.8L214.7 605.8L193 604.1L177.9 591.4L169.5 558.9L120 504.8L121.7 490.4L109.8 486.8L105.6 479.6L107 468.8L101.9 461.5L120.9 453.3L122.8 447.1L95.6 439.1L93.3 432.7L101.6 425.5L85.9 418.3L77.6 405.2L56.7 393L61.8 367.8L80.7 342.6L88.4 341.8L88.7 324.5L106.5 298.3L120.9 310.5L138.9 315.8L127.4 299.3L124.5 282.4L146.1 272.6L164.1 245.5L189.4 239.9L177.2 230.8L176.9 223.6L189.4 215.7L203.8 220.7L200.2 202.4L211 198.5L225.4 181.6L238.2 180.3L224.9 165.9L232.7 151.6L243.5 152.2L247.1 139.9L254.3 135.2L261.5 137.4L267.7 126.2L290.4 121.8L294 111.6L302.3 111.8Z" pathLength="1"/></g>
-<g class="iso" data-level="900 m" style="--lv:3"><path d="M358.1 147.8L361.5 155L351.7 176.7L355.3 179.5L369.7 165.8L384.1 167L391.3 172.1L394.9 189.4L398.5 189.2L405.3 180.3L405.7 169.3L409.3 212.9L431 183.5L441.8 182.5L442.5 194.7L452.6 192.7L470.6 217L477.9 201L485.1 198.5L485.5 191.1L495.9 195.7L503.1 190.9L513.9 199.3L535.5 196.5L531.9 216.3L539.2 231.8L553.6 216.5L569.5 212.7L571.6 200.9L611.3 194.1L614.9 220L607.5 238L611.3 245.5L640.1 203.8L647.3 202.2L654.5 209.8L661.7 198.4L665.4 200.9L687.2 223.6L677.6 245.2L676.2 266.4L683.4 266.7L694.2 252.9L704.3 263.2L692.7 299.3L680 310.1L676.3 324.5L679.8 326L690.6 314.4L715.8 308.4L728 292.1L737.5 290.6L753.1 313.7L747.7 324.5L758 335.3L753.6 349.8L771.1 357L759.1 366.9L749.2 389.4L766.3 380.2L778.3 385.8L769.2 403.8L773.5 418.3L768.4 432.7L802.7 421.9L788 443.8L795.2 450L806 447.6L813.9 454.3L812 465.1L827.8 486.8L816.8 505.5L792.8 508.4L809.2 530.1L801.4 540.9L804.2 558.9L796.4 566.1L777.1 568.2L769.9 573.6L748.3 564.2L759.1 587.4L697.8 568L705 581.6L734.6 605.8L719.4 608.3L686.8 602.2L687.8 616.6L672.6 625.3L676.2 630.7L715.8 632.4L732.7 638.2L724.4 645.4L698.9 652.6L705 661.4L723.1 670.7L712.2 678L715.1 685.1L707.4 699.5L697 703.1L692.5 721.2L700.2 732L691.6 739.2L678.1 739.2L683.6 757.2L679.8 782.5L686.1 793.3L677 825.7L687.8 843.8L683 854.6L689.1 869L683.4 897.8L676 908.7L734.9 966.4L745.8 1016.8L735.7 1049.3L748.9 1060.1L736.4 1081.7L740.2 1121.4L725.6 1143L706.4 1197.1L679.5 1226L667.2 1247.6L659.7 1269.2L662.6 1298.1L643.9 1355.8L611.3 1398.6L589.6 1410.6L578.8 1412.4L559.4 1402.7L545.8 1381L529 1330.5L516.3 1319.7L521 1305.3L510.2 1280.1L507.6 1247.6L512.9 1233.2L512.4 1207.9L494.8 1175.5L486 1099.8L497.6 1042.1L498.8 1006L492.3 966.4L504.5 937.5L501.8 926.7L506.6 901.4L513.9 892.1L534.2 883.4L548.5 869L550 860.5L557.2 853.6L564.4 854.4L571.6 840.5L594.7 829.3L603.3 818.5L603.4 807.7L578.8 762.1L564.4 753L557.2 753.4L550 769.4L542.8 760.6L528.3 769.5L517.5 763.8L510.3 767.6L499.5 759.9L492.3 773L470.2 768L467 757.2L470.7 742.8L459.8 741.7L456.2 735.3L445.4 744L434.6 743.9L427.4 737.6L420.2 740.8L409.2 735.6L405.7 726.1L377.5 717.6L420.4 659.9L423.8 648.8L434.7 641.8L438.4 623.8L463.4 615.9L492.3 630.5L498.8 609.4L521.1 614.7L524 609.4L517.4 587.7L526 584.1L532.2 569.7L521.1 570.8L506.7 561.7L483.7 566.1L507.1 537.3L479.1 530.1L494.3 501.2L492.3 498L481.5 503.3L474.2 490.9L467.9 512L452.6 530.2L443.7 530.1L420.2 551.4L409.5 551.7L403.5 573.3L384.5 580.5L384.1 599.2L366.1 600.6L362.4 620.2L348 620.8L279.5 694.5L264 656.3L261.3 645.4L265 638.2L246.9 613L259.4 598.6L255 587.7L243.3 587.7L239.9 570.4L229.1 572.5L225.4 564.6L217.1 562.5L206.4 526.4L196.6 528.6L185.8 522.8L167.8 505.4L156.4 486.8L162.1 472.4L144 465.1L150 432.7L140.3 432.7L138 418.3L144.7 407.5L127.2 396.6L145.3 382.2L145.6 364.2L153.3 353L180.7 349.8L174.7 338.9L182.2 306.5L189.9 299.3L185.4 292.1L207.4 265.1L221.8 277.5L226 274L220.9 259.6L228.2 252.4L224.7 241.6L243.5 237.1L247.1 227.9L257.9 229.5L261.6 220L283.4 212.7L272.3 208.1L265.1 193L290.4 202L306.2 191.1L304.8 183.4L290 176.7L288.4 165.9L297.6 161.8L304.8 149.2L319.2 152.6L322.8 163.1L333.6 154.4L344.4 156.7Z" pathLength="1"/></g>
-<g class="iso" data-level="1200 m" style="--lv:4"><path d="M592.2 234.4L604.1 297.4L613 284.9L618.5 257.5L636.5 247.7L650.2 259.6L638.4 277.6L658.2 284.9L652 302.9L656.3 313.7L669.7 306.5L654 335.3L641.7 346.2L650.9 348.2L657 357L652.5 367.8L665.4 368.9L679.8 341.9L697.8 327.1L705 327.9L705 340.4L720.7 342.6L715.4 360.6L726.2 364.2L714.4 378.6L730.3 380.8L732.1 385.8L705.9 411.1L708.6 414.4L748.3 404.7L733 429.1L744.7 433.3L751.9 450.7L762.7 454.3L746.3 465.1L782.1 468.8L775.5 486.8L751 508.4L773.1 522.8L760.2 533.7L751.9 550.5L733 544.5L728.8 551.7L732.2 566.1L726.7 568.2L705 559.2L679.8 557.4L678.6 562.5L699.3 591.4L672.6 588.4L673.8 598.6L669 603.7L634.3 609.4L658.9 627.4L656.1 641.8L679.8 642.3L686.9 649L683.2 659.9L689.5 663.5L684 670.7L682.6 688.7L669.4 692.3L677.7 710.3L657.3 728.4L656.9 753.6L651.6 760.8L658.1 793.3L654.8 818.5L661.9 865.4L656.8 876.2L660 879.8L654.5 921L641.6 933.9L655.3 959.1L679.9 980.8L693.4 1002.4L704.7 1045.7L694 1103.4L698.8 1121.4L691 1135.8L686.9 1161.1L673.7 1189.9L654 1211.5L624.1 1301.7L607.6 1323.3L611.3 1345L604.1 1356.8L589.6 1344.4L575.2 1347.7L568 1343.4L548.1 1305.3L541.1 1251.2L546.4 1215.2L534.5 1186.3L535.4 1175.5L517.5 1146.1L515.7 1103.4L526.2 1056.5L523.8 1045.7L532.8 1024L525.5 995.2L538.3 970L541.7 948.3L555.1 937.5L550 913.1L560.8 915.8L575.2 928.9L589.6 920.6L604.1 930.2L605.5 923.1L618.2 919.5L629.5 901.4L636.5 872.6L632.9 848.7L626.3 840.2L634.6 814.9L624.4 778.9L626.7 764.4L618.5 749.7L611.3 749.4L599.2 728.4L601.8 717.6L575.6 685.1L574.7 674.3L550 652.5L546 652.6L545.2 670.7L553.4 685.1L553.6 708.7L539.2 712.9L524.7 708.2L510.3 715.7L503.1 711.7L495.9 715.7L488.7 710.7L474.2 712.9L445.4 698.2L434.6 711.5L420.2 711.5L415.6 703.1L399 703.1L456.2 632.5L463.4 633.6L474.2 645.8L488.7 641.3L499.5 654.7L506.2 649L506.7 628L521.1 636.5L531.9 630.1L543.3 605.8L540.7 591.4L558.1 558.9L553.6 550.9L529.7 540.9L529.4 526.4L550.4 515.6L535.5 501.4L508.6 512L525.3 476L521.1 470.5L513.9 472.5L495.9 459.8L488.7 459.9L477.9 441.6L472 461.5L458.4 476L452.6 490.4L433 490.4L420.2 507.4L416.6 530.3L405.7 533.3L380.5 554.4L366 584.1L301.2 654.3L294.9 638.2L301.5 620.2L295.3 613L303.6 605.8L296.8 598.6L304.1 587.7L288.7 580.5L286.4 548.1L268.7 556.3L261.5 541.1L250.7 542.7L229 522.8L235.4 512L224 508.4L211.8 494L202.3 465.1L206.3 457.9L200 454.3L210.1 443.5L206.4 421.9L210 389.4L232.7 372.6L242 371.4L234.5 357L242.2 338.9L239 331.7L247.3 328.1L259.2 310.1L271.3 310.1L268.7 294.9L275.9 295.9L315.6 269.5L337.2 272.9L394.9 262.1L427.4 270.6L427.5 259.6L434.6 256L452.6 255L456.2 261.7L470.6 258.9L481.5 274.8L488.7 254.6L499.5 253.1L506.7 258.7L517.5 252.8L524.7 276.5L539.2 255.5L550 262.9L554.2 248.8L568 237.4L586 247.4Z" pathLength="1"/></g>
-<g class="iso" data-level="1500 m" style="--lv:5"><path d="M567.8 281.3L575.2 288.9L582.4 285.9L586 289.9L584.3 306.5L589.6 326.4L603.3 320.9L618.5 300.2L625 302.9L623 313.7L628.1 320.9L641.6 324.5L613.4 357L615 364.2L627.4 371.4L625.7 389.2L643.7 385.6L654.5 396.1L661.7 381.9L676.6 375L683.4 364.9L688.6 393L698.3 400.2L689.2 407.5L683.6 421.9L708.3 429.1L712.2 440.1L722.5 447.1L719.4 452.2L706.6 454.3L720 476L706.7 486.8L721.8 504.8L719.4 521.1L705 521.8L701.4 536.3L687 535.8L676.2 547.6L659.1 548.1L653.8 558.9L671.4 569.7L657.1 576.9L654.5 590.7L603.2 602.2L617.8 623.8L636.5 627.2L642.2 638.2L639.9 649L652.5 656.3L654.6 677.9L644 692.3L652.5 703.1L635.9 724.8L636.5 743.5L632.9 745.9L617.3 724.8L615.3 710.3L549.1 627.4L558.7 602.2L558.7 587.7L572.9 566.1L565.3 533.7L575.2 512.4L571.6 498.4L556.7 494L555 472.4L542.8 474.4L532.5 457.9L513.6 457.9L513.9 448.2L506.7 437L499.5 437.5L488.7 427.3L470.6 421L459.8 461.1L445.4 467.5L434.6 482.8L421.4 486.8L409.8 522.8L402.1 522.3L393.9 533.7L373.3 543.5L362.4 558.9L355.4 584.1L333.6 607.4L326 587.7L331.9 569.7L319.2 571.1L317.4 562.5L304.6 558.9L308.4 546.3L319.2 543.8L329.8 533.7L326.4 528.8L304.8 524.4L286.5 530.1L272.3 512.6L265.1 514.3L259.6 508.4L262.8 497.6L250.7 486.8L251.8 476L265.1 454.3L260 443.5L264.3 432.7L259.5 425.5L264.3 407.5L272.3 401.3L292.3 403.8L286.9 378.6L281.9 375L286.7 347.8L301.2 336.2L313.2 338.9L309 324.5L319.2 315.3L362.5 302.8L371.2 313.7L380.5 314.1L387.7 297.2L405.7 298.2L412.9 313.8L431 308.2L445.4 314.4L444 295.7L456.2 294L467 298.3L477.9 322.9L487.8 295.7L499.5 289.1L521.1 320.5L531.9 301.8L539.2 309.8L550 290.7L560.8 293.3Z" pathLength="1"/><path d="M458.8 649L488.7 673.2L506.7 670.1L524.7 655.2L528.9 667.1L474.2 688.4L449 673.6L427.4 685.6Z" pathLength="1"/><path d="M584.5 984.4L614.9 987.3L623.9 1009.6L634.1 1020.4L649.8 1016.8L651.4 1045.7L645.1 1052.9L666.1 1074.5L658.1 1080.3L650.1 1099.8L658.1 1136.6L640.8 1175.5L639.4 1204.3L632.3 1226L613.3 1244L602.1 1265.6L601.7 1283.7L589.6 1292.4L568.5 1269.2L574.8 1254.8L571.3 1215.2L564.8 1200.7L562.4 1150.2L551.2 1117.8L564.5 1067.3L556.1 1056.5L557.6 1024L552.5 1002.4Z" pathLength="1"/></g>
-<g class="iso" data-level="1800 m" style="--lv:6"><path d="M561.9 317.3L568 315.8L573.2 320.9L573 357L589.6 342.3L604.1 342.7L598 357L603.5 367.8L597.7 378.6L612.9 382.2L612.3 396.6L605.4 407.5L622.1 407.9L640.1 400.4L643.4 403.8L658.2 429.1L656.8 447.1L661.4 454.3L656.5 461.5L663.6 472.4L661.5 486.8L672.8 486.8L673.6 504.8L661.7 512L661.7 521.9L643.7 528.1L641.4 540.9L626 548.1L632.6 562.5L627.5 580.5L611.3 587.9L593.2 581.2L586.8 591.4L589.3 616.6L597.1 620.2L599.2 631L622.1 647.6L620.3 667.1L625.4 674.3L622.1 696.8L615 692.3L611 677.9L600.8 670.7L596.8 658.1L557.8 623.8L583 566.1L581.6 537.3L587.8 522.8L582.5 504.8L587.2 479.6L578.8 479.8L568 489.2L563.3 476L571.6 461.1L546.4 462.5L541.3 450.7L528.3 447.7L506.7 417.4L485.1 419.2L470.6 407.6L459.8 418.6L454 450.7L438.2 449.9L431 473.2L416.6 469.1L413.1 472.4L407.9 497.6L394.9 508.4L391.3 522.2L373.3 532.6L348 559.8L335.8 551.7L351.5 537.3L342.9 522.8L350.8 512L349.4 504.8L333.6 504L315.6 512.6L303.2 497.6L303.1 436.3L308.4 429.9L322.8 430.3L328.5 425.5L318.9 407.5L320.3 378.6L348 340.6L362.5 335L380.5 344.5L383.8 335.3L394.9 335.4L398.5 326.7L420.2 343.4L431 329.4L445.4 349.2L456.2 349.2L467 339.7L492.3 358.8L503.1 338.1L510.3 347.1L524.7 350.8L546.4 325.1L557.2 324.7Z" pathLength="1"/><path d="M599.1 1063.7L605.4 1067.3L605.2 1085.3L618.5 1092.6L624.4 1103.4L614.9 1119.1L602.4 1121.4L608.9 1132.2L606.8 1143L615.6 1168.3L613.3 1200.7L617.8 1207.9L611.3 1215.5L596.8 1197.1L598.3 1182.7L585.3 1150.2L589.1 1125L583 1114.2L586 1105.6L597.3 1103.4L591.2 1096.2L593.2 1070.5Z" pathLength="1"/></g>
-<g class="iso" data-level="2100 m" style="--lv:7"><path d="M422 360.6L431 357.5L445.4 370.3L474.2 359.8L485.1 379.1L495.9 377.3L506.7 366.2L528.3 367L550 360.6L544.6 375L557.2 383.4L568 383.8L571.6 406.1L579.9 407.5L583.8 421.9L618.5 429.1L613.9 439.9L620.1 447.1L623.2 483.2L615.8 494L622.1 516.3L611.3 528.4L605.1 526.4L598.9 504.8L601.1 472.4L586.9 465.1L583.1 450.7L560.8 443.5L553.6 445.9L542.8 429.8L534.5 429.1L530.4 414.7L517.7 411.1L513.9 403.4L499.5 398.7L488.7 410.6L470.6 395.2L452.6 409.2L449 437.9L434.6 434.6L431 438.7L423.8 461.6L405.7 454.1L393.9 465.1L403 490.4L381.9 494L378.5 512L369.7 519.9L364.3 494L352 483.2L360 468.8L353.6 457.9L363.1 443.5L374.7 439.9L376.3 421.9L382.6 414.7L374.8 403.8L385.1 393L385.7 378.6L394.9 369.4Z" pathLength="1"/></g>
-<g class="iso" data-level="2400 m" style="--lv:8"></g>
-</svg>
-<!--isla:fin-->

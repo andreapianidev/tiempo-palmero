@@ -1,0 +1,137 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOVIMIENTO · toda la coreografía en un solo sitio
+
+   Está separado del resto a propósito: es lo primero que hay que poder apagar,
+   revisar o rehacer entero sin tocar ni la disposición ni el color.
+
+   Dos reglas que se cumplen en todo el fichero:
+
+   1. Solo se anima lo que no obliga al navegador a recalcular la página:
+      `transform`, `opacity`, `clip-path` y `filter`. Ni un `top`, ni un `width`.
+   2. Lo del héroe se mueve con animaciones de CSS, no con JavaScript. Lo que
+      depende del desplazamiento sí necesita JavaScript, y por eso el estado
+      escondido cuelga de `html.mov`: sin JavaScript —`<noscript>` retira esa
+      clase— la página aparece entera y quieta, que es como debe fallar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── entrada del héroe ───────────────────────────────────────────────────── */
+.entra{animation:entra .95s cubic-bezier(.16,.84,.3,1) both}
+@keyframes entra{
+  from{opacity:0;transform:translate3d(0,26px,0);filter:blur(7px)}
+  to{opacity:1;transform:none;filter:blur(0)}
+}
+.e1{animation-delay:.05s}
+.e2{animation-delay:.16s}
+.e3{animation-delay:.28s}
+.e4{animation-delay:.40s}
+.e5{animation-delay:.52s}
+.e6{animation-delay:.64s}
+.e7{animation-delay:.78s}
+
+/* El titular entra por líneas, cada una desde debajo de su propia máscara. */
+.titular{display:block;overflow:hidden;padding-bottom:.04em}
+.titular>span{display:block;animation:linea 1.05s cubic-bezier(.16,.84,.3,1) both}
+@keyframes linea{from{transform:translate3d(0,105%,0)}to{transform:none}}
+.titular:nth-of-type(1)>span{animation-delay:.12s}
+.titular:nth-of-type(2)>span{animation-delay:.24s}
+
+/* ── la isla se dibuja sola ──────────────────────────────────────────────── */
+/* `pathLength="1"` lo pone el generador, así que un trazado de 40 km y otro de
+   400 m tardan lo mismo: el reparto lo decide la cota, no la longitud. */
+.isla path{stroke-dasharray:1;stroke-dashoffset:1;animation:traza 2.6s cubic-bezier(.22,.7,.25,1) both}
+@keyframes traza{to{stroke-dashoffset:0}}
+.iso:nth-child(1) path{animation-delay:.15s}
+.iso:nth-child(2) path{animation-delay:.34s}
+.iso:nth-child(3) path{animation-delay:.5s}
+.iso:nth-child(4) path{animation-delay:.64s}
+.iso:nth-child(5) path{animation-delay:.76s}
+.iso:nth-child(6) path{animation-delay:.86s}
+.iso:nth-child(7) path{animation-delay:.94s}
+.iso:nth-child(8) path{animation-delay:1s}
+
+/* ── revelados al desplazar ──────────────────────────────────────────────── */
+.mov .sube{opacity:0;transform:translate3d(0,28px,0);filter:blur(6px)}
+.mov .sube{transition:opacity .8s cubic-bezier(.16,.84,.3,1),transform .8s cubic-bezier(.16,.84,.3,1),filter .8s ease}
+.mov .sube.vista{opacity:1;transform:none;filter:blur(0)}
+
+/* Escalonado por posición dentro del grupo: en vez de un atributo `style` por
+   hijo —que la CSP no admite— lo reparte el propio selector. */
+.escalona>*{transition-delay:0s}
+.mov .escalona.vista>*:nth-child(1){transition-delay:.02s}
+.mov .escalona.vista>*:nth-child(2){transition-delay:.09s}
+.mov .escalona.vista>*:nth-child(3){transition-delay:.16s}
+.mov .escalona.vista>*:nth-child(4){transition-delay:.23s}
+.mov .escalona.vista>*:nth-child(5){transition-delay:.30s}
+.mov .escalona.vista>*:nth-child(6){transition-delay:.37s}
+.mov .escalona>*{opacity:0;transform:translate3d(0,20px,0)}
+.mov .escalona>*{transition:opacity .7s cubic-bezier(.16,.84,.3,1),transform .7s cubic-bezier(.16,.84,.3,1)}
+.mov .escalona.vista>*{opacity:1;transform:none}
+
+/* Las filas del panel del modelo se imprimen de arriba abajo, como el panel de
+   la aplicación cuando termina una pasada. */
+.mov .modelo .fila{opacity:0;transform:translate3d(-10px,0,0);transition:opacity .6s ease,transform .6s cubic-bezier(.16,.84,.3,1)}
+.mov .modelo.vista .fila{opacity:1;transform:none}
+.mov .modelo.vista .fila:nth-of-type(1){transition-delay:.05s}
+.mov .modelo.vista .fila:nth-of-type(2){transition-delay:.14s}
+.mov .modelo.vista .fila:nth-of-type(3){transition-delay:.23s}
+.mov .modelo.vista .fila:nth-of-type(4){transition-delay:.32s}
+.mov .modelo.vista .fila:nth-of-type(5){transition-delay:.41s}
+.mov .modelo.vista .fila:nth-of-type(6){transition-delay:.50s}
+
+/* La barrita de cada fila crece hasta su valor. `--v` lo pone el JavaScript. */
+.barra i{transition:transform 1.15s cubic-bezier(.16,.84,.3,1) .35s}
+.vista .barra i{transform:scaleX(var(--v,0))}
+
+/* ── la captura se abre ──────────────────────────────────────────────────── */
+/* Persiana de abajo arriba más un acercamiento mínimo. Es el gesto de la
+   aplicación al terminar de cargar una capa, no una entrada de presentación. */
+.mov .marco{clip-path:inset(0 0 100% 0);transition:clip-path 1.05s cubic-bezier(.16,.84,.3,1)}
+.mov .marco img{transform:scale(1.07);transition:transform 1.4s cubic-bezier(.16,.84,.3,1)}
+.mov .vista .marco,.mov .marco.vista{clip-path:inset(0 0 0 0)}
+.mov .vista .marco img,.mov .marco.vista img{transform:none}
+
+/* Y una pasada de luz, una sola vez, cuando termina de abrirse. */
+.marco::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(180deg,transparent 42%,rgba(226,180,92,.16) 50%,transparent 58%);
+}
+.mov .vista .marco::after,.mov .marco.vista::after{animation:barrido 1.5s ease-out .55s both}
+@keyframes barrido{
+  from{opacity:1;transform:translateY(-100%)}
+  to{opacity:0;transform:translateY(100%)}
+}
+
+/* ── paralaje ────────────────────────────────────────────────────────────── */
+/* `--p` va de -1 a 1 según dónde esté el elemento en la ventana; lo escribe
+   `js/ascenso.js` en el mismo fotograma que el resto, no en su propio oyente. */
+.par{transform:translate3d(0,calc(var(--p,0) * 26px),0);will-change:transform}
+.par--corto{transform:translate3d(0,calc(var(--p,0) * 12px),0)}
+
+/* ── viento del héroe ────────────────────────────────────────────────────── */
+/* El mismo alisio que dibuja la capa de viento de la aplicación, de nordeste a
+   suroeste. Se apaga cuando el héroe sale de la ventana. */
+.viento{
+  position:absolute;inset:0;z-index:-1;pointer-events:none;
+  /* Un `<canvas>` es un elemento reemplazado: con `inset:0` y sin medidas
+     explícitas se queda en los 300×150 de fábrica en vez de estirarse. */
+  width:100%;height:100%;
+  opacity:0;transition:opacity 1.4s ease .9s;
+}
+.viento.vista{opacity:.85}
+
+/* ── enlaces del pie de sección ──────────────────────────────────────────── */
+.fl{overflow:visible}
+
+/* ═══ sin movimiento ═══════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .entra,.titular>span,.isla path,.marco::after{animation:none}
+  .isla path{stroke-dashoffset:0}
+  .mov .sube,.mov .escalona>*,.mov .modelo .fila{opacity:1;transform:none;filter:none;transition:none}
+  .mov .marco{clip-path:none;transition:none}
+  .mov .marco img{transform:none;transition:none}
+  .par,.par--corto{transform:none}
+  .viento{display:none}
+  .punto,.marco-hd .en-vivo i,.aviso .rot i,.marca .rayo{animation:none}
+  .barra i{transition:none;transform:scaleX(var(--v,0))}
+}

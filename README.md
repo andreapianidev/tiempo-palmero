@@ -23,7 +23,16 @@ carcasa, con una hoja que sube desde abajo en vez del panel lateral.
 
 Y **[tiempopalmero.com](https://www.tiempopalmero.com)** es el sitio que la
 cuenta: qué hace, de qué datos sale y con qué licencia. Su código está en
-[`web/`](web/) — una sola página estática, sin dependencias ni analítica.
+[`web/`](web/) — estático, sin dependencias, sin analítica y sin una sola
+petición a un tercero: las dos tipografías de la aplicación van servidas desde
+`web/fonts/`, y la CSP del sitio es `default-src 'none'` con todo lo demás en
+`'self'`.
+
+La página se lee como una subida de la costa al Roque: el fondo, el altímetro
+de la izquierda y la curva de nivel encendida cuelgan todos de una sola variable
+CSS que el desplazamiento va reescribiendo. Las curvas de nivel de la isla no
+son una ilustración — salen del mismo modelo de elevación con el que la
+aplicación corrige la temperatura, y se regeneran con `npm run web:island`.
 
 > **Hay una tercera pieza, y no está aquí.**
 > [**Tiempo Palmero para macOS**](https://github.com/andreapianidev/tiempo-palmero-unity)

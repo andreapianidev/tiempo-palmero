@@ -28,8 +28,8 @@ import type { Dem } from '../src/lib/dem.js'
  *
  * Hasta dónde llega no se escribe a mano, se pregunta al modelo. La cota máxima
  * del DEM son 2400 m —el Roque son 2426, y la diferencia es el muestreo a 33,5
- * m/píxel—, pero además esto contornea sobre la malla ya promediada, cuyo
- * máximo baja a 2313 m: pedir la isohipsa de 2400 devolvía cero trazados.
+ * m/píxel—, pero además esto contornea sobre la malla ya promediada y suavizada,
+ * cuyo máximo baja a 2367 m: pedir la isohipsa de 2400 devolvía cero trazados.
  */
 const CONTOUR_STEP_M = 300
 const COAST_M = 1.5
@@ -37,21 +37,29 @@ const COAST_M = 1.5
 /**
  * Cuántos píxeles del DEM entran en cada celda de la malla de contorneo.
  *
- * A 1 el trazo sale dentado a 33 m de paso y el SVG pasa de 300 kB; a 6 la
- * Caldera se cierra en un óvalo y se pierde el Barranco de las Angustias, que
- * es justamente lo que hace reconocible a la isla. En 3 —100 m de paso— la
- * Caldera sigue abierta por el barranco y el fichero cabe en la página.
+ * Medido sobre esta isla, con la tolerancia en 0,55: a 1 salen 4.405 puntos y
+ * 51,0 kB de SVG; a 2, 2.195 y 25,8 kB; a 3, 1.370 y 16,4 kB; a 6, 620 y 7,8 kB
+ * pero las isohipsas de 1.200 y 1.500 se funden en manchas y el interior de la
+ * Caldera deja de leerse —el Barranco de las Angustias aún se distingue, pero
+ * el circo ya no—. En 3, que son 100 m de paso, la Caldera se lee entera y el
+ * SVG cabe dentro de la página sin cargar un fichero aparte.
  */
 const STEP = 3
 
 /**
- * Tolerancia del simplificado, en unidades de la malla ya reducida.
+ * Tolerancia del simplificado, en unidades de la malla ya reducida —es decir,
+ * 0,55 son 55 m sobre el terreno.
  *
- * Medido sobre esta isla: 0 deja 47.000 puntos y 214 kB de SVG; 0,9 deja 9.900
- * y 41 kB sin que se note a simple vista; 2 empieza a comerse los entrantes de
- * la costa de Garafía. Se queda en 0,9.
+ * Medido con STEP en 3: sin simplificar son 10.230 puntos y 117,3 kB de SVG;
+ * con 0,3 bajan a 2.038 y 24,0 kB; con 0,55, a 1.370 y 16,4 kB; con 1,0, a 946
+ * y 11,5 kB; con 2,0, a 577 y 7,3 kB. El corte está en que el trazo deje de
+ * parecer una curva: 0,55 quita el 87 % de los puntos y la costa se sigue
+ * viendo curva a pantalla completa.
  */
-const TOLERANCE = 0.9
+const TOLERANCE = 0.55
+
+/** Pasadas del suavizado 3×3 sobre la malla reducida. */
+const SMOOTH_PASSES = 2
 
 /** Polilíneas más cortas que esto son ruido de muestreo: fuera. */
 const MIN_POINTS = 12
@@ -64,6 +72,44 @@ interface Grid {
   v: Float32Array
   w: number
   h: number
+}
+
+/**
+ * Suavizado 3×3, aplicado sobre la malla ya reducida.
+ *
+ * Sin él marching squares saca la escalera del muestreo tal cual y las
+ * isohipsas salen en zigzag de diente de sierra —se ve a simple vista en la
+ * cara de barlovento, donde la pendiente es suave y el contorno serpentea entre
+ * dos celdas—. Dos pasadas bastan; con cuatro la Caldera empieza a redondearse.
+ *
+ * El mar entra en la media como una cota más, y así debe ser: la isohipsa de la
+ * costa ES la frontera entre tierra y agua, y suavizarla es justo lo que quita
+ * el diente de sierra del litoral.
+ */
+function smooth(g: Grid, passes: number): Grid {
+  let cur = g
+  for (let p = 0; p < passes; p++) {
+    const v = new Float32Array(cur.v.length)
+    for (let y = 0; y < cur.h; y++) {
+      for (let x = 0; x < cur.w; x++) {
+        let sum = 0
+        let n = 0
+        for (let j = -1; j <= 1; j++) {
+          const yy = y + j
+          if (yy < 0 || yy >= cur.h) continue
+          for (let i = -1; i <= 1; i++) {
+            const xx = x + i
+            if (xx < 0 || xx >= cur.w) continue
+            sum += cur.v[yy * cur.w + xx]
+            n++
+          }
+        }
+        v[y * cur.w + x] = sum / n
+      }
+    }
+    cur = { v, w: cur.w, h: cur.h }
+  }
+  return cur
 }
 
 /** Promedia bloques de STEP×STEP del DEM. Suaviza el escalón del muestreo. */
@@ -270,9 +316,15 @@ function islandBox(contours: Contour[]): { x0: number; y0: number; x1: number; y
 
 function main(): void {
   const dem = loadDem()
-  const grid = coarsen(dem, STEP)
+  const grid = smooth(coarsen(dem, STEP), SMOOTH_PASSES)
 
-  const contours: Contour[] = LEVELS.map((level) => {
+  let peak = 0
+  for (const h of grid.v) if (h > peak) peak = h
+
+  const levels = [COAST_M]
+  for (let m = CONTOUR_STEP_M; m < peak; m += CONTOUR_STEP_M) levels.push(m)
+
+  const contours: Contour[] = levels.map((level) => {
     const raw = stitch(isoSegments(grid, level))
     const long = raw.filter((l) => l.length >= MIN_POINTS)
     const lines = long.map((l) => simplify(l, TOLERANCE)).filter((l) => l.length >= 4)
@@ -307,10 +359,12 @@ function main(): void {
   }
 
   const groups = contours
-    .map(({ level, lines }, i) => {
+    .map(({ level, lines }) => {
       const paths = lines.map((l) => `<path d="${toPath(l)}" pathLength="1"/>`).join('')
       const label = level < 10 ? 'costa' : `${level} m`
-      return `<g class="iso" data-level="${label}" style="--lv:${i}">${paths}</g>`
+      // Sin atributo `style`: la CSP del sitio no admite estilo en línea, así
+      // que el índice de cota lo pone la hoja con `:nth-child`.
+      return `<g class="iso" data-cota="${label}">${paths}</g>`
     })
     .join('\n')
 
@@ -336,7 +390,7 @@ function main(): void {
 
   const kb = (Buffer.byteLength(svg) / 1024).toFixed(1)
   console.log(
-    `web/index.html ← ${contours.length} cotas, ` +
+    `web/index.html ← ${contours.length} cotas hasta ${Math.round(peak)} m, ` +
       `${contours.reduce((n, c) => n + c.lines.length, 0)} trazados, ${total} puntos, ${kb} kB`,
   )
 }

@@ -7,7 +7,7 @@
       "headers": [
         {
           "key": "content-security-policy",
-          "value": "default-src 'none'; script-src 'sha256-+M3cwlgEvT9/Zh8QcRhxIeMMtD2K7PM10tF+tFXT4pI='; style-src 'sha256-NWyA9ccdczALxMVzDADK4X9WVORILN2/JKdi01WqGe4='; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+          "value": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
         },
         {
           "key": "x-content-type-options",
@@ -25,6 +25,15 @@
     },
     {
       "source": "/img/(.*)",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=86400, stale-while-revalidate=2592000"
+        }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
       "headers": [
         {
           "key": "cache-control",

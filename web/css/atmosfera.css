@@ -1,0 +1,150 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ATMÓSFERA · el fondo sube contigo
+
+   La página no es una lista de secciones: es un ascenso de la costa al Roque, y
+   el fondo lo cuenta. Todo cuelga de `--asc` (0 en el mar, 1 en la cumbre), que
+   `js/ascenso.js` reescribe en cada fotograma.
+
+   El momento es el mar de nubes. En La Palma la inversión del alisio se sienta
+   entre los 1.000 y los 1.500 m y es una frontera de verdad: por debajo, la
+   laurisilva y la humedad; por encima, el cielo que hizo que el observatorio
+   del Roque esté donde está. En la página se cruza sobre `--asc` ≈ 0,47.
+
+   Coste: seis capas fijas que solo cambian `opacity` y `transform`. Ninguna
+   fuerza recálculo de disposición, y con `prefers-reduced-motion` se quedan
+   quietas en un estado intermedio legible.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.cielo{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:var(--ink)}
+.cielo>*{position:absolute;inset:0}
+
+/* ── 0-600 m · la costa ──────────────────────────────────────────────────── */
+/* Calima ámbar pegada al horizonte, como la que se ve desde Tazacorte al caer
+   la tarde. Se apaga a media subida. */
+.c-costa{
+  background:
+    radial-gradient(120% 66% at 50% 100%,rgba(226,180,92,.125),rgba(226,180,92,.035) 44%,transparent 70%),
+    radial-gradient(90% 48% at 16% 96%,rgba(193,135,58,.10),transparent 62%),
+    linear-gradient(180deg,transparent 40%,rgba(20,17,13,.9));
+  opacity:clamp(0,calc(1.05 - var(--asc) * 1.9),1);
+}
+
+/* ── el mar ──────────────────────────────────────────────────────────────── */
+/* Una banda de brillo tenue al pie de la primera pantalla, con un desplazamiento
+   lentísimo: es el reflejo, no el oleaje. El oleaje está en la aplicación. */
+.c-mar{
+  top:auto;height:46vh;
+  background:linear-gradient(180deg,transparent,rgba(120,140,150,.09) 55%,rgba(150,170,180,.13));
+  mask-image:repeating-linear-gradient(180deg,#000 0 2px,transparent 2px 5px);
+  -webkit-mask-image:repeating-linear-gradient(180deg,#000 0 2px,transparent 2px 5px);
+  opacity:clamp(0,calc(.9 - var(--asc) * 4),.9);
+  animation:mar 9s linear infinite;
+}
+@keyframes mar{to{mask-position:0 5px;-webkit-mask-position:0 5px}}
+
+/* ── por encima de la inversión ──────────────────────────────────────────── */
+.c-alto{
+  background:
+    radial-gradient(140% 90% at 50% -20%,rgba(31,45,72,.55),transparent 62%),
+    linear-gradient(180deg,#080a12 0%,#0a0b10 46%,rgba(13,12,11,0) 78%);
+  opacity:clamp(0,calc((var(--asc) - .34) * 2.1),1);
+}
+
+/* ── las estrellas del Roque ─────────────────────────────────────────────── */
+/* La Palma es Reserva Starlight y el cielo es el argumento del observatorio, así
+   que las estrellas no son adorno: son la cima de la página. */
+.c-estrellas{opacity:clamp(0,calc((var(--asc) - .6) * 3.4),1)}
+.c-estrellas svg{width:100%;height:100%;display:block}
+.c-estrellas circle{fill:#fff}
+.c-estrellas g:nth-child(1){opacity:.85;animation:titila 5.5s ease-in-out infinite}
+.c-estrellas g:nth-child(2){opacity:.55;animation:titila 8s ease-in-out infinite -2.4s}
+.c-estrellas g:nth-child(3){opacity:.33;animation:titila 11s ease-in-out infinite -5s}
+@keyframes titila{0%,100%{opacity:.2}50%{opacity:.9}}
+
+/* ── el mar de nubes ─────────────────────────────────────────────────────── */
+/* Tres colchones desenfocados que bajan por la pantalla mientras se sube. La
+   página los cruza una sola vez, y ese cruce cae dentro de la sección en la que
+   el modelo cuenta su propio error: se atraviesa la nube justo donde se explica
+   que el alisio es el que manda. */
+.c-nubes{
+  /* El punto de cruce está en .47 y no en .55 porque a .55 la nube pasaba
+     justo por detrás del panel del modelo, que es opaco, y no se veía cruzar
+     nada. A .47 cae en el hueco que hay sobre la cabecera de esa sección. */
+  transform:translate3d(0,calc((.47 - var(--asc)) * 250vh),0);
+  opacity:min(clamp(0,calc((var(--asc) - .08) * 3.6),1),clamp(0,calc((1.02 - var(--asc)) * 4),1));
+  will-change:transform;
+}
+.c-nubes i{
+  position:absolute;left:-25%;right:-25%;display:block;border-radius:50%;
+  filter:blur(46px);
+}
+
+/* POR QUÉ LA NIEBLA ES FINA Y HAY UNA SEGUNDA CAPA APARTE.
+
+   La primera versión de esto era un solo frente denso a pantalla completa, y se
+   medía fatal: detrás del párrafo de entrada de la sección 02 el fondo llegaba
+   a rgb(115,110,102) y el texto en `--fg-dim` se quedaba en 2,0:1 de contraste,
+   menos de la mitad del mínimo legible.
+
+   El límite sale de despejar la fórmula: para que `--fg-dim` (#a8a29a) mantenga
+   4,5:1, el fondo no puede pasar de rgb(57,57,57) — y sobre la tinta, que es
+   rgb(13,12,11), eso deja como mucho un 17 % de blanco. De ahí los alfas de
+   arriba: la niebla que cruza por delante del texto es fina porque no le queda
+   otra.
+
+   Lo que sí puede ser espeso es lo que no tiene texto delante. `--densa` es un
+   segundo frente, tres veces más opaco, recortado a partir del 68 % del ancho
+   —donde acaba la columna de lectura y empieza la isla—. Así el mar de nubes se
+   amontona contra la vertiente, que es exactamente lo que hace el alisio, y la
+   página se sigue leyendo. Debajo de 1080 px no existe: ahí el texto ocupa todo
+   el ancho y no hay dónde ponerlo. */
+.c-nubes--densa{
+  mask-image:linear-gradient(90deg,transparent 0 68%,rgba(0,0,0,.55) 82%,#000 95%);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0 68%,rgba(0,0,0,.55) 82%,#000 95%);
+}
+.c-nubes--densa i:nth-child(1){
+  background:radial-gradient(60% 100% at 40% 50%,rgba(232,228,220,.85),transparent 72%);
+}
+.c-nubes--densa i:nth-child(2){
+  background:radial-gradient(58% 100% at 62% 50%,rgba(242,238,230,.9),transparent 70%);
+}
+@media (max-width:1079px){.c-nubes--densa{display:none}}
+.c-nubes i:nth-child(1){
+  top:22vh;height:46vh;
+  background:radial-gradient(60% 100% at 30% 50%,rgba(226,222,214,.105),transparent 70%),
+             radial-gradient(50% 90% at 72% 46%,rgba(206,204,200,.088),transparent 72%);
+  animation:deriva 34s ease-in-out infinite;
+}
+.c-nubes i:nth-child(2){
+  top:44vh;height:36vh;
+  background:radial-gradient(55% 100% at 60% 50%,rgba(238,234,226,.112),transparent 68%);
+  animation:deriva 27s ease-in-out infinite reverse;
+}
+.c-nubes i:nth-child(3){
+  top:6vh;height:32vh;
+  background:radial-gradient(48% 100% at 42% 50%,rgba(180,182,186,.068),transparent 74%);
+  animation:deriva 44s ease-in-out infinite -12s;
+}
+@keyframes deriva{
+  0%,100%{transform:translate3d(-4%,0,0) scaleY(1)}
+  50%{transform:translate3d(5%,0,0) scaleY(1.14)}
+}
+
+/* Debajo de la nube el aire está sucio de humedad; encima, limpio. Este velo
+   sube con ella y le da espesor sin costar otra capa desenfocada. */
+.c-velo{
+  background:linear-gradient(180deg,transparent 30%,rgba(226,222,214,.03) 52%,transparent 74%);
+  transform:translate3d(0,calc((.47 - var(--asc)) * 250vh),0);
+  opacity:clamp(0,calc(1 - var(--asc)),1);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .c-mar,.c-nubes i,.c-estrellas g{animation:none}
+  /* Sin movimiento el fondo se congela a media ladera: se ve de qué va sin que
+     nada se mueva. */
+  .c-costa{opacity:.5}
+  .c-alto{opacity:.5}
+  .c-estrellas{opacity:.4}
+  .c-nubes{opacity:.5;transform:translate3d(0,30vh,0)}
+  .c-velo{transform:none}
+}

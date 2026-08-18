@@ -11,6 +11,7 @@ de depuración cada una.
 
 ```
 scripts/prepare-data.ts   Compilación. Se ejecuta una vez.
+scripts/web-island.ts     Las curvas de nivel de la portada, sacadas del DEM.
   ├── prepare-guagua.ts   GTFS de TILP → red de líneas, paradas y horarios
   ├── prepare-arcgis.ts   Servicios ArcGIS del visor: miradores y carreteras
   ├── prepare-osm-roads.ts  Viario completo de OSM vía Overpass (19.770 trazados)
@@ -36,7 +37,11 @@ src/lib/
   └── cabildo.ts          Cliente de la API, decodificación posicional
 
 web/                      El sitio de tiempopalmero.com, aparte de la aplicación
-  └── index.html          Una página estática, sin dependencias ni analítica
+  ├── index.html          Solo el marcado; el SVG de la isla lo escribe un script
+  ├── css/                base · atmosfera · chrome · secciones · motion · sin-js
+  ├── js/                 ascenso (scroll → --asc) · revelar (entradas) · viento
+  ├── fonts/              Barlow e IBM Plex Mono, subconjunto latino, servidas aquí
+  └── img/                Capturas de la aplicación, en 900 y 1800 px
 ```
 
 Lo que **no** está en este árbol y conviene saber que existe: la aplicación de

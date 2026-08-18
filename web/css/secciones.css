@@ -1,0 +1,226 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECCIONES · el contenido, tramo a tramo del ascenso
+
+   Cada bloque de la página es una cota. El grafismo repite el de la aplicación
+   a propósito: paneles de canto redondeado, cabecera de rótulo monoespaciado,
+   filete fino y el ámbar reservado para lo que es un dato.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.piel{padding-left:var(--rail)}
+
+section{position:relative;padding-block:clamp(4.5rem,11vh,8rem)}
+section+section{border-top:1px solid var(--line-soft)}
+
+/* La sección del mar de nubes respira más por arriba a propósito: ese hueco es
+   la ventana por la que se ve cruzar la nube. Sin él, el frente pasa por detrás
+   de un panel opaco y no se ve nada. */
+#modelo{padding-top:clamp(7rem,20vh,13rem)}
+#modelo .cabeza{margin-bottom:clamp(3rem,9vh,6rem)}
+
+/* ── cabecera de sección ─────────────────────────────────────────────────── */
+.cabeza{position:relative;max-width:44rem;margin-bottom:clamp(2.2rem,5vh,3.6rem)}
+.cabeza .rot{display:block;margin-bottom:1rem}
+.cabeza .rot::before{
+  content:"";display:inline-block;width:22px;height:1px;
+  background:var(--amber);vertical-align:middle;margin-right:.7rem;
+}
+.cabeza .entrada{margin-top:1.1rem;font-size:1.06em;max-width:38rem}
+
+/* El ordinal, enorme y hueco, detrás del título. No se lee: se ve. */
+.ord{
+  position:absolute;z-index:-1;
+  right:0;top:-.42em;
+  font-family:var(--mono);font-weight:600;font-size:clamp(5rem,14vw,11rem);
+  line-height:1;letter-spacing:-.04em;
+  color:transparent;-webkit-text-stroke:1px rgba(226,180,92,.16);
+  pointer-events:none;user-select:none;
+}
+@media (min-width:900px){.ord{right:-3rem}}
+
+/* ── héroe ───────────────────────────────────────────────────────────────── */
+.hero{position:relative;padding-top:clamp(3rem,9vh,6rem);padding-bottom:clamp(3rem,7vh,5rem);border-top:0}
+.hero .wrap{position:relative}
+.hero-txt{max-width:min(100%,54rem)}
+
+.hero-rot{display:flex;align-items:center;gap:.6rem;margin-bottom:1.6rem}
+.punto{
+  width:7px;height:7px;border-radius:50%;background:var(--live);flex:none;
+  box-shadow:0 0 0 0 rgba(95,191,127,.55);animation:late 2.6s ease-out infinite;
+}
+@keyframes late{
+  0%{box-shadow:0 0 0 0 rgba(95,191,127,.5)}
+  70%{box-shadow:0 0 0 9px rgba(95,191,127,0)}
+  100%{box-shadow:0 0 0 0 rgba(95,191,127,0)}
+}
+
+h1 em{display:block;font-style:normal;color:var(--amber)}
+
+.lede{margin-top:1.6rem;font-size:clamp(1.1rem,.9rem+.6vw,1.42rem);line-height:1.42;color:var(--fg);max-width:34rem;letter-spacing:-.012em}
+.sub{margin-top:1rem;max-width:36rem}
+
+.hero-actos{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2.1rem}
+
+/* Tira de cifras. Monoespaciada y tabular, como los paneles de la aplicación. */
+.tira{
+  display:grid;gap:1px;margin:clamp(2.6rem,6vh,4rem) 0 0;padding:0;
+  grid-template-columns:repeat(2,1fr);
+  background:var(--line-soft);border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden;
+}
+@media (min-width:760px){.tira{grid-template-columns:repeat(4,1fr)}}
+.tira>div{background:rgba(20,19,17,.72);padding:1.05rem 1.1rem}
+.tira dt{font-family:var(--mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--fg-faint)}
+.tira dd{
+  margin:.5rem 0 0;font-family:var(--mono);font-weight:600;
+  font-size:clamp(1.5rem,1.1rem+1.2vw,2rem);color:var(--fg);
+  font-variant-numeric:tabular-nums;letter-spacing:-.03em;line-height:1;
+}
+.tira dd small{display:block;margin-top:.4rem;font-size:.62rem;font-weight:400;letter-spacing:.06em;color:var(--fg-faint);text-transform:none}
+
+/* ── panel con captura ───────────────────────────────────────────────────── */
+/* La misma carcasa que un panel de la aplicación: filete, canto redondeado y
+   una cabecera de rótulo. Que la portada se parezca al producto no es un guiño,
+   es lo que promete el enlace. */
+.captura{margin:0}
+.marco{
+  position:relative;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel);overflow:hidden;
+  box-shadow:0 40px 90px -50px rgba(0,0,0,.95);
+}
+.marco-hd{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.6rem .9rem;border-bottom:1px solid var(--line-soft);
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--fg-faint);
+}
+.marco-hd .en-vivo{margin-left:auto;display:flex;align-items:center;gap:.4rem;color:var(--live)}
+.marco-hd .en-vivo i{width:5px;height:5px;border-radius:50%;background:var(--live);animation:late 2.6s ease-out infinite}
+.marco img{width:100%;display:block}
+.captura figcaption{margin-top:.9rem;font-size:.92rem;color:var(--fg-faint);max-width:46rem}
+.captura figcaption b{color:var(--fg-dim)}
+
+/* ── rasgos ──────────────────────────────────────────────────────────────── */
+.rasgos{display:grid;gap:clamp(3rem,8vh,5.5rem)}
+.rasgo{display:grid;gap:1.8rem;align-items:center}
+@media (min-width:980px){
+  .rasgo{grid-template-columns:minmax(0,.88fr) minmax(0,1.42fr);gap:clamp(2rem,4vw,3.5rem)}
+  .rasgo:nth-child(even) .rasgo-txt{order:2}
+}
+.rasgo-txt h3{margin-bottom:.9rem}
+.rasgo-txt .rot{display:block;margin-bottom:.8rem}
+
+/* ── panel del modelo ────────────────────────────────────────────────────── */
+.modelo{
+  border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel);overflow:hidden;
+}
+.modelo-hd{
+  display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;
+  padding:.75rem 1.1rem;border-bottom:1px solid var(--line-soft);
+  font-family:var(--mono);font-size:.63rem;letter-spacing:.15em;text-transform:uppercase;color:var(--fg-faint);
+}
+.modelo-hd b{color:var(--amber);font-weight:600;letter-spacing:.1em}
+.modelo-hd .der{margin-left:auto}
+
+.fila{
+  display:grid;gap:.35rem 1.4rem;padding:1.05rem 1.1rem;
+  border-top:1px solid var(--line-soft);
+}
+.fila:first-of-type{border-top:0}
+@media (min-width:760px){.fila{grid-template-columns:13.5rem minmax(0,1fr);align-items:baseline}}
+.fila dt{font-family:var(--mono);font-size:.7rem;letter-spacing:.11em;text-transform:uppercase;color:var(--fg-dim)}
+.fila dd{margin:0;font-size:.98rem}
+.fila .cifra{
+  font-family:var(--mono);font-weight:600;color:var(--amber);
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+}
+
+/* La medida de una fila. Solo la llevan las dos filas cuyo número ES una
+   fracción —35 de 52, y un R² que por definición va de 0 a 1—; en las otras
+   cuatro una barra sería un adorno con pinta de dato. El ancho lo pone
+   `data-barra` a través de --v, que escribe el JavaScript. */
+.medida{display:flex;align-items:center;gap:.7rem;margin-top:.85rem;flex-wrap:wrap}
+.medida small{font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;color:var(--fg-faint)}
+.barra{
+  position:relative;flex:none;width:clamp(90px,22%,150px);height:3px;
+  background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden;
+}
+.barra i{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,var(--amber-deep),var(--amber))}
+
+/* ── avisos ──────────────────────────────────────────────────────────────── */
+.aviso{
+  position:relative;margin-top:1.6rem;padding:1.35rem 1.5rem;
+  border:1px solid rgba(226,180,92,.32);border-left-width:2px;border-radius:0 var(--radius) var(--radius) 0;
+  background:rgba(226,180,92,.06);
+}
+.aviso h3{color:#f0c07a;margin-bottom:.7rem}
+.aviso--rojo{border-color:rgba(209,72,63,.42);background:rgba(209,72,63,.07)}
+.aviso--rojo h3{color:#e8907f}
+.aviso--rojo .rot{color:#d29b8c}  /* 5,5:1 sobre el fondo más claro de su sección; #c98374 daba 4,3 */
+.aviso .rot{display:flex;align-items:center;gap:.45rem;margin-bottom:.75rem}
+.aviso .rot i{width:5px;height:5px;border-radius:50%;background:currentColor;animation:respira 3.2s ease-in-out infinite}
+@keyframes respira{0%,100%{opacity:.35}50%{opacity:1}}
+
+/* ── fuentes ─────────────────────────────────────────────────────────────── */
+.fuentes{display:grid;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden}
+@media (min-width:680px){.fuentes{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1040px){.fuentes{grid-template-columns:repeat(3,1fr)}}
+.fuente{
+  position:relative;background:rgba(20,19,17,.72);padding:1.5rem 1.4rem 1.35rem;
+  display:flex;flex-direction:column;gap:.7rem;transition:background .3s;
+}
+.fuente:hover{background:rgba(30,28,24,.85)}
+.fuente h3{font-size:1.02rem}
+.fuente p{font-size:.93rem;flex:1;margin:0}
+.fuente .lic{
+  align-self:flex-start;font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--fg-faint);border:1px solid var(--line-soft);border-radius:5px;padding:.2rem .5rem;
+}
+.fuente a{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;color:var(--amber);
+  display:inline-flex;align-items:center;gap:.4rem;
+}
+.fuente a .fl{transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.fuente a:hover .fl{transform:translateX(4px)}
+
+/* ── repositorios ────────────────────────────────────────────────────────── */
+.repos{display:grid;gap:1.2rem}
+@media (min-width:880px){.repos{grid-template-columns:repeat(2,1fr)}}
+.repo{
+  position:relative;display:flex;flex-direction:column;gap:.85rem;
+  padding:1.6rem 1.5rem;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--panel);overflow:hidden;
+  transition:border-color .3s,transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.repo::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(38rem 20rem at var(--mx,50%) var(--my,0%),rgba(226,180,92,.10),transparent 60%);
+  opacity:0;transition:opacity .35s;
+}
+.repo:hover{border-color:rgba(226,180,92,.45);transform:translateY(-3px)}
+.repo:hover::after{opacity:1}
+.repo .etiq{
+  align-self:flex-start;font-family:var(--mono);font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--amber);border:1px solid rgba(226,180,92,.3);border-radius:5px;padding:.2rem .55rem;
+}
+.repo h3{font-family:var(--mono);font-size:.95rem;letter-spacing:-.01em;word-break:break-word}
+.repo p{font-size:.94rem;flex:1}
+.repo .ir{
+  font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint);
+  display:inline-flex;align-items:center;gap:.5rem;
+}
+.repo:hover .ir{color:var(--amber)}
+.repo .ir .fl{transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.repo:hover .ir .fl{transform:translateX(4px)}
+
+/* ── privacidad ──────────────────────────────────────────────────────────── */
+.llano{display:grid;gap:2rem}
+@media (min-width:820px){.llano{grid-template-columns:repeat(3,1fr);gap:2.4rem}}
+.llano h3{margin-bottom:.7rem}
+.llano>div{position:relative;padding-top:1.2rem;border-top:1px solid var(--line-soft)}
+.llano>div::before{content:"";position:absolute;top:-1px;left:0;width:2rem;height:1px;background:var(--amber)}
+
+/* ── cierre ──────────────────────────────────────────────────────────────── */
+.cierre{text-align:center;padding-block:clamp(5rem,14vh,10rem)}
+.cierre h2{font-size:clamp(2.1rem,1.2rem+3.6vw,4.2rem);margin-bottom:1.1rem}
+.cierre p{max-width:34rem;margin-inline:auto}
+.cierre .btn{margin-top:2rem}
+.cierre .rot{margin-bottom:1.2rem}

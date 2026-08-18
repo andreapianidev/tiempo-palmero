@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "prepare-data": "tsx scripts/prepare-data.ts",
     "prepare-data:snapshot": "tsx scripts/prepare-data.ts --only=snapshot",
-    "prepare-ocean": "tsx scripts/prepare-ocean.ts"
+    "prepare-ocean": "tsx scripts/prepare-ocean.ts",
+    "web:island": "tsx scripts/web-island.ts"
   },
   "dependencies": {
     "maplibre-gl": "^4.7.1",

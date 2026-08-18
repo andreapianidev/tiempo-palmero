@@ -1,0 +1,204 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARMAZÓN · barra, altímetro, isla de fondo, botones y pie
+
+   Lo que rodea al contenido y no pertenece a ninguna sección. El altímetro de
+   la izquierda y la isla de la derecha son la misma idea vista dos veces: la
+   página es una subida, y las dos cosas van marcando por dónde vas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.piel{position:relative;z-index:2}
+
+/* ── la isla, al fondo y a la derecha ────────────────────────────────────── */
+/* Las curvas de nivel salen del DEM de la aplicación (`scripts/web-island.ts`).
+   Se quedan fijas mientras la página pasa por delante, y la cota que toca a la
+   altura de lectura se enciende en ámbar. Es el único adorno de la página que
+   no se puede dibujar sin haber medido la isla. */
+.isla-fija{
+  position:fixed;z-index:1;pointer-events:none;
+  top:50%;right:-1vw;
+  /* Entera dentro de la ventana: recortada por arriba y por abajo deja de
+     leerse como una isla y pasa a ser un rayado. El límite en `vw` es para que
+     en una pantalla apaisada no se coma el texto. */
+  height:min(94vh,62vw);translate:0 -50%;
+  opacity:.48;
+}
+.isla-fija .isla{height:100%;width:auto;display:block;overflow:visible}
+.isla-fija path{
+  stroke:var(--amber);stroke-width:1;fill:none;
+  vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round;
+}
+
+/* Ocho cotas: costa, 300, 600 … 2.100. El índice lo pone el orden, no un
+   atributo `style` — la CSP del sitio no admite estilo en línea. */
+.iso:nth-child(1){--lv:0}
+.iso:nth-child(2){--lv:1}
+.iso:nth-child(3){--lv:2}
+.iso:nth-child(4){--lv:3}
+.iso:nth-child(5){--lv:4}
+.iso:nth-child(6){--lv:5}
+.iso:nth-child(7){--lv:6}
+.iso:nth-child(8){--lv:7}
+
+/* Distancia entre la cota del trazado y la cota de lectura. `max(a-b, b-a)` es
+   el valor absoluto escrito con lo que hay: `abs()` todavía no está en todos
+   los navegadores a los que sirve esta página. */
+.iso{
+  --cota:calc(var(--asc) * 7.4);
+  --d:max((var(--lv) - var(--cota)),(var(--cota) - var(--lv)));
+  opacity:calc(.13 + .87 * max(0,(1 - var(--d))));
+}
+.iso:nth-child(1){opacity:max(.3,calc(.13 + .87 * max(0,(1 - var(--d)))));stroke-width:1.4}
+.isla-fija .iso:nth-child(1) path{stroke:var(--fg);stroke-width:1.35}
+
+@media (max-width:1079px){
+  /* En el móvil el texto ocupa todo el ancho y la isla le pasa por detrás:
+     a .18 el rótulo de un aviso se quedaba en 4,5:1 justo. A .14 sube a 4,9. */
+  .isla-fija{right:-30vw;height:min(80vh,110vw);opacity:.14}
+}
+
+/* ── el altímetro ────────────────────────────────────────────────────────── */
+.altimetro{
+  position:fixed;left:0;top:0;bottom:0;width:var(--rail);z-index:4;
+  display:none;pointer-events:none;
+  padding:clamp(1rem,4vh,2.4rem) 0;
+  border-right:1px solid var(--line-soft);
+  /* Nada del altímetro se sale nunca del raíl. */
+  overflow:hidden;
+}
+@media (min-width:1080px){.altimetro{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end}}
+
+/* La línea viva: sube de abajo arriba con el ascenso. */
+.altimetro::after{
+  content:"";position:absolute;right:-1px;bottom:0;width:1px;
+  height:calc(var(--asc) * 100%);
+  background:linear-gradient(180deg,var(--amber),var(--amber-deep));
+  opacity:.55;
+}
+
+.alt-lectura{padding-right:.85rem;text-align:right;font-family:var(--mono)}
+.alt-lectura b{
+  display:block;font-size:1.5rem;font-weight:600;color:var(--amber);
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1;
+}
+.alt-lectura small{display:block;margin-top:.3rem;font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--fg-faint)}
+
+.alt-escala{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;width:100%;padding-block:6vh}
+.hito{display:flex;align-items:center;justify-content:flex-end;gap:.5rem;padding-right:.8rem}
+.hito span{
+  display:flex;flex-direction:column;align-items:flex-end;gap:.05rem;text-align:right;
+  font-family:var(--mono);font-size:.53rem;letter-spacing:.06em;color:var(--fg-faint);white-space:nowrap;
+}
+.hito span b{font-size:.66rem;font-weight:600;letter-spacing:.01em;color:var(--fg-dim);transition:color .4s ease}
+.hito i{display:block;height:1px;width:9px;background:var(--line);transition:width .4s ease,background .4s ease;flex:none}
+.hito.on span b{color:var(--amber)}
+.hito.on i{width:22px;background:var(--amber)}
+
+.alt-pie{padding-right:.85rem;text-align:right}
+
+/* ── barra superior ──────────────────────────────────────────────────────── */
+.top{
+  position:sticky;top:0;z-index:6;
+  background:color-mix(in srgb,var(--ink) 78%,transparent);
+  backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
+  border-bottom:1px solid var(--line-soft);
+}
+.top-in{display:flex;align-items:center;gap:1.2rem;min-height:58px}
+
+.marca{
+  display:flex;align-items:center;gap:.6rem;
+  font-family:var(--mono);font-size:.8rem;font-weight:600;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--fg);
+}
+.marca svg{display:block;flex:none;overflow:visible}
+.marca .rayo{transform-origin:center;animation:pulso-marca 6s ease-in-out infinite}
+@keyframes pulso-marca{0%,86%,100%{opacity:1}90%{opacity:.35}94%{opacity:1}}
+
+.top nav{display:none;gap:1.5rem;margin-left:1.5rem}
+@media (min-width:860px){.top nav{display:flex}}
+.top nav a{
+  position:relative;font-family:var(--mono);font-size:.68rem;font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--fg-faint);
+  padding-block:.35rem;transition:color .25s;
+}
+.top nav a::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:var(--amber);transform:scaleX(0);transform-origin:left;transition:transform .3s cubic-bezier(.2,.8,.2,1);
+}
+.top nav a:hover{color:var(--fg)}
+.top nav a:hover::after{transform:scaleX(1)}
+
+/* Cota de lectura para cuando no hay sitio para el altímetro. Por debajo de
+   430 px tampoco hay sitio para ella: la barra son marca + cota + botón, y a
+   390 px eso sumaba 410 px de contenido en 353 de hueco — el botón se salía de
+   la pantalla con la mitad de la etiqueta cortada. */
+.cota-movil{
+  display:none;align-items:baseline;gap:.28rem;
+  font-family:var(--mono);font-size:.72rem;color:var(--fg-faint);
+}
+.cota-movil b{color:var(--amber);font-weight:600;font-variant-numeric:tabular-nums}
+@media (min-width:430px){.cota-movil{display:flex}}
+@media (min-width:860px){.cota-movil{display:none}}
+
+/* El margen automático va SIEMPRE en el botón, que es el único elemento de la
+   barra que está en todos los tamaños. Colgarlo del `nav` o de la cota —que se
+   esconden según el ancho— dejaba el botón pegado a la marca en cuanto
+   desaparecía aquel del que colgaba. */
+.top-in>.btn{margin-left:auto}
+
+/* Marca y botón encogen antes de que nada se salga. */
+@media (max-width:559px){
+  .marca{font-size:.7rem;letter-spacing:.12em;gap:.45rem}
+  .marca svg{width:19px;height:19px}
+  .top .btn{padding:.5rem .8rem;letter-spacing:.1em}
+}
+
+/* Progreso del ascenso, pegado al canto inferior de la barra. */
+.progreso{
+  position:absolute;left:0;right:0;bottom:-1px;height:2px;display:block;
+  background:linear-gradient(90deg,var(--amber-deep),var(--amber));
+  transform:scaleX(var(--asc));transform-origin:left;
+}
+
+/* ── botones ─────────────────────────────────────────────────────────────── */
+.btn{
+  position:relative;display:inline-flex;align-items:center;gap:.6rem;
+  padding:.72rem 1.15rem;border-radius:10px;overflow:hidden;
+  font-family:var(--mono);font-size:.73rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;
+  background:var(--amber);color:#17130c;border:1px solid var(--amber);
+  transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;
+}
+.btn span{position:relative;z-index:1}
+.btn .fl{position:relative;z-index:1;flex:none;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.btn::before{
+  content:"";position:absolute;inset:0;z-index:0;
+  background:linear-gradient(100deg,#f2cd85,var(--amber) 55%);
+  transform:translateX(-101%);transition:transform .42s cubic-bezier(.2,.8,.2,1);
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px -14px rgba(226,180,92,.75)}
+.btn:hover::before{transform:translateX(0)}
+.btn:hover .fl{transform:translateX(4px)}
+
+.btn--fino{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn--fino::before{background:rgba(226,180,92,.11)}
+.btn--fino:hover{border-color:var(--amber);box-shadow:none;color:var(--fg)}
+
+.top .btn{padding:.55rem .9rem;font-size:.68rem}
+.btn .corta{display:none}
+@media (max-width:559px){
+  .btn .larga{display:none}
+  .top .btn .corta{display:inline}
+}
+
+/* ── pie ─────────────────────────────────────────────────────────────────── */
+footer{
+  position:relative;z-index:2;margin-top:clamp(4rem,10vh,7rem);
+  border-top:1px solid var(--line-soft);padding-block:2.4rem 3rem;
+  background:linear-gradient(180deg,transparent,rgba(8,10,18,.55));
+}
+.pie{display:grid;gap:1.4rem;font-family:var(--mono);font-size:.7rem;line-height:1.75;color:var(--fg-faint)}
+@media (min-width:760px){.pie{grid-template-columns:1fr auto;align-items:end}}
+.pie a{color:var(--fg-dim);border-bottom:1px solid var(--line-soft);transition:color .2s,border-color .2s}
+.pie a:hover{color:var(--amber);border-bottom-color:var(--amber)}
+.pie .der{text-align:left}
+@media (min-width:760px){.pie .der{text-align:right}}

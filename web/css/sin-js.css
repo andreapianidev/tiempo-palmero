@@ -1,0 +1,25 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIN JAVASCRIPT
+
+   Esta hoja solo la carga el <noscript> de la página. Retira los estados
+   escondidos de `motion.css` —los que un IntersectionObserver iba a quitar— y
+   apaga lo que no tiene sentido sin nadie que lo mueva.
+
+   El `!important` está justificado aquí y solo aquí: no es una hoja que compita
+   con otra, es la que tiene la última palabra cuando la que manda no va a poder
+   ejecutarse nunca.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.mov .sube,
+.mov .escalona>*,
+.mov .modelo .fila{
+  opacity:1!important;transform:none!important;filter:none!important;transition:none!important;
+}
+.mov .marco{clip-path:none!important;transition:none!important}
+.mov .marco img{transform:none!important;transition:none!important}
+.mov .marco::after{display:none}
+.par,.par--corto{transform:none!important}
+.viento{display:none}
+
+/* La barra de una fila sin valor que enseñar no es una barra: es una raya. */
+.barra{display:none}
