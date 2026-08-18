@@ -19,7 +19,7 @@ Garafía, en Puntagorda, en Barlovento, en Tijarafe, en Fuencaliente o en
 cualquier sitio donde la red del Cabildo no llega bien, la ayuda concreta es
 esta:
 
-> Abre [tiempo-palmero.vercel.app](https://tiempo-palmero.vercel.app), toca tu
+> Abre [app.tiempopalmero.com](https://app.tiempopalmero.com), toca tu
 > pueblo, y **abre un issue diciendo en qué se equivoca**. La hora, el sitio, lo
 > que marcaba la pantalla y lo que había de verdad. «A las 8:30 en Las Tricias
 > decía 19° y despejado, y había niebla cerrada y no se veía el barranco.»

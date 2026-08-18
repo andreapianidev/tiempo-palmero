@@ -1,0 +1,7 @@
+# tiempopalmero.com — el sitio que cuenta la aplicación.
+# La aplicación en sí vive en app.tiempopalmero.com y tiene su propio robots.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://www.tiempopalmero.com/sitemap.xml

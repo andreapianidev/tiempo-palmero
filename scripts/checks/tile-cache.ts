@@ -25,7 +25,7 @@
  * dependencia de esta aplicación. El servidor de desarrollo, porque el asidero
  * `window.__map` que hace falta para saber cuándo ha terminado de cargar el
  * mapa solo existe con `import.meta.env.DEV`: en el paquete de producción esa
- * línea no se compila, y apuntar esto a tiempopalmero.com solo da un tiempo de
+ * línea no se compila, y apuntar esto a app.tiempopalmero.com solo da un tiempo de
  * espera agotado. Lo que se mide aquí es el código, que es el mismo.
  *
  *   npm i --no-save playwright

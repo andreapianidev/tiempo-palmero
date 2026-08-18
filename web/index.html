@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiempo Palmero · Meteorología interpolada de La Palma</title>
+<meta name="description" content="El tiempo en cualquier punto de La Palma, no en la estación más cercana. Interpolación de alta resolución sobre los datos abiertos del Cabildo Insular. Libre, sin registro y sin publicidad.">
+<meta name="author" content="Andrea Piani">
+<meta name="google-site-verification" content="ji4SryKiSH_vuqayqZOTZTI6i63eYG0RQLgq-EzHEF4">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://www.tiempopalmero.com/">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="Tiempo Palmero">
+<meta property="og:title" content="Tiempo Palmero · Meteorología interpolada de La Palma">
+<meta property="og:description" content="El tiempo en cualquier punto de la isla, no en la estación más cercana. Sobre los datos abiertos del Cabildo Insular.">
+<meta property="og:url" content="https://www.tiempopalmero.com/">
+<meta property="og:image" content="https://www.tiempopalmero.com/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0d0c0b">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   TIEMPO PALMERO · boletín
+   Sin una sola petición fuera de este fichero: ni tipografías, ni CDN,
+   ni analítica. Las tres imágenes viven en /img.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root{
+  /* La tinta y el ámbar salen del propio icono de la aplicación. */
+  --ink:#0d0c0b;
+  --ink-2:#131211;
+  --paper:#efe7d9;
+  --paper-dim:#a49b8c;
+  --paper-faint:#6e675d;
+  --amber:#e2b45c;
+  --amber-deep:#c1873a;
+  --olive:#8b9a63;
+  --rule:rgba(239,231,217,.13);
+  --rule-soft:rgba(239,231,217,.07);
+
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+
+  --gut:clamp(1.25rem,4vw,3.5rem);
+  --rail:clamp(0px,9vw,146px);
+  --max:1240px;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+body{
+  margin:0;
+  background:var(--ink);
+  color:var(--paper);
+  font-family:var(--serif);
+  font-size:clamp(1.02rem,.62rem+.72vw,1.18rem);
+  line-height:1.66;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* Grano: un SVG en línea a pantalla completa, no una imagen. */
+.grain{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  opacity:.4;mix-blend-mode:soft-light;
+}
+
+a{color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:2px}
+
+.skip{
+  position:absolute;left:-9999px;top:0;z-index:99;
+  background:var(--amber);color:var(--ink);padding:.7rem 1.1rem;
+  font-family:var(--mono);font-size:.8rem;text-decoration:none;
+}
+.skip:focus{left:.5rem;top:.5rem}
+
+/* ── la regla de altitud, que es el hilo de toda la página ────────── */
+.rail{
+  position:fixed;left:0;top:0;bottom:0;width:var(--rail);z-index:3;
+  display:none;pointer-events:none;
+  border-right:1px solid var(--rule-soft);
+}
+@media (min-width:1080px){.rail{display:block}}
+.rail::after{
+  content:"";position:absolute;right:-1px;top:0;bottom:0;width:1px;
+  background:linear-gradient(180deg,transparent,var(--amber-deep) 12%,var(--amber-deep) 88%,transparent);
+  opacity:.28;
+}
+.rail-marks{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-evenly;padding:9vh 0}
+.mark{display:flex;align-items:center;justify-content:flex-end;gap:.55rem;padding-right:.8rem;overflow:hidden}
+.mark span{
+  display:flex;flex-direction:column;align-items:flex-end;gap:.1rem;text-align:right;
+  font-family:var(--mono);font-size:.56rem;letter-spacing:.07em;
+  color:var(--paper-faint);white-space:nowrap;
+}
+.mark span b{
+  font-size:.68rem;font-weight:600;letter-spacing:.02em;
+  color:var(--paper-dim);transition:color .45s ease;
+}
+.mark i{display:block;height:1px;width:10px;background:var(--rule);transition:all .45s ease;flex:none}
+.mark.on span{color:var(--paper-dim)}
+.mark.on span b{color:var(--amber)}
+.mark.on i{width:24px;background:var(--amber)}
+
+.shell{position:relative;z-index:1;padding-left:var(--rail)}
+.wrap{max-width:var(--max);margin:0 auto;padding-inline:var(--gut)}
+
+/* ── barra superior ───────────────────────────────────────────────── */
+.top{
+  position:sticky;top:0;z-index:6;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  background:color-mix(in srgb,var(--ink) 86%,transparent);
+  border-bottom:1px solid var(--rule-soft);
+}
+.top-in{display:flex;align-items:center;gap:1.4rem;min-height:60px}
+.brand{
+  font-family:var(--mono);font-size:.83rem;letter-spacing:.16em;
+  text-transform:uppercase;text-decoration:none;font-weight:600;
+  display:flex;align-items:center;gap:.6rem;
+}
+.brand svg{display:block;flex:none}
+.top nav{margin-left:auto;display:none;gap:1.6rem}
+@media (min-width:820px){.top nav{display:flex}}
+.top nav a{
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--paper-dim);text-decoration:none;padding-block:.3rem;
+  border-bottom:1px solid transparent;transition:color .2s,border-color .2s;
+}
+.top nav a:hover{color:var(--paper);border-bottom-color:var(--amber)}
+
+.cta{
+  display:inline-flex;align-items:center;gap:.6rem;
+  font-family:var(--mono);font-size:.74rem;letter-spacing:.11em;text-transform:uppercase;
+  text-decoration:none;font-weight:600;
+  background:var(--amber);color:#17130c;white-space:nowrap;
+  padding:.66rem 1.15rem;border:1px solid var(--amber);
+  transition:background .2s,transform .2s,box-shadow .2s;
+}
+.cta:hover{background:#f0c877;transform:translateY(-1px);box-shadow:0 8px 26px -12px var(--amber)}
+.cta--ghost{background:transparent;color:var(--paper);border-color:var(--rule)}
+.cta--ghost:hover{background:rgba(239,231,217,.06);border-color:var(--paper-dim);box-shadow:none}
+.top .cta{margin-left:auto;padding:.5rem .8rem;font-size:.64rem;letter-spacing:.08em}
+@media (min-width:820px){.top .cta{margin-left:0;padding:.52rem .9rem;font-size:.68rem}}
+@media (max-width:430px){
+  .brand{font-size:.72rem;letter-spacing:.1em;gap:.45rem}
+  .brand svg{width:19px;height:19px}
+  .top-in{gap:.7rem}
+}
+
+/* ── héroe ────────────────────────────────────────────────────────── */
+.hero{position:relative;padding-block:clamp(3.5rem,9vw,7.5rem) 0;overflow:hidden}
+.hero-kicker{
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--amber);margin:0 0 1.6rem;display:flex;align-items:center;gap:.75rem;
+}
+.hero-kicker::after{content:"";height:1px;flex:1;max-width:190px;background:var(--rule)}
+
+h1{
+  font-family:var(--mono);font-weight:600;
+  font-size:clamp(2.1rem,1.1rem+4.1vw,4.5rem);
+  line-height:1.04;letter-spacing:-.035em;margin:0 0 1.5rem;max-width:19ch;text-wrap:balance;
+}
+h1 em{font-style:normal;color:var(--amber);display:block}
+
+.lede{
+  font-size:clamp(1.1rem,.85rem+.75vw,1.42rem);
+  line-height:1.55;max-width:46ch;color:var(--paper);margin:0 0 .9rem;
+}
+.lede b{font-weight:600;color:var(--amber)}
+.sub{max-width:52ch;color:var(--paper-dim);margin:0 0 2.3rem;font-size:1rem}
+
+.hero-acts{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center;margin-bottom:3.4rem}
+
+/* la tira de cifras */
+.strip{
+  display:grid;gap:1px;background:var(--rule-soft);
+  border-block:1px solid var(--rule-soft);
+  grid-template-columns:repeat(2,1fr);
+}
+@media (min-width:760px){.strip{grid-template-columns:repeat(4,1fr)}}
+.strip div{background:var(--ink);padding:1.15rem 1.2rem}
+.strip dt{
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--paper-faint);margin:0 0 .45rem;
+}
+.strip dd{
+  margin:0;font-family:var(--mono);font-size:clamp(1.15rem,.9rem+.7vw,1.5rem);
+  font-weight:600;letter-spacing:-.02em;color:var(--paper);
+}
+.strip dd small{font-size:.62em;font-weight:400;color:var(--paper-dim);letter-spacing:0}
+
+.shot{
+  position:relative;margin-top:clamp(2.5rem,6vw,4.5rem);
+  border:1px solid var(--rule);background:var(--ink-2);
+}
+.shot img{display:block;width:100%;height:auto}
+.shot figcaption{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;line-height:1.6;
+  color:var(--paper-faint);padding:.8rem 1rem;border-top:1px solid var(--rule-soft);
+}
+.shot figcaption b{color:var(--paper-dim);font-weight:400}
+.hero .shot{box-shadow:0 40px 90px -50px #000}
+
+/* ── secciones ────────────────────────────────────────────────────── */
+section{padding-block:clamp(4rem,9vw,7.5rem);position:relative}
+section + section{border-top:1px solid var(--rule-soft)}
+
+.head{display:flex;align-items:baseline;gap:1.1rem;margin-bottom:2.6rem;flex-wrap:wrap}
+.num{
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;color:var(--amber-deep);
+  padding-top:.35rem;
+}
+h2{
+  font-family:var(--mono);font-weight:600;
+  font-size:clamp(1.45rem,1.05rem+1.5vw,2.3rem);
+  line-height:1.14;letter-spacing:-.03em;margin:0;max-width:22ch;
+}
+.head p{margin:.4rem 0 0;color:var(--paper-dim);max-width:54ch;flex-basis:100%}
+
+/* qué hace */
+.feats{display:grid;gap:clamp(2.5rem,5vw,4rem)}
+.feat{display:grid;gap:clamp(1.3rem,3vw,2.6rem);align-items:center}
+@media (min-width:900px){
+  .feat{grid-template-columns:1fr 1.25fr}
+  .feat:nth-child(even) .feat-txt{order:2}
+}
+.feat h3{
+  font-family:var(--mono);font-size:1.02rem;font-weight:600;letter-spacing:-.01em;
+  margin:0 0 .75rem;color:var(--paper);
+}
+.feat h3::before{
+  content:"";display:inline-block;width:16px;height:1px;background:var(--amber);
+  vertical-align:middle;margin-right:.7rem;
+}
+.feat p{margin:0 0 .8rem;color:var(--paper-dim)}
+.feat p:last-child{margin-bottom:0}
+.feat strong{color:var(--paper);font-weight:600}
+
+/* la hoja de datos */
+.sheet{border:1px solid var(--rule);background:linear-gradient(180deg,rgba(239,231,217,.035),transparent 60%)}
+.sheet-hd{
+  display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;
+  padding:1rem 1.25rem;border-bottom:1px solid var(--rule);
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--paper-faint);
+}
+.sheet-hd b{color:var(--amber);font-weight:600}
+.rows{margin:0}
+.row{
+  display:grid;gap:.3rem 1.5rem;padding:1.05rem 1.25rem;
+  border-bottom:1px solid var(--rule-soft);
+}
+@media (min-width:720px){.row{grid-template-columns:minmax(0,15rem) 1fr;align-items:baseline}}
+.row:last-child{border-bottom:0}
+.row dt{font-family:var(--mono);font-size:.82rem;color:var(--amber);letter-spacing:-.01em}
+.row dd{margin:0;color:var(--paper-dim);font-size:.98rem}
+.row dd b{color:var(--paper);font-weight:600;font-family:var(--mono);font-size:.94em}
+
+.warn{
+  margin-top:1.6rem;border:1px solid rgba(226,180,92,.3);
+  background:rgba(226,180,92,.06);padding:1.2rem 1.35rem;
+}
+.warn h3{
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--amber);margin:0 0 .6rem;
+}
+.warn p{margin:0;color:var(--paper-dim);font-size:.98rem}
+.warn p + p{margin-top:.6rem}
+
+/* datos y licencias */
+.srcs{display:grid;gap:1px;background:var(--rule-soft);border:1px solid var(--rule-soft)}
+@media (min-width:680px){.srcs{grid-template-columns:1fr 1fr}}
+.src{background:var(--ink);padding:1.25rem 1.3rem;display:flex;flex-direction:column;gap:.5rem}
+.src h3{
+  font-family:var(--mono);font-size:.88rem;font-weight:600;margin:0;letter-spacing:-.01em;
+}
+.src p{margin:0;color:var(--paper-dim);font-size:.93rem;flex:1}
+.lic{
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--olive);
+}
+.src a{color:var(--paper-dim);text-decoration:none;border-bottom:1px solid var(--rule);font-size:.82rem;font-family:var(--mono);align-self:flex-start}
+.src a:hover{color:var(--amber);border-bottom-color:var(--amber)}
+
+/* repos */
+.repos{display:grid;gap:1.1rem}
+@media (min-width:800px){.repos{grid-template-columns:1fr 1fr}}
+.repo{
+  border:1px solid var(--rule);padding:1.5rem 1.5rem 1.35rem;
+  display:flex;flex-direction:column;gap:.7rem;text-decoration:none;
+  transition:border-color .25s,background .25s,transform .25s;
+}
+.repo:hover{border-color:var(--amber);background:rgba(226,180,92,.045);transform:translateY(-2px)}
+.repo .tag{
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);
+}
+.repo h3{font-family:var(--mono);font-size:1rem;margin:0;font-weight:600;word-break:break-word}
+.repo p{margin:0;color:var(--paper-dim);font-size:.94rem;flex:1}
+.repo .go{font-family:var(--mono);font-size:.72rem;color:var(--paper-faint);letter-spacing:.06em}
+.repo:hover .go{color:var(--amber)}
+
+/* sin rastreo */
+.plain{display:grid;gap:1.4rem}
+@media (min-width:820px){.plain{grid-template-columns:repeat(3,1fr)}}
+.plain div{border-top:1px solid var(--amber);padding-top:1rem}
+.plain h3{font-family:var(--mono);font-size:.8rem;margin:0 0 .5rem;font-weight:600}
+.plain p{margin:0;color:var(--paper-dim);font-size:.93rem}
+
+/* cierre */
+.close-cta{text-align:center;padding-block:clamp(4rem,10vw,8rem)}
+.close-cta h2{margin:0 auto 1.4rem;max-width:20ch}
+.close-cta p{color:var(--paper-dim);max-width:44ch;margin:0 auto 2.2rem}
+
+footer{border-top:1px solid var(--rule);padding-block:2.8rem 3.4rem;font-size:.9rem}
+.legal{
+  font-family:var(--mono);font-size:.68rem;line-height:1.9;letter-spacing:.02em;
+  color:var(--paper-faint);
+}
+.legal a{color:var(--paper-dim);text-decoration:none;border-bottom:1px solid var(--rule)}
+.legal a:hover{color:var(--amber)}
+.foot-grid{display:flex;flex-wrap:wrap;gap:1.6rem 2.5rem;justify-content:space-between;align-items:flex-end}
+
+/* entrada escalonada */
+@media (prefers-reduced-motion:no-preference){
+  .rise{opacity:0;transform:translateY(14px);animation:rise .85s cubic-bezier(.2,.7,.3,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .d1{animation-delay:.05s}.d2{animation-delay:.14s}.d3{animation-delay:.23s}
+  .d4{animation-delay:.32s}.d5{animation-delay:.42s}.d6{animation-delay:.54s}
+}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">Saltar al contenido</a>
+
+<svg class="grain" aria-hidden="true" focusable="false">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)" opacity=".55"/>
+</svg>
+
+<!-- La regla de altitud: 0 m en la costa, 2426 m en el Roque. Es el motivo
+     por el que esta aplicación existe, así que vertebra la página. -->
+<div class="rail" aria-hidden="true">
+  <div class="rail-marks">
+    <div class="mark" data-for="hero"><span><b>0 m</b>el mar</span><i></i></div>
+    <div class="mark" data-for="hace"><span><b>400 m</b>medianías</span><i></i></div>
+    <div class="mark" data-for="honesto"><span><b>1561 m</b>mar de nubes</span><i></i></div>
+    <div class="mark" data-for="datos"><span><b>2000 m</b>cumbre</span><i></i></div>
+    <div class="mark" data-for="codigo"><span><b>2426 m</b>el Roque</span><i></i></div>
+  </div>
+</div>
+
+<div class="shell">
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="/">
+      <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#17150f"/>
+        <path d="M6 25 L13 9 L17 17 L21 12 L26 25 Z" fill="none" stroke="#e2b45c" stroke-width="2" stroke-linejoin="round"/>
+        <circle cx="13" cy="9" r="2" fill="#e2b45c"/>
+      </svg>
+      Tiempo&nbsp;Palmero
+    </a>
+    <nav>
+      <a href="#hace">Qué hace</a>
+      <a href="#honesto">El modelo</a>
+      <a href="#datos">Los datos</a>
+      <a href="#codigo">Código</a>
+    </nav>
+    <a class="cta" href="https://app.tiempopalmero.com">Abrir el mapa</a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ═══ HÉROE ═══════════════════════════════════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="wrap">
+    <p class="hero-kicker rise d1">Isla de La Palma · Canarias</p>
+    <h1 class="rise d2">El tiempo en tu barranco,<em>no en el pueblo de al lado.</em></h1>
+    <p class="lede rise d3">
+      Tocas cualquier punto del mapa y obtienes una estimación <b>en ese punto</b>,
+      no la lectura de la estación más cercana.
+    </p>
+    <p class="sub rise d3">
+      En La Palma eso no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa
+      escala la altitud manda sobre la distancia en cualquier variable atmosférica.
+      Dos puntos a cinco kilómetros pueden tener el viento al revés.
+    </p>
+    <div class="hero-acts rise d4">
+      <a class="cta" href="https://app.tiempopalmero.com">Abrir el mapa &rarr;</a>
+      <a class="cta cta--ghost" href="#honesto">Cómo se calcula</a>
+    </div>
+
+    <dl class="strip rise d5">
+      <div><dt>Red del Cabildo</dt><dd>52 <small>estaciones</small></dd></div>
+      <div><dt>Desnivel de la isla</dt><dd>2426 <small>m en 42 km</small></dd></div>
+      <div><dt>Datos abiertos</dt><dd>49 <small>conjuntos</small></dd></div>
+      <div><dt>Coste para ti</dt><dd>0 <small>· sin registro</small></dd></div>
+    </dl>
+
+    <figure class="shot rise d6">
+      <img src="/img/isla-completa.jpg" width="1800" height="1180" fetchpriority="high" decoding="async"
+           alt="La isla de La Palma en vista tridimensional, con las nubes y la lluvia del momento dibujadas en volumen sobre el relieve y pastillas con la temperatura de cada estación repartidas por la costa y la cumbre. En el panel lateral, el estado del modelo: 35 de 52 estaciones activas, gradiente medido 7,24 °C/km, RMSE de validación 1,24 °C.">
+      <figcaption><b>La isla, ahora mismo.</b> Las nubes y las cortinas de lluvia se dibujan en volumen sobre el relieve, a la cota que les toca. A la izquierda, el modelo enseñando su propio error.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══ 01 QUÉ HACE ═════════════════════════════════════════════════ -->
+<section id="hace">
+  <div class="wrap">
+    <div class="head">
+      <span class="num">01</span>
+      <h2>Lo que se ve en pantalla</h2>
+      <p>Contado por lo que hace, no por cómo lo hace. Todo lo que sigue está en marcha ahora mismo, gratis y sin instalar nada.</p>
+    </div>
+
+    <div class="feats">
+
+      <article class="feat">
+        <div class="feat-txt">
+          <h3>Una malla, no unos cuantos puntos</h3>
+          <p>La red del Cabildo publica lecturas en 52 emplazamientos. Entre ellos hay
+             barrancos, medianías y caras de sotavento donde no mide nadie — y donde vive
+             mucha gente.</p>
+          <p>El motor reconstruye la variable <strong>celda a celda sobre el modelo de
+             elevación</strong>, corrigiendo por altitud con el gradiente que la propia red
+             mide en ese instante. Temperatura, humedad, punto de rocío y déficit de vapor.</p>
+        </div>
+        <figure class="shot">
+          <img src="/img/estacion-detalle.jpg" width="1800" height="1180" loading="lazy" decoding="async"
+               alt="Vista cercana de la Caldera de Taburiente sobre ortofoto, con la ficha de la estación de Los Llanos abierta: temperatura 23,4 °C, humedad 73 %, punto de rocío calculado 18,3 °C, y una curva de las últimas 24 horas.">
+          <figcaption><b>Cada punto trae su ficha</b> con la última lectura, su antigüedad y la curva de las 24 h — y dice cuánto del intervalo transmitió de verdad.</figcaption>
+        </figure>
+      </article>
+
+      <article class="feat">
+        <div class="feat-txt">
+          <h3>Las capas de la isla, encima</h3>
+          <p>Senderos y sus puntos de interés, la red de guaguas, las carreteras insulares
+             y el viario completo, los aforos de tráfico, las cámaras de incendios, las
+             webcam, los miradores, el patrimonio, la recarga eléctrica.</p>
+          <p>Y tres fondos: el relieve sombreado de casa, la <strong>carta topográfica
+             1:20.000</strong> y la <strong>ortofoto 2024-2025</strong> de GRAFCAN, pedidas
+             a la resolución real de tu pantalla.</p>
+        </div>
+        <figure class="shot">
+          <img src="/img/tazacorte-mar.jpg" width="1800" height="1190" loading="lazy" decoding="async"
+               alt="Puerto de Tazacorte visto desde arriba sobre ortofoto de alta resolución, con el mar simulado en movimiento frente a la playa y el panel de capas abierto a la izquierda mostrando estaciones, sensores de CO₂, senderos, carreteras y webcam.">
+          <figcaption><b>El mar se mueve de verdad:</b> dos trenes de olas sobre la batimetría real, con la marea a su altura. Donde el fondo sube, la ola crece y rompe.</figcaption>
+        </figure>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 EL MODELO ════════════════════════════════════════════════ -->
+<section id="honesto">
+  <div class="wrap">
+    <div class="head">
+      <span class="num">02</span>
+      <h2>El modelo enseña dónde se equivoca</h2>
+      <p>Una estimación sin su error al lado es una cifra bonita sin procedencia. Esto es lo que la aplicación pone en pantalla, en directo, sin que haya que pedirlo.</p>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-hd">
+        <span>Panel «Modelo» · valores en directo</span>
+        <span><b>lo que se ve en la aplicación</b></span>
+      </div>
+      <dl class="rows">
+        <div class="row">
+          <dt>Estaciones activas</dt>
+          <dd>El denominador de verdad, no el del catálogo: <b>35 de 52</b> el día de la captura. Las que llevan sin transmitir salen de la cuenta y se dice cuántas son.</dd>
+        </div>
+        <div class="row">
+          <dt>Gradiente medido</dt>
+          <dd><b>7,24 °C/km</b> en ese instante — no los 6,5 del manual. Se recalcula con cada pasada, porque en una isla con inversión del alisio el del libro no vale.</dd>
+        </div>
+        <div class="row">
+          <dt>R² del ajuste</dt>
+          <dd><b>0,778</b>. Cuánto de lo que se ve lo explica la altitud. Cuando cae, la aplicación lo enseña caer.</dd>
+        </div>
+        <div class="row">
+          <dt>RMSE de validación</dt>
+          <dd><b>1,24 °C</b>, calculado <strong>escondiendo cada estación por turno</strong> y reconstruyéndola con las demás. Es el error contra datos que el modelo no ha visto.</dd>
+        </div>
+        <div class="row">
+          <dt>Margen calibrado</dt>
+          <dd><b>±1,02 °C</b>. La banda que acompaña a cada estimación está calibrada contra esa validación, no elegida a ojo.</dd>
+        </div>
+        <div class="row">
+          <dt>Fuera del techo de la red</dt>
+          <dd>Por encima de la estación más alta no se extrapola a ciegas: entran anclas de modelo global y la medida real del observatorio del Roque, a 2.387 m.</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="warn">
+      <h3>Un sensor descalibrado envenena el mapa entero</h3>
+      <p>Hay uno a 1561 m que en agosto marcaba 9,7 °C. Pasa cualquier filtro de
+         plausibilidad —a esa altitud no es un valor absurdo— pero arrastra la pendiente
+         del ajuste y con ella la estimación de toda la isla. Detectarlo y descartarlo
+         mejora el RMSE un <strong>43,7 %</strong>.</p>
+      <p>Por eso el descarte no se hace en silencio: la aplicación lleva el censo de qué
+         estaciones ha apartado y por qué. Y el detector se prueba por las dos orillas —
+         una invasión de aire sahariano hizo subir una estación 6 °C en quince minutos, y
+         eso no es una avería.</p>
+    </div>
+
+    <div class="warn" style="border-color:rgba(200,80,60,.4);background:rgba(200,80,60,.07)">
+      <h3 style="color:#e08a6e">La capa de CO₂ falla en cerrado</h3>
+      <p>La red DEMASE de Puerto Naos y La Bombilla mide gas volcánico del suelo, y sus
+         sensores llegan a marcar concentraciones letales. Eso no es una capa más: es un
+         dato de seguridad para la vida.</p>
+      <p>Se cachea 30 segundos y ni uno más, no hay reutilización de lecturas viejas, y
+         si el origen no responde la sección <strong>desaparece y lo dice</strong> — nunca
+         se sirve el último verde conocido. Y no lleva, ni llevará, publicidad ni muro de pago.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 LOS DATOS ════════════════════════════════════════════════ -->
+<section id="datos">
+  <div class="wrap">
+    <div class="head">
+      <span class="num">03</span>
+      <h2>Todo sale de datos abiertos</h2>
+      <p>La procedencia de cada byte importa, así que está escrita — aquí y dentro de la propia aplicación, fuente por fuente y con su licencia.</p>
+    </div>
+
+    <div class="srcs">
+      <div class="src">
+        <h3>Cabildo Insular de La Palma</h3>
+        <p>Meteorología, calidad del aire, calidad del cielo, cámaras de incendios, senderos,
+           aforos, sitios de interés, miradores y carreteras. Los 49 conjuntos del portal de
+           datos abiertos, revisados uno por uno.</p>
+        <span class="lic">CC-BY 4.0</span>
+        <a href="https://www.opendatalapalma.es" rel="noopener">opendatalapalma.es &rarr;</a>
+      </div>
+      <div class="src">
+        <h3>IDECanarias · GRAFCAN</h3>
+        <p>Cartografía oficial canaria: el Mapa Topográfico 1:20.000 y la Ortofoto
+           Territorial 2024-2025, pedidas tesela a tesela y solo mientras se miran.</p>
+        <span class="lic">Libre y gratuita</span>
+        <a href="https://www.idecanarias.es" rel="noopener">idecanarias.es &rarr;</a>
+      </div>
+      <div class="src">
+        <h3>Open-Meteo</h3>
+        <p>Las anclas por encima del techo de la red, el fondo del mapa de viento y el estado
+           del mar. Plan gratuito de uso no comercial: esta aplicación no cobra, no tendrá
+           suscripción y no mostrará publicidad.</p>
+        <span class="lic">CC-BY 4.0</span>
+        <a href="https://open-meteo.com" rel="noopener">open-meteo.com &rarr;</a>
+      </div>
+      <div class="src">
+        <h3>OpenStreetMap</h3>
+        <p>El viario completo de la isla —19.770 trazados y 3.373 km— y los topónimos que el
+           buscador entiende.</p>
+        <span class="lic">ODbL 1.0</span>
+        <a href="https://www.openstreetmap.org/copyright" rel="noopener">openstreetmap.org &rarr;</a>
+      </div>
+      <div class="src">
+        <h3>Copernicus EFFIS · EMODnet</h3>
+        <p>El histórico de incendios con el que se valida el índice de riesgo, y la batimetría
+           real sobre la que se calcula el oleaje.</p>
+        <span class="lic">CC-BY 4.0</span>
+        <a href="https://forest-fire.emergency.copernicus.eu" rel="noopener">copernicus.eu &rarr;</a>
+      </div>
+      <div class="src">
+        <h3>Mapzen Terrain Tiles · AWS</h3>
+        <p>El modelo de elevación sobre el que se corrige la altitud, se dibuja el relieve y
+           se levanta la vista tridimensional. Un solo modelo para las tres cosas.</p>
+        <span class="lic">Dominio público / CC-BY</span>
+        <a href="https://registry.opendata.aws/terrain-tiles/" rel="noopener">registry.opendata.aws &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 CÓDIGO ═══════════════════════════════════════════════════ -->
+<section id="codigo">
+  <div class="wrap">
+    <div class="head">
+      <span class="num">04</span>
+      <h2>Todo el código es libre</h2>
+      <p>Apache 2.0 con atribución. El motor de interpolación, sus umbrales y las pruebas que los sostienen son públicos: cualquiera puede comprobar de dónde sale cada número.</p>
+    </div>
+
+    <div class="repos">
+      <a class="repo" href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener">
+        <span class="tag">Aplicación web</span>
+        <h3>andreapianidev/tiempo-palmero</h3>
+        <p>El motor de interpolación, el control de calidad de la red, las capas y la escena
+           tridimensional. React y MapLibre GL, sin proveedor de mapas de pago y sin clave de
+           API. Es lo que corre en <span style="color:var(--paper)">app.tiempopalmero.com</span>.</p>
+        <span class="go">Apache-2.0 &nbsp;·&nbsp; ver en GitHub &rarr;</span>
+      </a>
+      <a class="repo" href="https://github.com/andreapianidev/tiempo-palmero-unity" rel="noopener">
+        <span class="tag">Gemelo digital · macOS</span>
+        <h3>andreapianidev/tiempo-palmero-unity</h3>
+        <p>La isla reconstruida en tres dimensiones con Unity 6 HDRP, alimentada por la misma
+           meteorología interpolada de la red del Cabildo. Gratis y de código abierto.</p>
+        <span class="go">Apache-2.0 &nbsp;·&nbsp; ver en GitHub &rarr;</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 SIN RASTREO ══════════════════════════════════════════════ -->
+<section id="privacidad">
+  <div class="wrap">
+    <div class="head">
+      <span class="num">05</span>
+      <h2>Sin cookies, sin analítica, sin publicidad</h2>
+    </div>
+    <div class="plain">
+      <div>
+        <h3>No hay cuentas</h3>
+        <p>No se pide un correo, no hay registro y no se puede pagar por nada. No hay
+           tampoco cookies ni analítica de terceros: nadie te sigue de aquí a otro sitio.</p>
+      </div>
+      <div>
+        <h3>Lo que sí se guarda</h3>
+        <p>Tus ajustes y la cartografía que ya has mirado, en tu propio navegador y nada más.
+           Sirve para que volver no cueste otra descarga. La aplicación lo dice y se borra
+           vaciando los datos del sitio.</p>
+      </div>
+      <div>
+        <h3>Hecho en la isla</h3>
+        <p>Lo escribe una persona sola, viviendo aquí. Si la aplicación se equivoca en tu
+           barrio, contarlo en un issue vale más que cualquier otra ayuda.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="close-cta">
+  <div class="wrap">
+    <h2>Mira qué tiempo hace<br>donde estás tú.</h2>
+    <p>En marcha, sin registro, sin clave de API y sin nada que instalar.</p>
+    <a class="cta" href="https://app.tiempopalmero.com">Abrir el mapa &rarr;</a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap foot-grid">
+    <p class="legal" style="margin:0">
+      <a href="https://app.tiempopalmero.com">app.tiempopalmero.com</a> &nbsp;·&nbsp;
+      <a href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener">Código</a> &nbsp;·&nbsp;
+      <a href="mailto:andreapiani.dev@gmail.com">andreapiani.dev@gmail.com</a>
+    </p>
+    <p class="legal" style="margin:0;text-align:right">
+      © 2026 Tiempo Palmero · Andrea Piani<br>
+      NIE 02915190306-Z · Tijarafe, Santa Cruz de Tenerife · Islas Canarias<br>
+      Datos del Cabildo Insular de La Palma (CC-BY) · Código Apache-2.0
+    </p>
+  </div>
+</footer>
+
+</div>
+
+<script>
+/* La regla de altitud se ilumina con la sección que se está leyendo.
+   Es una mejora progresiva: sin JavaScript la página se lee igual. */
+(function () {
+  var marks = document.querySelectorAll('.mark')
+  if (!marks.length || !('IntersectionObserver' in window)) return
+  var byId = {}
+  marks.forEach(function (m) { byId[m.dataset.for] = m })
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      var m = byId[e.target.id]
+      if (m) m.classList.toggle('on', e.isIntersecting)
+    })
+  }, { rootMargin: '-40% 0px -40% 0px' })
+  Object.keys(byId).forEach(function (id) {
+    var el = document.getElementById(id)
+    if (el) obs.observe(el)
+  })
+})()
+</script>
+
+</body>
+</html>

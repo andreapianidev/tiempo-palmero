@@ -21,3 +21,4 @@ __pycache__/
 
 # Scripts de captura usa y tira
 _shot.mjs
+web/.vercel

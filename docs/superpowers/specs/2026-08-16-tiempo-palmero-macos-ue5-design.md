@@ -20,7 +20,7 @@ la app.
 
 ## Contexto
 
-- La web (`tiempo-palmero.vercel.app`) es React + MapLibre GL con capas shader
+- La web (`app.tiempopalmero.com`) es React + MapLibre GL con capas shader
   propias (sol, nubes, lluvia, terreno, mar, viento, vapor, sombras) y un motor
   de interpolación en `src/lib/interpolate.ts` (1.205 líneas).
 - El escritorio será la segunda superficie que consuma ese core, y por tanto la

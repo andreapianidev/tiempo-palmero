@@ -31,9 +31,25 @@ src/lib/
   ├── grid.ts             Malla raster de ~200 m
   ├── counters/           Aforos: modelo del día, del pulso y del censo
   ├── webcams/            Catálogo depurado de webcams, con su procedencia
+  ├── tiles/              La caché de teselas de GRAFCAN y su precarga
   ├── settings/           Lo elegido, que dura: cajón por plataforma y validación
   └── cabildo.ts          Cliente de la API, decodificación posicional
+
+web/                      El sitio de tiempopalmero.com, aparte de la aplicación
+  └── index.html          Una página estática, sin dependencias ni analítica
 ```
+
+**Son dos despliegues, y no es una complicación gratuita.** La aplicación vive
+en `app.tiempopalmero.com` y el sitio que la explica en `tiempopalmero.com`: uno
+tiene que cargar un motor de interpolación y 118 teselas de relieve antes de
+enseñar nada, y el otro tiene que abrirse al instante en el móvil de quien llega
+desde un enlace. Meterlos en el mismo sitio obligaría a que el segundo pagase el
+arranque del primero.
+
+El precio de separarlos hay que decirlo, porque es real: **son dos orígenes
+distintos para el navegador**, así que las teselas guardadas y los ajustes de
+quien usara la aplicación en el dominio antiguo no viajan con ella. Se paga una
+vez, y se pagó el 18 de agosto de 2026.
 
 ### Por qué hay un proxy
 

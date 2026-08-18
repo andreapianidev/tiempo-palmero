@@ -1,7 +1,8 @@
 # Tiempo Palmero
 
 [![CI](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml/badge.svg)](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml)
-[![Web en producción](https://img.shields.io/badge/web-en%20producción-2ea44f?logo=vercel&logoColor=white)](https://tiempopalmero.com)
+[![La aplicación](https://img.shields.io/badge/app-app.tiempopalmero.com-2ea44f?logo=vercel&logoColor=white)](https://app.tiempopalmero.com)
+[![El sitio](https://img.shields.io/badge/web-tiempopalmero.com-8b9a63)](https://www.tiempopalmero.com)
 [![Licencia Apache 2.0](https://img.shields.io/badge/licencia-Apache%202.0-4c6ef5)](LICENSE)
 [![Datos del Cabildo Insular de La Palma](https://img.shields.io/badge/datos-Cabildo%20de%20La%20Palma-005f73)](https://www.opendatalapalma.es)
 [![Se buscan colaboradores en La Palma](https://img.shields.io/badge/se%20buscan-colaboradores%20en%20la%20isla-b5179e)](CONTRIBUTING.md)
@@ -14,10 +15,14 @@ punto**, no la lectura de la estación más cercana. Es una distinción que en L
 Palma no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa escala la
 altitud manda sobre la distancia en cualquier variable atmosférica.
 
-**Probar la aplicación → [tiempopalmero.com](https://tiempopalmero.com)**
+**Probar la aplicación → [app.tiempopalmero.com](https://app.tiempopalmero.com)**
 — en marcha, sin registro, sin clave de API y sin nada que instalar. Se ve igual
 en un teléfono: por debajo de 720 px de ancho la interfaz cambia a su propia
 carcasa, con una hoja que sube desde abajo en vez del panel lateral.
+
+Y **[tiempopalmero.com](https://www.tiempopalmero.com)** es el sitio que la
+cuenta: qué hace, de qué datos sale y con qué licencia. Su código está en
+[`web/`](web/) — una sola página estática, sin dependencias ni analítica.
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 
@@ -367,7 +372,7 @@ está en cuatro documentos. Cada uno se lee solo.
 | **[El motor de interpolación](docs/motor.md)** | Los seis pasos, la corrección altimétrica, el rechazo de valores atípicos, la banda de incertidumbre calibrada y la validación dejando fuera cada estación por turno. | 448 |
 | **[Los datos del Cabildo](docs/datos-del-cabildo.md)** | Los 49 conjuntos del portal, uno por uno: lo integrado, lo que falta, lo que no conviene añadir. Las guaguas, los aforos, las webcam, el viario, la cobertura de TDT. | 783 |
 | **[La sección experimental](docs/experimental.md)** | Las cinco funciones que dibujan más de lo que miden: nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 676 |
-| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 589 |
+| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 605 |
 
 ---
 
@@ -590,7 +595,8 @@ modificar citando al autor y manteniendo las atribuciones de los datos. Ver
 Escrito en El Paso, en la isla de La Palma, sobre los datos abiertos de su
 Cabildo.
 
-Aplicación en marcha: **[tiempopalmero.com](https://tiempopalmero.com)**
+Aplicación en marcha: **[app.tiempopalmero.com](https://app.tiempopalmero.com)**
+· Sitio: **[tiempopalmero.com](https://www.tiempopalmero.com)**
 · Código: **[github.com/andreapianidev/tiempo-palmero](https://github.com/andreapianidev/tiempo-palmero)**
 
 © 2026 Tiempo Palmero · Andrea Piani · Tijarafe, Santa Cruz de
