@@ -165,9 +165,9 @@ export const VARIABLES: Record<MapVariable, VariableSpec> = {
  * En el orden en que se enseñan. Lo medido primero, lo derivado después.
  *
  * Son las cuatro del paquete higrotérmico y NADA más: esta lista es la que
- * decide qué puede pedirle la interfaz al motor de interpolación, y la app
- * nativa la usa para separar variables de capas. Meter aquí el CO₂ haría que
- * el móvil tratase su capa de sensores como una malla.
+ * decide qué puede pedirle la interfaz al motor de interpolación, y es también
+ * lo que separa una variable de una capa. Meter aquí el CO₂ haría que su red de
+ * sensores pasara por una malla interpolada.
  */
 export const VARIABLE_ORDER: readonly DisplayVariable[] = [
   'temperature',

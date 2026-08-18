@@ -73,9 +73,7 @@ export const COLORS = {
  * `maplibre-gl` no está ni puede estar. De aquí solo pueden salir tipos e
  * importaciones que no arrastren `maplibre-gl` en tiempo de ejecución — si una
  * lo hace, el núcleo deja de cargar fuera del navegador sin que ninguna prueba
- * de la web se entere. La regla la estrenó la app de iOS y Android, que
- * empaquetaba con Metro y se rompía igual; esa app vive desde agosto de 2026 en
- * su propio repositorio, y la trampa sigue abierta para quien queda.
+ * de la web se entere.
  *
  * Por eso los fondos de GRAFCAN no se declaran aquí: sus fuentes y sus capas las
  * añade `MapView` al cargar, que es solo de la web. Y por eso la caché de

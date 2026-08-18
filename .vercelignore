@@ -6,13 +6,11 @@
 #
 # AQUÍ NO SE PONE UN PATRÓN SIN BARRA INICIAL. Estos patrones se comportan como
 # los de `.gitignore`: `mobile` a secas casa con un directorio llamado así A
-# CUALQUIER PROFUNDIDAD. Lo hubo, para excluir la app de iOS y Android que vivía
-# en `/mobile`, y el día que la web estrenó su propia carcasa de móvil en
-# `src/components/mobile/` esa regla se la llevó por delante —ese directorio no
-# llegaba a subir— y el despliegue moría con «Cannot find module
+# CUALQUIER PROFUNDIDAD. Lo hubo, y el día que la web estrenó su carcasa de
+# móvil en `src/components/mobile/` esa regla se la llevó por delante —ese
+# directorio no llegaba a subir— y el despliegue moría con «Cannot find module
 # './components/mobile/MobileShell'». No se reproducía en local, porque en local
-# el directorio está: solo fallaba en Vercel, que es donde importa. La app
-# nativa ya no está en este repositorio; la lección de la barra, sí.
+# el directorio está: solo fallaba en Vercel, que es donde importa.
 #
 # El entrenamiento offline del modelo de incendios cae en la misma trampa que
 # avisa el párrafo primero: está en `.gitignore`, y `.gitignore` aquí no cuenta.

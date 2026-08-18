@@ -15,8 +15,9 @@
  * La lectura ocurre en el inicializador de `useState`, o sea antes del primer
  * render y no en un efecto posterior. Es deliberado: hidratar después obliga a
  * pintar una vez con los valores de fábrica y corregir al fotograma siguiente,
- * y eso se ve como un salto de la malla al entrar. Por eso el cajón es síncrono
- * en las dos plataformas —ver `backend.native.ts`.
+ * y eso se ve como un salto de la malla al entrar. Por eso el cajón es síncrono,
+ * y lo tiene que ser en cualquier plataforma que lo implemente —ver
+ * `backend.ts`.
  */
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'

@@ -135,10 +135,10 @@ describe('catálogo de variables', () => {
   })
 
   it('el orden higrotérmico NO se traga las variables de red propia', () => {
-    // `VARIABLE_ORDER` es lo que se le puede pedir al motor de interpolación,
-    // y la app nativa la usa además para separar variables de capas. Si el
-    // CO₂ se colara aquí, el móvil trataría su capa de sensores como una
-    // malla y `isDisplayVariable('co2')` empezaría a decir que sí.
+    // `VARIABLE_ORDER` es lo que se le puede pedir al motor de interpolación, y
+    // es además lo que separa una variable de una capa. Si el CO₂ se colara
+    // aquí, su red de sensores pasaría por una malla interpolada e
+    // `isDisplayVariable('co2')` empezaría a decir que sí.
     expect(VARIABLE_ORDER).not.toContain('co2')
     expect(isDisplayVariable('co2')).toBe(false)
     for (const id of VARIABLE_ORDER) expect(isDisplayVariable(id)).toBe(true)

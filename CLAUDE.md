@@ -22,17 +22,15 @@ desplegar; no se deja nada colgando en una rama.
 
 ## Este repositorio es la web, y solo la web
 
-`mobile/` estuvo aquí hasta agosto de 2026 —una app de Expo para iOS y Android
-que importaba `../src` con el alias `@core/*`— y salió.
-**Aquí no vuelve a entrar código nativo.**
-La web se ve en un teléfono porque tiene su propia carcasa responsive en
-`src/components/mobile/`, que es HTML y no tiene nada de nativo: ese directorio
-sí es de este repositorio y no se toca al hablar de «quitar el móvil».
+**Aquí no entra código nativo.** Ni iOS, ni Android, ni empaquetadores de app.
+Que la web se vea en un teléfono es cosa de `src/components/mobile/`, que es su
+carcasa responsive en HTML: ese directorio SÍ es de este repositorio y no se
+toca al hablar de «quitar el móvil».
 
-Lo que dejó escrito el reparto sigue valiendo, y no por nostalgia: el núcleo de
-`src/lib` **no puede importar `maplibre-gl` en tiempo de ejecución**. Quien pisa
-hoy esa trampa es el escritorio, y quien la vigila es
-`mapStyle.portable.test.ts`.
+Y una regla que sale de ahí y no se relaja: el núcleo de `src/lib` **no puede
+importar `maplibre-gl` en tiempo de ejecución**, porque el escritorio de UE5
+carga ese mismo núcleo dentro de QuickJS, donde la librería no existe. Lo
+vigila `mapStyle.portable.test.ts`.
 
 ## El escritorio es otra puerta, no un adorno
 

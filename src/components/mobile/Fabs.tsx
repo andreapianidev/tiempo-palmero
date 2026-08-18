@@ -1,8 +1,7 @@
 /**
  * Los botones redondos del móvil: capas, mi ubicación y volver a ver la isla.
  *
- * Los trazados son los del prototipo de iOS, y el de capas lleva un contador
- * cuando hay alguna encendida: sin él, cerrar el panel deja el mapa lleno de
+ * El de capas lleva un contador cuando hay alguna encendida: sin él, cerrar el panel deja el mapa lleno de
  * senderos y guaguas sin nada que recuerde de dónde salieron ni dónde se
  * apagan.
  *

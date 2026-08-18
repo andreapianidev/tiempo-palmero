@@ -5,11 +5,9 @@
  * `getImageData` es la parte cara y hacerla 63 veces cuesta más que hacerla una.
  *
  * Este fichero es la mitad web de la descarga, y el `<canvas>` es lo único que
- * tiene de navegador. Tuvo un gemelo —`dem-loader.native.ts`, que hacía lo mismo
- * con Skia— hasta que la app de iOS y Android se mudó a su propio repositorio en
- * agosto de 2026. Lo que se conserva es el reparto, no el gemelo: aquí dentro no
- * hay un solo `if` de plataforma, y quien traiga los píxeles de otra manera —el
- * escritorio de UE5— pone su cargador al lado en vez de una rama aquí.
+ * tiene de navegador. Lo que importa es el reparto: aquí dentro no hay un solo
+ * `if` de plataforma, y quien traiga los píxeles de otra manera —el escritorio
+ * de UE5— pone su cargador al lado en vez de una rama aquí.
  */
 
 import { blitTerrarium, demTilePath, demTiles, emptyDem, type Dem, type DemManifest } from './dem'

@@ -16,8 +16,8 @@
  * ellos —CO₂, cobertura, incendio— no cambiaban tampoco los pines. Apagarla
  * sigue siendo cosa de esta casilla y de nadie más.
  *
- * La lista de variables NO vive aquí: está en `lib/variables.ts`, que es la
- * misma tabla que consume la app nativa. Este fichero solo la dibuja.
+ * La lista de variables NO vive aquí: está en `lib/variables.ts`, junto al
+ * motor que las calcula. Este fichero solo la dibuja.
  */
 
 import { rampCss } from '../../lib/palette'

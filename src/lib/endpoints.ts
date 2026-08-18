@@ -9,8 +9,7 @@
  * no se sirve desde ninguna parte y los datos siguen viviendo en el despliegue
  * de producción. Quien esté en ese caso llama una vez a `setDataOrigin()` al
  * arrancar y el resto del núcleo —`api.ts`, el DEM, las capas, la red de
- * guaguas— no se entera de nada. Lo estrenó la app de iOS y Android, que ya vive
- * en su propio repositorio; el escritorio hereda el mismo mecanismo.
+ * guaguas— no se entera de nada.
  *
  * Es deliberado que esto sea un módulo y no un parámetro más en cada función:
  * la alternativa era pasar un origen por trece sitios distintos, y el origen no

@@ -23,13 +23,9 @@ la app.
 - La web (`tiempo-palmero.vercel.app`) es React + MapLibre GL con capas shader
   propias (sol, nubes, lluvia, terreno, mar, viento, vapor, sombras) y un motor
   de interpolación en `src/lib/interpolate.ts` (1.205 líneas).
-- El móvil (`mobile/`, Expo) ya importa ese mismo core con el alias `@core/*`:
-  es el precedente de «un solo motor, varias superficies».
-  > **Ya no es cierto (18 ago 2026).** La app de iOS y Android salió de este
-  > repositorio y vive en el suyo; aquí solo queda la web. El precedente sigue
-  > valiendo como argumento —el core se compartió de verdad y funcionó—, pero
-  > el escritorio es hoy la única superficie que lo comparte, y por tanto el
-  > único que puede romperse si el núcleo importa `maplibre-gl`.
+- El escritorio será la segunda superficie que consuma ese core, y por tanto la
+  única que puede romperse si el núcleo importa `maplibre-gl` en tiempo de
+  ejecución. Lo vigila `mapStyle.portable.test.ts`.
 - Reglas del repo (CLAUDE.md): todo cambio termina en producción, un archivo una
   responsabilidad, los umbrales se miden y no se relajan, las cifras en texto se
   verifican.

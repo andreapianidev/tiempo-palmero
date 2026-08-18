@@ -63,10 +63,9 @@ aplicación pide es público. Las funciones de `api/` se ejecutan de verdad en
 desarrollo —las monta `dev/edgeApi.ts`—, así que lo que pruebas es lo que se
 despliega, con su caché delante.
 
-**Este repositorio es la web y solo la web.** La aplicación de iOS y Android
-vivió aquí hasta agosto de 2026 y salió. Que la web se vea bien en un teléfono
-no es aquello: es la carcasa responsive de `src/components/mobile/`, que es
-HTML.
+**Este repositorio es la web y solo la web.** Que se vea bien en un teléfono no
+es una aplicación aparte: es la carcasa responsive de `src/components/mobile/`,
+que es HTML como el resto.
 
 ---
 

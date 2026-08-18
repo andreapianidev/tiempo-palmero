@@ -102,10 +102,10 @@ export function parseHistoricDay(ts: unknown): string | null {
 /**
  * Miles abreviados: en la entrada de Santa Cruz caben 20.000 pasos al día.
  *
- * Vivía en `CounterMarker.ts`, junto al marcador del DOM, y eso dejaba a la app
- * nativa importando `document.createElement` para poder escribir «8,7 k». Es
- * una regla de cómo se lee una cifra de esta red, no de cómo se dibuja: va con
- * el modelo, que es lo que comparten las tres plataformas.
+ * Vivía en `CounterMarker.ts`, junto al marcador del DOM, y eso obligaba a
+ * arrastrar `document.createElement` para poder escribir «8,7 k». Es una regla
+ * de cómo se lee una cifra de esta red, no de cómo se dibuja: va con el modelo,
+ * que es lo que se comparte fuera del navegador.
  */
 export function compactCount(value: number): string {
   if (value < 1000) return n0(value)

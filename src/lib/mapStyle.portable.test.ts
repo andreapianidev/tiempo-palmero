@@ -14,10 +14,7 @@ import { describe, expect, it } from 'vitest'
  * Y no se entera nadie: `npm test` y `npm run build` solo miran la web, donde
  * esa importación es perfectamente válida. Ya pasó una vez —un sombreado propio
  * que se declaraba dentro de `buildStyle`, y con él entraba
- * `maplibre.addProtocol`— y de ahí sale este test. Entonces quien se rompía era
- * la app de iOS y Android, que empaquetaba con Metro; esa app se mudó a su
- * repositorio en agosto de 2026 y la trampa se quedó, porque el que la pisa
- * ahora es el escritorio.
+ * `maplibre.addProtocol`— y de ahí sale este test.
  *
  * La caché de teselas de agosto de 2026 es el caso vivo: `tiles/protocol.ts`
  * llama a `maplibre.addProtocol` de verdad, y por eso cuelga de `MapView` y no
@@ -65,7 +62,7 @@ function runtimeMaplibreImport(src: string): string | null {
   return null
 }
 
-describe('el estilo del mapa sigue siendo portable a la app nativa', () => {
+describe('el estilo del mapa sigue siendo portable fuera del navegador', () => {
   const files = reachableFrom(resolve(HERE, 'mapStyle.ts'))
 
   it('alcanza los módulos que se esperan, o el rastreo está roto', () => {

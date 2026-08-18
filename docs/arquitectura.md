@@ -457,9 +457,9 @@ CPU—, que es justo la primera cosa que se apaga al bajar de calidad.
 ### La misma web, en un teléfono
 
 Por debajo de 720 px de ancho la web deja de montar la barra lateral y el panel
-flotante, y monta lo mismo que la app nativa: cabecera sobre el mapa, una tira
-de variables que se desplaza, tres botones redondos y **una hoja que asoma por
-abajo y nunca se cierra**. Vive en `src/components/mobile/` y el escritorio no
+flotante, y monta lo que se espera de un teléfono: cabecera sobre el mapa, una
+tira de variables que se desplaza, tres botones redondos y **una hoja que asoma
+por abajo y nunca se cierra**. Vive en `src/components/mobile/` y el escritorio no
 cambia en nada.
 
 Lo que **no** se duplica es la ficha. Dentro de la hoja van el mismo
@@ -501,10 +501,10 @@ escena atmosférica, la luz solar y sus sombras, y qué secciones del panel est�
 desplegadas. Van a `localStorage`, y la lectura es **síncrona**, que no es un
 detalle de implementación: hidratar después del primer render obliga a pintar la
 malla en temperatura y corregirla al fotograma siguiente, y ese salto se ve. Por
-eso `settings/backend.ts` es un fichero aparte de `settings/store.ts` —la lógica
-es una y el cajón cambia con la plataforma—: así lo estrenó la app nativa, que
-guardaba en un archivo del directorio de documentos, y así lo hereda el
-escritorio.
+eso `settings/backend.ts` es un fichero aparte de `settings/store.ts`: la lógica
+de qué se guarda es una sola, y lo único que cambia de una plataforma a otra es
+quién sabe abrir el cajón. En la web es `localStorage`; el escritorio, que no lo
+tiene, pondrá el suyo al lado sin tocar `store.ts`.
 
 Lo que **no** se guarda es el estado de la sesión: el punto consultado, la ficha
 abierta, la ubicación, si el zoom da ya para ver las paradas. Son respuestas a

@@ -8,8 +8,8 @@
  *
  * Aquí queda solo lo que habla con `maplibre-gl`. El zoom mínimo de las
  * paradas, el marcado de qué líneas sirven cada una y el rectángulo de un
- * recorrido están en `lib/guagua/display.ts`: son las mismas decisiones en la
- * web y en la app nativa, y esta plataforma no puede ser la dueña de ellas.
+ * recorrido están en `lib/guagua/display.ts`: son decisiones de la red, no del
+ * motor de mapas, y este fichero no puede ser el dueño de ellas.
  */
 
 import type { Map as MlMap, GeoJSONSource, LayerSpecification } from 'maplibre-gl'

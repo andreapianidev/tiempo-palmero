@@ -19,10 +19,6 @@ altitud manda sobre la distancia en cualquier variable atmosférica.
 en un teléfono: por debajo de 720 px de ancho la interfaz cambia a su propia
 carcasa, con una hoja que sube desde abajo en vez del panel lateral.
 
-> **Este repositorio es la web, y nada más.** Hubo aquí una aplicación nativa de
-> iOS y Android —Expo sobre este mismo motor, en `mobile/`— y salió en agosto de
-> 2026. Lo que se ve en un teléfono es esta misma web.
-
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 
 La isla entera, con el tiempo que hacía en ese momento. Cada pastilla es un

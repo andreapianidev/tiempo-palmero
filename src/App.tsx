@@ -192,9 +192,9 @@ export default function App() {
    * y no un descuido.
    *
    * La calidad se decide sola mirando cuántos píxeles hay que pintar y cuántos
-   * núcleos hay debajo, con la MISMA regla en cualquier dispositivo —la web y
-   * el móvil comparten el código y se tienen que ver igual—, y se puede cambiar
-   * a mano. Ver `lib/ocean/quality.ts`.
+   * núcleos hay debajo, con la MISMA regla en cualquier dispositivo —un portátil
+   * y un teléfono corren este mismo código y la decisión no puede depender de
+   * cuál sea—, y se puede cambiar a mano. Ver `lib/ocean/quality.ts`.
    *
    * Y aquí hay una cesión consciente: `autoQuality()` solo corre la PRIMERA vez.
    * A partir de ahí manda lo guardado, porque el ajuste no distingue una calidad
