@@ -4,12 +4,14 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 /**
- * `mapStyle.ts` no lo usa solo la web.
+ * `mapStyle.ts` no lo lee solo un navegador.
  *
- * El escritorio de UE5 monta el mismo estilo desde `desktop/js-core`, dentro de
- * QuickJS: ahí no hay DOM, no hay `window` y **`maplibre-gl` no está ni puede
- * estar**. Basta con que un módulo de esta cadena la importe en tiempo de
- * ejecución para que el núcleo deje de cargar fuera del navegador.
+ * Dos sitios sin DOM dependen de que esta cadena se pueda importar: los scripts
+ * de `scripts/`, que corren en Node, y la aplicación de macOS
+ * —<https://github.com/andreapianidev/tiempo-palmero-unity>— que lleva una
+ * COPIA de este `src/lib` y no trae este test consigo. Basta con que un módulo
+ * de la cadena importe `maplibre-gl` en tiempo de ejecución para romper a los
+ * dos.
  *
  * Y no se entera nadie: `npm test` y `npm run build` solo miran la web, donde
  * esa importación es perfectamente válida. Ya pasó una vez —un sombreado propio

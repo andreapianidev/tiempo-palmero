@@ -83,11 +83,12 @@ borrar un dato bueno?»**. Una invasión de aire sahariano hizo subir una estaci
 por mucho que también cace la avería de verdad.
 
 **2. El núcleo no arrastra el navegador.** Nada de lo que cuelga de
-`src/lib/mapStyle.ts` puede importar `maplibre-gl` en tiempo de ejecución: el
-escritorio de UE5 monta ese mismo estilo dentro de QuickJS, donde la librería no
-existe. Lo vigila `mapStyle.portable.test.ts`, y por eso la caché de teselas
-registra su protocolo en `tiles/protocol.ts` y no en el estilo. Antes de abrir
-un PR:
+`src/lib/mapStyle.ts` puede importar `maplibre-gl` en tiempo de ejecución. Aquí
+mismo, `scripts/` y `npm test` corren en Node sin DOM; y la
+[aplicación de macOS](https://github.com/andreapianidev/tiempo-palmero-unity)
+lleva una copia de este `src/lib` donde tampoco lo hay. Lo vigila
+`mapStyle.portable.test.ts`, y por eso la caché de teselas registra su protocolo
+en `tiles/protocol.ts` y no en el estilo. Antes de abrir un PR:
 
 ```bash
 npm test && npm run build

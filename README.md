@@ -3,6 +3,7 @@
 [![CI](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml/badge.svg)](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml)
 [![La aplicación](https://img.shields.io/badge/app-app.tiempopalmero.com-2ea44f?logo=vercel&logoColor=white)](https://app.tiempopalmero.com)
 [![El sitio](https://img.shields.io/badge/web-tiempopalmero.com-8b9a63)](https://www.tiempopalmero.com)
+[![La aplicación de macOS](https://img.shields.io/badge/macOS-Unity%206%20HDRP-000000?logo=unity&logoColor=white)](https://github.com/andreapianidev/tiempo-palmero-unity)
 [![Licencia Apache 2.0](https://img.shields.io/badge/licencia-Apache%202.0-4c6ef5)](LICENSE)
 [![Datos del Cabildo Insular de La Palma](https://img.shields.io/badge/datos-Cabildo%20de%20La%20Palma-005f73)](https://www.opendatalapalma.es)
 [![Se buscan colaboradores en La Palma](https://img.shields.io/badge/se%20buscan-colaboradores%20en%20la%20isla-b5179e)](CONTRIBUTING.md)
@@ -23,6 +24,15 @@ carcasa, con una hoja que sube desde abajo en vez del panel lateral.
 Y **[tiempopalmero.com](https://www.tiempopalmero.com)** es el sitio que la
 cuenta: qué hace, de qué datos sale y con qué licencia. Su código está en
 [`web/`](web/) — una sola página estática, sin dependencias ni analítica.
+
+> **Hay una tercera pieza, y no está aquí.**
+> [**Tiempo Palmero para macOS**](https://github.com/andreapianidev/tiempo-palmero-unity)
+> es un gemelo digital en 3D de la isla, hecho con Unity 6 HDRP y movido por
+> esta misma meteorología: el mar de nubes a la cota que le toca, la lluvia
+> donde las estaciones dicen que llueve, el Atlántico con el viento que se está
+> midiendo. Está en desarrollo, es gratis y su código también es abierto.
+> Lleva **una copia** de este `src/lib`, no una referencia — lo que significa
+> que un arreglo del motor hay que llevarlo a los dos sitios.
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 
@@ -372,7 +382,7 @@ está en cuatro documentos. Cada uno se lee solo.
 | **[El motor de interpolación](docs/motor.md)** | Los seis pasos, la corrección altimétrica, el rechazo de valores atípicos, la banda de incertidumbre calibrada y la validación dejando fuera cada estación por turno. | 448 |
 | **[Los datos del Cabildo](docs/datos-del-cabildo.md)** | Los 49 conjuntos del portal, uno por uno: lo integrado, lo que falta, lo que no conviene añadir. Las guaguas, los aforos, las webcam, el viario, la cobertura de TDT. | 783 |
 | **[La sección experimental](docs/experimental.md)** | Las cinco funciones que dibujan más de lo que miden: nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 676 |
-| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 605 |
+| **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 621 |
 
 ---
 

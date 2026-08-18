@@ -3,8 +3,8 @@
  *
  * Es la mitad web de un reparto: la lógica de qué se guarda vive entera en
  * `store.ts` y lo único que cambia de una plataforma a otra es quién sabe abrir
- * el cajón. El escritorio, que no tiene `localStorage`, pondrá el suyo al lado
- * sin tocar nada de `store.ts`.
+ * el cajón. Quien no tenga `localStorage` pone el suyo al lado sin tocar nada de
+ * `store.ts`.
  *
  * Los dos `try` no son prudencia decorativa. `localStorage` **lanza al
  * tocarlo** en Safari con navegación privada y con cookies de terceros

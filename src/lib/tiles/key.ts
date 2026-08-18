@@ -50,10 +50,10 @@ export function cacheKey(url: string): string {
 /**
  * La misma fuente raster, pero pidiendo por la caché.
  *
- * Se aplica en la web al añadir la fuente al mapa, NO en `basemaps.ts`: ese
- * fichero lo comparte el escritorio, que no tiene ni IndexedDB ni MapLibre y
- * recibiría una URL con un protocolo que no sabe resolver. El núcleo no se
- * toca.
+ * Se aplica en la web al añadir la fuente al mapa, NO en `basemaps.ts`: de ese
+ * fichero hay una copia en la aplicación de macOS, que no tiene ni IndexedDB ni
+ * MapLibre y recibiría una URL con un protocolo que nadie sabe resolver. El
+ * núcleo se queda como está.
  */
 export function cachedSource(source: RasterSourceSpecification): RasterSourceSpecification {
   return { ...source, tiles: (source.tiles ?? []).map(cachedUrl) }

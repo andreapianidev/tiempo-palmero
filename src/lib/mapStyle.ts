@@ -68,12 +68,12 @@ export const COLORS = {
 } as const
 
 /**
- * ESTE FICHERO NO LO USA SOLO LA WEB. El escritorio de UE5 monta el mismo
- * estilo desde `desktop/js-core`, dentro de QuickJS, donde no hay DOM y
- * `maplibre-gl` no está ni puede estar. De aquí solo pueden salir tipos e
- * importaciones que no arrastren `maplibre-gl` en tiempo de ejecución — si una
- * lo hace, el núcleo deja de cargar fuera del navegador sin que ninguna prueba
- * de la web se entere.
+ * ESTE FICHERO TIENE QUE PODER LEERSE SIN NAVEGADOR. Aquí mismo lo importan
+ * scripts que corren en Node, y la aplicación de macOS —otro repositorio, que
+ * lleva una copia de este `src/lib`— tampoco tiene DOM. De aquí solo pueden
+ * salir tipos e importaciones que no arrastren `maplibre-gl` en tiempo de
+ * ejecución: si una lo hace, el núcleo deja de cargar fuera del navegador sin
+ * que ninguna prueba de la web se entere.
  *
  * Por eso los fondos de GRAFCAN no se declaran aquí: sus fuentes y sus capas las
  * añade `MapView` al cargar, que es solo de la web. Y por eso la caché de

@@ -1,5 +1,18 @@
 # Tiempo Palmero macOS (UE5) — Plan del Milestone 1: la isla en 3D
 
+> ## ⛔ DOCUMENTO OBSOLETO — no se sigue
+>
+> **Este plan no se ejecutó y su enfoque quedó descartado.** El escritorio de
+> macOS no se hizo con Unreal Engine 5 ni ejecuta el core dentro de QuickJS:
+> se hizo con **Unity 6 HDRP**, vive en su propio repositorio
+> —<https://github.com/andreapianidev/tiempo-palmero-unity>— y lleva una
+> **copia** de `src/lib`, no una referencia. El andamiaje `desktop/` que este
+> documento describe salió de este repositorio el 18 de agosto de 2026, junto
+> con dos scripts de `package.json` que invocaban ficheros inexistentes.
+>
+> Se conserva porque es un registro fechado de una decisión y de por qué se
+> abandonó, no porque describa nada de lo que hay hoy.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Aplicación macOS (Apple Silicon) «Tiempo Palmero» construida con Unreal Engine 5.8 que ejecuta el core TypeScript de la web sin modificarlo y muestra La Palma como terreno 3D real (DEM + ortofoto/topo + sol real + cartografía 3D), lista para crecer hacia la atmósfera completa (Milestone 2).

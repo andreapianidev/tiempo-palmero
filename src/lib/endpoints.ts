@@ -5,11 +5,11 @@
  * y `/layers/*`, así que la base es la cadena vacía y todo sigue siendo
  * relativo, exactamente como antes.
  *
- * En una aplicación empaquetada no hay origen: el binario del escritorio de UE5
- * no se sirve desde ninguna parte y los datos siguen viviendo en el despliegue
- * de producción. Quien esté en ese caso llama una vez a `setDataOrigin()` al
- * arrancar y el resto del núcleo —`api.ts`, el DEM, las capas, la red de
- * guaguas— no se entera de nada.
+ * En una aplicación empaquetada no hay origen: un binario no se sirve desde
+ * ninguna parte y los datos siguen viviendo en el despliegue de producción.
+ * Quien esté en ese caso —la aplicación de macOS, que lleva una copia de este
+ * núcleo— llama una vez a `setDataOrigin()` al arrancar, y el resto —`api.ts`,
+ * el DEM, las capas, la red de guaguas— no se entera de nada.
  *
  * Es deliberado que esto sea un módulo y no un parámetro más en cada función:
  * la alternativa era pasar un origen por trece sitios distintos, y el origen no

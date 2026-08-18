@@ -39,6 +39,22 @@ web/                      El sitio de tiempopalmero.com, aparte de la aplicació
   └── index.html          Una página estática, sin dependencias ni analítica
 ```
 
+Lo que **no** está en este árbol y conviene saber que existe: la aplicación de
+macOS, un gemelo digital en 3D de la isla hecho con Unity 6 HDRP, que vive en
+[su propio repositorio](https://github.com/andreapianidev/tiempo-palmero-unity).
+Y no comparte este `src/lib`: lleva **una copia**. Aquí hubo un intento anterior
+con Unreal Engine 5 —un `desktop/` con el núcleo empaquetado para QuickJS— que
+nunca pasó del andamiaje y salió en agosto de 2026, con los dos scripts de
+`package.json` que llevaban meses invocando ficheros que no existían.
+
+Que sea una copia y no una referencia tiene una factura, y está mejor escrita
+que escondida: **un arreglo del motor aquí no llega allí solo.** Cuando el
+cambio toca la interpolación, el control de calidad o un umbral, o se lleva a
+mano o quedan dos aplicaciones diciendo dos temperaturas para el mismo punto.
+Lo que sí sigue valiendo para las dos es la regla de portabilidad: `src/lib`
+tiene que poder importarse sin navegador, y eso lo vigila
+`mapStyle.portable.test.ts`.
+
 **Son dos despliegues, y no es una complicación gratuita.** La aplicación vive
 en `app.tiempopalmero.com` y el sitio que la explica en `tiempopalmero.com`: uno
 tiene que cargar un motor de interpolación y 118 teselas de relieve antes de
@@ -222,10 +238,10 @@ solo funciona mientras los navegadores sigan olfateando los bytes en vez de
 creerse la etiqueta.
 
 El prefijo lo pone `MapView` y **no `basemaps.ts`**, que es la parte que importa:
-ese fichero lo comparte el escritorio de UE5, donde no hay ni IndexedDB ni
-MapLibre y una URL con un protocolo desconocido no la sabría resolver nadie. Por
-lo mismo, de los seis ficheros de `src/lib/tiles/` solo `protocol.ts` menciona
-`maplibre-gl`; lo vigila `mapStyle.portable.test.ts`.
+de ese fichero hay una copia en la aplicación de macOS, donde no hay ni
+IndexedDB ni MapLibre y una URL con un protocolo desconocido no la sabría
+resolver nadie. Por lo mismo, de los siete ficheros de `src/lib/tiles/` solo
+`protocol.ts` menciona `maplibre-gl`; lo vigila `mapStyle.portable.test.ts`.
 
 **Y lo que se pide por delante, que es poco a propósito.** La licencia de
 GRAFCAN dice «se prohíbe la descarga masiva de información», así que la precarga
@@ -525,8 +541,8 @@ detalle de implementación: hidratar después del primer render obliga a pintar 
 malla en temperatura y corregirla al fotograma siguiente, y ese salto se ve. Por
 eso `settings/backend.ts` es un fichero aparte de `settings/store.ts`: la lógica
 de qué se guarda es una sola, y lo único que cambia de una plataforma a otra es
-quién sabe abrir el cajón. En la web es `localStorage`; el escritorio, que no lo
-tiene, pondrá el suyo al lado sin tocar `store.ts`.
+quién sabe abrir el cajón. En la web es `localStorage`; quien no lo tenga pone el
+suyo al lado sin tocar `store.ts`.
 
 Lo que **no** se guarda es el estado de la sesión: el punto consultado, la ficha
 abierta, la ubicación, si el zoom da ya para ver las paradas. Son respuestas a

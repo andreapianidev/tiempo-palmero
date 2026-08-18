@@ -19,9 +19,7 @@
     "test:watch": "vitest",
     "prepare-data": "tsx scripts/prepare-data.ts",
     "prepare-data:snapshot": "tsx scripts/prepare-data.ts --only=snapshot",
-    "prepare-ocean": "tsx scripts/prepare-ocean.ts",
-    "desktop:core": "node desktop/scripts/bundle-core.mjs",
-    "desktop:golden": "node desktop/scripts/gen-golden.mjs"
+    "prepare-ocean": "tsx scripts/prepare-ocean.ts"
   },
   "dependencies": {
     "maplibre-gl": "^4.7.1",

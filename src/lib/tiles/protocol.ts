@@ -2,11 +2,12 @@
  * El enganche con MapLibre: teselas servidas desde la caché.
  *
  * ESTE ES EL ÚNICO FICHERO DE `tiles/` QUE IMPORTA `maplibre-gl`, y no es
- * casualidad. `mapStyle.ts` lo comparte el escritorio de UE5, que corre el
- * núcleo dentro de QuickJS y no tiene la librería; `mapStyle.portable.test.ts`
- * comprueba que nada de esa cadena la arrastre. Por eso el protocolo se registra
- * desde `MapView`, que es solo de la web, y los otros cuatro ficheros de este
- * directorio —rejilla, claves, presupuesto, almacén— no la mencionan.
+ * casualidad. La cadena que cuelga de `mapStyle.ts` tiene que poder importarse
+ * sin navegador —lo hacen los scripts de Node de aquí y la copia de `src/lib`
+ * que lleva la aplicación de macOS— y `mapStyle.portable.test.ts` lo comprueba.
+ * Por eso el protocolo se registra desde `MapView`, que es solo de la web, y los
+ * otros ficheros de este directorio —rejilla, claves, presupuesto, almacén,
+ * descargas en vuelo— no la mencionan.
  *
  * CÓMO ENCAJA. `addProtocol('palmero', ...)` intercepta cualquier URL que
  * empiece por `palmero://`; `key.ts` le pone ese prefijo a las plantillas de

@@ -6,8 +6,8 @@
  *
  * Este fichero es la mitad web de la descarga, y el `<canvas>` es lo único que
  * tiene de navegador. Lo que importa es el reparto: aquí dentro no hay un solo
- * `if` de plataforma, y quien traiga los píxeles de otra manera —el escritorio
- * de UE5— pone su cargador al lado en vez de una rama aquí.
+ * `if` de plataforma, y quien traiga los píxeles de otra manera pone su cargador
+ * al lado en vez de una rama aquí dentro.
  */
 
 import { blitTerrarium, demTilePath, demTiles, emptyDem, type Dem, type DemManifest } from './dem'

@@ -35,8 +35,8 @@ export interface GridOptions {
  * La malla, en píxeles sueltos y sin depender de nada del navegador.
  *
  * Aquí está todo el trabajo: una estimación por celda sobre el retículo del
- * DEM. Dónde acaban esos píxeles —un `<canvas>` en la web, una textura en el
- * escritorio— es cosa de quien llama.
+ * DEM. Dónde acaban esos píxeles —un `<canvas>` en la web, una textura en una
+ * aplicación 3D— es cosa de quien llama.
  *
  * `valueAt` en lugar de un modelo: el punto de rocío no se interpola, se deriva
  * de la temperatura y la humedad, así que la malla tiene que poder pintar algo
