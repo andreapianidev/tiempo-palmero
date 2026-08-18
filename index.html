@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0d0c0b" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- Instalable. `apple-mobile-web-app-capable` sigue haciendo falta: el
+         `display` del manifiesto solo lo lee iOS 16.4 en adelante. La barra de
+         estado va translúcida porque la carcasa de móvil ya respeta
+         `env(safe-area-inset-*)` — ver `src/styles/mobile.css`. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Tiempo" />
     <title>Tiempo Palmero — meteorología interpolada de La Palma</title>
     <meta name="description" content="Estimación meteorológica punto a punto para la isla de La Palma, a partir de los sensores del Cabildo Insular." />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

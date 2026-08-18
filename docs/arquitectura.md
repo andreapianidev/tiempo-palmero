@@ -13,6 +13,8 @@ de depuración cada una.
 scripts/prepare-data.ts   Compilación. Se ejecuta una vez.
 scripts/web-island.ts     Las curvas de nivel de la portada, sacadas del DEM.
 scripts/web-terreno.ts    La malla 3D de la portada, sacada del mismo DEM.
+scripts/web-icons.ts      El icono, sacado del mismo DEM. `icon/` lo dibuja.
+scripts/contour.ts        Marching squares del DEM, compartido por los dos.
   ├── prepare-guagua.ts   GTFS de TILP → red de líneas, paradas y horarios
   ├── prepare-arcgis.ts   Servicios ArcGIS del visor: miradores y carreteras
   ├── prepare-osm-roads.ts  Viario completo de OSM vía Overpass (19.770 trazados)
@@ -36,6 +38,9 @@ src/lib/
   ├── tiles/              La caché de teselas de GRAFCAN y su precarga
   ├── settings/           Lo elegido, que dura: cajón por plataforma y validación
   └── cabildo.ts          Cliente de la API, decodificación posicional
+
+src/sw/                   El service worker: `policy.ts` decide, `sw.ts` obedece
+src/pwa/                  Registro del service worker y medida de los iconos
 
 web/                      El sitio de tiempopalmero.com, aparte de la aplicación
   ├── index.html          Solo el marcado; el SVG de la isla lo escribe un script
@@ -552,6 +557,78 @@ El umbral de 720 px está escrito **una sola vez**, en `useIsMobile()`. La hoja
 de estilos no lo repite: cuelga de la clase `.app-mobile` que pone ese hook, y
 así no hay ninguna franja de anchos en la que JavaScript monte una disposición
 y el CSS pinte la otra.
+
+### Se instala, y en las tres tiendas de nadie
+
+Desde agosto de 2026 `app.tiempopalmero.com` se puede añadir a la pantalla de
+inicio y abrirse como una aplicación: sin barra de direcciones, con su icono y
+—esto es lo que importa aquí— **sin cobertura**. Es una PWA, no un envoltorio
+nativo: este repositorio [sigue siendo la web y solo la web](../CLAUDE.md).
+
+Son tres piezas y ninguna es una dependencia nueva:
+
+- **`public/manifest.webmanifest`**, con el nombre, los colores y los iconos.
+  El nombre corto es «Tiempo» y no «Tiempo Palmero» por una razón medida: la
+  etiqueta de debajo del icono corta sobre los doce caracteres, y catorce se
+  quedan en «Tiempo Palm…». Lo comprueba `src/pwa/icons.test.ts`.
+- **`src/sw/`**, el service worker. La decisión de qué se guarda y qué no está
+  en `policy.ts`, una función pura que se prueba en Node —`policy.test.ts`—
+  porque probar un service worker de verdad exige un navegador y un despliegue.
+- **`dev/swBuild.ts`**, que lo compila a `/sw.js` con esbuild, que ya estaba en
+  el proyecto. No entra `vite-plugin-pwa`: hace esto mismo y trae Workbox
+  detrás, y lo que aquí hay que decidir no es una configuración genérica sino
+  siete rutas concretas.
+
+**`/api/` no se cachea nunca, y es la regla que sostiene el resto.** Detrás de
+esas rutas están las estaciones del Cabildo: una temperatura de hace dos horas
+servida como si fuera la de ahora no es una aplicación más rápida, es una
+aplicación que miente. La caché que va delante de esos datos es la del CDN, con
+el `s-maxage` que se pone cada función de `api/`, que sí sabe cuánto dura cada
+cosa.
+
+Lo que sí se guarda, en dos cajones que se tratan distinto:
+
+| Cajón | Qué lleva | Qué pasa al desplegar |
+|---|---|---|
+| `shell-<sello>` | El HTML y los ficheros con hash de Vite | Se tira entera: el sello cambia |
+| `datos` | El DEM (2,3 MB), topónimos, guaguas, iconos | **No se toca** |
+
+Separarlos no es cosmética: el DEM son 118 teselas que no han cambiado porque se
+haya desplegado un arreglo de CSS, y volver a bajarlas en cada despliegue sería
+castigar justo al que actualiza.
+
+**Las capas del Cabildo se quedan fuera del service worker**, y es la decisión
+menos evidente: son 16 MB de `public/layers/` que solo se piden al encender su
+interruptor. Guardarlas duplicaría la cuota que ya usa [la caché de
+teselas](#las-teselas-que-se-quedan) para algo que casi nadie enciende. Siguen
+con la caché del navegador y su `stale-while-revalidate` de 30 días.
+
+### El icono es la isla, medida
+
+`npm run web:icons` dibuja los siete ficheros del icono desde `public/dem/` —el
+mismo modelo de elevación con el que el motor corrige la temperatura por
+altitud—. La costa es su isohipsa de 1,5 m, la misma curva que traza la portada
+del sitio, y el relieve de dentro son sus alturas con un sombreado del noroeste.
+El icono anterior era una montaña con un sol: valía igual para una aplicación
+del tiempo de Oslo.
+
+Hay tres versiones y las tres salen de la misma silueta:
+
+- **La pestaña** (`favicon.svg`, `favicon-32.png`) va plana, con la rampa ámbar
+  de lejos. A 32 px la isla mide 26 px para 45 km de isla: el sombreado ahí no
+  es detalle, es grano.
+- **La aplicación instalada** (`icon-192`, `icon-512`, `apple-touch-icon`) lleva
+  el relieve, y el paso con el que se mide la pendiente es el píxel de salida,
+  no el del DEM: cada tamaño enseña el relieve que puede enseñar.
+- **El recortable** (`icon-maskable-512`) lleva la isla más pequeña porque
+  Android puede recortarlo con un círculo del 80 % del lado. La punta de
+  Fuencaliente queda a 0,338 del centro y el círculo corta en 0,400; a tamaño
+  normal llegaría a 0,410, o sea que se saldría. Por eso son dos ficheros, y por
+  eso `src/pwa/icons.test.ts` mide el píxel pintado más lejano en vez de fiarse.
+
+Rasteriza `scripts/icon/raster.ts`, sesenta líneas de relleno de polígono con
+antialias. La alternativa era `sharp` —binario nativo de 30 MB— o depender de
+que quien regenere el icono tenga ImageMagick instalado.
 
 ### Lo elegido dura
 

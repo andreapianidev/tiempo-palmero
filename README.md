@@ -20,6 +20,14 @@ altitud manda sobre la distancia en cualquier variable atmosférica.
 en un teléfono: por debajo de 720 px de ancho la interfaz cambia a su propia
 carcasa, con una hoja que sube desde abajo en vez del panel lateral.
 
+Y **quien quiera, la instala**: «Añadir a pantalla de inicio» en iOS, «Instalar
+aplicación» en Android y en el escritorio, y a partir de ahí abre con su icono,
+sin barra de direcciones y **sin cobertura** —el mapa, el relieve y los
+topónimos quedan guardados; los datos de las estaciones, no, porque un dato del
+Cabildo de hace dos horas servido como si fuera de ahora sería mentir—. Ni
+tiendas ni envoltorio nativo: es la misma web. Cómo está montado, en
+[Arquitectura](docs/arquitectura.md#se-instala-y-en-las-tres-tiendas-de-nadie).
+
 Y **[tiempopalmero.com](https://www.tiempopalmero.com)** es el sitio que la
 cuenta: qué hace, de qué datos sale y con qué licencia. Su código está en
 [`web/`](web/) — estático, sin dependencias, sin analítica y sin una sola
@@ -120,7 +128,9 @@ senderos, las cámaras de incendios y las webcam de la isla.
   [las teselas que se quedan](docs/arquitectura.md#las-teselas-que-se-quedan),
   la cartografía de GRAFCAN guardada en el navegador ·
   [las trampas de esta API](docs/arquitectura.md#trampas-de-esta-api-que-ya-están-resueltas-en-el-código),
-  un día de depuración cada una
+  un día de depuración cada una ·
+  [se instala](docs/arquitectura.md#se-instala-y-en-las-tres-tiendas-de-nadie),
+  y [el icono es la isla medida](docs/arquitectura.md#el-icono-es-la-isla-medida)
 
 ---
 
@@ -538,6 +548,14 @@ npm run prepare-data -- --only=layers     # las capas del Cabildo
 ```bash
 npm test                 # validación leave-one-out del motor
 npm run build
+```
+
+```bash
+# Lo que se dibuja desde el DEM y se versiona ya dibujado. Se vuelve a pasar
+# cuando cambia el modelo de elevación, no antes:
+npm run web:icons        # el icono de la aplicación y del sitio, 9 ficheros
+npm run web:island       # las curvas de nivel de la portada
+npm run web:terreno      # la malla 3D de la portada
 ```
 
 Para refrescar solo una parte:

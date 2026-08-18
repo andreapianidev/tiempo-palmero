@@ -22,6 +22,20 @@
       ]
     },
     {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "cache-control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "service-worker-allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        { "key": "content-type", "value": "application/manifest+json; charset=utf-8" },
+        { "key": "cache-control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
       "source": "/api/co2",
       "headers": [{ "key": "cache-control", "value": "public, s-maxage=30" }]
     }

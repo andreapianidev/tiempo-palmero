@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { edgeApi } from './dev/edgeApi'
+import { serviceWorker } from './dev/swBuild'
 
 /**
  * Ya no hay bloque `server.proxy`.
@@ -13,7 +14,7 @@ import { edgeApi } from './dev/edgeApi'
  * las funciones de verdad y respeta su `s-maxage`.
  */
 export default defineConfig({
-  plugins: [react(), edgeApi()],
+  plugins: [react(), edgeApi(), serviceWorker()],
   build: { target: 'es2022' },
   test: {
     /**
