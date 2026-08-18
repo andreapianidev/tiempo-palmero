@@ -78,7 +78,19 @@ export function useTileCache(map: MapLibreMap | null, basemap: BasemapId): void 
     return () => {
       map.off('movestart', onMoveStart)
       map.off('idle', onIdle)
-      stopWarming()
     }
   }, [map, basemap])
+
+  /**
+   * Cortar las descargas es cosa DEL DESMONTAJE Y DE NADIE MÁS, y por eso está
+   * en su propio efecto con la lista de dependencias vacía.
+   *
+   * Estuvo en la limpieza del efecto de arriba, que depende de `basemap`, y ahí
+   * hacía algo que nadie pidió: cambiar de fondo vaciaba la fila entera, así que
+   * la vista de lejos del fondo anterior se quedaba a medias. Y no se recupera
+   * sola —`warmed` ya lo daba por precargado—, de modo que ese fondo se quedaba
+   * con agujeros hasta la siguiente recarga de la página. Es justo lo que los
+   * canales de `warm.ts` existen para evitar, anulado desde fuera.
+   */
+  useEffect(() => stopWarming, [])
 }

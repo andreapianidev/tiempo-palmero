@@ -154,6 +154,10 @@ const ENTRIES: Entry[] = [
     title: t.sources.noTrackingTitle,
     body: t.sources.noTrackingBody,
   },
+  {
+    title: t.sources.storageTitle,
+    body: t.sources.storageBody,
+  },
 ]
 
 export function SourcesScreen({ onClose }: Props) {

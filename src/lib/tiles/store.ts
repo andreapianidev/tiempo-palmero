@@ -114,15 +114,36 @@ export async function writeTile(
     tx.objectStore(BODY).put({ body, type } satisfies CachedTile, key)
     return await new Promise((resolve) => {
       tx.oncomplete = () => resolve(true)
-      // Cuota llena. No se reintenta ni se avisa: la tesela ya está en pantalla,
-      // y lo único que se pierde es tenerla mañana. La purga del próximo reposo
-      // hará sitio.
-      tx.onerror = () => resolve(false)
-      tx.onabort = () => resolve(false)
+      // Cuota llena. No se reintenta y no se avisa a nadie: la tesela ya está en
+      // pantalla y lo único que se pierde es tenerla mañana. Pero sí se hace
+      // sitio, porque si no el siguiente intento fallaría igual: la purga
+      // ordinaria solo corre cada media hora (`SWEEP_EVERY_MS`) y hasta entonces
+      // todo lo que se mirase se perdería en silencio.
+      tx.onerror = () => resolve(sweepAfterFailure(now))
+      tx.onabort = () => resolve(sweepAfterFailure(now))
     })
   } catch {
     return false
   }
+}
+
+/**
+ * Una purga de emergencia por cuota llena, como mucho una cada vez.
+ *
+ * El pestillo evita el bucle evidente —purgar, volver a escribir, fallar,
+ * purgar—: mientras haya una en marcha, los demás fallos de escritura no
+ * encadenan otra.
+ */
+let sweeping = false
+
+function sweepAfterFailure(now: number): false {
+  if (!sweeping) {
+    sweeping = true
+    void sweep(now).finally(() => {
+      sweeping = false
+    })
+  }
+  return false
 }
 
 /** Está guardada y sigue fresca. No lee el cuerpo: es para decidir si precargar. */
@@ -199,7 +220,14 @@ async function estimateQuota(): Promise<number | undefined> {
   }
 }
 
-/** Vacía la caché entera. Existe para el panel de ajustes y para las pruebas. */
+/**
+ * Vacía la caché entera.
+ *
+ * Todavía no la llama ninguna pantalla: quien quiera borrarla hoy lo hace desde
+ * los datos del sitio en su navegador, y así lo dice la pantalla de fuentes. Se
+ * queda porque una caché sin manera de vaciarse es una caché a la que hay que
+ * añadirle esto con prisa el día que haga falta.
+ */
 export async function clearTiles(): Promise<void> {
   const db = await openDb()
   if (!db) return
