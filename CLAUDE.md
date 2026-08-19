@@ -59,14 +59,22 @@ Señales de que toca partir, en orden de importancia:
 2. **Pasa de ~250 líneas.** No es una prohibición: `interpolate.ts` tiene 1.205
    y se queda como está, porque es un único dominio —el motor— y partirlo
    separaría pasos que solo se entienden juntos. Pero pasar de 250 obliga a
-   justificar por qué sigue siendo una sola cosa, y hoy hay 27 ficheros que lo
-   pasan. El que peor lo justifica es `MapView.tsx`: 1.510 líneas, 31
-   `useEffect`, y catorce secciones que el propio fichero se marca con una
-   raya —inicialización, vista 3D, fondo, malla, viento, evaporación, capas
-   GeoJSON, guaguas, sitios y carreteras, marcadores, topónimos, punto
-   consultado, ubicación, mando a distancia—. Catorce rayas que uno mismo se
-   dibuja para no perderse dentro de un fichero son la señal del punto 1
-   escrita a mano. Es el siguiente que toca partir.
+   justificar por qué sigue siendo una sola cosa, y hoy hay **42 ficheros** que
+   lo pasan.
+
+   El que peor lo justifica sigue siendo `MapView.tsx`, y va a peor: cuando se
+   escribió esta regla tenía 1.510 líneas y 31 `useEffect`, y hoy tiene
+   **2.203 y 53** — casi el doble en un mes. Son catorce secciones que el
+   propio fichero se marca con una raya —inicialización, vista 3D, fondo,
+   malla, viento, evaporación, capas GeoJSON, guaguas, sitios y carreteras,
+   marcadores, topónimos, punto consultado, ubicación, mando a distancia—, más
+   las que han ido entrando después. Catorce rayas que uno mismo se dibuja para
+   no perderse dentro de un fichero son la señal del punto 1 escrita a mano.
+
+   **Es el siguiente que toca partir, y la cifra de arriba es la prueba de que
+   aplazarlo no sale gratis.** Detrás van `App.tsx` (1.197) y
+   `sidebar/index.tsx` (660), que crecen por el mismo motivo: son los dos sitios
+   por los que pasa todo lo nuevo.
 3. **Para tocar una parte hay que leer el resto.** Si cambiar el buscador
    obliga a desplazarse por la tabla del modelo, ya está mal repartido.
 
