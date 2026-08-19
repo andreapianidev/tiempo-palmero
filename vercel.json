@@ -5,6 +5,12 @@
   "outputDirectory": "dist",
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "tiempo-palmero.vercel.app" }],
+      "destination": "https://app.tiempopalmero.com/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "tiempo-palmero.vercel.app" }],
       "destination": "https://app.tiempopalmero.com/:path*",
