@@ -49,10 +49,20 @@ const IS_BRANDING = new Set(BRANDING)
  * Los que apuntan a la versión de un conjunto de datos. Si se sirven de la
  * caché, el resto del conjunto no se entera nunca de que ha cambiado.
  */
-const POINTERS = new Set(['/dem/manifest.json', '/ocean/manifest.json', '/layers/index.json'])
+const POINTERS = new Set([
+  '/dem/manifest.json',
+  '/ocean/manifest.json',
+  '/cielo/manifest.json',
+  '/layers/index.json',
+])
 
 /** Datos generados que se piden enteros y cambian de tarde en tarde. */
-const DATA_PREFIXES = ['/dem/', '/ocean/', '/fire/']
+// `/cielo/` entra aquí y no en los punteros: el catálogo de estrellas se
+// regenera con `npm run prepare-cielo` y su manifiesto sí es puntero, pero los
+// binarios pesan 107 KB y se piden enteros una sola vez. Cachearlos es la
+// diferencia entre una escena que aparece al instante y una que se descarga
+// otra vez cada noche.
+const DATA_PREFIXES = ['/dem/', '/ocean/', '/cielo/', '/fire/']
 const DATA_FILES = new Set(['/gazetteer.json', '/guagua-red.json'])
 
 export function routeFor(url: string, origin: string, mode: string, method = 'GET'): Route {

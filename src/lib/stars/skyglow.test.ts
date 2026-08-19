@@ -1,0 +1,232 @@
+/**
+ * El modelo del cielo, contra el cielo.
+ *
+ * El fixture `sqm-noche.json` son 183 lecturas reales de la red de fotómetros
+ * del Cabildo —tres estaciones, del 17 al 18 de agosto de 2026— con la posición
+ * del sol y de la luna de cada una calculada al lado. Cubre las tres
+ * situaciones que el modelo tiene que acertar: 112 lecturas de noche cerrada sin
+ * luna, 38 de crepúsculo entre −16° y −3°, y 12 con la luna alta.
+ *
+ * LA PRUEBA QUE IMPORTA NO ES «¿SE PARECE?». Es que el modelo acierte **en las
+ * tres zonas a la vez**, porque cada una la gobierna un término distinto y un
+ * error compensado entre dos se lee como un acierto. Por eso hay un umbral por
+ * zona y no uno global.
+ */
+
+import { describe, expect, it } from 'vitest'
+import fixture from '../__fixtures__/sqm-noche.json'
+import {
+  ISLAND_DARK_SKY,
+  MOON_MODEL_BIAS,
+  magArcsec2,
+  modelledSkyGlow,
+  nanoLamberts,
+  twilightExcess,
+} from './skyglow'
+import { extinctionCoefficient, limitingMagnitude, visibleCount } from './visibility'
+
+interface Row {
+  station: string
+  site: string
+  elevationM: number
+  at: string
+  sqm: number
+  sunElevationDeg: number
+  moonElevationDeg: number
+  moonIllumination: number
+  moonZenithSeparationDeg: number
+}
+
+const rows = fixture as Row[]
+
+/**
+ * El cielo oscuro propio de cada estación del fixture, percentil 90 de sus
+ * lecturas con el sol bajo −18° y la luna puesta. Se mide aquí en vez de
+ * escribirlo a mano para que la prueba siga valiendo si se regenera el fixture.
+ */
+function darkSkyOf(station: string): number {
+  const own = rows
+    .filter(
+      (r) =>
+        r.station === station && r.sunElevationDeg < -18 && r.moonElevationDeg < 0,
+    )
+    .map((r) => r.sqm)
+    .sort((a, b) => a - b)
+  return own[Math.floor(own.length * 0.9)]
+}
+
+function modelFor(r: Row): number {
+  return modelledSkyGlow({
+    sunElevationDeg: r.sunElevationDeg,
+    moon:
+      r.moonElevationDeg > 0
+        ? {
+            illumination: r.moonIllumination,
+            elevationDeg: r.moonElevationDeg,
+          }
+        : null,
+    moonSeparationDeg: r.moonZenithSeparationDeg,
+    skyElevationDeg: 90,
+    darkSky: darkSkyOf(r.station),
+    extinctionK: extinctionCoefficient(r.elevationM),
+  })
+}
+
+function errors(subset: Row[]): { mean: number; worst: number; n: number } {
+  const e = subset.map((r) => Math.abs(modelFor(r) - r.sqm))
+  return {
+    mean: e.reduce((a, b) => a + b, 0) / e.length,
+    worst: Math.max(...e),
+    n: e.length,
+  }
+}
+
+describe('brillo del fondo de cielo', () => {
+  it('acierta la noche cerrada sin luna', () => {
+    const night = rows.filter(
+      (r) => r.sunElevationDeg < -18 && r.moonElevationDeg < 0,
+    )
+    expect(night.length).toBeGreaterThan(80)
+    const { mean, worst } = errors(night)
+    // Aquí el modelo casi no hace nada: devuelve la base de la estación. El
+    // error MEDIDO —0,188 mag de media, 0,57 en el peor caso sobre las 112
+    // lecturas— es la variabilidad propia del cielo de una noche: airglow,
+    // cirros altos y la Vía Láctea pasando por el cenit, que sube el fondo
+    // medio punto largo cuando cruza. Los dos lados: 0,3 deja sitio a esa
+    // variabilidad real —bajarlo a 0,2 haría fallar la prueba por culpa del
+    // cielo y no del código— y no deja pasar una base desplazada medio punto,
+    // que es el fallo que tiene que cazar.
+    expect(mean).toBeLessThan(0.3)
+    expect(worst).toBeLessThan(1.0)
+  })
+
+  it('acierta el crepúsculo, que es donde el cielo cambia 1,1 mag por grado', () => {
+    const dusk = rows.filter(
+      (r) =>
+        r.sunElevationDeg > -16 && r.sunElevationDeg < -3 && r.moonElevationDeg < 0,
+    )
+    expect(dusk.length).toBeGreaterThan(10)
+    const { mean, worst } = errors(dusk)
+    // Medido: 0,252 de media, 0,57 en el peor caso. En esta zona el cielo se
+    // mueve 1,1 mag por grado de sol, o sea que medio punto de error son menos
+    // de treinta segundos de reloj. El umbral en 0,4/1,2 caza una pendiente
+    // equivocada —que daría varias magnitudes en los extremos del rango— sin
+    // exigirle al ajuste de dos parámetros una precisión que no tiene.
+    expect(mean).toBeLessThan(0.4)
+    expect(worst).toBeLessThan(1.2)
+  })
+
+  it('con la luna alta arrastra el sesgo declarado, ni más ni menos', () => {
+    const moonlit = rows.filter(
+      (r) => r.sunElevationDeg < -18 && r.moonElevationDeg > 10,
+    )
+    expect(moonlit.length).toBeGreaterThan(5)
+    // Ésta es la prueba de una limitación CONOCIDA, no de un acierto, y por eso
+    // acota el error por los dos lados en vez de solo por arriba. Krisciunas y
+    // Schaefer da el cielo más oscuro de lo que la red mide, y el sesgo medido
+    // es de 0,64 mag. Si algún día baja de 0,3 será porque alguien ha corregido
+    // el modelo con una lunación entera de archivo, y entonces esta prueba y
+    // `MOON_MODEL_BIAS` tienen que cambiar juntos — que es exactamente lo que
+    // se quiere que pase.
+    const signed = moonlit.map((r) => modelFor(r) - r.sqm).sort((a, b) => a - b)
+    const median = signed[signed.length >> 1]
+    expect(median).toBeGreaterThan(0.3)
+    expect(median).toBeLessThan(1.0)
+    expect(median).toBeCloseTo(MOON_MODEL_BIAS, 1)
+    const { worst } = errors(moonlit)
+    expect(worst).toBeLessThan(1.3)
+  })
+
+  it('la luna nueva no aclara el cielo', () => {
+    // La contraprueba del error que costó descubrir el sesgo: una corrección
+    // aplicada al cielo ENTERO en vez de al término lunar daba un cielo 0,6 mag
+    // más claro con la luna nueva a 45°, que no ilumina nada.
+    const dark = modelledSkyGlow({
+      sunElevationDeg: -30,
+      moon: null,
+      moonSeparationDeg: 90,
+      skyElevationDeg: 90,
+      extinctionK: 0.15,
+    })
+    const newMoon = modelledSkyGlow({
+      sunElevationDeg: -30,
+      moon: { illumination: 0, elevationDeg: 45 },
+      moonSeparationDeg: 45,
+      skyElevationDeg: 90,
+      extinctionK: 0.15,
+    })
+    expect(Math.abs(newMoon - dark)).toBeLessThan(0.05)
+    // Y la llena sí, mucho: tres magnitudes largas de cielo.
+    const full = modelledSkyGlow({
+      sunElevationDeg: -30,
+      moon: { illumination: 1, elevationDeg: 45 },
+      moonSeparationDeg: 45,
+      skyElevationDeg: 90,
+      extinctionK: 0.15,
+    })
+    expect(dark - full).toBeGreaterThan(2.5)
+    // Con el valor de un sitio oscuro con luna llena que publica la
+    // bibliografía, 17,5-18,5 mag/arcsec².
+    expect(full).toBeGreaterThan(17.5)
+    expect(full).toBeLessThan(18.6)
+  })
+
+  it('el crepúsculo se suma en flujo, no en magnitudes', () => {
+    // La comprobación de unidades que costó un error real: el ajuste se hizo en
+    // flujo `10^(−0,4·V)` y el modelo trabaja en nanolamberts, con un factor
+    // 3,4 × 10¹⁰ entre medias. Con las unidades cruzadas, el término del
+    // crepúsculo sería diez órdenes de magnitud más pequeño que el cielo oscuro
+    // y no movería nada: a −6° del sol el cielo seguiría saliendo a 21,6.
+    const dark = nanoLamberts(ISLAND_DARK_SKY)
+    expect(twilightExcess(-6)).toBeGreaterThan(dark * 100)
+    expect(twilightExcess(-30)).toBeLessThan(dark / 100)
+    // Y la suma en flujo tiene que dar un cielo más claro que cualquiera de los
+    // dos sumandos por separado, que es lo que una suma de magnitudes no haría.
+    const both = magArcsec2(dark + twilightExcess(-8))
+    expect(both).toBeLessThan(ISLAND_DARK_SKY)
+  })
+})
+
+describe('de brillo de fondo a estrellas', () => {
+  it('reproduce la tabla de la isla: de 7885 estrellas a 83 en 34 km', () => {
+    // Los seis brillos son lecturas reales de la red del Cabildo. Las cuentas de
+    // estrellas salen del catálogo generado por `prepare-cielo.ts`, y lo que
+    // esta prueba fija es la RELACIÓN, no las cuentas: que el sitio oscuro tenga
+    // dos órdenes de magnitud más de estrellas que el iluminado.
+    expect(limitingMagnitude(21.52)).toBeCloseTo(6.39, 2)
+    expect(limitingMagnitude(21.13)).toBeCloseTo(6.19, 2)
+    expect(limitingMagnitude(19.5)).toBeCloseTo(5.14, 2)
+    expect(limitingMagnitude(16.19)).toBeCloseTo(2.37, 2)
+    // Monótona: más oscuro nunca puede dar menos estrellas.
+    for (let s = 15; s < 22; s += 0.25) {
+      expect(limitingMagnitude(s + 0.25)).toBeGreaterThan(limitingMagnitude(s))
+    }
+  })
+
+  it('la extinción pasa por los dos anclajes publicados', () => {
+    // Roque de los Muchachos: la mediana de 20 años del Carlsberg Meridian
+    // Telescope, k_V = 0,13 (arXiv:1009.4056).
+    expect(extinctionCoefficient(2387)).toBeCloseTo(0.13, 2)
+    // Nivel del mar: el total con aerosol marino, ~0,25.
+    expect(extinctionCoefficient(0)).toBeCloseTo(0.25, 2)
+    // Y baja monótonamente con la altura: una estrella se ve mejor desde arriba.
+    for (let h = 0; h < 2400; h += 100) {
+      expect(extinctionCoefficient(h + 100)).toBeLessThan(extinctionCoefficient(h))
+    }
+  })
+
+  it('el corte por magnitud es un prefijo del catálogo ordenado', () => {
+    const mags = Int16Array.from([-146, 0, 120, 250, 250, 400, 649, 650, 651])
+    expect(visibleCount(mags, 6.5)).toBe(8)
+    expect(visibleCount(mags, 2.5)).toBe(5)
+    // Y el límite NO se redondea: 6,499 deja fuera las de 6,50, que es lo que
+    // hacía entrar 63 estrellas de más en el catálogo real.
+    expect(visibleCount(mags, 6.499)).toBe(7)
+    // −1,46 es Sirio: entra con el límite en −1,0 y no con el límite en −2,0.
+    expect(visibleCount(mags, -1)).toBe(1)
+    expect(visibleCount(mags, -2)).toBe(0)
+    // Por debajo de la más brillante no se dibuja ninguna, y eso es un cielo
+    // encapotado, no un fallo.
+    expect(visibleCount(mags, -30)).toBe(0)
+  })
+})

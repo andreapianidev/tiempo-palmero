@@ -40,6 +40,7 @@ import { bool, flags, oneOf, shape } from './lib/settings/revive'
 import { buildVaporField } from './lib/vapor/field'
 import { breathAt } from './lib/vapor/breath'
 import { useSky } from './hooks/useSky'
+import { useNightSky } from './hooks/useNightSky'
 import { islandLcl } from './lib/sky/base'
 import { moonState, sunPosition } from './lib/sun'
 import { sunCrossing, sunEvents, sunTrack, type TrackPoint } from './lib/sky/sun-path'
@@ -485,6 +486,60 @@ export default function App() {
     [sunPathOn, now],
   )
   /**
+   * El cielo estrellado. Tres casillas: la escena, las figuras de las
+   * constelaciones y el centelleo. Apagadas al llegar porque el catálogo son
+   * 133 KB que nadie debería pagar sin pedirlos, y porque de día no se ve nada.
+   */
+  const [nightSkyOn, setNightSkyOn] = usePersistentState('nightSky', false, bool)
+  const [nightFiguresOn, setNightFiguresOn] = usePersistentState('nightFigures', true, bool)
+  const [nightTwinkleOn, setNightTwinkleOn] = usePersistentState('nightTwinkle', true, bool)
+  /**
+   * El observador: el mismo punto de referencia de la isla que usa el resto de
+   * la aplicación, con su cota sacada del DEM y —cuando el TNG contesta— con la
+   * presión y la temperatura MEDIDAS en la cumbre.
+   *
+   * Que la presión sea la medida y no la estándar no es un detalle: la
+   * refracción es proporcional a la densidad del aire, y entre los 1013 hPa de
+   * manual y los 757 de allí arriba hay 8 minutos de arco en el horizonte.
+   */
+  const nightObserver = useMemo(
+    () => ({
+      lon: ISLAND_BREATH_LON,
+      lat: ISLAND_BREATH_LAT,
+      // Sin DEM todavía, el nivel del mar. Es el caso conservador: da la
+      // refracción y la extinción máximas, o sea el cielo más pobre, que es
+      // preferible a prometer el de la cumbre y luego quitarlo.
+      elevationM: (data.dem
+        ? elevationAt(data.dem, ISLAND_BREATH_LON, ISLAND_BREATH_LAT)
+        : null) ?? 0,
+      pressureHpa: data.roque?.fields.pressure?.outdated === false
+        ? (data.roque.fields.pressure?.value ?? null)
+        : null,
+      temperatureC: data.roque?.fields.temperature?.outdated === false
+        ? (data.roque.fields.temperature?.value ?? null)
+        : null,
+    }),
+    [data.dem, data.roque],
+  )
+  /**
+   * La luna para el cielo nocturno se calcula SIEMPRE que la escena esté
+   * encendida, y no solo con la luz solar puesta como la de arriba: aquí no
+   * ilumina el relieve, decide cuántas estrellas se ven.
+   */
+  const nightMoon = useMemo(
+    () => (nightSkyOn ? moonState(now, ISLAND_BREATH_LON, ISLAND_BREATH_LAT) : null),
+    [nightSkyOn, now],
+  )
+  const nightSky = useNightSky(
+    nightSkyOn,
+    now,
+    nightObserver,
+    sun,
+    nightMoon,
+    nightTwinkleOn,
+    nightFiguresOn,
+  )
+  /**
    * Hasta qué altura del cielo llega la pantalla con este fondo, y a qué hora
    * baja el sol de ahí.
    *
@@ -793,6 +848,7 @@ export default function App() {
         wind={wind.field}
         vapor={vaporField}
         sky3d={{ on: sky3dOn, clouds: sky.clouds, sun }}
+        nightSky={{ on: nightSkyOn, scene: nightSky.scene, data: nightSky.data }}
         sunLight={{
           on: sunLightOn,
           shadows: sunShadowsOn,
@@ -1007,6 +1063,23 @@ export default function App() {
           if (!sky3dOn) setTerrain((s) => ({ ...s, on: true }))
           setSky3dOn((v) => !v)
         }}
+        nightSky={nightSky}
+        nightSkyOn={nightSkyOn}
+        nightFiguresOn={nightFiguresOn}
+        nightTwinkleOn={nightTwinkleOn}
+        /*
+          Igual que la escena de nubes: encender el cielo sin inclinar la cámara
+          es encender algo que no se puede ver. Y aquí además hace falta el
+          fondo de casa, porque con los de GRAFCAN el tope de inclinación se
+          queda en 65° y el horizonte no llega a entrar en pantalla.
+        */
+        onNightSky={() => {
+          if (!nightSkyOn) prepararElCielo()
+          setNightSkyOn((v) => !v)
+        }}
+        onNightFigures={() => setNightFiguresOn((v) => !v)}
+        onNightTwinkle={() => setNightTwinkleOn((v) => !v)}
+        observerElevationM={nightObserver.elevationM}
         vapor={{
           field: vaporField,
           breath,

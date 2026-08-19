@@ -41,6 +41,9 @@ import { VaporLayer } from './vapor/VaporLayer'
 import type { VaporField } from '../lib/vapor/field'
 import { CloudLayer } from './sky/CloudLayer'
 import { SunLayer } from './sky/SunLayer'
+import { StarLayer } from './stars/StarLayer'
+import type { StarSceneState } from './stars/StarLayer'
+import type { SkyData } from '../lib/stars/catalog'
 import { SunPathLayer } from './sky/SunPathLayer'
 import { RainLayer } from './sky/RainLayer'
 import type { Cloud } from '../lib/sky/scene'
@@ -244,6 +247,11 @@ interface Props {
    */
   sky3d: { on: boolean; clouds: Cloud[]; sun: SkyPosition }
   /**
+   * El cielo estrellado. `scene` es `null` mientras el catálogo no ha llegado;
+   * la capa se añade igual y no dibuja nada hasta que lo tiene.
+   */
+  nightSky: { on: boolean; scene: StarSceneState | null; data: SkyData | null }
+  /**
    * La luz solar sobre el relieve.
    *
    * Va aparte de `sky3d` aunque compartan el sol: son dos funciones que se
@@ -415,6 +423,7 @@ export function MapView(props: Props) {
   /** Las dos de la escena atmosférica, por lo mismo. */
   const cloudLayerRef = useRef<CloudLayer | null>(null)
   const sunLayerRef = useRef<SunLayer | null>(null)
+  const starLayerRef = useRef<StarLayer | null>(null)
   const sunPathLayerRef = useRef<SunPathLayer | null>(null)
   const rainLayerRef = useRef<RainLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
@@ -749,6 +758,14 @@ export function MapView(props: Props) {
       sunLayerRef.current = sunLayer
       map.addLayer(sunLayer)
 
+      // Las estrellas van DESPUÉS del sol en el orden de capas y da igual: las
+      // dos escriben a profundidad 1 y no coinciden nunca en pantalla —una se
+      // dibuja con el sol arriba y la otra con el cielo por debajo de la
+      // magnitud de Sirio—.
+      const starLayer = new StarLayer()
+      starLayerRef.current = starLayer
+      map.addLayer(starLayer)
+
       const cloudLayer = new CloudLayer()
       cloudLayerRef.current = cloudLayer
       map.addLayer(cloudLayer)
@@ -939,6 +956,7 @@ export function MapView(props: Props) {
       terrainRef.current = null
       cloudLayerRef.current = null
       sunLayerRef.current = null
+      starLayerRef.current = null
       sunPathLayerRef.current = null
       rainLayerRef.current = null
       map.remove()
@@ -1350,7 +1368,22 @@ export function MapView(props: Props) {
   useEffect(() => {
     if (!ready) return
     sunLayerRef.current?.setVisible(props.sunLight.disc)
-  }, [ready, props.sunLight.disc])
+  }, [props.sunLight.disc])
+
+  /**
+   * El cielo estrellado. El catálogo sube una sola vez —`setData` es
+   * idempotente— y el estado de la escena cada vez que cambia la hora, el
+   * fotómetro o una casilla.
+   */
+  useEffect(() => {
+    const layer = starLayerRef.current
+    if (!layer) return
+    if (props.nightSky.data) {
+      layer.setData(props.nightSky.data.catalog, props.nightSky.data.figures)
+    }
+    if (props.nightSky.scene) layer.setState(props.nightSky.scene)
+    layer.setVisible(props.nightSky.on && !!props.nightSky.scene)
+  }, [ready, props.nightSky.on, props.nightSky.data, props.nightSky.scene])
 
   // El camino del sol: su propia casilla, y su propio dato. Se recalcula solo
   // cuando cambia el día —`sunTrack` se memoriza fuera—, así que esto es una

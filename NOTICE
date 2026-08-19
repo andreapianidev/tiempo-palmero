@@ -66,6 +66,18 @@ reutilice este repositorio mantiene sus atribuciones:
   · Modelos de combustible y mapa de cultivos 2002-2008 — Gobierno de Canarias,
     Consejería de Medio Ambiente.
 
+  · Catálogo de estrellas — HYG v4.4, Astronomy Nexus (David Nash), que funde
+    Hipparcos, Yale Bright Star y Gliese. CC BY-SA 4.0.
+    https://codeberg.org/astronexus/hyg
+    El fichero `public/cielo/estrellas.bin` es obra derivada de ese catálogo y
+    se distribuye bajo la MISMA licencia CC BY-SA 4.0, no bajo la Apache 2.0
+    del código. Quien lo reutilice mantiene la atribución y el share-alike.
+
+  · Figuras de las constelaciones — d3-celestial, Olaf Frohn. BSD-3-Clause.
+    https://github.com/ofrohn/d3-celestial
+    `public/cielo/figuras.bin` es obra derivada: son los mismos vértices,
+    convertidos a índices del catálogo de estrellas.
+
   · Batimetría — EMODnet. Balizamiento náutico — OpenSeaMap, © colaboradores
     de OpenStreetMap, ODbL 1.0.
 

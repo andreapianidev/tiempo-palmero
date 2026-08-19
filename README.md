@@ -118,7 +118,8 @@ senderos, las cámaras de incendios y las webcam de la isla.
   [la escena atmosférica](docs/experimental.md#la-escena-atmosférica-nubes-y-lluvia-en-volumen):
   cuántas nubes dibuja y por qué esa cuenta sale de una fórmula y no de un gusto ·
   [la luz del sol](docs/experimental.md#la-luz-del-sol-sobre-el-relieve) ·
-  [el índice de incendio](docs/experimental.md#el-índice-de-incendio): cinco
+  [el cielo estrellado](docs/experimental.md#el-cielo-estrellado-8920-estrellas-y-un-fotómetro-que-decide-cuántas-se-ven) ·
+  [el índice de incendio](docs/experimental.md#el-índice-de-incendio): seis
   incendios, un clasificador validado escondiendo uno entero cada vez
 - [**Arquitectura**](docs/arquitectura.md) —
   [la vista 3D](docs/arquitectura.md#la-vista-3d), sin una descarga más ·
@@ -205,7 +206,7 @@ en tres dimensiones** que usa el mismo modelo de elevación que ya sombrea el
 mapa: no descarga nada nuevo. Con `Ctrl` y arrastrando se gira 360° y se inclina
 hasta 65°.
 
-### Lo experimental: cinco funciones que dibujan más de lo que miden
+### Lo experimental: seis funciones que dibujan más de lo que miden
 
 Hay una sección aparte, plegada y detrás de un aviso, para las funciones que
 **no se sostienen igual que el resto**. Están separadas a propósito: ponerlas
@@ -420,7 +421,7 @@ está en cuatro documentos. Cada uno se lee solo.
 |---|---|---:|
 | **[El motor de interpolación](docs/motor.md)** | Los seis pasos, la corrección altimétrica, el rechazo de valores atípicos, la banda de incertidumbre calibrada y la validación dejando fuera cada estación por turno. | 448 |
 | **[Los datos del Cabildo](docs/datos-del-cabildo.md)** | Los 49 conjuntos del portal, uno por uno: lo integrado, lo que falta, lo que no conviene añadir. Las guaguas, los aforos, las webcam, el viario, la cobertura de TDT. | 783 |
-| **[La sección experimental](docs/experimental.md)** | Las cinco funciones que dibujan más de lo que miden: nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 676 |
+| **[La sección experimental](docs/experimental.md)** | Las seis funciones que dibujan más de lo que miden: el cielo estrellado, nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 810 |
 | **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 621 |
 
 ---

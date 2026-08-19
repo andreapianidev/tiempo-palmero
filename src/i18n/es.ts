@@ -826,6 +826,56 @@ export const es = {
    * es la capa de la aplicación con más capacidad de que la confundan con un
    * radar meteorológico. Ver la cabecera de `components/sidebar/Sky3D.tsx`.
    */
+  /**
+   * La escena nocturna. El vocabulario importa: aquí hay que decir tres veces
+   * la misma distinción —qué está medido y qué está dibujado— porque es lo
+   * único que separa esta función de un planetario de escritorio.
+   */
+  nightSky: {
+    layer: 'Cielo estrellado en 3D',
+    figures: 'Líneas de las constelaciones',
+    twinkle: 'Centelleo',
+    hint: 'Dibuja el cielo real de este instante sobre la isla: las posiciones son de catálogo y CUÁNTAS estrellas se ven sale del brillo de fondo que miden los fotómetros del Cabildo. Es la misma diferencia que se ve subiendo a la Cumbre.',
+    loading: 'Descargando el catálogo de estrellas…',
+    failed: (why: string) => `No se pudo cargar el catálogo de estrellas: ${why}`,
+    glow: 'Brillo del cielo',
+    glowUnit: (v: number) => `${v.toFixed(2)} mag/arcsec²`,
+    limit: 'Magnitud límite',
+    visible: 'Estrellas visibles',
+    visibleOf: (n: number, total: number) => `${n} de ${total}`,
+    extinction: 'Extinción',
+    extinctionUnit: (k: number) => `${k.toFixed(3)} mag/masa de aire`,
+    horizon: 'Horizonte visible',
+    horizonUnit: (deg: number) => `${deg.toFixed(2)}°`,
+    source: 'Origen del brillo',
+    /**
+     * Las dos ramas. No se parecen a propósito: una nombra una estación y la
+     * otra dice que no hay ninguna, y quien mira tiene derecho a saber cuál de
+     * las dos está viendo antes de creerse la cuenta de estrellas.
+     */
+    sourceStation: (name: string, km: number, minutes: number) =>
+      `Medido por «${name}», a ${km.toFixed(1)} km, hace ${minutes} min. Esa lectura ya lleva dentro la luna, el crepúsculo y las luces del pueblo.`,
+    sourceModel:
+      'No hay ningún fotómetro con lectura utilizable a menos de 12 km, así que el brillo del cielo es MODELADO: cielo oscuro de referencia de la isla, más el crepúsculo medido en esta red y más la luna por Krisciunas y Schaefer. La cuenta de estrellas de arriba es una estimación, no una medida.',
+    network: 'Red de fotómetros',
+    networkValue: (usable: number, registered: number) => `${usable} de ${registered} midiendo`,
+    rejected: 'Descartadas',
+    rejectedDetail: (r: { sunUp: number; impossible: number; stale: number; sentinel: number }) =>
+      `${r.sunUp} con el sol arriba, ${r.impossible} con valor imposible, ${r.sentinel} con centinela, ${r.stale} con lectura vieja.`,
+    frozen: (n: number) =>
+      n === 1
+        ? '1 fotómetro descartado por publicar hora nueva con el mismo valor de siempre.'
+        : `${n} fotómetros descartados por publicar hora nueva con el mismo valor de siempre.`,
+    scope:
+      'Qué es dato y qué es dibujo: la posición de cada estrella, su magnitud y su color son de catálogo (HYG: Hipparcos, Yale Bright Star y Gliese); cuántas se ven sale del brillo de fondo medido. El tamaño en píxeles, el centelleo y el halo son representación: una estrella no tiene tamaño angular, y lo que se dibuja es la respuesta del ojo, no el objeto.',
+    figuresScope:
+      'Las figuras no son un dato astronómico: son una convención cultural. Van enganchadas por índice a las estrellas del catálogo, así que precesan con ellas, y se apagan solas cuando el cielo está tan claro que unirían estrellas que ya no se ven.',
+    twinkleScope:
+      'El centelleo crece con la masa de aire según el exponente 1,75 de Young (1967): en el cenit es un temblor y a cinco grados del horizonte es lo que hace parpadear a Sirio recién salido. La fase de cada estrella es suya, para que no titilen a la vez.',
+    needs3d: 'El cielo solo se ve con la vista inclinada: en planta no hay horizonte en pantalla, igual que le pasa al disco del sol.',
+    observer: 'Observador',
+    observerValue: (m: number) => `${Math.round(m)} m sobre el mar`,
+  },
   sky3d: {
     layer: 'Nubes y lluvia en 3D',
     hint:
@@ -1076,6 +1126,23 @@ export const es = {
       'restringidas, cartografiadas por navegantes sobre OpenStreetMap. Se piden mientras se miran, ' +
       'solo con «Faros, boyas y puertos» encendido, y por debajo del zoom 9 no hay balizas dibujadas.',
     seamarksLicense: 'ODbL 1.0',
+    starsTitle: 'Catálogo de estrellas',
+    starsBody:
+      'HYG v4.4, de Astronomy Nexus: funde en un solo fichero todas las estrellas identificables de ' +
+      'los catálogos Hipparcos, Yale Bright Star y Gliese —las 9.040 con número HR del Yale entre ' +
+      'ellas—. Se descarga una vez en tiempo de compilación, se corta en magnitud 6,5 —8.920 ' +
+      'estrellas, 104 KB— y se le aplica el movimiento propio hasta la época del build. CUÁNTAS de ' +
+      'esas 8.920 se dibujan no sale del catálogo: sale del brillo de fondo que miden los ' +
+      'fotómetros del Cabildo. El fichero derivado hereda la licencia del original.',
+    starsLicense: 'CC BY-SA 4.0',
+    figuresTitle: 'Figuras de las constelaciones',
+    figuresBody:
+      'Las líneas vienen de d3-celestial, de Olaf Frohn, y aquí no se guardan como coordenadas sino ' +
+      'como parejas de índices al catálogo: cada uno de los 893 vértices se engancha a la estrella ' +
+      'más cercana —mediana de 0,16 segundos de arco, peor caso 30,6 en α Centauri, que es doble—, ' +
+      'así que las figuras precesan con sus estrellas y ninguna puede quedar colgando de un punto ' +
+      'vacío. No son un dato astronómico: son una convención cultural.',
+    figuresLicense: 'BSD-3-Clause',
     demTitle: 'Modelo de elevación y relieve',
     demBody:
       'Mapzen Terrain Tiles (formato terrarium), servidas por AWS Open Data. Derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM. Las mismas teselas generan el sombreado del relieve y las altitudes del cálculo.',

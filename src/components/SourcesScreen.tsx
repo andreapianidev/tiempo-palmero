@@ -130,6 +130,20 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'openseamap.org',
   },
   {
+    title: t.sources.starsTitle,
+    body: t.sources.starsBody,
+    license: t.sources.starsLicense,
+    href: 'https://codeberg.org/astronexus/hyg',
+    hrefLabel: 'codeberg.org/astronexus/hyg',
+  },
+  {
+    title: t.sources.figuresTitle,
+    body: t.sources.figuresBody,
+    license: t.sources.figuresLicense,
+    href: 'https://github.com/ofrohn/d3-celestial',
+    hrefLabel: 'github.com/ofrohn/d3-celestial',
+  },
+  {
     title: t.sources.demTitle,
     body: t.sources.demBody,
     license: t.sources.demLicense,

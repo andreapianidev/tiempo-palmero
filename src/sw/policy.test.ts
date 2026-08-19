@@ -35,6 +35,7 @@ describe('routeFor', () => {
   it('pero el manifiesto que dice qué versión hay va SIEMPRE a la red primero', () => {
     expect(route('/dem/manifest.json')).toBe('fresh')
     expect(route('/ocean/manifest.json')).toBe('fresh')
+    expect(route('/cielo/manifest.json')).toBe('fresh')
     expect(route('/layers/index.json')).toBe('fresh')
   })
 
@@ -47,6 +48,10 @@ describe('routeFor', () => {
     expect(route('/guagua-red.json')).toBe('data')
     expect(route('/fire/riesgo.png')).toBe('data')
     expect(route('/ocean/batimetria.png')).toBe('data')
+    // El catálogo de estrellas: 107 KB que se piden una vez y valen para
+    // siempre hasta que se regenere el fichero.
+    expect(route('/cielo/estrellas.bin')).toBe('data')
+    expect(route('/cielo/figuras.bin')).toBe('data')
     expect(route('/manifest.webmanifest')).toBe('data')
     expect(route('/icon-512.png')).toBe('data')
   })

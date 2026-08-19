@@ -26,6 +26,8 @@ import { PlaceSearch } from './PlaceSearch'
 import { VariablePicker } from './VariablePicker'
 import { FireRisk } from './FireRisk'
 import { Sky3D } from './Sky3D'
+import { NightSky } from './NightSky'
+import type { NightSkyState } from '../../hooks/useNightSky'
 import { WindAnimation } from './WindAnimation'
 import { SeaMotion } from './SeaMotion'
 import { SunLight } from './sun'
@@ -78,6 +80,16 @@ interface Props {
   coverage: CoverageState
   /** La capa experimental de incendios: su modelo y qué le falta. */
   fire: FireRiskState
+  /** El cielo estrellado: catálogo, red de fotómetros y magnitud límite. */
+  nightSky: NightSkyState
+  nightSkyOn: boolean
+  nightFiguresOn: boolean
+  nightTwinkleOn: boolean
+  onNightSky: () => void
+  onNightFigures: () => void
+  onNightTwinkle: () => void
+  /** Cota del observador, para el panel del cielo. */
+  observerElevationM: number
   /** La escena atmosférica experimental: la rejilla del cielo y sus cifras. */
   sky: SkyState
   sky3dOn: boolean
@@ -316,10 +328,23 @@ export function Sidebar(props: Props) {
               props.sunLight.disc ||
               props.sunLight.path
                 ? 1
-                : 0)
-            }/5`}
+                : 0) +
+              (props.nightSkyOn ? 1 : 0)
+            }/6`}
           >
             <Sky3D sky={props.sky} on={props.sky3dOn} onToggle={props.onSky3d} />
+            <hr className="sep" />
+            <NightSky
+              sky={props.nightSky}
+              on={props.nightSkyOn}
+              onToggle={props.onNightSky}
+              figures={props.nightFiguresOn}
+              onToggleFigures={props.onNightFigures}
+              twinkle={props.nightTwinkleOn}
+              onToggleTwinkle={props.onNightTwinkle}
+              observerElevationM={props.observerElevationM}
+              view3d={props.terrain.on}
+            />
             <hr className="sep" />
             <SunLight
               on={props.sunLight.on}

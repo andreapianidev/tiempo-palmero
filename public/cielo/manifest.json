@@ -1,0 +1,24 @@
+{
+  "catalog": "HYG v4.4",
+  "catalogUrl": "https://codeberg.org/astronexus/hyg",
+  "count": 8920,
+  "magLimit": 6.5,
+  "epochJd": 2461272.365732743,
+  "epoch": "J2026.63",
+  "figures": {
+    "segments": 743,
+    "vertices": 893,
+    "worstSnapArcsec": 30.6,
+    "source": "https://github.com/ofrohn/d3-celestial",
+    "license": "BSD-3-Clause"
+  },
+  "measured": {
+    "properMotionMaxArcsec": 188,
+    "properMotionFastest": "Groombridge 1830",
+    "faintestFigureStar": 6.47,
+    "withoutColorIndex": 40
+  },
+  "attribution": "Estrellas: HYG v4.4, Astronomy Nexus (Hipparcos · Yale Bright Star · Gliese), CC BY-SA 4.0. Figuras de las constelaciones: d3-celestial, Olaf Frohn, BSD-3-Clause.",
+  "license": "CC BY-SA 4.0",
+  "generated": "2026-08-19T20:46:39.309Z"
+}

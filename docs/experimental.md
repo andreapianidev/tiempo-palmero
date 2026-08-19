@@ -1,6 +1,6 @@
 # La sección experimental
 
-Las cinco funciones que dibujan más de lo que miden: qué parte es dato, qué
+Las seis funciones que dibujan más de lo que miden: qué parte es dato, qué
 parte es representación, y qué las mantiene fuera de las variables normales.
 
 ← Volver al [README](../README.md)
@@ -11,7 +11,7 @@ parte es representación, y qué las mantiene fuera de las variables normales.
 Hay un sitio aparte en la barra lateral, **«Experimental»**, plegado y detrás de
 un aviso, para las funciones que no se sostienen igual que el resto de la
 aplicación. Van ahí y no entre las variables normales porque ponerlas al lado de
-la temperatura las igualaría con una medida. Hoy hay **cinco**, y todas tienen
+la temperatura las igualaría con una medida. Hoy hay **seis**, y todas tienen
 en común lo mismo: dibujan más de lo que miden.
 
 Dos de ellas no nacieron aquí, se mudaron:
@@ -38,6 +38,140 @@ perfectamente— y el precio era absurdo: para ver una carta publicada por EMODn
 había que encender antes una simulación que no tiene nada que ver con ella, y
 que además se lleva el fondo al satélite cuando la carta topográfica no dibuja
 mar.
+
+### El cielo estrellado: 8920 estrellas y un fotómetro que decide cuántas se ven
+
+Dibuja el cielo real de este instante sobre la isla. Es la función de esta
+sección que **más se parece a un dato y menos lo es**, y a la vez la que tiene
+el ancla medida más limpia de todas — las dos cosas a la vez, y conviene separar
+cuál es cuál.
+
+| Dato | Dibujo |
+|---|---|
+| La dirección de cada estrella (ICRS, catálogo HYG) | Cuántos píxeles mide |
+| Su magnitud y su índice de color B−V | El centelleo |
+| El brillo de fondo del cielo, mag/arcsec², **medido** | El halo alrededor del punto |
+| La presión y la temperatura, para la refracción | Lo blanqueado que sale el color |
+| La altitud del observador, del DEM | Las líneas de las constelaciones |
+
+**Lo que decide cuántas estrellas hay no es una constante: es la red de
+fotómetros del Cabildo.** El portal publica `skyobservation_lastdata`, 59
+estaciones que miden el brillo del fondo de cielo en magnitudes por segundo de
+arco cuadrado. De ahí sale la magnitud límite a simple vista por la relación de
+Schaefer (1990), y de la magnitud límite sale un corte sobre el catálogo. Lo que
+eso significa en esta isla, con lecturas reales del 19 de agosto de 2026:
+
+| Sitio | Brillo medido | Magnitud límite | Estrellas dibujadas |
+|---|---|---|---|
+| SkyPalma (Garafía) | 21,52 | 6,39 | **7885** |
+| Centro de Visitantes del Roque | 21,13 | 6,19 | 6180 |
+| Mirador Las Toscas | 20,60 | 5,88 | 4420 |
+| Colegio La Palmita | 19,50 | 5,14 | 1930 |
+| Cementerio de Santa Cruz | 18,00 | 3,97 | 504 |
+| CEIP Santo Domingo (Los Llanos) | 16,19 | 2,37 | **83** |
+
+De 7885 a 83 en 34 km. La contaminación lumínica no se enseña con un mapa de
+colores: se enseña con las estrellas que faltan.
+
+**El denominador se dice entero.** De las 59 registradas, el 19 de agosto de
+2026 a las 20:35 UTC habían publicado algo 15 en el último mes, 13 en el último
+día y **7 en la última hora**. El panel dice «7 de 59».
+
+**Los tres valores que no son medidas, y cómo se distinguen sin adivinar.** El
+archivo de dos días —15 111 lecturas— trae tres formas de «no hay dato»
+disfrazadas de número: el centinela `−1000`, el `0` exacto que ponen los TESS-W
+de día (7308 lecturas), y el suelo de saturación del hardware «Smart», entre
+9,02 y 9,99, que es el peligroso porque tiene decimales y desviación y parece
+una medida. No se filtran por el valor sino por la física — **un fotómetro de
+cielo nocturno no mide nada mientras el sol esté arriba**— y el corte sale
+perfecto por los dos lados:
+
+| Sol | Lecturas | Mínimo | ¿Ceros? | ¿Suelo 9-10? |
+|---|---:|---:|---:|---:|
+| por encima de −6° | 8761 | 0,00 | 7308 | 995 |
+| de −6° a −12° | 616 | **12,43** | 0 | 0 |
+| por debajo de −12° | 5734 | **16,71** | 0 | 0 |
+
+Con el sol bajo −6°, la lectura más brillante de toda la red son 12,43 y el
+artefacto más oscuro del hardware son 9,99: **2,44 magnitudes de nada** entre
+los dos. El segundo cinturón —un umbral de valor en 11,0— cae justo en mitad de
+ese hueco.
+
+Y hay un cuarto caso, el sensor **congelado**: el fotómetro del Centro de
+Visitantes del Roque publicó cuatro veces, el 17 y el 18 de agosto, exactamente
+la misma terna —21,126 de brillo, −10,09 de temperatura de cielo, «Despejado»—
+a las 05:32, 13:15, 07:31 y 14:14. La hora avanzaba y la medida no. Se descarta
+a la tercera repetición, no a la segunda: republicar una vez el último dato
+antes de tener uno nuevo es normal.
+
+**Cuando no hay fotómetro cerca, se modela y se dice.** El límite son 12 km
+—percentil 90 de la distancia al fotómetro más cercano barriendo el recuadro del
+mapa—. Más lejos, el brillo sale de un modelo, y el panel cambia de frase. **No
+se interpola**: entre el Roque a 21,13 y un colegio de Los Llanos a 16,19 hay
+12 km, y un campo interpolado pondría 18,7 en mitad de la Caldera de
+Taburiente, donde no hay ni una luz. La discontinuidad ES el fenómeno.
+
+La ley del crepúsculo de ese modelo también está medida aquí, y sale igual en
+cinco estaciones repartidas entre los 300 y los 2382 m: el flujo del cielo es el
+del cielo oscuro más `10^(a + 0,438·h)`, con `h` la altura del sol. En
+magnitudes son **1,10 mag de cielo por cada grado que el sol baja**, con 0,13 de
+residuo medio sobre 832 lecturas.
+
+**La luna arrastra un sesgo declarado, y no se corrige.** El modelo de
+Krisciunas y Schaefer (1991) predice el cielo 0,64 mag más oscuro del que la red
+mide, igual en las cuatro estaciones. Se probó a corregirlo: el factor óptimo
+contra ese fixture sale en 3,5, baja el error medio de 0,66 a 0,15… y llevado a
+luna llena da un cielo de 16,3-17,4 mag/arcsec² cuando la bibliografía publica
+17,5-18,5 para un sitio oscuro. Arregla la fase con la que se midió y rompe la
+que no. Un modelo publicado con un sesgo escrito es preferible a uno ajustado a
+dos noches; lo que falta para corregirlo bien es una lunación entera de archivo.
+
+**Dónde están las estrellas: cuatro efectos, y cuánto vale cada uno.** El
+catálogo da direcciones en un sistema fijo; lo que se dibuja es dónde están
+vistas desde aquí ahora.
+
+| Efecto | Cuánto mueve | ¿Entra? |
+|---|---|---|
+| Precesión J2000 → hoy | **22 minutos de arco** en 26 años | Sí, es el grande |
+| Refracción atmosférica | **34 minutos** en el horizonte | Sí, es el otro grande |
+| Nutación | 17 segundos | Sí, sale gratis |
+| Aberración anual | 20,5 segundos | Sí, son tres líneas |
+
+Los dos grandes son los que se ven: 22' son dos tercios de la luna llena, y en
+el horizonte el aire levanta un astro un diámetro lunar entero. Todo eso va en
+**una matriz de 3 × 3 que se calcula una vez por fotograma**, y el sombreador la
+aplica a las 8920 estrellas: medio millón de conversiones por segundo que en
+JavaScript no cabrían en un teléfono y en la GPU son una llamada de dibujo.
+Comparada contra `astronomy-engine` —que implementa VSOP87 y NOVAS C 3.1— sobre
+64 posiciones repartidas por todo el cielo y por veinte años, la cadena coincide
+con una mediana de **0,31 segundos de arco** y un peor caso de 0,54.
+
+**La refracción se calcula con la presión medida, no con la de manual.** Es
+proporcional a la densidad del aire: en el Roque, a 757 hPa, vale un 25 % menos
+que al nivel del mar — 8 minutos de arco en el horizonte, que es lo que separa
+ver salir una estrella de no verla. Y el horizonte de una cumbre no está en
+cero: desde 2387 m está **1,43° por debajo**, así que desde ahí arriba se ven
+estrellas que desde la costa están puestas.
+
+**Las figuras de las constelaciones no son un dato astronómico**, son una
+convención cultural, y por eso llevan su propio interruptor. Se guardan como
+parejas de índices al catálogo y no como coordenadas: los 893 vértices del
+fichero de origen se enganchan a la estrella más cercana con una mediana de
+**0,16 segundos de arco** —el peor caso, 30,6, es α Centauri, que es doble—, así
+que precesan con sus estrellas y ninguna puede quedar colgando de un punto
+vacío. Se apagan solas cuando el cielo está tan claro que unirían estrellas que
+ya no se ven.
+
+**El centelleo tiene exponente.** La amplitud crece como `X^1,75` —la masa de
+aire elevada al exponente de Young (1967)— y por eso Sirio recién salido tiembla
+y Vega en el cenit no. Cada estrella lleva su fase, para que no titilen a la vez.
+
+**El corte por magnitud es un prefijo del fichero.** El catálogo viene ordenado
+de más brillante a más débil desde `prepare-cielo.ts`, así que «¿cuáles se ven
+esta noche?» es una búsqueda binaria y un `drawArrays` de `[0, k)`. Sin ese
+orden habría que recorrer las 8920 cada fotograma para descartar las que sobran.
+
+---
 
 ### La escena atmosférica: nubes y lluvia en volumen
 
