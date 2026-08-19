@@ -24,7 +24,9 @@
  * colores se calculan aquí, donde se pueden probar.
  */
 
-import { moonState, skyVector, sunPosition } from '../sun'
+import { moonState } from '../moon'
+import { relativeMoonlight } from '../moon-brightness'
+import { skyVector, sunPosition } from '../sun'
 
 export type Rgb = [number, number, number]
 
@@ -397,9 +399,15 @@ export function oceanLight(
 
   // De noche la luna manda, y manda poco: la luna llena da unos 0,25 lux contra
   // los 100.000 del sol. Aquí no se trata de reproducir esa proporción —el mar
-  // se quedaría negro— sino de que se note si hay luna o no la hay.
+  // se quedaría negro— sino de que se note si hay luna o no la hay, y CUÁNTA.
+  //
+  // LA FASE NO ENTRA COMO FRACCIÓN ILUMINADA, que es lo que hacía antes. Media
+  // luna no alumbra la mitad: alumbra el 9 %, y una creciente de cinco días el
+  // 2,6 %. La columna de luna sobre el agua se dibujaba cinco veces y media más
+  // brillante de la cuenta en cuarto creciente. La curva está en
+  // `moon-brightness.ts`, y es la misma que ya usaba el brillo del cielo.
   const moonUp = Math.max(0, Math.min(1, (moon.elevationDeg + 2) / 10))
-  const moonIntensity = (1 - daylight) * moonUp * moon.illumination
+  const moonIntensity = (1 - daylight) * moonUp * relativeMoonlight(moon.illumination)
 
   const ambient = mix(
     scale(zenith, 0.35 + 0.45 * cloudy),

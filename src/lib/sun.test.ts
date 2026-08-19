@@ -1,16 +1,19 @@
 /**
- * Sol y luna, contra hechos astronómicos y no contra otra implementación.
+ * El sol, contra hechos astronómicos y no contra otra implementación.
+ *
+ * LA LUNA SE FUE A `moon.test.ts` con su efeméride. Las tres pruebas que estaban
+ * aquí —mes sinódico, la llena enfrente del sol, la nueva sin luz— se fueron
+ * enteras y sin tocar: comprueban lo mismo sobre el mismo `moonState`.
  *
  * No hay aquí ninguna tabla de orto y ocaso copiada de un servicio: lo que se
  * comprueba son cosas que tienen que salir por definición —la declinación en
  * los solsticios, la ecuación del tiempo en sus dos extremos, la duración del
- * día del solsticio en esta latitud— y la coherencia interna de las dos
- * efemérides entre sí. Un test contra una tabla copiada solo demuestra que se
- * copió bien.
+ * día del solsticio en esta latitud—. Un test contra una tabla copiada solo
+ * demuestra que se copió bien.
  */
 
 import { describe, expect, it } from 'vitest'
-import { dayFactor, dayLengthHours, moonState, solarGeometry, sunPosition } from './sun'
+import { dayFactor, dayLengthHours, solarGeometry, sunPosition } from './sun'
 
 /** Santa Cruz de La Palma. */
 const LON = -17.7642
@@ -99,67 +102,6 @@ describe('el sol sobre la isla', () => {
     // y el de Navidad, que en esta latitud es toda la estacionalidad que hay.
     expect(dayLengthHours(utc('2026-06-21T12:00:00Z'), LAT)).toBeCloseTo(13.83, 1)
     expect(dayLengthHours(utc('2026-12-21T12:00:00Z'), LAT)).toBeCloseTo(10.17, 1)
-  })
-})
-
-describe('la luna', () => {
-  it('la fase va de cero a uno y vuelve, con el mes sinódico', () => {
-    // Se buscan dos llenas seguidas recorriendo cuarenta días de hora en hora.
-    // Entre una y otra tienen que pasar 29,5 días: el mes sinódico. Si la serie
-    // de Meeus estuviera mal transcrita, este periodo no saldría.
-    const start = utc('2026-01-01T00:00:00Z')
-    const peaks: number[] = []
-    let previous = 0
-    let rising = true
-    for (let h = 0; h < 24 * 70; h++) {
-      const at = start + h * 3600000
-      const f = moonState(at, LON, LAT).illumination
-      if (rising && f < previous) {
-        peaks.push(at)
-        rising = false
-      }
-      if (!rising && f > previous) rising = true
-      previous = f
-    }
-    expect(peaks.length).toBeGreaterThanOrEqual(2)
-    const days = (peaks[1] - peaks[0]) / 86400000
-    expect(days).toBeCloseTo(29.53, 0)
-  })
-
-  it('la luna llena sale cuando se pone el sol', () => {
-    // No es folclore: si está llena, es que está enfrente del sol. Se busca la
-    // llena más cercana y se comprueba que a medianoche solar está alta.
-    const start = utc('2026-01-01T00:00:00Z')
-    let full = start
-    let best = 0
-    for (let h = 0; h < 24 * 40; h++) {
-      const at = start + h * 3600000
-      const f = moonState(at, LON, LAT).illumination
-      if (f > best) {
-        best = f
-        full = at
-      }
-    }
-    expect(best).toBeGreaterThan(0.99)
-    const sun = sunPosition(full, LON, LAT)
-    const moon = moonState(full, LON, LAT)
-    // La llena de este barrido cae el 1 de febrero de 2026 a las 20:00 UTC, con
-    // el sol a −15,6° —recién puesto por el oeste— y la luna a +15,6° saliendo
-    // por el este. Los dos acimutes tienen que estar a media vuelta.
-    const separation = Math.abs(((moon.azimuthDeg - sun.azimuthDeg + 540) % 360) - 180)
-    expect(separation).toBeGreaterThan(145)
-    // Y uno arriba justo cuando el otro está abajo, que es la comprobación que
-    // de verdad distingue una luna llena de una nueva.
-    expect(Math.sign(moon.elevationDeg)).toBe(-Math.sign(sun.elevationDeg))
-  })
-
-  it('la nueva no ilumina nada', () => {
-    const start = utc('2026-01-01T00:00:00Z')
-    let worst = 1
-    for (let h = 0; h < 24 * 40; h++) {
-      worst = Math.min(worst, moonState(start + h * 3600000, LON, LAT).illumination)
-    }
-    expect(worst).toBeLessThan(0.01)
   })
 })
 

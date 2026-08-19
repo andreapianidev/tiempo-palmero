@@ -881,6 +881,53 @@ export const es = {
     observer: 'Observador',
     observerValue: (m: number) => `${Math.round(m)} m sobre el mar`,
   },
+  /**
+   * La luna, dentro de la escena nocturna.
+   *
+   * Las cifras de estos textos salen de `moon.ts` y de `moon-brightness.ts`, y
+   * las dos afirmaciones fuertes —los 0,17' de error y el 9 % de luz en cuarto—
+   * están medidas en sus pruebas. Si alguna cambia, cambia allí primero.
+   */
+  nightMoon: {
+    layer: 'La luna',
+    names: {
+      nueva: 'nueva',
+      crecienteFina: 'creciente',
+      cuartoCreciente: 'cuarto creciente',
+      gibosaCreciente: 'gibosa creciente',
+      llena: 'llena',
+      gibosaMenguante: 'gibosa menguante',
+      cuartoMenguante: 'cuarto menguante',
+      menguanteFina: 'menguante',
+    } as Record<string, string>,
+    phase: 'Fase',
+    /*
+      Las cifras llegan YA FORMATEADAS desde el componente, con `n` y `n0`, que
+      es lo que pone la coma decimal del castellano. Formatear aquí con
+      `toFixed` habría escrito «13.7°» en un panel donde todo lo demás dice
+      «13,7°».
+    */
+    phaseValue: (name: string, percent: string) => `${name} · ${percent} % iluminada`,
+    where: 'Dónde está',
+    whereValue: (deg: string, rose: string) => `${deg}° al ${rose}`,
+    whereDown: (deg: string) => `puesta, ${deg}°`,
+    size: 'Tamaño',
+    sizeValue: (arcmin: string, km: string) => `${arcmin}′ · ${km} km`,
+    light: 'Luz que echa',
+    lightValue: (percent: string) => `${percent} % de la llena`,
+    /**
+     * El mismo problema del disco del sol y la misma solución: decir en presente
+     * dónde está y hasta dónde llega la pantalla. Una casilla marcada sin nada
+     * en pantalla es indistinguible de un fallo.
+     */
+    tooHigh: (deg: string, ceiling: string) =>
+      `Está a ${deg}° de altura y la pantalla llega a ${ceiling}°: la luna está por encima del borde de arriba. Se verá cuando baje hacia el horizonte, que es también cuando se pone naranja.`,
+    below: 'Ahora mismo está por debajo del horizonte de este observador, así que no hay nada que dibujar.',
+    scope:
+      'Qué es dato y qué es dibujo: la posición, la fase, el tamaño y la distancia son efemérides —serie completa de Meeus con paralaje topocéntrica, comprobada contra astronomy-engine con 0,17\u2032 de error en el peor caso de dos años—. El BRILLO del disco en pantalla es representación: la luna llena es dieciocho magnitudes más brillante que el cielo que tiene al lado y esa diferencia en un monitor no cabe. El enrojecimiento al bajar sí sale de la extinción medida del sitio.',
+    sea:
+      'Sobre el mar en movimiento se ve su reflejo, y la luz que le echa NO es proporcional a la parte iluminada: media luna alumbra el 9 % de la llena, no el 50 %. Es la curva de fase de Krisciunas y Schaefer, la misma con la que se calcula cuántas estrellas tapa.',
+  },
   sky3d: {
     layer: 'Nubes y lluvia en 3D',
     hint:

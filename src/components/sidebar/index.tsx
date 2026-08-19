@@ -85,9 +85,11 @@ interface Props {
   nightSkyOn: boolean
   nightFiguresOn: boolean
   nightTwinkleOn: boolean
+  nightMoonOn: boolean
   onNightSky: () => void
   onNightFigures: () => void
   onNightTwinkle: () => void
+  onNightMoon: () => void
   /** Cota del observador, para el panel del cielo. */
   observerElevationM: number
   /** La escena atmosférica experimental: la rejilla del cielo y sus cifras. */
@@ -342,6 +344,9 @@ export function Sidebar(props: Props) {
               onToggleFigures={props.onNightFigures}
               twinkle={props.nightTwinkleOn}
               onToggleTwinkle={props.onNightTwinkle}
+              moon={props.nightMoonOn}
+              onToggleMoon={props.onNightMoon}
+              ceilingDeg={props.sunLight.ceilingDeg}
               observerElevationM={props.observerElevationM}
               view3d={props.terrain.on}
             />

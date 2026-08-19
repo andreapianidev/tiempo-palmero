@@ -65,13 +65,26 @@ export interface SunScreen {
 /**
  * `matrix` es la matriz de vista de MapLibre, en columna mayor, tal cual llega
  * a una capa personalizada.
- *
- * En Mercator la `y` crece hacia el SUR, y por eso la componente norte entra
- * con signo cambiado. Es el error que haría salir el sol en el sitio simétrico
- * respecto al centro de la pantalla, o sea plausible y equivocado.
  */
 export function sunScreen(matrix: ArrayLike<number>, sun: SkyPosition): SunScreen {
-  const [east, north, up] = skyVector(sun)
+  return directionScreen(matrix, skyVector(sun))
+}
+
+/**
+ * Lo mismo pero para una dirección ya en la base local (este, norte, arriba).
+ *
+ * Es la puerta que usa la luna, que no llega como altura y acimut sino como
+ * vector —hace falta el vector para saber hacia dónde apunta el cuerno—. Está
+ * aquí y no duplicada allí por una razón concreta: el signo de la componente
+ * norte. En Mercator la `y` crece hacia el SUR, y una segunda copia de esta
+ * cuenta es un segundo sitio donde olvidarlo. El error no rompe nada: pone el
+ * astro en el punto simétrico respecto al centro de la pantalla, o sea
+ * plausible y en el sitio equivocado.
+ */
+export function directionScreen(
+  matrix: ArrayLike<number>,
+  [east, north, up]: [number, number, number],
+): SunScreen {
   const x = matrix[0] * east + matrix[4] * -north + matrix[8] * up
   const y = matrix[1] * east + matrix[5] * -north + matrix[9] * up
   const w = matrix[3] * east + matrix[7] * -north + matrix[11] * up

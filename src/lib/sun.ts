@@ -1,5 +1,8 @@
 /**
- * Dónde está el sol —y la luna— sobre la isla en este instante.
+ * Dónde está el sol sobre la isla en este instante.
+ *
+ * LA LUNA ESTABA AQUÍ Y SE FUE A `moon.ts`. La razón, con la cifra, está escrita
+ * en el hueco que dejó, más abajo.
  *
  * ESTE FICHERO VIVÍA EN `ocean/`, y salió de allí por una razón que conviene
  * dejar escrita porque casi se repite el error: cuando la escena 3D necesitó
@@ -26,11 +29,10 @@
  * mediodía sobre un mapa que enseña la temperatura de las siete de la mañana
  * sería una contradicción en la misma pantalla.
  *
- * DE DÓNDE SALE. El algoritmo solar es el de la NOAA (*Solar Position
- * Calculator*, el mismo de la hoja de cálculo pública del ESRL), que da la
- * declinación con un error por debajo de 0,01° en este siglo. El lunar es la
- * versión truncada de Meeus, *Astronomical Algorithms* cap. 47: unos pocos
- * minutos de arco de error, que para decidir de qué color es una cresta sobra.
+ * DE DÓNDE SALE. El algoritmo es el de la NOAA (*Solar Position Calculator*, el
+ * mismo de la hoja de cálculo pública del ESRL), que da la declinación con un
+ * error por debajo de 0,01° en este siglo. Son 36 segundos de arco contra un
+ * disco de 32 minutos: la centésima parte del sol que se dibuja.
  *
  * NO PIDE NADA A NADIE. Es geometría: entra un instante y unas coordenadas y
  * sale un ángulo. Un servicio de orto y ocaso habría sido una dependencia
@@ -176,71 +178,24 @@ export function dayLengthHours(at: number, latDeg: number): number {
 // ---------------------------------------------------------------------------
 // Luna
 // ---------------------------------------------------------------------------
+//
+// AQUÍ YA NO HAY LUNA, y merece la pena decir por qué en el sitio donde estuvo.
+//
+// Vivió aquí una serie truncada de Meeus —un término de longitud, uno de
+// latitud, geocéntrica— que servía perfectamente para lo único que se le pedía:
+// mover el reflejo sobre el agua y saber cuánta luz echa. Cuando hubo que
+// DIBUJAR el disco al lado de las estrellas se midió, y se equivocaba en 70
+// minutos de arco de mediana: más de dos diámetros lunares.
+//
+// La luna se fue entera a `moon.ts`, con las tablas 47.A y 47.B completas, con
+// paralaje topocéntrica y con el reloj en Tiempo Terrestre. `moonState` sigue
+// existiendo allí con la misma firma, así que quien solo quiera altura, acimut
+// y fase cambia el import y ya está.
+//
+// NO SE HA DEJADO UNA COPIA AQUÍ a propósito. Este fichero empieza contando que
+// durante unos commits hubo dos astronomías en el repositorio y que quedó una;
+// dejar la luna vieja de respaldo habría sido volver a tener dos.
 
-export interface MoonState extends SkyPosition {
-  /** Fracción iluminada del disco, de 0 (luna nueva) a 1 (llena). */
-  illumination: number
-}
-
-/**
- * Posición y fase de la luna.
- *
- * Serie truncada de Meeus: los términos principales de longitud, latitud y
- * distancia. La fase NO sale de un mes sinódico contado desde una luna nueva de
- * referencia —eso arrastra horas de error y, peor, no sabe nada de dónde está
- * la luna—, sino de la elongación geométrica real entre el sol y la luna, que
- * es la definición de la fase.
- */
-export function moonState(at: number, lonDeg: number, latDeg: number): MoonState {
-  const d = julianDay(at) - J2000
-  const eclipticLong = (218.316 + 13.176396 * d) * RAD
-  const meanAnomaly = (134.963 + 13.064993 * d) * RAD
-  const meanDistance = (93.272 + 13.22935 * d) * RAD
-
-  const lambda = eclipticLong + 6.289 * RAD * Math.sin(meanAnomaly)
-  const beta = 5.128 * RAD * Math.sin(meanDistance)
-  const distanceKm = 385001 - 20905 * Math.cos(meanAnomaly)
-
-  const obliq = 23.4397 * RAD
-  const ra = Math.atan2(
-    Math.sin(lambda) * Math.cos(obliq) - Math.tan(beta) * Math.sin(obliq),
-    Math.cos(lambda),
-  )
-  const dec = Math.asin(
-    Math.sin(beta) * Math.cos(obliq) + Math.cos(beta) * Math.sin(obliq) * Math.sin(lambda),
-  )
-
-  // Ángulo horario de la luna: el del punto Aries (tiempo sidéreo) menos su
-  // ascensión recta. La constante 280,16 + 360,9856235·d es el tiempo sidéreo
-  // medio de Greenwich en grados.
-  const siderealDeg = 280.16 + 360.9856235 * d + lonDeg
-  const moonHourAngle = ((siderealDeg - ra * DEG + 540) % 360) - 180
-  const position = horizon(moonHourAngle, dec * DEG, latDeg)
-
-  // Fase por elongación. La distancia al sol entra porque la luna no está en el
-  // centro de la órbita terrestre: sin ella, la luna llena saldría del 100 %
-  // exacto en vez del 99,x % que de verdad se ve casi siempre.
-  const { declinationDeg, rightAscensionDeg } = solarGeometry(at)
-  const sunDec = declinationDeg * RAD
-  const sunRa = rightAscensionDeg * RAD
-  const elongation = Math.acos(
-    Math.max(
-      -1,
-      Math.min(
-        1,
-        Math.sin(sunDec) * Math.sin(dec) +
-          Math.cos(sunDec) * Math.cos(dec) * Math.cos(sunRa - ra),
-      ),
-    ),
-  )
-  const sunDistanceKm = 149_598_000
-  const phaseAngle = Math.atan2(
-    sunDistanceKm * Math.sin(elongation),
-    distanceKm - sunDistanceKm * Math.cos(elongation),
-  )
-
-  return { ...position, illumination: (1 + Math.cos(phaseAngle)) / 2 }
-}
 
 /**
  * Elevación del sol en grados, para quien solo necesita eso.

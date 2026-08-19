@@ -17,6 +17,7 @@
 import { t } from '../../i18n'
 import type { NightSkyState } from '../../hooks/useNightSky'
 import { compassPoint } from '../../lib/stars/tonight'
+import { NightMoon } from './NightMoon'
 
 interface Props {
   sky: NightSkyState
@@ -26,6 +27,10 @@ interface Props {
   onToggleFigures: () => void
   twinkle: boolean
   onToggleTwinkle: () => void
+  moon: boolean
+  onToggleMoon: () => void
+  /** Hasta qué altura del cielo llega la pantalla con el fondo puesto. */
+  ceilingDeg: number
   observerElevationM: number
   /** `false` con la vista en plano: no hay cielo en pantalla que enseñar. */
   view3d: boolean
@@ -39,6 +44,9 @@ export function NightSky({
   onToggleFigures,
   twinkle,
   onToggleTwinkle,
+  moon,
+  onToggleMoon,
+  ceilingDeg,
   observerElevationM,
   view3d,
 }: Props) {
@@ -177,6 +185,25 @@ export function NightSky({
           <p className="dim small">{t.nightSky.scope}</p>
           {figures && <p className="dim small">{t.nightSky.figuresScope}</p>}
           {twinkle && <p className="dim small">{t.nightSky.twinkleScope}</p>}
+        </>
+      )}
+
+      {/*
+        LA LUNA VA FUERA DEL `sky.data &&` de arriba a propósito: no depende del
+        catálogo. Los 133 KB de estrellas pueden estar descargándose o haber
+        fallado, y la luna se sigue viendo igual — en el cielo y en este panel.
+      */}
+      {on && (
+        <>
+          <hr className="sep" />
+          <NightMoon
+            moon={sky.moon}
+            on={moon}
+            onToggle={onToggleMoon}
+            floorDeg={sky.floorDeg}
+            ceilingDeg={ceilingDeg}
+            view3d={view3d}
+          />
         </>
       )}
     </>

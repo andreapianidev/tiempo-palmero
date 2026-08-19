@@ -34,8 +34,10 @@ import {
   type SqmNetwork,
 } from '../lib/sqm/network'
 import { pickStation, type SqmPick } from '../lib/sqm/pick'
-import type { MoonState, SkyPosition } from '../lib/sun'
+import { moonSight, type MoonSight } from '../lib/moon'
+import type { SkyPosition } from '../lib/sun'
 import type { StarSceneState } from '../components/stars/StarLayer'
+import type { MoonSceneState } from '../components/moon/MoonLayer'
 
 /** Lo que cachea el proxy para `skyobservation_lastdata`. */
 const REFRESH_MS = 10 * 60 * 1000
@@ -83,6 +85,15 @@ export interface NightSkyState {
   tonight: VisibleStar[]
   /** Lo que la capa necesita para dibujar. `null` si no hay catálogo. */
   scene: StarSceneState | null
+  /**
+   * La luna de este minuto, vista desde el observador.
+   *
+   * SE CALCULA SIEMPRE que la escena esté encendida, haya catálogo o no: la
+   * luna no depende de los 133 KB de estrellas, y es lo primero que se ve.
+   */
+  moon: MoonSight
+  /** Lo que la capa de la luna necesita. `null` con la luna apagada. */
+  moonScene: MoonSceneState | null
 }
 
 export function useNightSky(
@@ -90,7 +101,7 @@ export function useNightSky(
   now: number,
   observer: NightSkyObserver,
   sun: SkyPosition,
-  moon: MoonState | null,
+  moonOn: boolean,
   twinkle: boolean,
   figures: boolean,
 ): NightSkyState {
@@ -173,6 +184,20 @@ export function useNightSky(
 
     const station = network ? pickStation(network, observer.lon, observer.lat) : null
 
+    // LA LUNA SE CALCULA AQUÍ Y NO EN `App`, que es donde estaba. Allí se
+    // pedía con las coordenadas de referencia de la isla y sin altitud, o sea
+    // sin paralaje: hasta 23' de error, casi un diámetro lunar. Aquí entra el
+    // mismo observador que decide el horizonte y la extinción, y las tres cosas
+    // no pueden hablar de sitios distintos.
+    const moonObserver = {
+      lon: observer.lon,
+      lat: observer.lat,
+      elevationM: observer.elevationM,
+      pressureHpa: pressure,
+      temperatureC: temperature,
+    }
+    const moon = moonSight(now, moonObserver)
+
     // EL FOTÓMETRO GANA, y con él no se suma nada más: su lectura ya lleva
     // dentro la luna, el crepúsculo y el resplandor del pueblo de al lado.
     // Sumarle el modelo de la luna sería contarla dos veces.
@@ -181,8 +206,13 @@ export function useNightSky(
       ? station.station.sky
       : modelledSkyGlow({
           sunElevationDeg: sun.elevationDeg,
-          moon: moon ? { illumination: moon.illumination, elevationDeg: moon.elevationDeg } : null,
-          moonSeparationDeg: moon ? 90 - moon.elevationDeg : 90,
+          moon: {
+            illumination: moon.illumination,
+            elevationDeg: moon.apparentElevationDeg,
+          },
+          // El punto de cielo que se evalúa es el cenit, así que la separación
+          // a la luna es su distancia cenital.
+          moonSeparationDeg: 90 - moon.apparentElevationDeg,
           skyElevationDeg: 90,
           extinctionK,
         })
@@ -237,6 +267,10 @@ export function useNightSky(
       visible,
       tonight,
       scene,
+      moon,
+      moonScene: moonOn
+        ? { observer: moonObserver, floorDeg, extinctionK, sunElevationDeg: sun.elevationDeg }
+        : null,
     }
   }, [
     data,
@@ -244,7 +278,7 @@ export function useNightSky(
     figures,
     frozenIds,
     loading,
-    moon,
+    moonOn,
     network,
     now,
     observer.elevationM,

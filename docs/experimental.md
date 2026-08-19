@@ -171,6 +171,76 @@ de más brillante a más débil desde `prepare-cielo.ts`, así que «¿cuáles s
 esta noche?» es una búsqueda binaria y un `drawArrays` de `[0, k)`. Sin ese
 orden habría que recorrer las 8920 cada fotograma para descartar las que sobran.
 
+#### Y la luna, que es lo primero que se mira
+
+Con el cielo encendido se dibuja también **el disco lunar, con su fase de
+verdad**: la posición, el tamaño, la orientación del cuerno y la luz que echa
+salen de una efeméride, no de una imagen girada.
+
+**Hubo que cambiar la luna antes de poder dibujarla.** La que había —un término
+de la serie de Meeus, geocéntrica, con UTC por Tiempo Terrestre— servía para lo
+único que se le pedía hasta entonces, que era mover el reflejo sobre el agua.
+Medida contra `astronomy-engine` a lo largo de dos años cada tres horas desde el
+Roque, se equivocaba en **70,7 minutos de arco de mediana y 216 en el peor
+caso**: la luna llena mide 31'. Dibujarla así habría sido poner una luna
+perfectamente plausible a más de dos diámetros de donde está.
+
+| | mediana | p95 | peor caso |
+|---|---:|---:|---:|
+| La serie de un término, geocéntrica | 70,7′ | 152,1′ | 216,3′ |
+| **La de ahora, topocéntrica** | **0,06′** | **0,13′** | **0,17′** |
+
+Los tres errores eran tres, y hubo que arreglar los tres:
+
+1. **La serie.** Entran las tablas 47.A y 47.B de Meeus completas —60 términos de
+   longitud y distancia, 60 de latitud— más los aditivos de Venus, Júpiter y el
+   achatamiento. Un término solo se deja fuera la evección (1,27°), la variación
+   (0,66°) y la ecuación anual (0,19°).
+2. **La paralaje.** La luna está a 60 radios terrestres: mirarla desde la
+   superficie y no desde el centro de la Tierra la corre **22,8' de mediana**
+   sobre La Palma y hasta 57' en el horizonte. Es el único astro de la
+   aplicación donde eso importa —para el sol son 8,8" y para una estrella, cero—
+   y de ahí sale además que la luna del cenit se vea un 1,7 % más grande que la
+   del horizonte, que es la única parte de la «ilusión lunar» que es verdad.
+3. **El reloj.** Las efemérides van en Tiempo Terrestre y la aplicación en UTC.
+   Son 69 segundos, y la luna corre 0,55" por segundo: **38"**. Es el único
+   sitio del repositorio donde esa diferencia deja de ser despreciable, y se vio
+   porque dejaba un sesgo constante de −41" en longitud con la latitud y la
+   distancia clavadas — la firma de un error de reloj y no de un término que
+   falte.
+
+**La fase se calcula por píxel y no es un sprite girado.** El terminador no es
+un diámetro rotado: es media elipse cuyo eje menor vale `cos α`. En coordenadas
+del disco, la parte iluminada es simplemente `x·sen α + z·cos α > 0`, y esa
+condición dibuja la curva ella sola — no hay una fórmula del terminador escrita
+aparte que pueda discrepar de la iluminación. El sombreado es **Lommel-Seeliger**
+y no Lambert, que es la diferencia entre una luna y una bola de billar: la llena
+de verdad se ve plana como una moneda porque su suelo es polvo
+retrorreflectante.
+
+**Media luna no alumbra la mitad: alumbra el 9 %.** Es la curva de fase de
+Krisciunas y Schaefer, la misma con la que se calcula cuánto cielo tapa la luna,
+y hasta este cambio el mar no la usaba — dibujaba la columna de reflejo
+proporcional a la fracción iluminada, o sea **cinco veces y media más brillante
+de la cuenta en cuarto creciente**.
+
+| Fracción iluminada | Luz que echa | Veces menos que lo lineal |
+|---:|---:|---:|
+| 1,00 | 100 % | — |
+| 0,75 | 22,7 % | 3,3 |
+| 0,50 | **9,1 %** | **5,5** |
+| 0,25 | 2,6 % | 9,5 |
+| 0,10 | 0,7 % | 14,5 |
+
+**Y lo que es dibujo va dicho.** El enrojecimiento al bajar sale de la extinción
+medida del sitio repartida por canal —desde el Roque la razón azul/rojo pasa de
+0,75 a 60° de altura a 0,089 a 3°, que es la luna de color ladrillo que sale por
+el mar—. El brillo del disco no: la luna llena es dieciocho magnitudes más
+brillante que el cielo que tiene al lado y eso en un monitor no cabe. La luz
+cenicienta tiene la forma física exacta —proporcional a `1 − k`, que es la
+fracción iluminada de la Tierra vista desde la luna— y la amplitud dibujada, un
+2,2 % contra las diez milésimas de verdad.
+
 ---
 
 ### La escena atmosférica: nubes y lluvia en volumen
@@ -405,8 +475,9 @@ una celda como mucho.
 En el mismo interruptor entran las **sombras de las nubes** sobre el suelo:
 antes flotaban sobre un terreno al que no le quitaban el sol.
 
-**De noche manda la luna**, y es de verdad: posición y fase de Meeus, las mismas
-efemérides que el mar. Una luna llena alta ilumina desde donde está, con luz fría
+**De noche manda la luna**, y es de verdad: la misma efeméride que mueve el
+reflejo del mar y que coloca el disco en el cielo — serie completa de Meeus con
+paralaje topocéntrica, 0,17′ de error en el peor caso de dos años. Una luna llena alta ilumina desde donde está, con luz fría
 y sombras suaves; una nueva no ilumina nada y queda un relieve apenas insinuado.
 Se le deja un mínimo de sombreado a propósito, porque el mapa se sigue usando de
 noche para leer temperaturas y un relieve sin forma se lee peor.

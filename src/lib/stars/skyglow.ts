@@ -67,6 +67,8 @@
  * y por eso el fotómetro fresco siempre gana.
  */
 
+import { moonIlluminance, opticalPath, phaseAngleFromIllumination } from '../moon-brightness'
+
 /** Nanolamberts de un brillo en mag/arcsec². Krisciunas y Schaefer 1991, ec. 27. */
 export function nanoLamberts(magArcsec2: number): number {
   return 34.08 * Math.exp(20.7233 - 0.92104 * magArcsec2)
@@ -163,16 +165,6 @@ export interface MoonGlow {
 }
 
 /**
- * Camino óptico relativo de Krisciunas y Schaefer, ec. 3. No es la masa de aire
- * de Kasten y Young que usa el resto de la aplicación: es la que ese modelo
- * lleva dentro, y cambiarla por otra descalibraría los coeficientes.
- */
-function opticalPath(zenithDeg: number): number {
-  const s = Math.sin((zenithDeg * Math.PI) / 180)
-  return Math.pow(Math.max(0.04, 1 - 0.96 * s * s), -0.5)
-}
-
-/**
  * Brillo que la luna añade a un trozo de cielo, en nanolamberts.
  *
  * Devuelve cero con la luna bajo el horizonte, que es correcto y además evita
@@ -186,16 +178,11 @@ export function moonGlowNl(
   extinctionK: number,
 ): number {
   if (moon.elevationDeg <= 0) return 0
-  // Ángulo de fase: 0° es luna llena, 180° luna nueva.
-  const alpha =
-    (Math.acos(Math.max(-1, Math.min(1, 2 * moon.illumination - 1))) * 180) / Math.PI
-  // Iluminancia de la luna, ec. 20. El término en α⁴ es el que hace que la luna
-  // llena sea desproporcionadamente más brillante que la de tres cuartos: no es
-  // un ajuste, es el pico de oposición del regolito.
-  const illuminance = Math.pow(
-    10,
-    -0.4 * (3.84 + 0.026 * Math.abs(alpha) + 4e-9 * Math.pow(alpha, 4)),
-  )
+  // Iluminancia de la luna, ec. 20 del mismo trabajo. Vive en
+  // `moon-brightness.ts` junto con el resto de la curva de fase, porque el mar
+  // la necesita igual: dos copias de esta cuenta eran dos lunas de brillos
+  // distintos en la misma pantalla.
+  const illuminance = moonIlluminance(phaseAngleFromIllumination(moon.illumination))
   // Función de dispersión, ec. 21: Rayleigh —el coseno cuadrado— más Mie, que
   // es el halo cerrado alrededor del disco.
   const rho = (separationDeg * Math.PI) / 180

@@ -43,6 +43,8 @@ import { CloudLayer } from './sky/CloudLayer'
 import { SunLayer } from './sky/SunLayer'
 import { StarLayer } from './stars/StarLayer'
 import type { StarSceneState } from './stars/StarLayer'
+import { MoonLayer } from './moon/MoonLayer'
+import type { MoonSceneState } from './moon/MoonLayer'
 import type { SkyData } from '../lib/stars/catalog'
 import { SunPathLayer } from './sky/SunPathLayer'
 import { RainLayer } from './sky/RainLayer'
@@ -250,7 +252,13 @@ interface Props {
    * El cielo estrellado. `scene` es `null` mientras el catálogo no ha llegado;
    * la capa se añade igual y no dibuja nada hasta que lo tiene.
    */
-  nightSky: { on: boolean; scene: StarSceneState | null; data: SkyData | null }
+  nightSky: {
+    on: boolean
+    scene: StarSceneState | null
+    data: SkyData | null
+    /** El disco de la luna. `null` con su casilla apagada. */
+    moon: MoonSceneState | null
+  }
   /**
    * La luz solar sobre el relieve.
    *
@@ -424,6 +432,7 @@ export function MapView(props: Props) {
   const cloudLayerRef = useRef<CloudLayer | null>(null)
   const sunLayerRef = useRef<SunLayer | null>(null)
   const starLayerRef = useRef<StarLayer | null>(null)
+  const moonLayerRef = useRef<MoonLayer | null>(null)
   const sunPathLayerRef = useRef<SunPathLayer | null>(null)
   const rainLayerRef = useRef<RainLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
@@ -765,6 +774,14 @@ export function MapView(props: Props) {
       const starLayer = new StarLayer()
       starLayerRef.current = starLayer
       map.addLayer(starLayer)
+
+      // La luna DESPUÉS de las estrellas, y esto sí importa: las dos escriben a
+      // profundidad 1, así que quien se dibuja después gana, y la luna tapa las
+      // estrellas que tiene detrás. Es lo que hace de verdad — una ocultación
+      // lunar —, y al revés se vería Aldebarán a través del disco.
+      const moonLayer = new MoonLayer()
+      moonLayerRef.current = moonLayer
+      map.addLayer(moonLayer)
 
       const cloudLayer = new CloudLayer()
       cloudLayerRef.current = cloudLayer
@@ -1384,6 +1401,18 @@ export function MapView(props: Props) {
     if (props.nightSky.scene) layer.setState(props.nightSky.scene)
     layer.setVisible(props.nightSky.on && !!props.nightSky.scene)
   }, [ready, props.nightSky.on, props.nightSky.data, props.nightSky.scene])
+
+  /**
+   * La luna. Va por su cuenta y no dentro del efecto de arriba porque NO
+   * DEPENDE DEL CATÁLOGO: se dibuja aunque los 133 KB de estrellas no hayan
+   * llegado o hayan fallado, que es lo correcto —la luna se ve igual—.
+   */
+  useEffect(() => {
+    const layer = moonLayerRef.current
+    if (!layer) return
+    if (props.nightSky.moon) layer.setState(props.nightSky.moon)
+    layer.setVisible(props.nightSky.on && !!props.nightSky.moon)
+  }, [ready, props.nightSky.on, props.nightSky.moon])
 
   // El camino del sol: su propia casilla, y su propio dato. Se recalcula solo
   // cuando cambia el día —`sunTrack` se memoriza fuera—, así que esto es una

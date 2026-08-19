@@ -42,7 +42,8 @@ import { breathAt } from './lib/vapor/breath'
 import { useSky } from './hooks/useSky'
 import { useNightSky } from './hooks/useNightSky'
 import { islandLcl } from './lib/sky/base'
-import { moonState, sunPosition } from './lib/sun'
+import { moonState } from './lib/moon'
+import { sunPosition } from './lib/sun'
 import { sunCrossing, sunEvents, sunTrack, type TrackPoint } from './lib/sky/sun-path'
 import { skyCeilingDeg } from './lib/sky/sun-screen'
 import { oceanLight } from './lib/ocean/light'
@@ -494,6 +495,16 @@ export default function App() {
   const [nightFiguresOn, setNightFiguresOn] = usePersistentState('nightFigures', true, bool)
   const [nightTwinkleOn, setNightTwinkleOn] = usePersistentState('nightTwinkle', true, bool)
   /**
+   * El disco de la luna. Va con la escena nocturna y no con la luz solar
+   * —donde está el disco del sol— porque es lo que se busca cuando se enciende
+   * un cielo: lo primero que mira nadie de noche es si hay luna.
+   *
+   * ENCENDIDA DE FÁBRICA, al revés que las otras dos casillas. No cuesta ni una
+   * descarga —la luna es aritmética— y un cielo nocturno sin luna las noches en
+   * que la hay sería el cielo de otro sitio.
+   */
+  const [nightMoonOn, setNightMoonOn] = usePersistentState('nightMoon', true, bool)
+  /**
    * El observador: el mismo punto de referencia de la isla que usa el resto de
    * la aplicación, con su cota sacada del DEM y —cuando el TNG contesta— con la
    * presión y la temperatura MEDIDAS en la cumbre.
@@ -522,20 +533,18 @@ export default function App() {
     [data.dem, data.roque],
   )
   /**
-   * La luna para el cielo nocturno se calcula SIEMPRE que la escena esté
-   * encendida, y no solo con la luz solar puesta como la de arriba: aquí no
-   * ilumina el relieve, decide cuántas estrellas se ven.
+   * La luna de la escena nocturna la calcula el propio `useNightSky`, con el
+   * mismo observador que decide el horizonte y la extinción. Antes se pedía
+   * aquí, con las coordenadas de referencia de la isla y sin altitud: sin
+   * paralaje, o sea hasta 23' de error, casi un diámetro lunar. Servía para
+   * contar estrellas y no habría servido para dibujar el disco.
    */
-  const nightMoon = useMemo(
-    () => (nightSkyOn ? moonState(now, ISLAND_BREATH_LON, ISLAND_BREATH_LAT) : null),
-    [nightSkyOn, now],
-  )
   const nightSky = useNightSky(
     nightSkyOn,
     now,
     nightObserver,
     sun,
-    nightMoon,
+    nightMoonOn,
     nightTwinkleOn,
     nightFiguresOn,
   )
@@ -848,7 +857,12 @@ export default function App() {
         wind={wind.field}
         vapor={vaporField}
         sky3d={{ on: sky3dOn, clouds: sky.clouds, sun }}
-        nightSky={{ on: nightSkyOn, scene: nightSky.scene, data: nightSky.data }}
+        nightSky={{
+          on: nightSkyOn,
+          scene: nightSky.scene,
+          data: nightSky.data,
+          moon: nightSky.moonScene,
+        }}
         sunLight={{
           on: sunLightOn,
           shadows: sunShadowsOn,
@@ -1067,6 +1081,7 @@ export default function App() {
         nightSkyOn={nightSkyOn}
         nightFiguresOn={nightFiguresOn}
         nightTwinkleOn={nightTwinkleOn}
+        nightMoonOn={nightMoonOn}
         /*
           Igual que la escena de nubes: encender el cielo sin inclinar la cámara
           es encender algo que no se puede ver. Y aquí además hace falta el
@@ -1079,6 +1094,7 @@ export default function App() {
         }}
         onNightFigures={() => setNightFiguresOn((v) => !v)}
         onNightTwinkle={() => setNightTwinkleOn((v) => !v)}
+        onNightMoon={() => setNightMoonOn((v) => !v)}
         observerElevationM={nightObserver.elevationM}
         vapor={{
           field: vaporField,
