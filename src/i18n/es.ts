@@ -872,6 +872,11 @@ export const es = {
       'Las figuras no son un dato astronómico: son una convención cultural. Van enganchadas por índice a las estrellas del catálogo, así que precesan con ellas, y se apagan solas cuando el cielo está tan claro que unirían estrellas que ya no se ven.',
     twinkleScope:
       'El centelleo crece con la masa de aire según el exponente 1,75 de Young (1967): en el cenit es un temblor y a cinco grados del horizonte es lo que hace parpadear a Sirio recién salido. La fase de cada estrella es suya, para que no titilen a la vez.',
+    tonight: 'Ahora mismo, sobre la isla',
+    tonightValue: (deg: number, rose: string, mag: number) =>
+      `${Math.round(deg)}° al ${rose} · mag ${mag.toFixed(1)}`,
+    tonightScope:
+      'Las cinco más brillantes que llegan por encima del límite de esta noche, ordenadas por lo que le llega al ojo y no por lo que dice el catálogo: una estrella brillante a tres grados del horizonte se ve peor que una mediana en el cenit. Es la parte de esta función que se puede comprobar saliendo a la puerta.',
     needs3d: 'El cielo solo se ve con la vista inclinada: en planta no hay horizonte en pantalla, igual que le pasa al disco del sol.',
     observer: 'Observador',
     observerValue: (m: number) => `${Math.round(m)} m sobre el mar`,

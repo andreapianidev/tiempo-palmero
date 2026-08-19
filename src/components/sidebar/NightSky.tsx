@@ -16,6 +16,7 @@
 
 import { t } from '../../i18n'
 import type { NightSkyState } from '../../hooks/useNightSky'
+import { compassPoint } from '../../lib/stars/tonight'
 
 interface Props {
   sky: NightSkyState
@@ -145,6 +146,32 @@ export function NightSky({
           )}
           {sky.frozen.length > 0 && (
             <p className="dim small">{t.nightSky.frozen(sky.frozen.length)}</p>
+          )}
+
+          {/* La parte que se puede comprobar saliendo a la puerta. Va antes
+              del aviso de alcance a propósito: es lo más concreto que este
+              panel puede decir. */}
+          {sky.tonight.length > 0 && (
+            <>
+              <h4 className="lbl">{t.nightSky.tonight}</h4>
+              <table className="kv">
+                <tbody>
+                  {sky.tonight.map((s) => (
+                    <tr key={s.name}>
+                      <th>{s.name}</th>
+                      <td className="mono">
+                        {t.nightSky.tonightValue(
+                          s.elevationDeg,
+                          compassPoint(s.azimuthDeg),
+                          s.apparentMag,
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="dim small">{t.nightSky.tonightScope}</p>
+            </>
           )}
 
           <p className="dim small">{t.nightSky.scope}</p>

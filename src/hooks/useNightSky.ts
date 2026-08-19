@@ -21,6 +21,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { fetchSkyQuality } from '../lib/api'
 import { fetchSkyData, type SkyData } from '../lib/stars/catalog'
+import { skyFrame } from '../lib/stars/frame'
+import { visibleTonight, type VisibleStar } from '../lib/stars/tonight'
 import { visibleFloorDeg, REFERENCE_PRESSURE_HPA } from '../lib/stars/refraction'
 import { modelledSkyGlow } from '../lib/stars/skyglow'
 import { extinctionCoefficient, limitingMagnitude, visibleCount } from '../lib/stars/visibility'
@@ -71,6 +73,14 @@ export interface NightSkyState {
   floorDeg: number
   /** Cuántas estrellas del catálogo entran con esa magnitud límite. */
   visible: number
+  /**
+   * Las cinco más brillantes que se ven ahora, con nombre y rumbo.
+   *
+   * Es la única parte comprobable de la escena: se sale a la puerta y se mira.
+   * Se recalcula con el pulso de un minuto de la interfaz, que para una tabla
+   * de texto sobra — el cielo gira 0,25° en ese rato.
+   */
+  tonight: VisibleStar[]
   /** Lo que la capa necesita para dibujar. `null` si no hay catálogo. */
   scene: StarSceneState | null
 }
@@ -198,6 +208,20 @@ export function useNightSky(
         }
       : null
 
+    const tonight = data
+      ? visibleTonight({
+          catalog: data.catalog,
+          names: data.names,
+          frame: skyFrame(now, observer.lon, observer.lat),
+          limitMag,
+          extinctionK,
+          floorDeg,
+          pressureHpa: pressure,
+          temperatureC: temperature,
+          limit: 5,
+        })
+      : []
+
     return {
       loading,
       failed,
@@ -211,6 +235,7 @@ export function useNightSky(
       extinctionK,
       floorDeg,
       visible,
+      tonight,
       scene,
     }
   }, [
