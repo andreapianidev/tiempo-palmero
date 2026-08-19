@@ -1,0 +1,8 @@
+# app.tiempopalmero.com — la aplicación. El sitio que la cuenta está en
+# www.tiempopalmero.com y tiene su propio robots.
+#
+# tiempo-palmero.vercel.app sirve esta misma aplicación y redirige aquí con un
+# 308 (vercel.json), para que haya una sola dirección canónica que indexar.
+
+User-agent: *
+Allow: /

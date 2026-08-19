@@ -23,7 +23,7 @@ CACHE = Path(__file__).resolve().parent / "cache"
 #: Los servicios de esta lista son públicos y gratuitos. Se identifica quién
 #: llama, como pide la política de uso de Nominatim y de Overpass, y como es
 #: cortesía elemental con los demás.
-UA = "tiempo-palmero/1.0 (+https://tiempo-palmero.vercel.app) modelo experimental de incendios"
+UA = "tiempo-palmero/1.0 (+https://app.tiempopalmero.com) modelo experimental de incendios"
 
 
 def fetch(url: str, name: str | None = None, tries: int = 4, timeout: int = 300) -> bytes:
