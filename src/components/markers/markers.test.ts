@@ -27,6 +27,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const MAPVIEW = join(__dirname, '../MapView.tsx')
+const DECLUTTER = join(__dirname, '../map/useDeclutter.ts')
 
 const STYLES = join(__dirname, '../../styles')
 const ROOT = join(__dirname, '../../styles.css')
@@ -99,11 +100,21 @@ describe('CSS de los marcadores', () => {
  */
 describe('marcadores y reparto', () => {
   const source = readFileSync(MAPVIEW, 'utf8')
+  const declutter = readFileSync(DECLUTTER, 'utf8')
 
-  /** Refs que guardan elementos del DOM colocados sobre el mapa. */
-  const markerRefs = [...source.matchAll(/const (\w+Ref) = useRef<[^>]*\{ el: HTMLElement/g)].map(
-    (m) => m[1],
-  )
+  /**
+   * Refs que guardan elementos del DOM colocados sobre el mapa.
+   *
+   * Se buscan por el TIPO y no por la forma literal del objeto. Antes se
+   * buscaba `useRef<{ el: HTMLElement`, y el día que las tres colecciones
+   * pasaron a tipos con nombre —`PillMarker`, `FireMarker`, `WebcamMarker`, al
+   * partir `MapView`— esta prueba se habría quedado en cero comprobaciones sin
+   * fallar. No pasó porque la de abajo sí falló; la de arriba es la que impide
+   * que vuelva a poder pasar.
+   */
+  const markerRefs = [
+    ...source.matchAll(/const (\w+Ref) = useRef<(?:[A-Za-z]*Marker\[\]|\{ el: HTMLElement)/g),
+  ].map((m) => m[1])
 
   it('encuentra las colecciones de marcadores que tiene que vigilar', () => {
     // Si un refactor cambiara la forma de declararlas, esto quedaría en cero y
@@ -112,12 +123,31 @@ describe('marcadores y reparto', () => {
   })
 
   it('mete todas en el reparto', () => {
-    const from = source.indexOf('const declutterImpl = ')
-    const to = source.indexOf('const declutterRef = ')
+    // El reparto se fue de `MapView` a `map/useDeclutter.ts` cuando el fichero
+    // se partió, y las refs siguen naciendo en `MapView`: la comprobación cruza
+    // los dos ficheros, que es justo lo que hace falta ahora que están
+    // separados.
+    const from = declutter.indexOf('const declutterImpl = ')
+    const to = declutter.indexOf('const declutterRef = ')
     expect(from).toBeGreaterThan(0)
     expect(to).toBeGreaterThan(from)
-    const body = source.slice(from, to)
+    const body = declutter.slice(from, to)
+    // Los nombres con los que el gancho las recibe son los mismos: se
+    // desestructuran con alias para que esta comprobación siga valiendo.
     const forgotten = markerRefs.filter((ref) => !body.includes(ref))
     expect(forgotten).toEqual([])
+  })
+
+  it('el gancho recibe todas las que `MapView` declara', () => {
+    // La otra mitad: que no se quede una colección sin pasar. Si alguien añade
+    // una ref de marcadores y no la mete en el objeto de `useDeclutter`, la
+    // prueba de arriba pasaría —el nombre no está en el cuerpo porque no llega—
+    // y el marcador se dibujaría por encima de todo sin avisar a nadie.
+    const call = source.slice(
+      source.indexOf('useDeclutter(ready, props, {'),
+      source.indexOf('useDomMarkers('),
+    )
+    const missing = markerRefs.filter((ref) => !call.includes(ref))
+    expect(missing).toEqual([])
   })
 })

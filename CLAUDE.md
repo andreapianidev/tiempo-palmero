@@ -62,19 +62,30 @@ Señales de que toca partir, en orden de importancia:
    justificar por qué sigue siendo una sola cosa, y hoy hay **42 ficheros** que
    lo pasan.
 
-   El que peor lo justifica sigue siendo `MapView.tsx`, y va a peor: cuando se
-   escribió esta regla tenía 1.510 líneas y 31 `useEffect`, y hoy tiene
-   **2.203 y 53** — casi el doble en un mes. Son catorce secciones que el
-   propio fichero se marca con una raya —inicialización, vista 3D, fondo,
-   malla, viento, evaporación, capas GeoJSON, guaguas, sitios y carreteras,
-   marcadores, topónimos, punto consultado, ubicación, mando a distancia—, más
-   las que han ido entrando después. Catorce rayas que uno mismo se dibuja para
-   no perderse dentro de un fichero son la señal del punto 1 escrita a mano.
+   `MapView.tsx` era el ejemplo de esta regla y ya está partido: llegó a **2.203
+   líneas y 53 `useEffect`** —casi el doble en un mes— y hoy son **787 y 39**.
+   Lo que salió vive en `src/components/map/`, y lo que decidió los cortes no
+   fue el tamaño sino el punto 1: los tipos (`types.ts`), crear el mapa
+   (`useMapSetup.ts`), los marcadores del DOM (`useDomMarkers.ts`), repartir el
+   sitio en pantalla (`useDeclutter.ts`) y la escena del cielo
+   (`useSkyScene.ts`) son cinco cosas que se explicaban con un «y».
 
-   **Es el siguiente que toca partir, y la cifra de arriba es la prueba de que
-   aplazarlo no sale gratis.** Detrás van `App.tsx` (1.197) y
-   `sidebar/index.tsx` (660), que crecen por el mismo motivo: son los dos sitios
-   por los que pasa todo lo nuevo.
+   **DOS REGLAS QUE SALIERON DE HACERLO**, y que valen para el próximo:
+
+   - **Los efectos se mueven en bloque contiguo, sin reordenar.** React los
+     ejecuta en el orden en que se declaran, y ese orden es funcionalidad: el
+     de las nubes tiene que correr antes que el del mar, que refleja esas
+     nubes. Agrupar «todo lo del cielo» saltándose lo que hay en medio habría
+     sido un cambio de comportamiento disfrazado de refactor.
+   - **Una prueba que lee el código fuente hay que moverla con él.**
+     `markers.test.ts` comprueba que toda colección de marcadores entra en el
+     reparto leyendo el texto de `MapView.tsx`; al partirlo se quedó buscando
+     un `declutterImpl` que ya no estaba. Falló, que es lo que tenía que hacer.
+     Ahora cruza los dos ficheros y comprueba además que ninguna ref se quede
+     sin pasar al gancho.
+
+   Detrás van `App.tsx` (1.197) y `sidebar/index.tsx` (660), que crecen por el
+   mismo motivo: son los dos sitios por los que pasa todo lo nuevo.
 3. **Para tocar una parte hay que leer el resto.** Si cambiar el buscador
    obliga a desplazarse por la tabla del modelo, ya está mal repartido.
 
