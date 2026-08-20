@@ -232,10 +232,13 @@ h1 em{display:block;font-style:normal;color:var(--amber)}
 .llano>div::before{content:"";position:absolute;top:-1px;left:0;width:2rem;height:1px;background:var(--amber)}
 
 /* ── cierre ──────────────────────────────────────────────────────────────── */
-.cierre{text-align:center;padding-block:clamp(5rem,14vh,10rem)}
-.cierre h2{font-size:clamp(2.1rem,1.2rem+3.6vw,4.2rem);margin-bottom:1.1rem}
-.cierre p{max-width:34rem;margin-inline:auto}
-.cierre .btn{margin-top:2rem}
+/* EL AIRE BAJA DE 10rem A 6rem porque el cierre dejó de ser dos botones sueltos.
+   Con solo los botones, 280 px de relleno rodeaban 265 px de contenido: la mitad
+   de la sección era vacío. Ahora lleva dentro el inventario de las seis familias
+   y la línea de procedencia, así que el aire sobra en vez de faltar. */
+.cierre{text-align:center;padding-block:clamp(3.5rem,9vh,6rem)}
+.cierre h2{font-size:clamp(1.9rem,1.1rem+2.9vw,3.3rem);margin-bottom:0}
+.cierre .cierre-cabeza p{max-width:40rem;margin-inline:auto}
 .cierre .rot{margin-bottom:1.2rem}
 
 /* Dos botones en el cierre, no uno. El segundo lleva al proyecto en tres

@@ -42,8 +42,12 @@
  *    —38 ms para bajar la resolución, 55 para rendirse— es que los regímenes han
  *    salido caros y hay que quitarles trabajo.
  *
- * Uso:
- *   cd web && python3 -m http.server 4173 &
+ * Uso — CON `servir.py`, NO CON `python3 -m http.server`. Aquel habla HTTP/1.0 y
+ * bajo la ráfaga de peticiones de la portada suelta conexiones: las últimas
+ * hojas de estilo no cargan y la isla no arranca, y esto lo denuncia como si
+ * fuera un fallo del sitio. Está contado entero en `servir.py`.
+ *
+ *   python3 scripts/checks/servir.py 4173 web &
  *   npx tsx scripts/checks/portada-regimenes.ts http://127.0.0.1:4173/index.html
  *
  * Playwright NO es dependencia de este proyecto: por eso este fichero está en la
@@ -61,7 +65,7 @@ const SALIDA = join(import.meta.dirname, '../../.tmp/portada')
 /**
  * Las siete paradas: cada régimen en mitad de su tramo, más los tres cruces.
  * NO SE ELIGEN: las calcula `portada-secciones.ts` a partir de `LIMITES` en
- * `web/js/isla3d/regimenes.js` —hoy [0,10 · 0,33 · 0,64] con 0,09 de cruce— y
+ * `web/js/isla3d/regimenes.js` —hoy [0,10 · 0,31 · 0,59] con 0,09 de cruce— y
  * hay que moverlas con él. Al añadir las cuatro secciones nuevas en agosto de
  * 2026, las paradas viejas medían la calima en pleno alisio y la noche en el
  * crepúsculo: seguían midiendo bien seis fondos, pero ya no eran los seis
@@ -70,11 +74,11 @@ const SALIDA = join(import.meta.dirname, '../../.tmp/portada')
 const PARADAS = [
   { asc: 0.05, nombre: 'calima' },
   { asc: 0.145, nombre: 'cruce-calima-alisio' },
-  { asc: 0.26, nombre: 'alisio' },
-  { asc: 0.375, nombre: 'cruce-alisio-temporal' },
-  { asc: 0.53, nombre: 'temporal' },
-  { asc: 0.685, nombre: 'cruce-temporal-noche' },
-  { asc: 0.865, nombre: 'noche' },
+  { asc: 0.25, nombre: 'alisio' },
+  { asc: 0.355, nombre: 'cruce-alisio-temporal' },
+  { asc: 0.495, nombre: 'temporal' },
+  { asc: 0.635, nombre: 'cruce-temporal-noche' },
+  { asc: 0.84, nombre: 'noche' },
 ]
 
 const PANTALLAS = [

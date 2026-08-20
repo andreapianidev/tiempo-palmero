@@ -26,8 +26,12 @@
  * propone unos `LIMITES` que dejan cada cruce en una costura entre secciones y
  * no en mitad de una.
  *
- * Uso:
- *   cd web && python3 -m http.server 4173 &
+ * Uso — CON `servir.py`, NO CON `python3 -m http.server`. Aquel habla HTTP/1.0 y
+ * bajo la ráfaga de peticiones de la portada suelta conexiones: las últimas
+ * hojas de estilo no cargan y la isla no arranca, y esto lo denuncia como si
+ * fuera un fallo del sitio. Está contado entero en `servir.py`.
+ *
+ *   python3 scripts/checks/servir.py 4173 web &
  *   npx tsx scripts/checks/portada-secciones.ts http://127.0.0.1:4173/index.html
  *
  * Playwright NO es dependencia de este proyecto: por eso este fichero está en

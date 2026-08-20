@@ -40,6 +40,7 @@
 <link rel="stylesheet" href="/css/tresd.css">
 <link rel="stylesheet" href="/css/cielo.css">
 <link rel="stylesheet" href="/css/marcas.css">
+<link rel="stylesheet" href="/css/resumen.css">
 <link rel="stylesheet" href="/css/motion.css">
 <noscript><link rel="stylesheet" href="/css/sin-js.css"></noscript>
 </head>
@@ -130,6 +131,34 @@
     <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
       <path d="M12 2.2c2.7 3.1 4.4 5.5 4.4 7.9a4.4 4.4 0 0 1-8.8 0c0-1.6.7-3 2-4.1.1 1.4.7 2.2 1.5 2.4-.6-2.3-.2-4.2 1-6.2z"/>
       <path d="M2.6 17.8c1.9-1.5 3.8-1.5 5.7 0s3.8 1.5 5.7 0 3.8-1.5 5.7 0M2.6 21.6c1.9-1.5 3.8-1.5 5.7 0s3.8 1.5 5.7 0 3.8-1.5 5.7 0"/>
+    </g>
+  </symbol>
+  <!-- ── y la leyenda del resumen final ── -->
+  <symbol id="g-relieve" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M2.4 20.4 9 9.2l3.5 5.6 3-4.5 6.1 10.1z"/>
+      <path d="M1.6 15.2c1.7-1.3 3.4-1.3 5.1 0M17.3 15.2c1.7-1.3 3.4-1.3 5.1 0"/>
+    </g>
+  </symbol>
+  <symbol id="g-cielo" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M5 6.8 12 4.2l6.6 5.1M5 6.8 9.2 13.4l5.9 5.1M9.2 13.4l9.4-4.1"/>
+      <circle cx="5" cy="6.8" r="1.4"/><circle cx="12" cy="4.2" r="1.1"/>
+      <circle cx="18.6" cy="9.3" r="1.4"/><circle cx="9.2" cy="13.4" r="1.1"/>
+      <circle cx="15.1" cy="18.5" r="1.4"/>
+    </g>
+  </symbol>
+  <symbol id="g-sendero" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M4.2 20.4c2.7-.3 3.8-2.4 5-4.8s2.6-5 5.8-5.4"/>
+      <circle cx="4.2" cy="20.4" r="1.5"/>
+      <path d="M16.2 3.1v9.4M16.2 3.9l5.2 1.9-5.2 2.1z"/>
+    </g>
+  </symbol>
+  <symbol id="g-aire" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M2.6 7.4h9.3a2.6 2.6 0 1 0-2.5-3.3M2.6 16.6h11a2.8 2.8 0 1 1-2.7 3.5"/>
+      <circle cx="17.6" cy="8.2" r="1.3"/><circle cx="20.4" cy="13" r="1.1"/><circle cx="15" cy="12.6" r="1.1"/>
     </g>
   </symbol>
   <symbol id="g-cota" viewBox="0 0 24 24">
@@ -1033,12 +1062,94 @@
 </section>
 
 <section class="cierre">
-  <div class="wrap sube">
-    <p class="rot">2426 m · aquí se acaba la isla</p>
-    <h2>Mira qué tiempo hace<br>donde vas a estar.</h2>
-    <p>En marcha, sin registro, sin clave de API y sin nada que instalar. Y si quieres verla
-       entera y volarla, el proyecto en tres dimensiones está al lado.</p>
-    <div class="hero-actos cierre-actos">
+  <div class="wrap">
+
+    <div class="cierre-cabeza sube">
+      <p class="rot">2426 m · aquí se acaba la isla</p>
+      <h2>Todo esto, sobre los datos<br>que la isla publica de sí misma</h2>
+      <p class="entrada">Quince capas y seis más en pruebas, en marcha ahora mismo, en un navegador,
+         sin registro, sin clave de API y sin nada que instalar.</p>
+    </div>
+
+    <div class="capacidades escalona">
+
+      <article class="capacidad">
+        <div class="capacidad-hd">
+          <svg class="marca-svg" aria-hidden="true"><use href="#g-tiempo"/></svg>
+          <h3>Meteorología</h3>
+        </div>
+        <p>Temperatura, humedad relativa, punto de rocío y déficit de vapor en <em>cualquier</em>
+           punto de la isla, no en la estación más cercana. Con el viento animado encima y el error
+           del modelo escrito al lado, en directo.</p>
+        <p class="dato"><b>52</b><span>estaciones del Cabildo</span></p>
+      </article>
+
+      <article class="capacidad">
+        <div class="capacidad-hd">
+          <svg class="marca-svg" aria-hidden="true"><use href="#g-relieve"/></svg>
+          <h3>En tres dimensiones</h3>
+        </div>
+        <p>El relieve real, con las nubes y las cortinas de lluvia dibujadas en volumen a la cota
+           que les toca —el mar de nubes donde está, no donde queda bonito— y el mar moviéndose
+           debajo sobre la batimetría de verdad.</p>
+        <p class="dato"><b>1200 m</b><span>la inversión, medida</span></p>
+      </article>
+
+      <article class="capacidad">
+        <div class="capacidad-hd">
+          <svg class="marca-svg" aria-hidden="true"><use href="#g-cielo"/></svg>
+          <h3>El cielo de esta noche</h3>
+        </div>
+        <p>Estrellas y líneas de constelación sobre el horizonte real de la isla, con la luna, los
+           planetas y la Vía Láctea. Cuántas se ven no lo decide un ajuste: lo miden los fotómetros
+           del Cabildo.</p>
+        <p class="dato"><b>8920</b><span>estrellas · 743 figuras</span></p>
+      </article>
+
+      <article class="capacidad">
+        <div class="capacidad-hd">
+          <svg class="marca-svg" aria-hidden="true"><use href="#g-sendero"/></svg>
+          <h3>Senderos y quién pasa</h3>
+        </div>
+        <p>Los senderos señalizados con sus puntos de interés —refugios, fuentes, miradores— y los
+           aforos que cuentan quién cruza cada acceso, a pie y en bicicleta, en los dos sentidos y
+           cada pocos minutos.</p>
+        <p class="dato"><b>640 km</b><span>49 senderos · 30 aforos</span></p>
+      </article>
+
+      <article class="capacidad">
+        <div class="capacidad-hd">
+          <svg class="marca-svg" aria-hidden="true"><use href="#g-aire"/></svg>
+          <h3>Ambiente</h3>
+        </div>
+        <p>Calidad del aire, calidad del cielo, y los sensores de CO<sub>2</sub> de Puerto Naos y
+           La Bombilla de la red DEMASE. Más un índice de incendio experimental, dicho como lo que
+           es: no sustituye a ningún aviso oficial.</p>
+        <p class="dato"><b>DEMASE</b><span>CO₂ · aire · cielo</span></p>
+      </article>
+
+      <article class="capacidad">
+        <div class="capacidad-hd">
+          <svg class="marca-svg" aria-hidden="true"><use href="#g-via"/></svg>
+          <h3>La isla en movimiento</h3>
+        </div>
+        <p>La red de guaguas con sus paradas, las carreteras insulares, el viario completo de
+           OpenStreetMap, las cámaras de incendios del Cabildo y las webcam de la isla, con la hora
+           de su última imagen.</p>
+        <p class="dato"><b>3373 km</b><span>19.770 trazados</span></p>
+      </article>
+
+    </div>
+
+    <div class="procedencia sube">
+      <svg class="marca-svg" aria-hidden="true"><use href="#g-red"/></svg>
+      <p>Todo sale de los <strong>49 conjuntos de datos abiertos del Cabildo Insular de La
+         Palma</strong>, más la cartografía oficial de GRAFCAN y del IGN. Cada fuente lleva su
+         licencia escrita al lado, aquí y dentro de la propia aplicación — porque es la condición
+         bajo la que estos datos son libres, no un pie de página.</p>
+    </div>
+
+    <div class="hero-actos cierre-actos sube">
       <a class="btn" href="https://app.tiempopalmero.com">
         <span>Abrir el mapa</span>
         <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>

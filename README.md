@@ -101,10 +101,16 @@ nubes, que tiene que caer por un hueco destapado —`--panel` es opaco al 92 % y
 detrás de él no se ve pasar nada.
 
 ```bash
-cd web && python3 -m http.server 4173 &
+python3 scripts/checks/servir.py 4173 web &
 npx tsx scripts/checks/portada-secciones.ts  http://127.0.0.1:4173/index.html
 npx tsx scripts/checks/portada-regimenes.ts  http://127.0.0.1:4173/index.html
 ```
+
+Ese `servir.py` no es un capricho: `python3 -m http.server` habla HTTP/1.0 y bajo
+la ráfaga de la portada —trece hojas, cuatro guiones, dos tipografías y el
+terreno— suelta conexiones. Las que se caen son siempre las últimas de la lista,
+así que la página sale a medio vestir y parece un fallo del CSS. Con HTTP/1.1 y
+la cola de peticiones más larga, no.
 
 El segundo es el que de verdad manda: fotografía la página en cada parada, con
 las letras y sin ellas, y mide el contraste de **cada texto contra los píxeles

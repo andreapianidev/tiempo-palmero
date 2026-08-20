@@ -1,0 +1,84 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL RESUMEN DEL CIERRE · todo lo que hace, en una pantalla
+
+   POR QUÉ EXISTE. La página cuenta bien cada cosa, pero la cuenta en diez
+   secciones, y quien llega al final ha leído mucho sin haber visto NUNCA el
+   inventario entero de un golpe. Eso importa para quien tiene que decidir si
+   esto sirve para algo —un cabildo, un centro de visitantes, un aula— y no va a
+   recorrer la página tres veces para hacer la lista él.
+
+   Y de paso arregla un agujero de encuadre: el cierre eran dos botones con
+   280 px de aire alrededor para 265 px de contenido. La mitad de la sección era
+   relleno.
+
+   NO SON VEINTIÚN INTERRUPTORES SUELTOS. La aplicación tiene quince capas más
+   seis experimentales, y una rejilla de veintiuna casillas no se lee: se mira y
+   se pasa. Van en seis familias, cada una con lo que de verdad trae dentro y su
+   cifra medida, que es como alguien decide si le sirve.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.cierre-cabeza{max-width:44rem;margin-inline:auto;margin-bottom:clamp(2.4rem,6vh,3.6rem)}
+.cierre-cabeza .rot{display:block;margin-bottom:1.1rem}
+.cierre-cabeza .entrada{margin-top:1.2rem;font-size:1.04em;max-width:40rem;margin-inline:auto}
+
+/* ── las seis familias ───────────────────────────────────────────────────── */
+.capacidades{
+  display:grid;gap:1px;background:var(--line-soft);
+  border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden;
+  text-align:left;
+}
+/* DOS COLUMNAS Y SE ACABÓ, aunque haya sitio de sobra en la ventana. Esta
+   sección vive dentro de la columna de lectura, que NO es el ancho de la
+   ventana: el raíl se lleva 168 px por la izquierda y la banda de la isla hasta
+   700 por la derecha. A 1440 px de ventana quedan 782 de columna, y ahí tres
+   columnas salen a 245 px cada una — con «déficit de vapor» partido en tres
+   líneas y seis párrafos convertidos en tiras estrechas. Con dos, 380 px y el
+   texto se lee.
+
+   Una consulta de medios no puede arreglarlo porque mide la VENTANA y el que
+   manda aquí es el ancho del contenedor; y seis baldosas llenan tres filas de
+   dos exactamente igual de bien que dos de tres. */
+@media (min-width:640px){.capacidades{grid-template-columns:repeat(2,1fr)}}
+
+.capacidad{
+  display:flex;flex-direction:column;gap:.7rem;
+  padding:1.5rem 1.35rem 1.5rem;background:rgba(20,19,17,.86);
+  transition:background .3s ease;
+}
+.capacidad:hover{background:rgba(30,28,24,.9)}
+
+.capacidad-hd{display:flex;align-items:center;gap:.75rem}
+.capacidad-hd .marca-svg{width:1.5rem;height:1.5rem;color:var(--amber)}
+.capacidad h3{font-size:1.02rem;margin:0}
+.capacidad p{font-size:.92rem;margin:0;flex:1}
+
+/* La cifra medida de cada familia, en el formato de instrumento de la página.
+   `flex:none` por lo mismo que en `.publico`: si crece, separa la cifra de su
+   unidad media baldosa. */
+.capacidad .dato{
+  display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;flex:none;
+  margin-top:.15rem;padding-top:.8rem;border-top:1px solid var(--line-soft);
+  font-family:var(--mono);
+}
+.capacidad .dato b{
+  font-size:1.05rem;font-weight:600;color:var(--amber);letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;line-height:1;
+}
+.capacidad .dato span{
+  font-size:.58rem;letter-spacing:.13em;text-transform:uppercase;color:var(--fg-faint);
+}
+
+/* ── la línea de procedencia ─────────────────────────────────────────────── */
+/* La que de verdad importa en una presentación: de quién son los datos. Va
+   entre el inventario y los botones, con el Cabildo destacado — que es lo que
+   pide su CC-BY y lo que hace falta decir en voz alta. */
+.procedencia{
+  max-width:46rem;margin:clamp(1.8rem,4vh,2.6rem) auto 0;
+  display:flex;align-items:flex-start;gap:.85rem;text-align:left;
+  padding:1.05rem 1.25rem;border-radius:var(--radius);
+  border:1px solid var(--line-soft);background:rgba(20,19,17,.72);
+  font-size:.92rem;color:var(--fg-faint);
+}
+.procedencia .marca-svg{width:1.5rem;height:1.5rem;color:var(--amber);margin-top:.15rem}
+.procedencia p{margin:0}
+.procedencia strong{color:var(--fg)}

@@ -304,16 +304,17 @@ export var REGIMENES = [
  *
  *   calima    0,00–0,10  hero y «para quién es». La calima ámbar de `.c-costa`
  *                        está a tope en 0; el hito dice «0 m · el puerto»
- *   alisio    0,19–0,33  «lo que se ve en pantalla» y los aforos
- *   temporal  0,42–0,64  el panel del modelo y la isla en 3D. El régimen en el
+ *   alisio    0,19–0,31  «lo que se ve en pantalla» y los aforos
+ *   temporal  0,40–0,59  el panel del modelo y la isla en 3D. El régimen en el
  *                        que una recta acierta es justo el sitio donde la página
  *                        habla de acertar — y el mar de nubes de `.c-nubes`
- *                        cruza en 0,42, o sea justo al empezar: se atraviesa la
- *                        manta al entrar en él
- *   noche     0,73–1,00  la sección del cielo y lo que va detrás. `.c-estrellas`
- *                        llega a 1 en 0,76, dentro de esa sección y no después
+ *                        cruza en 0,38, o sea justo al entrar: se atraviesa la
+ *                        manta por el hueco que hay sobre el panel
+ *   noche     0,68–1,00  la sección del cielo y lo que va detrás. `.c-estrellas`
+ *                        llega a 1 en 0,70, o sea antes de que se lea la escala
+ *                        de fotómetros y no después
  */
-export var LIMITES = [0.1, 0.33, 0.64]
+export var LIMITES = [0.1, 0.31, 0.59]
 export var CRUCE = 0.09
 
 function mezcla(a, b, t) {
