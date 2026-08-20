@@ -10,7 +10,7 @@
    Porque acompaña a un lienzo que también lo está, y porque cambia de texto
    mientras se rueda la página: leído en voz alta sería una letanía encima del
    contenido. Lo que dice en cifras está en la columna de texto, que es donde la
-   página cuenta las cosas de verdad. Mismo criterio que el altímetro.
+   página cuenta las cosas de verdad. Mismo criterio que el raíl.
 
    ── EL CAMBIO ES DE GOLPE, NO INTERPOLADO ──────────────────────────────────
    Los números sí se mezclan en el sombreador —el relieve se convierte poco a

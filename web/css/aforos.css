@@ -1,0 +1,80 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL TABLERO DE AFOROS · quién cruza por dónde
+
+   Un tablero de estación, no una rejilla de tarjetas: la red de aforos es una
+   lista de sitios con nombre propio y lo que se quiere leer de un vistazo es
+   el nombre y qué cuenta cada uno, no un párrafo por cada uno.
+
+   POR QUÉ ESTOS SIETE Y NO LOS TREINTA. Porque el tablero es un ejemplo, no un
+   inventario: los treinta están en el mapa de la aplicación, con su nombre y su
+   sentido, y meterlos aquí sería una tabla de treinta filas en una página que
+   se lee de paso. Los siete elegidos son los que nombran sitios que alguien que
+   viene a la isla reconoce —la entrada de Santa Cruz, los Brecitos, el Time— y
+   entre ellos salen los cinco tipos que la red publica.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tablero{
+  border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden;
+  background:rgba(20,19,17,.88);
+}
+
+.tablero-hd{
+  display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;
+  padding:.85rem 1.1rem;border-bottom:1px solid var(--line-soft);
+  background:rgba(12,11,10,.6);
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--fg-faint);
+}
+.tablero-hd b{color:var(--amber);font-weight:600;letter-spacing:.1em}
+/* El pulso verde: la misma señal de «esto está en marcha» que llevan las
+   capturas del héroe. Aquí es literal — la red publica cada pocos minutos. */
+.tablero-hd .en-vivo{margin-left:auto;display:flex;align-items:center;gap:.4rem;color:var(--live)}
+.tablero-hd .en-vivo i{width:5px;height:5px;border-radius:50%;background:var(--live);animation:late 2.6s ease-out infinite}
+
+.aforo{
+  display:grid;gap:.35rem .9rem;align-items:baseline;
+  padding:.85rem 1.1rem;border-top:1px solid var(--line-soft);
+}
+.aforo:first-of-type{border-top:0}
+/* A partir de 720 px caben las tres columnas: sitio, clase y lo que cuenta.
+   Por debajo se apilan, que es como se lee un tablero en un teléfono. */
+@media (min-width:720px){
+  .aforo{grid-template-columns:minmax(0,1fr) 7.5rem minmax(0,15rem)}
+}
+
+.aforo-sitio{font-size:.97rem;color:var(--fg);font-weight:500;margin:0}
+.aforo-sitio small{
+  display:block;margin-top:.15rem;font-family:var(--mono);font-size:.62rem;
+  letter-spacing:.07em;color:var(--fg-faint);font-weight:400;
+}
+
+/* La clase: sendero o carretera. Los dos colores separan las dos redes de un
+   vistazo sin necesidad de leer la palabra. */
+.aforo-clase{
+  justify-self:start;align-self:center;
+  font-family:var(--mono);font-size:.58rem;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;
+  padding:.24rem .5rem;border-radius:4px;border:1px solid;white-space:nowrap;
+}
+.aforo-clase[data-clase="sendero"]{color:#9dc48a;border-color:rgba(157,196,138,.4);background:rgba(157,196,138,.08)}
+.aforo-clase[data-clase="carretera"]{color:var(--fg-faint);border-color:var(--line);background:rgba(255,255,255,.03)}
+
+.aforo-cuenta{
+  display:flex;flex-wrap:wrap;gap:.3rem;
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.07em;color:var(--fg-faint);
+}
+.aforo-cuenta span{
+  padding:.2rem .42rem;border-radius:3px;
+  background:rgba(255,255,255,.045);border:1px solid var(--line-soft);
+  white-space:nowrap;
+}
+
+/* La nota del final, que es la que cuenta la trampa del endpoint. Va dentro del
+   tablero y no fuera: es una advertencia sobre estos datos, no sobre la
+   sección. */
+.tablero-pie{
+  padding:.95rem 1.1rem;border-top:1px solid var(--line-soft);
+  background:rgba(12,11,10,.45);
+  font-size:.88rem;color:var(--fg-faint);margin:0;
+}
+.tablero-pie b{color:var(--fg-dim)}

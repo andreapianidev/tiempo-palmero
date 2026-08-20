@@ -6,7 +6,7 @@
    progreso y qué curva de nivel de la isla está encendida: todo eso es CSS y no
    vuelve a pasar por aquí.
 
-   Además pone el número del altímetro y el paralaje, que son las dos cosas que
+   Además pone el número del raíl y el paralaje, que son las dos cosas que
    el CSS no puede sacar solo de `--asc` —una es texto y la otra depende de
    dónde está cada elemento dentro de la ventana, no de la página—.
 
@@ -20,7 +20,7 @@
   'use strict'
 
   var raiz = document.documentElement
-  var lecturas = document.querySelectorAll('[data-altimetro]')
+  var lecturas = document.querySelectorAll('[data-cota]')
   var paralajes = document.querySelectorAll('[data-par]')
 
   /** El Roque de los Muchachos. La página entera vale ese desnivel. */

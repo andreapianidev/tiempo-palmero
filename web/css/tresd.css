@@ -1,0 +1,108 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LA ISLA EN TRES DIMENSIONES · la sección de La Palma 3D
+
+   Dos piezas propias y nada más: la tira de fichas técnicas —que es una ficha
+   de producto, no una tabla de datos, y por eso no reutiliza `.fila` del panel
+   del modelo— y la banda de tres capturas.
+
+   LAS TRES CAPTURAS VAN A DISTINTA ALTURA A PROPÓSITO. Puestas a la misma
+   quedaban como un carrete de fotos de una tienda de aplicaciones, que es
+   exactamente lo que esta página no es. Escalonadas, la vista salta de una a
+   otra y la banda se lee como lo que enseña: tres alturas sobre la misma isla,
+   de la caldera entera a la pantalla del programa.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── la chapa de plataforma ──────────────────────────────────────────────── */
+/* Lo primero que hay que saber de esto es dónde corre hoy, así que va arriba
+   del todo y no escondido en la letra pequeña. */
+.plataforma{
+  display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;
+  margin-top:1.4rem;
+  font-family:var(--mono);font-size:.63rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--fg-faint);
+}
+.plataforma b{
+  color:var(--fg);font-weight:600;
+  padding:.28rem .6rem;border-radius:5px;
+  border:1px solid rgba(226,180,92,.4);background:rgba(226,180,92,.08);
+}
+.plataforma em{font-style:normal;color:var(--fg-faint)}
+
+/* ── las fichas técnicas ─────────────────────────────────────────────────── */
+.fichas{
+  display:grid;gap:1px;background:var(--line-soft);
+  border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden;
+  margin:0;
+}
+@media (min-width:560px){.fichas{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1040px){.fichas{grid-template-columns:repeat(3,1fr)}}
+
+.ficha{padding:1.3rem 1.25rem 1.4rem;background:rgba(20,19,17,.86)}
+.ficha dt{
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--fg-faint);
+}
+.ficha dd{
+  margin:.55rem 0 0;font-family:var(--mono);font-size:1.24rem;font-weight:600;
+  color:var(--amber);letter-spacing:-.015em;line-height:1.1;font-variant-numeric:tabular-nums;
+}
+.ficha dd small{
+  display:block;margin-top:.45rem;font-family:var(--sans);font-size:.86rem;font-weight:400;
+  letter-spacing:0;color:var(--fg-faint);line-height:1.5;
+}
+
+/* ── la banda de capturas ────────────────────────────────────────────────── */
+/* UNA GRANDE Y DOS AL LADO, no tres iguales. La primera versión ponía las tres
+   en columnas de un tercio y a la anchura real de esta página —la columna de
+   lectura son unos 700 px, porque la banda de la derecha es de la isla— cada
+   una salía a 215 px. Esta sección presume de 31 cm por píxel, y a 215 px de
+   ancho no se distingue un barranco de una mancha. La primera ocupa la fila
+   entera y es la que enseña el detalle; las otras dos, escalonadas, hacen de
+   pie de página visual. */
+.vistas{display:grid;gap:clamp(1.5rem,4vh,2.6rem);margin-top:clamp(2.2rem,6vh,3.4rem)}
+@media (min-width:760px){
+  .vistas{grid-template-columns:repeat(2,1fr);gap:1.8rem;align-items:start}
+  .vistas>*:nth-child(1){grid-column:1/-1}
+  /* El escalón: la tercera baja, y el ojo hace un quiebro en vez de barrer una
+     línea recta. */
+  .vistas>*:nth-child(3){margin-top:1.7rem}
+}
+.vista-3d{margin:0}
+.vista-3d .marco{border-radius:10px}
+.vista-3d figcaption{
+  margin-top:.75rem;font-size:.85rem;line-height:1.55;color:var(--fg-faint);
+}
+.vista-3d figcaption b{color:var(--fg-dim)}
+
+/* ── la comprobación ─────────────────────────────────────────────────────── */
+/* La cifra que sostiene todo lo demás: si la georreferenciación estuviera mal,
+   nada de lo de arriba valdría — y una isla volteada sobre el eje norte-sur
+   sigue pareciendo una isla. Va en su propia caja porque es una prueba, no una
+   característica. */
+.comprobacion{
+  margin-top:clamp(2.2rem,6vh,3.4rem);
+  border:1px solid rgba(226,180,92,.28);border-radius:var(--radius);
+  /* Tinta propia debajo del tinte, por lo mismo que `.aviso`: con 4,5 % de
+     ámbar y nada más, lo que se lee encima depende de por dónde ande el mar de
+     nubes. */
+  background:linear-gradient(rgba(226,180,92,.045),rgba(226,180,92,.045)),rgba(13,12,11,.93);
+  padding:clamp(1.3rem,3vw,1.9rem);
+}
+.comprobacion .rot{display:block;margin-bottom:.9rem;color:#d8b479}
+.comprobacion h3{margin-bottom:.85rem}
+.comprobacion p{font-size:.95rem;max-width:44rem}
+.comprobacion p:last-child{margin-bottom:0}
+
+.cotejo{
+  display:grid;gap:.5rem .9rem;margin:1.2rem 0;
+  font-family:var(--mono);font-size:.78rem;color:var(--fg-dim);
+  font-variant-numeric:tabular-nums;
+}
+@media (min-width:640px){.cotejo{grid-template-columns:minmax(0,14rem) minmax(0,11rem) 5rem}}
+.cotejo>span{white-space:nowrap}
+.cotejo .et{color:var(--fg-faint);letter-spacing:.04em}
+.cotejo .sep{
+  grid-column:1/-1;height:1px;background:var(--line-soft);margin:.15rem 0;
+  padding:0;
+}
+.cotejo .saldo{color:var(--amber);font-weight:600}

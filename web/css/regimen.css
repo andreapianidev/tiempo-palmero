@@ -5,7 +5,7 @@
    régimen está pintado, de qué día es y con qué cifra medida. Es la pieza que
    distingue un relieve que cambia de color de un relieve que dice algo.
 
-   ES EL HERMANO DEL ALTÍMETRO, y se compone como tal. El altímetro manda en el
+   ES EL HERMANO DEL RAÍL, y se compone como tal. El raíl manda en el
    raíl de la izquierda y contesta «a qué altura vas»; esto manda en la banda de
    la derecha y contesta «qué tiempo estás mirando». Misma familia mono, mismo
    ámbar para la cifra que importa, misma alineación hacia el canto de pantalla.
@@ -77,7 +77,7 @@
   }
 
   /* El filete: corto, ámbar y arriba a la derecha. Es el mismo gesto que la
-     marca del hito encendido del altímetro, del otro lado de la pantalla. */
+     marca del hito encendido del raíl, del otro lado de la pantalla. */
   .regimen b {
     display: block;
     padding-top: 0.62rem;

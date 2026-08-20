@@ -58,14 +58,23 @@ import { join } from 'node:path'
 const URL_BASE = process.argv[2] ?? 'http://127.0.0.1:4173/index.html'
 const SALIDA = join(import.meta.dirname, '../../.tmp/portada')
 
-/** Las cinco paradas: cada régimen en su tramo, más los dos cruces que importan. */
+/**
+ * Las siete paradas: cada régimen en mitad de su tramo, más los tres cruces.
+ * NO SE ELIGEN: las calcula `portada-secciones.ts` a partir de `LIMITES` en
+ * `web/js/isla3d/regimenes.js` —hoy [0,10 · 0,33 · 0,64] con 0,09 de cruce— y
+ * hay que moverlas con él. Al añadir las cuatro secciones nuevas en agosto de
+ * 2026, las paradas viejas medían la calima en pleno alisio y la noche en el
+ * crepúsculo: seguían midiendo bien seis fondos, pero ya no eran los seis
+ * peores, que es lo único que este script existe para encontrar.
+ */
 const PARADAS = [
-  { asc: 0.04, nombre: 'calima' },
-  { asc: 0.26, nombre: 'cruce-calima-alisio' },
-  { asc: 0.38, nombre: 'alisio' },
-  { asc: 0.62, nombre: 'temporal' },
-  { asc: 0.75, nombre: 'cruce-temporal-noche' },
-  { asc: 0.9, nombre: 'noche' },
+  { asc: 0.05, nombre: 'calima' },
+  { asc: 0.145, nombre: 'cruce-calima-alisio' },
+  { asc: 0.26, nombre: 'alisio' },
+  { asc: 0.375, nombre: 'cruce-alisio-temporal' },
+  { asc: 0.53, nombre: 'temporal' },
+  { asc: 0.685, nombre: 'cruce-temporal-noche' },
+  { asc: 0.865, nombre: 'noche' },
 ]
 
 const PANTALLAS = [
@@ -224,6 +233,44 @@ async function main() {
       await page.evaluate((y) => window.scrollTo(0, y), Math.round(parada.asc * alto))
       // Tiempo para que la cámara y los cruces de régimen se asienten.
       await page.waitForTimeout(1100)
+
+      /* Y ADEMÁS, QUE HAYAN ACABADO LOS REVELADOS. Los 1100 ms de arriba son
+         para la isla, no para el CSS: un bloque `.sube` que acaba de entrar en
+         pantalla tarda 800 ms en pasar de `opacity:0` a 1, y fotografiado a
+         mitad es transparente. Eso no da un contraste bajo de mentira —da uno
+         de verdad, pero de un estado que dura menos de un segundo y por el que
+         no se lee nada—, y con él la caja de la comprobación de la sección en
+         3D salió a 2,50:1 midiendo el mar de nubes que tenía detrás, no su
+         propia tinta.
+
+         Se espera a que todos los revelados visibles estén en su sitio, con un
+         tope por si alguno se queda a medias. */
+      await page
+        .waitForFunction(
+          () => {
+            // SOLO LOS QUE YA SE ESTÁN REVELANDO, es decir, los que tienen
+            // `.vista`. Uno sin ella está en `opacity:0` a propósito y ahí se
+            // queda: `revelar.js` pide un 12 % de solapamiento y un margen del
+            // −12 % abajo, así que al SALTAR a una parada —en vez de llegar
+            // rodando— hay bloques que asoman por el canto inferior sin llegar
+            // a encenderse nunca. Esperarlos era esperar para siempre, y por
+            // eso los primeros intentos se comían los 4 s de tope en tres de
+            // las catorce paradas. No se miden porque no se ven.
+            const dentro = [...document.querySelectorAll('.sube,.escalona,.modelo,.marco')].filter((el) => {
+              if (!el.classList.contains('vista')) return false
+              const r = el.getBoundingClientRect()
+              return r.bottom > 0 && r.top < window.innerHeight
+            })
+            return dentro.every((el) => {
+              const cs = getComputedStyle(el)
+              return parseFloat(cs.opacity) > 0.995 && (cs.filter === 'none' || cs.filter === 'blur(0px)')
+            })
+          },
+          { timeout: 4000 },
+        )
+        .catch(() => {
+          console.log(`  · ${parada.nombre}: algún revelado no acabó en 4 s; se mide igual`)
+        })
 
       const asc = await page.evaluate(() =>
         parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--asc')),

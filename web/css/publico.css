@@ -1,0 +1,63 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOS PÚBLICOS · seis maneras de usar lo mismo
+
+   La rejilla de la sección «para quién es». Es hermana de `.fuentes` —misma
+   idea de baldosas separadas por un filete de 1 px— pero no es ella: las
+   fuentes son una lista de procedencias, todas del mismo peso, y estas son
+   seis usos que no se parecen entre sí, así que cada una lleva su marca y la
+   primera ocupa dos columnas porque es la que trae a la mayoría de la gente
+   que llega a esta isla.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.publicos{
+  display:grid;gap:1px;background:var(--line-soft);
+  border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden;
+}
+@media (min-width:680px){.publicos{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1040px){.publicos{grid-template-columns:repeat(3,1fr)}}
+
+.publico{
+  position:relative;display:flex;flex-direction:column;gap:.7rem;
+  padding:1.5rem 1.35rem 1.6rem;background:rgba(20,19,17,.86);
+  transition:background .3s ease;
+}
+.publico:hover{background:rgba(30,28,24,.9)}
+
+/* EL PRIMERO MANDA, Y NO ENSANCHÁNDOLO. La primera versión le daba dos columnas
+   —es el senderismo, que es a lo que viene la mayor parte de quien llega— y eso
+   dejaba siete huecos en una rejilla de tres columnas: dos filas llenas y una
+   tercera con una baldosa y un boquete de dos. Seis baldosas iguales llenan
+   exactamente dos filas de tres, o tres de dos, así que el énfasis lo pone un
+   filete ámbar en el canto y el orden de lectura, que ya lo pone primero. */
+.publico--jefe::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:linear-gradient(180deg,var(--amber),transparent 70%);
+}
+
+.publico .rot{display:flex;align-items:center;gap:.5rem}
+/* El filete de la etiqueta, igual que el de las cabeceras de sección. */
+.publico .rot::before{
+  content:"";width:1.4rem;height:1px;background:var(--amber);flex:none;
+}
+.publico h3{font-size:1.06rem}
+/* `:not(.dato)` NO ES DECORACIÓN. `.dato` también es un `<p>`, así que con
+   `.publico p{flex:1}` crecían los dos: el párrafo empujaba el dato hacia
+   abajo, como se quería, pero el dato crecía a su vez y separaba la cifra de su
+   unidad media baldosa. Solo estira el texto; la cifra mide lo que mide. */
+.publico p{font-size:.94rem;margin:0}
+.publico p:not(.dato){flex:1}
+
+/* El dato duro de cada baldosa, en el mismo formato de instrumento que usa el
+   panel del modelo: cifra en ámbar y su unidad debajo en versalitas. */
+.publico .dato{
+  display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;
+  margin-top:.2rem;padding-top:.85rem;border-top:1px solid var(--line-soft);
+  flex:none;font-family:var(--mono);
+}
+.publico .dato b{
+  font-size:1.15rem;font-weight:600;color:var(--amber);letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;line-height:1;
+}
+.publico .dato span{
+  font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--fg-faint);
+}

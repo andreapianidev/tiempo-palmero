@@ -7,7 +7,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tiempo Palmero · Meteorología interpolada de La Palma</title>
-<meta name="description" content="El tiempo en cualquier punto de La Palma, no en la estación más cercana. Interpolación de alta resolución sobre los datos abiertos del Cabildo Insular. Libre, sin registro y sin publicidad.">
+<meta name="description" content="El tiempo en cualquier punto de La Palma, no en la estación más cercana: para senderistas, ciclistas, astroturismo, museos y gestión. Con los aforos de la isla, el cielo estrellado medido por sus fotómetros y la isla entera en tres dimensiones. Libre, sin registro y sin publicidad.">
 <meta name="author" content="Andrea Piani">
 <meta name="google-site-verification" content="ji4SryKiSH_vuqayqZOTZTI6i63eYG0RQLgq-EzHEF4">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -19,7 +19,7 @@
 <meta property="og:locale" content="es_ES">
 <meta property="og:site_name" content="Tiempo Palmero">
 <meta property="og:title" content="Tiempo Palmero · Meteorología interpolada de La Palma">
-<meta property="og:description" content="El tiempo en cualquier punto de la isla, no en la estación más cercana. Sobre los datos abiertos del Cabildo Insular.">
+<meta property="og:description" content="El tiempo en cualquier punto de la isla, no en la estación más cercana. Senderos, aforos, cielo estrellado y la isla entera en 3D, sobre los datos abiertos del Cabildo Insular.">
 <meta property="og:url" content="https://www.tiempopalmero.com/">
 <meta property="og:image" content="https://www.tiempopalmero.com/img/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
@@ -32,8 +32,13 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/atmosfera.css">
 <link rel="stylesheet" href="/css/chrome.css">
+<link rel="stylesheet" href="/css/rail.css">
 <link rel="stylesheet" href="/css/regimen.css">
 <link rel="stylesheet" href="/css/secciones.css">
+<link rel="stylesheet" href="/css/publico.css">
+<link rel="stylesheet" href="/css/aforos.css">
+<link rel="stylesheet" href="/css/tresd.css">
+<link rel="stylesheet" href="/css/cielo.css">
 <link rel="stylesheet" href="/css/motion.css">
 <noscript><link rel="stylesheet" href="/css/sin-js.css"></noscript>
 </head>
@@ -91,7 +96,7 @@
 <!-- La lectura del relieve: qué régimen está pintado, de qué día y con qué
      cifra medida. La rellena `js/isla3d/etiqueta.js`; sin JavaScript o sin
      WebGL se queda vacía y no ocupa nada. Va `aria-hidden` por lo mismo que el
-     altímetro: acompaña a un lienzo decorativo y cambia de texto al rodar la
+     raíl: acompaña a un lienzo decorativo y cambia de texto al rodar la
      página, así que leerla en voz alta sería una letanía sobre el contenido. -->
 <p class="regimen" data-regimen aria-hidden="true"></p>
 <div class="isla-fija" aria-hidden="true"><!--isla:inicio-->
@@ -108,17 +113,48 @@
 </svg>
 <!--isla:fin--></div>
 
-<!-- ═══ ALTÍMETRO ═══════════════════════════════════════════════════════════ -->
-<aside class="altimetro" aria-hidden="true">
-  <p class="alt-lectura"><b data-altimetro>0</b><small>m s. n. m.</small></p>
-  <div class="alt-escala">
-    <div class="hito" data-tramo="hero"><span><b>0 m</b>el mar</span><i></i></div>
-    <div class="hito" data-tramo="hace"><span><b>400 m</b>medianías</span><i></i></div>
-    <div class="hito" data-tramo="modelo"><span><b>1200 m</b>mar de nubes</span><i></i></div>
-    <div class="hito" data-tramo="datos"><span><b>2000 m</b>cumbre</span><i></i></div>
-    <div class="hito" data-tramo="codigo"><span><b>2426 m</b>el Roque</span><i></i></div>
+<!-- ═══ EL RAÍL ════════════════════════════════════════════════════════════
+     Ya no es un altímetro: cada hito dice la cota, el sitio y QUÉ SE CUENTA en
+     esa franja, que es el argumento de la página. Se sube de las boyas del
+     puerto a las 8.920 estrellas del catálogo pasando por los aforos de los
+     senderos, y en ese orden están las secciones. Ver `css/rail.css`.
+
+     `aria-hidden` porque es un duplicado: cada hito repite el rótulo de su
+     sección, que sí se lee, y el número de arriba cambia en cada fotograma del
+     rodillo. Leerlo en voz alta sería una letanía. -->
+<aside class="rail" aria-hidden="true">
+  <p class="rail-lectura"><b data-cota>0</b><small>m sobre el mar</small></p>
+  <div class="rail-escala">
+    <div class="hito" data-tramo="hero">
+      <span class="hito-txt"><b>0 m</b><span class="sitio">el puerto</span><span class="mide">el mar y el oleaje</span></span>
+      <span class="tic"></span>
+    </div>
+    <div class="hito" data-tramo="publico">
+      <span class="hito-txt"><b>300 m</b><span class="sitio">quien llega</span><span class="mide">640 km de sendero</span></span>
+      <span class="tic"></span>
+    </div>
+    <div class="hito" data-tramo="hace">
+      <span class="hito-txt"><b>600 m</b><span class="sitio">medianías</span><span class="mide">52 estaciones</span></span>
+      <span class="tic"></span>
+    </div>
+    <div class="hito" data-tramo="aforos">
+      <span class="hito-txt"><b>900 m</b><span class="sitio">los senderos</span><span class="mide">30 aforos, cada 5 min</span></span>
+      <span class="tic"></span>
+    </div>
+    <div class="hito" data-tramo="modelo">
+      <span class="hito-txt"><b>1200 m</b><span class="sitio">mar de nubes</span><span class="mide">la inversión medida</span></span>
+      <span class="tic"></span>
+    </div>
+    <div class="hito" data-tramo="tresd">
+      <span class="hito-txt"><b>1800 m</b><span class="sitio">sobre la isla</span><span class="mide">el relieve, a 5 m</span></span>
+      <span class="tic"></span>
+    </div>
+    <div class="hito" data-tramo="cielo">
+      <span class="hito-txt"><b>2426 m</b><span class="sitio">el Roque</span><span class="mide">8920 estrellas</span></span>
+      <span class="tic"></span>
+    </div>
   </div>
-  <p class="alt-pie rot">Ascenso</p>
+  <p class="rail-pie rot">Una isla,<br>siete maneras<br>de mirarla</p>
 </aside>
 
 <div class="piel">
@@ -134,12 +170,13 @@
       Tiempo&nbsp;Palmero
     </a>
     <nav>
+      <a href="#publico">Para quién</a>
       <a href="#hace">Qué hace</a>
-      <a href="#modelo">El modelo</a>
-      <a href="#datos">Los datos</a>
-      <a href="#codigo">Código</a>
+      <a href="#tresd">En 3D</a>
+      <a href="#cielo">El cielo</a>
+      <a href="#datos">Datos</a>
     </nav>
-    <p class="cota-movil"><b data-altimetro>0</b> m</p>
+    <p class="cota-movil"><b data-cota>0</b> m</p>
     <a class="btn" href="https://app.tiempopalmero.com">
       <span class="larga">Abrir el mapa</span>
       <span class="corta">El mapa</span>
@@ -169,12 +206,17 @@
 
       <p class="lede entra e3">
         Tocas cualquier punto del mapa y obtienes una estimación <b>en ese punto</b>,
-        no la lectura de la estación más cercana.
+        no la lectura de la estación más cercana. Sirve igual para salir a andar,
+        para bajar en bicicleta, para saber si el cielo estará limpio esta noche
+        o para dejarlo puesto en la pantalla de un centro de visitantes.
       </p>
       <p class="sub entra e4">
         En La Palma eso no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa
         escala la altitud manda sobre la distancia en cualquier variable atmosférica.
-        Dos puntos a cinco kilómetros pueden tener el viento al revés.
+        Dos puntos a cinco kilómetros pueden tener el viento al revés. Encima de esa
+        malla va todo lo demás que la isla publica de sí misma —quién cruza cada
+        sendero, cómo está el mar, cuánto se ve del cielo— y al lado, la misma isla
+        en tres dimensiones para recorrerla antes de recorrerla.
       </p>
 
       <div class="hero-actos entra e5">
@@ -188,8 +230,8 @@
 
     <dl class="tira entra e6">
       <div><dt>Red del Cabildo</dt><dd><b data-cuenta="52">52</b><small>estaciones</small></dd></div>
-      <div><dt>Desnivel de la isla</dt><dd><b data-cuenta="2426">2426</b><small>m en 42 km</small></dd></div>
-      <div><dt>Datos abiertos</dt><dd><b data-cuenta="49">49</b><small>conjuntos</small></dd></div>
+      <div><dt>Aforos en la isla</dt><dd><b data-cuenta="30">30</b><small>puntos contando</small></dd></div>
+      <div><dt>Senderos señalizados</dt><dd><b data-cuenta="640">640</b><small>km, 49 trazados</small></dd></div>
       <div><dt>Coste para ti</dt><dd>0<small>sin registro</small></dd></div>
     </dl>
 
@@ -211,12 +253,85 @@
   </div>
 </section>
 
-<!-- ═══ 01 · 400 m ══════════════════════════════════════════════════════════ -->
-<section id="hace">
+<!-- ═══ 01 · 300 m ══════════════════════════════════════════════════════════ -->
+<section id="publico">
   <div class="wrap">
     <div class="cabeza sube">
       <span class="ord" aria-hidden="true">01</span>
-      <span class="rot">400 m · medianías</span>
+      <span class="rot">300 m · quien llega a la isla</span>
+      <h2>No hace falta ser meteorólogo</h2>
+      <p class="entrada">A La Palma se viene a andarla, a bajarla en bicicleta, a correrla y a mirar
+         su cielo. Es el mismo instrumento para las cuatro cosas — y para quien tiene que gestionarlas,
+         enseñarlas o estudiarlas.</p>
+    </div>
+
+    <div class="publicos escalona">
+
+      <article class="publico publico--jefe">
+        <span class="rot">A pie</span>
+        <h3>Antes de salir, mira el tiempo donde vas a estar</h3>
+        <p>La isla tiene <strong>49 senderos señalizados y 640 km</strong> de trazado, y un recorrido
+           de cumbre atraviesa dos regímenes de tiempo distintos. La estación más cercana a un
+           sendero casi nunca está <em>en</em> el sendero: aquí eliges el punto, y encima van los
+           <strong>1.190 puntos de interés</strong> de la red, de refugios a fuentes.</p>
+        <p class="dato"><b>640</b><span>km · 49 trazados</span></p>
+      </article>
+
+      <article class="publico">
+        <span class="rot">En bicicleta</span>
+        <h3>El viento decide la bajada</h3>
+        <p>Bajar de la cumbre al valle de Aridane es cruzar la inversión del alisio de arriba abajo.
+           Los aforos del Cabildo cuentan las bicicletas <strong>aparte</strong> de los peatones, así
+           que también se ve por dónde va la gente.</p>
+        <p class="dato"><b>2426 m</b><span>de desnivel, en 42 km</span></p>
+      </article>
+
+      <article class="publico">
+        <span class="rot">Corriendo</span>
+        <h3>De un faro a un observatorio</h3>
+        <p>El GR-131 sube del faro de Fuencaliente al Roque de los Muchachos y baja a Tazacorte: la
+           travesía de la isla. Uno de los aforos de sendero cuenta justamente ahí, y publica el
+           sentido —«Faro Fuencaliente» o «Pueblo»— además del número.</p>
+        <p class="dato"><b>214 km</b><span>de gran recorrido</span></p>
+      </article>
+
+      <article class="publico">
+        <span class="rot">De noche</span>
+        <h3>Y muchos vienen a mirar hacia arriba</h3>
+        <p>La Palma es <strong>Reserva Starlight</strong> y el Roque es uno de los mejores cielos del
+           hemisferio norte. La aplicación dibuja el cielo real de este instante sobre el relieve, y
+           cuántas estrellas se ven no lo decide un ajuste: lo miden los fotómetros de la isla.</p>
+        <p class="dato"><b>8920</b><span>estrellas en el catálogo</span></p>
+      </article>
+
+      <article class="publico">
+        <span class="rot">Museos y aulas</span>
+        <h3>Se deja puesto en una pantalla y ya está</h3>
+        <p>Se abre en un navegador, a pantalla completa, sin instalar, sin cuenta y sin clave de API.
+           Un centro de interpretación, un aula o un mirador pueden tenerlo encendido todo el día
+           enseñando la isla de verdad, no una animación.</p>
+        <p class="dato"><b>0</b><span>instalar · 0 registrarse</span></p>
+      </article>
+
+      <article class="publico">
+        <span class="rot">Gestión y ciencia</span>
+        <h3>Y cada cifra se puede auditar</h3>
+        <p>Todo lo que se enseña sale de fuentes públicas con su licencia escrita al lado, y el motor
+           que lo calcula es código abierto con sus pruebas. Se puede comprobar de dónde sale cada
+           número — o reutilizarlo para otra cosa.</p>
+        <p class="dato"><b>49</b><span>conjuntos · Apache-2.0</span></p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 · 600 m ══════════════════════════════════════════════════════════ -->
+<section id="hace">
+  <div class="wrap">
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">02</span>
+      <span class="rot">600 m · medianías</span>
       <h2>Lo que se ve en pantalla</h2>
       <p class="entrada">Contado por lo que hace, no por cómo lo hace. Todo lo que sigue está en marcha ahora mismo, gratis y sin instalar nada.</p>
     </div>
@@ -319,11 +434,85 @@
   </div>
 </section>
 
-<!-- ═══ 02 · 1200 m · el mar de nubes ═══════════════════════════════════════ -->
+<!-- ═══ 03 · 900 m ══════════════════════════════════════════════════════════ -->
+<section id="aforos">
+  <div class="wrap">
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">03</span>
+      <span class="rot">900 m · los senderos</span>
+      <h2>Y cuánta gente está pasando ahora mismo</h2>
+      <p class="entrada">El Cabildo tiene una red de aforos que cuenta quién cruza por treinta puntos
+         de la isla y publica el conteo cada pocos minutos. Está en el mapa, con su nombre y con el
+         sentido en el que va cada uno.</p>
+    </div>
+
+    <div class="tablero sube">
+      <p class="tablero-hd">
+        <b>30</b> emplazamientos · <b>21</b> de carretera · <b>9</b> de sendero
+        <span class="en-vivo"><i aria-hidden="true"></i>publicando</span>
+      </p>
+
+      <div class="aforo">
+        <p class="aforo-sitio">Acceso Entrada a Santa Cruz<small>Santa Cruz ↔ Aeropuerto</small></p>
+        <span class="aforo-clase" data-clase="carretera">Carretera</span>
+        <span class="aforo-cuenta"><span>coches</span><span>motos</span><span>pesados</span><span>peatones</span></span>
+      </div>
+      <div class="aforo">
+        <p class="aforo-sitio">Acceso Los Llanos<small>El Paso ↔ Los Llanos</small></p>
+        <span class="aforo-clase" data-clase="carretera">Carretera</span>
+        <span class="aforo-cuenta"><span>coches</span><span>motos</span><span>bicicletas</span></span>
+      </div>
+      <div class="aforo">
+        <p class="aforo-sitio">Acceso Brecitos<small>Los Llanos ↔ Los Brecitos · Caldera de Taburiente</small></p>
+        <span class="aforo-clase" data-clase="carretera">Carretera</span>
+        <span class="aforo-cuenta"><span>coches</span><span>peatones</span><span>bicicletas</span><span>pesados</span></span>
+      </div>
+      <div class="aforo">
+        <p class="aforo-sitio">Acceso Sendero a Torre del Time<small>entrada ↔ salida</small></p>
+        <span class="aforo-clase" data-clase="sendero">Sendero</span>
+        <span class="aforo-cuenta"><span>peatones</span><span>bicicletas</span></span>
+      </div>
+      <div class="aforo">
+        <p class="aforo-sitio">Acceso Amagar<small>El Time ↔ Barranco de Las Angustias</small></p>
+        <span class="aforo-clase" data-clase="sendero">Sendero</span>
+        <span class="aforo-cuenta"><span>peatones</span><span>bicicletas</span></span>
+      </div>
+      <div class="aforo">
+        <p class="aforo-sitio">Acceso San Antonio<small>Faro de Fuencaliente ↔ pueblo</small></p>
+        <span class="aforo-clase" data-clase="sendero">Sendero</span>
+        <span class="aforo-cuenta"><span>peatones</span><span>bicicletas</span></span>
+      </div>
+      <div class="aforo">
+        <p class="aforo-sitio">Acceso sendero puerto Tazacorte<small>El Time ↔ Puerto de Tazacorte</small></p>
+        <span class="aforo-clase" data-clase="sendero">Sendero</span>
+        <span class="aforo-cuenta"><span>peatones</span><span>bicicletas</span></span>
+      </div>
+
+      <p class="tablero-pie">Siete de los treinta, para que se vea la forma de la red. Entre los dos
+        tipos publican <b>133 canales</b> y cinco clases de tránsito — peatones, bicicletas, coches,
+        motos y pesados—, cada una contada por separado y en los dos sentidos.</p>
+    </div>
+
+    <div class="aviso sube">
+      <p class="rot"><i aria-hidden="true"></i>Lo que este dato no es</p>
+      <h3>El endpoint que se llama «hoy» no es el total del día</h3>
+      <p>Es el último intervalo publicado, de unos cinco minutos. Comprobado pidiéndolo dos veces
+         seguidas: un aforo de peatones pasó de 2 a 0 en cinco minutos, y un acumulado no baja. A esa
+         misma hora el histórico del mismo día daba <strong>8.697</strong> coches en la entrada de
+         Santa Cruz mientras el «hoy» daba <strong>3</strong>. Enseñar el «hoy» como el día sería
+         contar trece coches en la entrada de la capital.</p>
+      <p>Así que las cifras del día salen del histórico, y el «hoy» se usa para lo único que sabe
+         decir: si ese aforo está vivo <em>ahora</em> y a qué hora habló por última vez.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ 04 · 1200 m · el mar de nubes ═══════════════════════════════════════ -->
 <section id="modelo">
   <div class="wrap">
     <div class="cabeza sube">
-      <span class="ord" aria-hidden="true">02</span>
+      <span class="ord" aria-hidden="true">04</span>
       <span class="rot">1200 m · mar de nubes</span>
       <h2>El modelo enseña dónde se equivoca</h2>
       <p class="entrada">Una estimación sin su error al lado es una cifra bonita sin procedencia. Esto es lo que la aplicación pone en pantalla, en directo, sin que haya que pedirlo.</p>
@@ -411,12 +600,228 @@
   </div>
 </section>
 
-<!-- ═══ 03 · 2000 m ═════════════════════════════════════════════════════════ -->
+<!-- ═══ 05 · 1800 m ═════════════════════════════════════════════════════════ -->
+<section id="tresd">
+  <div class="wrap">
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">05</span>
+      <span class="rot">1800 m · sobre la isla</span>
+      <h2>Y la misma isla, para volarla</h2>
+      <p class="entrada">Ver en el mapa que en la cumbre hay niebla es una cosa; recorrer esa cumbre
+         y ver dónde se apoya la niebla es otra. <strong>La Palma 3D</strong> es la rama en tres
+         dimensiones del proyecto: la isla entera reconstruida a escala real, con el mismo modelo del
+         terreno y la misma red de estaciones. Se navega como en Google Earth.</p>
+      <p class="plataforma">
+        <b>macOS · Apple Silicon</b>
+        <em>Unity 6 · HDRP 17.5 · se compila desde el código</em>
+      </p>
+    </div>
+
+    <dl class="fichas escalona">
+      <div class="ficha">
+        <dt>Elevación</dt>
+        <dd>5 m<small>El MDT05 del Instituto Geográfico Nacional, una muestra cada cinco metros y
+          8,5 cm por escalón en vertical.</small></dd>
+      </div>
+      <div class="ficha">
+        <dt>Fotografía</dt>
+        <dd>31,25 cm<small>La ortofoto de GRAFCAN, píxel a píxel. La colada de 2021 está donde
+          está, y a esta resolución se distingue del terreno que se comió.</small></dd>
+      </div>
+      <div class="ficha">
+        <dt>La isla entera</dt>
+        <dd>41 × 51 km<small>En ochenta terrenos de 5,12 km. Nada de una maqueta de un trozo:
+          está toda, del acantilado del norte a Fuencaliente.</small></dd>
+      </div>
+      <div class="ficha">
+        <dt>Escala</dt>
+        <dd>1 : 1<small>Una unidad de Unity es un metro de la isla. Una distancia medida dentro es
+          una distancia sobre el terreno.</small></dd>
+      </div>
+      <div class="ficha">
+        <dt>Puntos del Cabildo</dt>
+        <dd>2348<small>Senderos, miradores, refugios y sitios de interés, en quince capas del portal
+          de datos abiertos, colocados sobre el relieve.</small></dd>
+      </div>
+      <div class="ficha">
+        <dt>Sin clave de acceso</dt>
+        <dd>0<small>Ninguna de las fuentes exige registro ni clave, y ninguna de las dos mitades del
+          programa tiene una sola dependencia externa.</small></dd>
+      </div>
+    </dl>
+
+    <div class="vistas">
+      <figure class="vista-3d sube" data-par>
+        <div class="marco">
+          <img src="/img/isla-3d-1800.jpg"
+               srcset="/img/isla-3d-900.jpg 900w, /img/isla-3d-1800.jpg 1800w"
+               sizes="(min-width:1180px) 680px, (min-width:760px) 50vw, 100vw"
+               width="1800" height="1180" loading="lazy" decoding="async"
+               alt="La Caldera de Taburiente vista desde el aire, con la red de senderos marcada en blanco bajando por las laderas y cúmulos sueltos sobre el Atlántico.">
+        </div>
+        <figcaption><b>La Caldera de Taburiente.</b> Los trazos blancos son los senderos del
+          Cabildo puestos sobre el relieve real, no dibujados encima de una foto.</figcaption>
+      </figure>
+      <figure class="vista-3d sube" data-par>
+        <div class="marco">
+          <img src="/img/cumbre-senderos-1800.jpg"
+               srcset="/img/cumbre-senderos-900.jpg 900w, /img/cumbre-senderos-1800.jpg 1800w"
+               sizes="(min-width:760px) 340px, 100vw"
+               width="1800" height="1180" loading="lazy" decoding="async"
+               alt="La cresta de la cumbre desde el aire, con las cúpulas del observatorio del Roque de los Muchachos recortadas contra el cielo y los puntos de interés de la red de senderos marcados a lo largo del filo.">
+        </div>
+        <figcaption><b>El filo de la cumbre</b>, con las cúpulas del observatorio arriba y los
+          puntos de interés de la red repartidos por la cresta.</figcaption>
+      </figure>
+      <figure class="vista-3d sube" data-par>
+        <div class="marco">
+          <img src="/img/panel-3d-1800.jpg"
+               srcset="/img/panel-3d-900.jpg 900w, /img/panel-3d-1800.jpg 1800w"
+               sizes="(min-width:760px) 340px, 100vw"
+               width="1800" height="1180" loading="lazy" decoding="async"
+               alt="El programa en marcha: a la izquierda el panel con la procedencia de los datos y los mandos de la escena, a la derecha la ladera de la Degollada de Las Palomas y un recuadro que dice a qué coordenada y a qué altura mira la cámara.">
+        </div>
+        <figcaption><b>El programa por dentro.</b> El panel dice de dónde sale cada cosa y a qué
+          coordenada mira la cámara — la atribución viaja en pantalla, no en un pie de página.</figcaption>
+      </figure>
+    </div>
+
+    <div class="comprobacion sube">
+      <span class="rot">La comprobación que cuenta</span>
+      <h3>Una isla volteada sigue pareciendo una isla</h3>
+      <p>Un modelo de elevación invertido sobre el eje norte-sur pasa cualquier revisión hecha a ojo,
+         así que la cadena se verificó de la única manera que sirve: buscando el punto más alto
+         <em>dentro del mapa de alturas generado</em> y preguntándose dónde caía de verdad.</p>
+      <div class="cotejo">
+        <span class="et">Vértice hallado en el fichero</span><span>28,75423 N · 17,88489 O</span><span>2425 m</span>
+        <span class="et">Roque de los Muchachos</span><span>28,75436 N · 17,88508 O</span><span>2426 m</span>
+        <i class="sep" aria-hidden="true"></i>
+        <span class="et">Desviación</span><span class="saldo">24 m — una celda</span><span class="saldo">1 m de cota</span>
+      </div>
+      <p>Georreferenciación, orientación de los ejes y escala vertical, las tres correctas. Es una
+         comprobación que vale mucho más que un vistazo al render.</p>
+    </div>
+
+    <div class="aviso sube">
+      <p class="rot"><i aria-hidden="true"></i>Lo que todavía no está hecho</p>
+      <h3>El puente meteorológico está escrito, no ejecutado</h3>
+      <p>El modelo de nubes de Tiempo Palmero —70 puntos, interpolación IDW y la cota de la manta
+         anclada a la inversión <em>medida</em> en los radiosondeos— está escrito y cableado al
+         override de nubes volumétricas de la escena. Pero <strong>todavía no se ha corrido con datos
+         reales</strong>, y en este proyecto eso son dos estados distintos que se cuentan por
+         separado. Hasta que se verifique, el tiempo de verdad está en la aplicación web, que es
+         donde lleva el botón de arriba.</p>
+      <p>Lo mismo con las plataformas: hoy se compila en macOS con Apple Silicon. El resto vendrá
+         después, y estará escrito aquí cuando esté, no antes.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ 06 · 2426 m · el Roque ══════════════════════════════════════════════ -->
+<section id="cielo">
+  <div class="wrap">
+    <div class="cabeza sube">
+      <span class="ord" aria-hidden="true">06</span>
+      <span class="rot">2426 m · el Roque de los Muchachos</span>
+      <h2>A esta isla también se viene a mirar hacia arriba</h2>
+      <p class="entrada">La Palma es Reserva Starlight y el Roque tiene uno de los mejores cielos del
+         hemisferio norte. La aplicación dibuja el cielo real de este instante sobre el relieve — y
+         <strong>cuántas estrellas se ven no lo decide un ajuste: lo miden los fotómetros del
+         Cabildo</strong>, y esa es toda la diferencia entre un planetario y un instrumento.</p>
+    </div>
+
+    <figure class="escala-cielo sube">
+      <p class="escala-hd">Brillo de fondo medido <b>→</b> estrellas que se ven · catálogo de <b>8920</b> hasta magnitud 6,5</p>
+
+      <div class="sqm sqm--techo">
+        <span class="sqm-brillo">21,52</span>
+        <span class="sqm-sitio">SkyPalma · Garafía</span>
+        <span class="barra" aria-hidden="true"><i data-barra="100"></i></span>
+        <span class="sqm-cuenta">7885<small>estrellas</small></span>
+      </div>
+      <div class="sqm">
+        <span class="sqm-brillo">21,13</span>
+        <span class="sqm-sitio">Centro de Visitantes del Roque</span>
+        <span class="barra" aria-hidden="true"><i data-barra="78.4"></i></span>
+        <span class="sqm-cuenta">6180<small>estrellas</small></span>
+      </div>
+      <div class="sqm">
+        <span class="sqm-brillo">20,60</span>
+        <span class="sqm-sitio">Mirador Las Toscas</span>
+        <span class="barra" aria-hidden="true"><i data-barra="56.1"></i></span>
+        <span class="sqm-cuenta">4420<small>estrellas</small></span>
+      </div>
+      <div class="sqm">
+        <span class="sqm-brillo">19,50</span>
+        <span class="sqm-sitio">Colegio La Palmita</span>
+        <span class="barra" aria-hidden="true"><i data-barra="24.5"></i></span>
+        <span class="sqm-cuenta">1930<small>estrellas</small></span>
+      </div>
+      <div class="sqm">
+        <span class="sqm-brillo">18,00</span>
+        <span class="sqm-sitio">Cementerio de Santa Cruz</span>
+        <span class="barra" aria-hidden="true"><i data-barra="6.4"></i></span>
+        <span class="sqm-cuenta">504<small>estrellas</small></span>
+      </div>
+      <div class="sqm">
+        <span class="sqm-brillo">16,19</span>
+        <span class="sqm-sitio">CEIP Santo Domingo · Los Llanos</span>
+        <span class="barra" aria-hidden="true"><i data-barra="1.1"></i></span>
+        <span class="sqm-cuenta">83<small>estrellas</small></span>
+      </div>
+
+      <figcaption class="escala-pie">Seis fotómetros de la red del Cabildo, con sus lecturas del
+        <b>19 de agosto de 2026</b>. De 7885 estrellas a 83 <b>en 34 kilómetros</b>: la
+        contaminación lumínica no se enseña con un mapa de colores, se enseña con las estrellas que
+        faltan. Y es la razón por la que el observatorio está donde está.</figcaption>
+    </figure>
+
+    <div class="cielo-piezas escalona">
+      <div class="cielo-pieza">
+        <h3>Las constelaciones</h3>
+        <p>743 segmentos enganchados por índice a las estrellas del catálogo, así que precesan con
+           ellas — y se apagan solas cuando el cielo está tan claro que unirían estrellas que ya no
+           se ven.</p>
+      </div>
+      <div class="cielo-pieza">
+        <h3>La luna</h3>
+        <p>Serie completa de Meeus con paralaje topocéntrica, comprobada contra otra
+           implementación con 0,17′ de error en el peor caso de dos años. Y sale sabiendo que apaga
+           lo demás.</p>
+      </div>
+      <div class="cielo-pieza">
+        <h3>Los planetas</h3>
+        <p>Los cinco que se ven a simple vista, más Urano, que pide justamente un cielo como el de
+           aquí. Son 20 KB de efemérides que solo se descargan si enciendes la casilla.</p>
+      </div>
+      <div class="cielo-pieza">
+        <h3>La Vía Láctea</h3>
+        <p>El contorno de la banda con sus 197 agujeros de nebulosa oscura — los que la parten en dos
+           por la Fisura del Cisne—, atenuado por el mismo fondo que miden los fotómetros.</p>
+      </div>
+    </div>
+
+    <div class="aviso sube">
+      <p class="rot"><i aria-hidden="true"></i>El denominador honesto</p>
+      <h3>La red tiene 59 fotómetros y de noche miden unos siete</h3>
+      <p>Publicar «59 fotómetros» sería verdad y sería mentira. El panel de la aplicación dice
+         <strong>«7 de 59»</strong> cuando siete están midiendo, y cuando no hay ninguno con lectura
+         utilizable a menos de 12 km lo dice también: entonces el brillo del cielo es
+         <em>modelado</em> —cielo oscuro de referencia de la isla, más el crepúsculo y la luna— y la
+         cuenta de estrellas de arriba es una estimación, no una medida. Las dos son legítimas;
+         confundirlas no.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ 07 · la procedencia ═════════════════════════════════════════════════ -->
 <section id="datos">
   <div class="wrap">
     <div class="cabeza sube">
-      <span class="ord" aria-hidden="true">03</span>
-      <span class="rot">2000 m · cumbre</span>
+      <span class="ord" aria-hidden="true">07</span>
+      <span class="rot">De dónde sale cada byte</span>
       <h2>Todo sale de datos abiertos</h2>
       <p class="entrada">La procedencia de cada byte importa, así que está escrita — aquí y dentro de la propia aplicación, fuente por fuente y con su licencia.</p>
     </div>
@@ -471,14 +876,14 @@
   </div>
 </section>
 
-<!-- ═══ 04 · 2426 m · el Roque ══════════════════════════════════════════════ -->
+<!-- ═══ 08 · el código ══════════════════════════════════════════════════════ -->
 <section id="codigo">
   <div class="wrap">
     <div class="cabeza sube">
-      <span class="ord" aria-hidden="true">04</span>
-      <span class="rot">2426 m · el Roque de los Muchachos</span>
+      <span class="ord" aria-hidden="true">08</span>
+      <span class="rot">Apache-2.0, las dos mitades</span>
       <h2>Todo el código es libre</h2>
-      <p class="entrada">Apache 2.0 con atribución. El motor de interpolación, sus umbrales y las pruebas que los sostienen son públicos: cualquiera puede comprobar de dónde sale cada número.</p>
+      <p class="entrada">Apache 2.0 con atribución, las dos mitades. El motor de interpolación, sus umbrales y las pruebas que los sostienen son públicos: cualquiera puede comprobar de dónde sale cada número — o levantar otra cosa encima.</p>
     </div>
 
     <div class="repos escalona">
@@ -490,15 +895,24 @@
            API. Es lo que corre en <strong>app.tiempopalmero.com</strong>.</p>
         <span class="ir">Apache-2.0 · ver en GitHub <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></span>
       </a>
+      <a class="repo" href="https://github.com/andreapianidev/lapalma3d" rel="noopener">
+        <span class="etiq">Aplicación de escritorio</span>
+        <h3>andreapianidev/lapalma3d</h3>
+        <p>La isla en tres dimensiones. Dos piezas: <strong>atlas</strong>, en Swift, que baja los
+           datos oficiales y los convierte en lo que Unity sabe abrir, y el proyecto de
+           <strong>Unity 6 con HDRP</strong>, que levanta los ochenta terrenos, cuelga la ortofoto y
+           coloca los puntos del Cabildo. Sin una sola dependencia externa en ninguna de las dos.</p>
+        <span class="ir">Apache-2.0 · macOS, por ahora <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></span>
+      </a>
     </div>
   </div>
 </section>
 
-<!-- ═══ 05 ══════════════════════════════════════════════════════════════════ -->
+<!-- ═══ 09 ══════════════════════════════════════════════════════════════════ -->
 <section id="privacidad">
   <div class="wrap">
     <div class="cabeza sube">
-      <span class="ord" aria-hidden="true">05</span>
+      <span class="ord" aria-hidden="true">09</span>
       <span class="rot">Sin contrapartida</span>
       <h2>Sin cookies, sin analítica, sin publicidad</h2>
     </div>
@@ -526,12 +940,19 @@
 <section class="cierre">
   <div class="wrap sube">
     <p class="rot">2426 m · aquí se acaba la isla</p>
-    <h2>Mira qué tiempo hace<br>donde estás tú.</h2>
-    <p>En marcha, sin registro, sin clave de API y sin nada que instalar.</p>
-    <a class="btn" href="https://app.tiempopalmero.com">
-      <span>Abrir el mapa</span>
-      <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
-    </a>
+    <h2>Mira qué tiempo hace<br>donde vas a estar.</h2>
+    <p>En marcha, sin registro, sin clave de API y sin nada que instalar. Y si quieres verla
+       entera y volarla, el proyecto en tres dimensiones está al lado.</p>
+    <div class="hero-actos cierre-actos">
+      <a class="btn" href="https://app.tiempopalmero.com">
+        <span>Abrir el mapa</span>
+        <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
+      </a>
+      <a class="btn btn--fino" href="https://github.com/andreapianidev/lapalma3d" rel="noopener">
+        <span>La isla en 3D</span>
+        <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -542,6 +963,7 @@
     <p>
       <a href="https://app.tiempopalmero.com">app.tiempopalmero.com</a> ·
       <a href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener">Código</a> ·
+      <a href="https://github.com/andreapianidev/lapalma3d" rel="noopener">La Palma 3D</a> ·
       <a href="mailto:andreapiani.dev@gmail.com">andreapiani.dev@gmail.com</a>
     </p>
     <p class="der">

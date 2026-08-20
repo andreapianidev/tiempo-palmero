@@ -146,13 +146,22 @@ h1 em{display:block;font-style:normal;color:var(--amber)}
 .barra i{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,var(--amber-deep),var(--amber))}
 
 /* ── avisos ──────────────────────────────────────────────────────────────── */
+/* EL TINTE VA SOBRE TINTA PROPIA, no sobre lo que haya detrás. Con solo el 6 %
+   de ámbar el aviso era transparente, y eso funcionó mientras los dos únicos
+   avisos de la página cayeron donde el fondo era oscuro. Al aparecer avisos en
+   las secciones nuevas, uno quedó justo donde cruza el mar de nubes: a 390 px el
+   fondo real bajo su texto subía a rgb(115,113,109) y `--fg-dim` se quedaba en
+   3,56:1, menos del mínimo. Lo cazó `scripts/checks/portada-regimenes.ts`.
+
+   Con la tinta al 93 % debajo, el peor fondo posible baja a rgb(32,31,30) y
+   `--fg-dim` sube a 7,4:1 se ponga la nube donde se ponga. */
 .aviso{
   position:relative;margin-top:1.6rem;padding:1.35rem 1.5rem;
   border:1px solid rgba(226,180,92,.32);border-left-width:2px;border-radius:0 var(--radius) var(--radius) 0;
-  background:rgba(226,180,92,.06);
+  background:linear-gradient(rgba(226,180,92,.06),rgba(226,180,92,.06)),rgba(13,12,11,.93);
 }
 .aviso h3{color:#f0c07a;margin-bottom:.7rem}
-.aviso--rojo{border-color:rgba(209,72,63,.42);background:rgba(209,72,63,.07)}
+.aviso--rojo{border-color:rgba(209,72,63,.42);background:linear-gradient(rgba(209,72,63,.07),rgba(209,72,63,.07)),rgba(13,12,11,.93)}
 .aviso--rojo h3{color:#e8907f}
 .aviso--rojo .rot{color:#d29b8c}  /* 5,5:1 sobre el fondo más claro de su sección; #c98374 daba 4,3 */
 .aviso .rot{display:flex;align-items:center;gap:.45rem;margin-bottom:.75rem}
@@ -226,3 +235,7 @@ h1 em{display:block;font-style:normal;color:var(--amber)}
 .cierre p{max-width:34rem;margin-inline:auto}
 .cierre .btn{margin-top:2rem}
 .cierre .rot{margin-bottom:1.2rem}
+
+/* Dos botones en el cierre, no uno. El segundo lleva al proyecto en tres
+   dimensiones, que es una rama distinta y no una página más de esta. */
+.cierre-actos{justify-content:center;margin-top:2rem}

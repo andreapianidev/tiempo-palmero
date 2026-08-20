@@ -28,7 +28,7 @@
   src:url(../fonts/ibm-plex-mono-600.woff2) format('woff2')}
 
 /* El ascenso: 0 en la costa, 1 en el Roque. Lo escribe `js/ascenso.js` en cada
-   fotograma y de él cuelga toda la página —el cielo, el altímetro, qué curva de
+   fotograma y de él cuelga toda la página —el cielo, el raíl, qué curva de
    nivel está encendida—. Declarado con @property para que tenga un valor de
    partida antes de que corra el JavaScript y para que sea un número de verdad
    en los `calc()` en vez de una cadena. */
@@ -50,15 +50,20 @@
      medida: allí el texto va sobre panel opaco, y aquí va sobre un cielo que
      cambia. Recorriendo el ascenso entero y fotografiando el fondo real debajo
      de cada texto —con las letras apagadas y los paneles puestos—, el fondo más
-     claro que llega a haber detrás de un párrafo es rgb(54,52,47), el de la
-     calima de la costa. Sobre él:
+     claro que llega a haber detrás de un párrafo es rgb(53,47,36), el punto
+     caliente de la calima de la costa a 390 px. Sobre él:
 
-       #a8a29a (el de la aplicación)  3,9:1  — no llega
-       #b3ada4                        5,7:1  ✓  --fg-dim
-       #7d776f (el de la aplicación)  2,7:1  — no llega
-       #a49d92                        4,7:1  ✓  --fg-faint
+       #a8a29a (el de la aplicación)  4,1:1  — no llega
+       #b3ada4                        6,0:1  ✓  --fg-dim
+       #7d776f (el de la aplicación)  2,8:1  — no llega
+       #a49d92                        4,9:1  ✓  --fg-faint
 
-     Si se vuelve a subir el brillo de la atmósfera, se vuelven a medir. */
+     SI SE VUELVE A SUBIR EL BRILLO DE LA ATMÓSFERA, SE VUELVEN A MEDIR — y no
+     es teórico: al añadir una sección donde antes no había ninguna, la calima
+     que le tocaba subió del 59 al 86 % y este margen se comió las cuatro
+     centésimas que le sobraban. Se arregló bajando el punto caliente de
+     `.c-costa`, no el token; está contado allí. Lo mide
+     `scripts/checks/portada-regimenes.ts`. */
   --fg-dim:#b3ada4;
   --fg-faint:#a49d92;
   --amber:#e2b45c;
@@ -73,13 +78,20 @@
   --sans:Barlow,system-ui,-apple-system,'Helvetica Neue',sans-serif;
 
   --gut:clamp(1.15rem,4vw,3.25rem);
-  /* 11vw y no 8: a 1440 px el raíl salía de 115 px y «mar de nubes» —la
-     etiqueta más larga del altímetro— necesita 110 con la marca encendida. Se
-     salía por la izquierda de la pantalla. */
-  --rail:clamp(0px,11vw,150px);
+  /* 12vw y no 8: a 1440 px el raíl salía de 115 px y «mar de nubes» —la
+     etiqueta más larga de las que nombran el sitio— necesita 110 con la marca
+     encendida. Se salía por la izquierda de la pantalla.
+
+     Y el tope sube de 150 a 168 porque el raíl dejó de decir solo la cota: cada
+     hito lleva ahora un tercer renglón con lo que se cuenta en esa franja, y con
+     150 px «30 aforos, cada 5 min» se partía en dos líneas y la segunda asomaba
+     fuera. Medido con IBM Plex Mono a .52rem —4,8 px por carácter— los 168 px
+     dejan 28 caracteres útiles y la etiqueta más larga tiene 21. Ver
+     `rail.css`. */
+  --rail:clamp(0px,12vw,168px);
 
   /* La banda de la derecha, reservada para la isla. Es la simétrica del raíl:
-     el altímetro manda en la izquierda y el relieve en la derecha, y el texto
+     el raíl manda en la izquierda y el relieve en la derecha, y el texto
      vive entre los dos SIN pisar ninguno.
 
      Existe porque no hay manera de tener las dos cosas en el mismo sitio. Con

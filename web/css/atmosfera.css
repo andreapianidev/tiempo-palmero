@@ -8,7 +8,7 @@
    El momento es el mar de nubes. En La Palma la inversión del alisio se sienta
    entre los 1.000 y los 1.500 m y es una frontera de verdad: por debajo, la
    laurisilva y la humedad; por encima, el cielo que hizo que el observatorio
-   del Roque esté donde está. En la página se cruza sobre `--asc` ≈ 0,47.
+   del Roque esté donde está. En la página se cruza sobre `--asc` ≈ 0,42.
 
    Coste: seis capas fijas que solo cambian `opacity` y `transform`. Ninguna
    fuerza recálculo de disposición, y con `prefers-reduced-motion` se quedan
@@ -21,10 +21,25 @@
 /* ── 0-600 m · la costa ──────────────────────────────────────────────────── */
 /* Calima ámbar pegada al horizonte, como la que se ve desde Tazacorte al caer
    la tarde. Se apaga a media subida. */
+/* EL PUNTO CALIENTE BAJA DE .125 A .105, Y SALE DE MEDIRLO. El foco de este
+   radial cae en el centro-bajo de la pantalla, que es justo donde se pone el
+   rótulo de una cabecera de sección al pasar por delante. Mientras la primera
+   sección después del héroe estaba en `--asc` 0,24 la calima ya iba por el 59 %
+   y el peor fondo bajo una letra era rgb(54,52,47) —el que se midió para fijar
+   `--fg-faint` en `base.css`—. Al entrar «para quién es» en 0,10, la calima ahí
+   va al 86 % y ese fondo subió a rgb(60,54,41): el rótulo «300 m · quien llega
+   a la isla» se quedó en 4,46:1, cuatro centésimas por debajo del mínimo, y lo
+   cazó `scripts/checks/portada-regimenes.ts` a 390 px.
+
+   Con .105 el peor fondo vuelve a rgb(53,47,36) y ese mismo rótulo sube a
+   4,94:1. Se tocó la calima y no el token porque el token está medido y la
+   calima es una elección — y porque subir `--fg-faint` lo bastante para cubrir
+   esto lo dejaba a un pelo de `--fg-dim`, que es el otro gris, y los dos grises
+   dejarían de distinguirse. */
 .c-costa{
   background:
-    radial-gradient(120% 66% at 50% 100%,rgba(226,180,92,.125),rgba(226,180,92,.035) 44%,transparent 70%),
-    radial-gradient(90% 48% at 16% 96%,rgba(193,135,58,.10),transparent 62%),
+    radial-gradient(120% 66% at 50% 100%,rgba(226,180,92,.105),rgba(226,180,92,.03) 44%,transparent 70%),
+    radial-gradient(90% 48% at 16% 96%,rgba(193,135,58,.085),transparent 62%),
     linear-gradient(180deg,transparent 40%,rgba(20,17,13,.9));
   opacity:clamp(0,calc(1.05 - var(--asc) * 1.9),1);
 }
@@ -53,7 +68,11 @@
 /* ── las estrellas del Roque ─────────────────────────────────────────────── */
 /* La Palma es Reserva Starlight y el cielo es el argumento del observatorio, así
    que las estrellas no son adorno: son la cima de la página. */
-.c-estrellas{opacity:clamp(0,calc((var(--asc) - .6) * 3.4),1)}
+/* Llega a 1 en 0,76 y no en 0,89: la sección del cielo va de 0,70 a 0,81 y con
+   la rampa antigua llegaba a su mitad con las estrellas al 51 %. Ahora entra
+   con la noche —el régimen de la isla cruza a noche en 0,63–0,72— y está entera
+   antes de que se lea la escala de fotómetros. */
+.c-estrellas{opacity:clamp(0,calc((var(--asc) - .6) * 6.2),1)}
 .c-estrellas svg{width:100%;height:100%;display:block}
 .c-estrellas circle{fill:#fff}
 .c-estrellas g:nth-child(1){opacity:.85;animation:titila 5.5s ease-in-out infinite}
@@ -67,10 +86,17 @@
    el modelo cuenta su propio error: se atraviesa la nube justo donde se explica
    que el alisio es el que manda. */
 .c-nubes{
-  /* El punto de cruce está en .47 y no en .55 porque a .55 la nube pasaba
-     justo por detrás del panel del modelo, que es opaco, y no se veía cruzar
-     nada. A .47 cae en el hueco que hay sobre la cabecera de esa sección. */
-  transform:translate3d(0,calc((.47 - var(--asc)) * 250vh),0);
+  /* EL PUNTO DE CRUCE SE MIDE, no se elige, y la medida cambió al alargarse la
+     página. El criterio es el mismo de siempre: la nube tiene que cruzar por un
+     hueco DESTAPADO, porque `--panel` es opaco al 92 % y detrás de él no se ve
+     pasar nada. Antes eran 0,47; con las cuatro secciones nuevas, el panel del
+     modelo entra en pantalla en 0,391 y a 0,47 lo llenaba entero.
+
+     0,42 es donde el canto superior de ese panel queda a media pantalla: la
+     mitad de arriba es la cabecera de la sección, que es texto sobre nada, y la
+     nube cruza por ahí. Si se vuelve a mover una sección, esto se vuelve a
+     medir con `.tmp/hueco.mjs`. */
+  transform:translate3d(0,calc((.42 - var(--asc)) * 250vh),0);
   opacity:min(clamp(0,calc((var(--asc) - .08) * 3.6),1),clamp(0,calc((1.02 - var(--asc)) * 4),1));
   will-change:transform;
 }

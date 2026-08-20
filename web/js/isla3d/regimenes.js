@@ -145,7 +145,7 @@ export var REGIMENES = [
          1.561 m       11,8 %, y 1,6 °C MÁS CALIENTE que a 1.085 m
 
        Eso acota la tapa entre 1.085 y 1.561 m, y por eso el mar de nubes de la
-       escena se pone a 1,2 km: es la cifra del hito del altímetro y cae dentro
+       escena se pone a 1,2 km: es la cifra del hito del raíl y cae dentro
        de lo medido. No se puede afinar más con esta red —entre esas dos cotas no
        hay ninguna estación más—, y decir 1.200 m clavados sería inventar una
        precisión que no existe. */
@@ -293,16 +293,27 @@ export var REGIMENES = [
  * Los límites van pegados a lo que la página ya hacía en cada tramo, porque el
  * fondo de CSS y la isla se ven a la vez y no pueden contar cosas distintas:
  *
- *   calima    0,00–0,22  la calima ámbar de `.c-costa` está a tope en 0 y se
- *                        apaga sobre 0,55; el hito dice «0 m · el mar»
- *   alisio    0,31–0,46  el mar de nubes de `.c-nubes` entra a 0,08 y cruza en
- *                        0,47, que es donde acaba este tramo
- *   temporal  0,55–0,70  cae en la sección 02, la que explica el error del
- *                        modelo: el régimen en el que una recta acierta es justo
- *                        el sitio donde la página habla de acertar
- *   noche     0,79–1,00  `.c-estrellas` empieza a 0,60 y llega a 1 sobre 0,89
+ * LOS TRES CRUCES VAN CENTRADOS EN UNA COSTURA ENTRE SECCIONES, no en medio de
+ * una. Se miden con `.tmp/mirar.mjs`, que dice en qué `--asc` queda centrada
+ * cada sección; los de aquí salen de la medida del 20 de agosto de 2026, con la
+ * página en diez secciones. SI SE AÑADE O SE QUITA UNA SECCIÓN HAY QUE VOLVER A
+ * MEDIRLOS: `--asc` es una fracción de la página entera, así que alargarla mueve
+ * todo lo de abajo hacia arriba. La vez que se añadieron cuatro secciones de
+ * golpe —para quién es, los aforos, la isla en 3D y el cielo— la noche empezaba
+ * a 0,79 y la sección del cielo quedaba entera en el crepúsculo.
+ *
+ *   calima    0,00–0,10  hero y «para quién es». La calima ámbar de `.c-costa`
+ *                        está a tope en 0; el hito dice «0 m · el puerto»
+ *   alisio    0,19–0,33  «lo que se ve en pantalla» y los aforos
+ *   temporal  0,42–0,64  el panel del modelo y la isla en 3D. El régimen en el
+ *                        que una recta acierta es justo el sitio donde la página
+ *                        habla de acertar — y el mar de nubes de `.c-nubes`
+ *                        cruza en 0,42, o sea justo al empezar: se atraviesa la
+ *                        manta al entrar en él
+ *   noche     0,73–1,00  la sección del cielo y lo que va detrás. `.c-estrellas`
+ *                        llega a 1 en 0,76, dentro de esa sección y no después
  */
-export var LIMITES = [0.22, 0.46, 0.7]
+export var LIMITES = [0.1, 0.33, 0.64]
 export var CRUCE = 0.09
 
 function mezcla(a, b, t) {

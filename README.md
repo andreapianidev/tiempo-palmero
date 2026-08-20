@@ -3,6 +3,7 @@
 [![CI](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml/badge.svg)](https://github.com/andreapianidev/tiempo-palmero/actions/workflows/ci.yml)
 [![La aplicación](https://img.shields.io/badge/app-app.tiempopalmero.com-2ea44f?logo=vercel&logoColor=white)](https://app.tiempopalmero.com)
 [![El sitio](https://img.shields.io/badge/web-tiempopalmero.com-8b9a63)](https://www.tiempopalmero.com)
+[![La rama en 3D · lapalma3d](https://img.shields.io/badge/en%203D-lapalma3d-000000?logo=unity&logoColor=white)](https://github.com/andreapianidev/lapalma3d)
 [![Licencia Apache 2.0](https://img.shields.io/badge/licencia-Apache%202.0-4c6ef5)](LICENSE)
 [![Datos del Cabildo Insular de La Palma](https://img.shields.io/badge/datos-Cabildo%20de%20La%20Palma-005f73)](https://www.opendatalapalma.es)
 [![Se buscan colaboradores en La Palma](https://img.shields.io/badge/se%20buscan-colaboradores%20en%20la%20isla-b5179e)](CONTRIBUTING.md)
@@ -28,12 +29,23 @@ Cabildo de hace dos horas servido como si fuera de ahora sería mentir—. Ni
 tiendas ni envoltorio nativo: es la misma web. Cómo está montado, en
 [Arquitectura](docs/arquitectura.md#se-instala-y-en-las-tres-tiendas-de-nadie).
 
+Y hay una **rama en tres dimensiones**:
+**[andreapianidev/lapalma3d](https://github.com/andreapianidev/lapalma3d)**
+reconstruye la isla entera a escala real —el MDT de 5 m del IGN, la ortofoto de
+31 cm de GRAFCAN y los puntos del Cabildo, 41 × 51 km en ochenta terrenos, un
+metro de Unity por metro de isla— y se navega como en Google Earth. Comparte con
+esta el modelo del terreno y la red de estaciones: aquella contesta *cómo es
+este punto*, esta *qué tiempo hace en él*. Hoy se compila en **macOS con Apple
+Silicon** sobre Unity 6 y HDRP; el resto de plataformas vendrá después. El
+puente meteorológico entre las dos está escrito y cableado, **todavía no
+ejecutado con datos reales**, y así se cuenta en los dos sitios.
+
 Y **[tiempopalmero.com](https://www.tiempopalmero.com)** es el sitio que la
-cuenta: qué hace, de qué datos sale y con qué licencia. Su código está en
-[`web/`](web/) — estático, sin dependencias, sin analítica y sin una sola
-petición a un tercero: las dos tipografías de la aplicación van servidas desde
-`web/fonts/`, y la CSP del sitio es `default-src 'none'` con todo lo demás en
-`'self'`.
+cuenta: para quién es, qué hace, quién cruza cada sendero, qué se ve del cielo,
+de qué datos sale todo y con qué licencia. Su código está en [`web/`](web/) —
+estático, sin dependencias, sin analítica y sin una sola petición a un tercero:
+las dos tipografías de la aplicación van servidas desde `web/fonts/`, y la CSP
+del sitio es `default-src 'none'` con todo lo demás en `'self'`.
 
 La página se lee como una subida de la costa al Roque, y **la isla está
 levantada en tres dimensiones a un lado**: una malla de 209×333 cotas que gira
@@ -68,8 +80,37 @@ y la página no lo insinúa: cada régimen lleva su fecha escrita al lado.
 
 Si no hay WebGL, si la tarjeta no da para ello o si el sistema pide no animar,
 queda un plano de curvas de nivel de la misma isla y del mismo modelo
-(`npm run web:island`). Y todo —el cielo, el altímetro, la cámara— cuelga de una
-sola variable CSS que el desplazamiento va reescribiendo.
+(`npm run web:island`). Y todo —el cielo, el raíl de la izquierda, la cámara—
+cuelga de una sola variable CSS que el desplazamiento va reescribiendo.
+
+El raíl **ya no es un altímetro**. Decía la cota y nada más, y la cota sola
+cuenta el argumento equivocado: esta isla no interesa por lo alta que es, sino
+por lo que se mide en cada una de sus franjas y por quién anda en ellas. Ahora
+cada hito lleva la cota, el sitio y qué se cuenta ahí —de «0 m · el puerto · el
+mar y el oleaje» a «2426 m · el Roque · 8920 estrellas»— y esos siete hitos son
+las siete secciones de la página, en orden.
+
+Los límites de los cuatro regímenes están **pegados a dónde cae cada sección**
+en esa variable, así que **añadir o quitar una sección los descalibra**: `--asc`
+es una fracción de la página entera, y alargarla empuja todo lo de abajo hacia
+arriba. Lo mide `scripts/checks/portada-secciones.ts`, que dice en qué `--asc`
+queda centrada cada sección, comprueba contra el propio `regimenes.js` que a
+cada una le toca el régimen que le toca, y escupe los `LIMITES` y las `PARADAS`
+que tocan si no. Lo mismo vale para el punto por el que se cruza el mar de
+nubes, que tiene que caer por un hueco destapado —`--panel` es opaco al 92 % y
+detrás de él no se ve pasar nada.
+
+```bash
+cd web && python3 -m http.server 4173 &
+npx tsx scripts/checks/portada-secciones.ts  http://127.0.0.1:4173/index.html
+npx tsx scripts/checks/portada-regimenes.ts  http://127.0.0.1:4173/index.html
+```
+
+El segundo es el que de verdad manda: fotografía la página en cada parada, con
+las letras y sin ellas, y mide el contraste de **cada texto contra los píxeles
+que de verdad tiene debajo** — no contra el color declarado en el CSS. Son 475
+medidas, y encontró dos avisos por debajo del mínimo la última vez que se tocó
+esto.
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 

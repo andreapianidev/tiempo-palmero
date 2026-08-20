@@ -33,6 +33,7 @@
     "scripts/checks/occlusion-margin.ts",
     "scripts/checks/tile-cache.ts",
     "scripts/checks/precarga-intencion.ts",
-    "scripts/checks/portada-regimenes.ts"
+    "scripts/checks/portada-regimenes.ts",
+    "scripts/checks/portada-secciones.ts"
   ]
 }

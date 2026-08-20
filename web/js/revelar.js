@@ -5,7 +5,7 @@
 
      · los bloques suben y se enfocan          (clase `.vista`)
      · las cifras cuentan hasta su valor       (`data-cuenta`)
-     · el altímetro enciende el hito del tramo (`.hito`)
+     · el raíl enciende el hito del tramo (`.hito`)
 
    CÓMO FALLA. El estado escondido de los revelados vive detrás de `html.mov`,
    que está puesta en el marcado. Si no hay JavaScript, el `<noscript>` de la
@@ -92,7 +92,7 @@
 
     for (var m = 0; m < mirados.length; m++) obs.observe(mirados[m])
 
-    /* ── el hito encendido del altímetro ─────────────────────────────────── */
+    /* ── el hito encendido del raíl ──────────────────────────────────────── */
 
     var hitos = document.querySelectorAll('.hito')
     if (hitos.length) {

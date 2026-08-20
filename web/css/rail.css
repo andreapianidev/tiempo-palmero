@@ -1,0 +1,83 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL RAÍL · dónde estás, y qué se cuenta ahí
+
+   SALE DE `chrome.css`, que llevaba cinco cosas dentro —barra, altímetro,
+   isla de fondo, botones y pie— y pasaba de 250 líneas. Aquí queda una sola:
+   la columna fija del flanco izquierdo.
+
+   Y NO ES EL MISMO ALTÍMETRO. El de antes decía la cota y nada más, y la cota
+   sola cuenta el argumento equivocado: esta isla no interesa por lo alta que
+   es, interesa por lo que se mide en cada una de sus franjas y por quién anda
+   en ellas a esa hora. Cada hito lleva ahora tres renglones —la cota, el sitio
+   y qué se cuenta ahí— y el recorrido lo hacen los tres juntos: se sube de las
+   boyas del puerto a las 8.920 estrellas del catálogo pasando por los aforos
+   de los senderos, que es exactamente el orden en el que la página lo explica.
+
+   LA MECÁNICA NO CAMBIA. `--asc` mueve la línea viva del canto derecho y
+   `revelar.js` enciende el hito de la sección que se está leyendo. Lo que
+   cambia es el ancho: con tres renglones, 150 px dejaban «30 aforos, cada
+   5 min» partido en dos líneas y con la segunda saliéndose del raíl. Medido
+   con IBM Plex Mono a .52rem —4,8 px por carácter— el hueco útil de 168 px son
+   28 caracteres, y la etiqueta más larga de las siete tiene 21.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.rail{
+  position:fixed;left:0;top:0;bottom:0;width:var(--rail);z-index:4;
+  display:none;pointer-events:none;
+  padding:clamp(1rem,4vh,2.4rem) 0;
+  border-right:1px solid var(--line-soft);
+  /* Nada del raíl se sale nunca del raíl. */
+  overflow:hidden;
+}
+@media (min-width:1080px){.rail{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end}}
+
+/* La línea viva: sube de abajo arriba con el ascenso. */
+.rail::after{
+  content:"";position:absolute;right:-1px;bottom:0;width:1px;
+  height:calc(var(--asc) * 100%);
+  background:linear-gradient(180deg,var(--amber),var(--amber-deep));
+  opacity:.55;
+}
+
+/* ── la lectura de arriba ────────────────────────────────────────────────── */
+.rail-lectura{padding-right:.85rem;text-align:right;font-family:var(--mono);margin:0}
+.rail-lectura b{
+  display:block;font-size:1.5rem;font-weight:600;color:var(--amber);
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1;
+}
+.rail-lectura small{
+  display:block;margin-top:.3rem;font-size:.58rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--fg-faint);
+}
+
+/* ── los siete hitos ─────────────────────────────────────────────────────── */
+.rail-escala{
+  flex:1;display:flex;flex-direction:column;justify-content:space-evenly;
+  width:100%;padding-block:4vh;
+}
+.hito{display:flex;align-items:center;justify-content:flex-end;gap:.5rem;padding-right:.8rem}
+.hito-txt{
+  display:flex;flex-direction:column;align-items:flex-end;gap:.06rem;text-align:right;
+  font-family:var(--mono);white-space:nowrap;
+}
+.hito-txt b{
+  font-size:.66rem;font-weight:600;letter-spacing:.01em;color:var(--fg-dim);
+  font-variant-numeric:tabular-nums;transition:color .4s ease;
+}
+/* El sitio y lo que se cuenta ahí. El segundo es el que trae el argumento —«30
+   aforos», «8.920 estrellas»— así que va en la tinta más apagada de las dos
+   solo para que no compita con la cota, no para esconderlo. */
+.hito-txt .sitio{font-size:.55rem;letter-spacing:.055em;color:var(--fg-faint)}
+.hito-txt .mide{font-size:.52rem;letter-spacing:.03em;color:var(--fg-faint);opacity:.78;transition:opacity .4s ease,color .4s ease}
+
+.hito .tic{display:block;height:1px;width:9px;background:var(--line);transition:width .4s ease,background .4s ease;flex:none}
+
+.hito.on .hito-txt b{color:var(--amber)}
+.hito.on .hito-txt .mide{color:var(--fg-dim);opacity:1}
+.hito.on .tic{width:22px;background:var(--amber)}
+
+/* ── el pie ──────────────────────────────────────────────────────────────── */
+/* Antes decía «Ascenso», que era el nombre del mecanismo. Ahora dice lo que el
+   raíl enseña de verdad, que son siete maneras distintas de mirar la misma
+   isla — el argumento entero de la página en cuatro palabras. */
+.rail-pie{padding-right:.85rem;text-align:right;max-width:100%;margin:0;line-height:1.5}
