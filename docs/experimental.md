@@ -77,25 +77,41 @@ colores: se enseña con las estrellas que faltan.
 2026 a las 20:35 UTC habían publicado algo 15 en el último mes, 13 en el último
 día y **7 en la última hora**. El panel dice «7 de 59».
 
-**Los tres valores que no son medidas, y cómo se distinguen sin adivinar.** El
-archivo de dos días —15 111 lecturas— trae tres formas de «no hay dato»
-disfrazadas de número: el centinela `−1000`, el `0` exacto que ponen los TESS-W
-de día (7308 lecturas), y el suelo de saturación del hardware «Smart», entre
-9,02 y 9,99, que es el peligroso porque tiene decimales y desviación y parece
-una medida. No se filtran por el valor sino por la física — **un fotómetro de
-cielo nocturno no mide nada mientras el sol esté arriba**— y el corte sale
-perfecto por los dos lados:
+**Los tres valores que no son medidas, y cómo se distinguen sin adivinar.**
+Medido sobre una **lunación entera** —203 918 lecturas de 15 estaciones entre el
+21 de julio y el 19 de agosto de 2026, que baja `scripts/checks/sqm-archivo.ts`—
+hay tres formas de «no hay dato» disfrazadas de número: el centinela `−1000`, el
+`0` exacto que ponen los TESS-W de día (101 923 lecturas), y el suelo de
+saturación del hardware «Smart» entre 9,02 y 9,99 (14 889), que es el peligroso
+porque tiene decimales y desviación y parece una medida. Entre las tres,
+**116 812 artefactos contra 87 106 medidas reales: más de la mitad de lo que
+publica la red no es una medida.**
 
-| Sol | Lecturas | Mínimo | ¿Ceros? | ¿Suelo 9-10? |
-|---|---:|---:|---:|---:|
-| por encima de −6° | 8761 | 0,00 | 7308 | 995 |
-| de −6° a −12° | 616 | **12,43** | 0 | 0 |
-| por debajo de −12° | 5734 | **16,71** | 0 | 0 |
+No se filtran por el valor sino por la física — **un fotómetro de cielo nocturno
+no mide nada mientras el sol esté arriba**—, y ese criterio se lleva 116 714 de
+los 116 812: el 99,92 %.
 
-Con el sol bajo −6°, la lectura más brillante de toda la red son 12,43 y el
-artefacto más oscuro del hardware son 9,99: **2,44 magnitudes de nada** entre
-los dos. El segundo cinturón —un umbral de valor en 11,0— cae justo en mitad de
-ese hueco.
+**Pero no los 116 812, y esto corrige lo que aquí ponía.** Sobre dos días de
+archivo el criterio solar parecía llevárselos «sin excepción». Sobre la lunación
+entera se le escapan **98**, y tienen nombre: `stars403` publica 68 ceros
+exactos con el sol hasta −27,4°, y tres estaciones «Smart» publican el suelo
+9,5 con el sol hasta −46,2°. O sea que ese suelo no es solo saturación de día:
+también es lo que el sensor emite cuando falla de noche. Los caza el umbral de
+valor en 11,0, que por tanto **no es un cinturón de repuesto sino el único
+filtro que los ve**. Con los dos juntos: 116 812 de 116 812, cero fugas, y cero
+de las 81 365 medidas reales de noche perdidas.
+
+La medida real más brillante de la lunación con el sol puesto son **12,43**; el
+artefacto más oscuro, **9,99**. Entre los dos hay 2,44 magnitudes de nada, y el
+umbral cae a 1,01 del artefacto y a 1,43 de la medida.
+
+**Lo que el criterio solar sí se lleva y no es basura**, dicho con precisión:
+2380 lecturas de valor plausible con el sol por encima de −6°. Unas 1700 son
+crepúsculos civiles reales de dos estaciones urbanas —el colegio de Los Llanos,
+con el sol hasta −2,3° y valores de 11,0 a 15,0— y el resto son imposibles
+(`stars394` publica 16,9 con el sol a +24,7°). Las primeras se pierden y da
+igual: con el sol a −3° no hay ni una estrella que contar. La frase correcta es
+«no se lleva ninguna lectura que sirva para esto», no «ninguna lectura buena».
 
 Y hay un cuarto caso, el sensor **congelado**: el fotómetro del Centro de
 Visitantes del Roque publicó cuatro veces, el 17 y el 18 de agosto, exactamente
@@ -104,10 +120,37 @@ a las 05:32, 13:15, 07:31 y 14:14. La hora avanzaba y la medida no. Se descarta
 a la tercera repetición, no a la segunda: republicar una vez el último dato
 antes de tener uno nuevo es normal.
 
-**Cuando no hay fotómetro cerca, se modela y se dice.** El límite son 12 km
-—percentil 90 de la distancia al fotómetro más cercano barriendo el recuadro del
-mapa—. Más lejos, el brillo sale de un modelo, y el panel cambia de frase. **No
-se interpola**: entre el Roque a 21,13 y un colegio de Los Llanos a 16,19 hay
+**Cuando no hay fotómetro cerca, se modela y se dice.** El límite son 12 km, y
+la razón cambió al medirla. Antes era «el percentil 90 de la distancia al
+fotómetro más cercano barriendo el recuadro del mapa»; repetida hoy esa cuenta
+da 15,2 km de percentil 90 y un 78,6 % de cobertura, no el 90 % que decía. Pero
+el problema no es que la cifra envejeciera: es que cubrir un recuadro que es
+medio océano no dice nada.
+
+**La pregunta buena es a partir de qué distancia un fotómetro deja de predecir a
+otro**, y eso se mide con parejas de lecturas simultáneas de noche cerrada y sin
+luna. Sobre la lunación, 14 016 parejas:
+
+| Distancia | Parejas | \|Δ\| mediana |
+|---|---:|---:|
+| 0–1 km | 516 | **0,60** ← dos aparatos en el mismo sitio |
+| 2–4 km | 762 | 0,22 |
+| 6–8 km | 1195 | 0,16 |
+| 8–10 km | 1520 | 0,71 |
+| 10–12 km | 185 | 0,26 |
+| **12–15 km** | 2105 | **1,13** |
+| 15–20 km | 2414 | 1,14 |
+| 20–40 km | 3762 | 0,90 |
+
+Hay un escalón y cae justo en 12. Por debajo, un fotómetro predice a otro tan
+bien o mejor que dos aparatos plantados en el mismo sitio —que ya discrepan
+0,60 mag, el suelo de ruido de esta red—. A partir de 12 km la discrepancia se
+dobla y deja de cambiar con la distancia, que es la firma de haber dejado de
+predecir. Sobre un cielo de 21,1, 1,13 mag de error son **el 54 % de las
+estrellas**: de 6076 a 2783.
+
+Más lejos, el brillo sale de un modelo y el panel cambia de frase. **No se
+interpola**: entre el Roque a 21,13 y un colegio de Los Llanos a 16,19 hay
 12 km, y un campo interpolado pondría 18,7 en mitad de la Caldera de
 Taburiente, donde no hay ni una luz. La discontinuidad ES el fenómeno.
 
@@ -117,14 +160,32 @@ del cielo oscuro más `10^(a + 0,438·h)`, con `h` la altura del sol. En
 magnitudes son **1,10 mag de cielo por cada grado que el sol baja**, con 0,13 de
 residuo medio sobre 832 lecturas.
 
-**La luna arrastra un sesgo declarado, y no se corrige.** El modelo de
-Krisciunas y Schaefer (1991) predice el cielo 0,64 mag más oscuro del que la red
-mide, igual en las cuatro estaciones. Se probó a corregirlo: el factor óptimo
-contra ese fixture sale en 3,5, baja el error medio de 0,66 a 0,15… y llevado a
-luna llena da un cielo de 16,3-17,4 mag/arcsec² cuando la bibliografía publica
-17,5-18,5 para un sitio oscuro. Arregla la fase con la que se midió y rompe la
-que no. Un modelo publicado con un sesgo escrito es preferible a uno ajustado a
-dos noches; lo que falta para corregirlo bien es una lunación entera de archivo.
+**La luna ya no arrastra un sesgo declarado: está calibrada, y el motivo para no
+hacerlo antes resultó estar equivocado.** Krisciunas y Schaefer (1991) daba el
+cielo 0,64 mag más oscuro del que la red mide sobre dos noches con la luna al
+29-39 %. Un factor de 3,5 sobre el flujo lunar lo arreglaba, y se descartó con
+este argumento: llevado a luna llena daría 16,3-17,4 mag/arcsec² «cuando la
+bibliografía publica 17,5-18,5 para un sitio oscuro».
+
+Ese argumento comparaba el modelo con un artículo teniendo la red delante.
+**Medido sobre 987 lecturas con la luna llena por encima de 40° en los seis
+sitios oscuros de la isla, lo que los fotómetros del Cabildo miden es
+16,18-17,26, mediana 16,62.** El cielo de La Palma con luna llena es más de una
+magnitud más claro que el sitio oscuro de manual —lo más probable es el polvo
+sahariano, que dispersa la luz de la luna mucho mejor que la atmósfera para la
+que K&S se calibró—. O sea que el factor no rompía la luna llena: la rompía la
+referencia.
+
+Y con la lunación entera se puede ver algo que dos noches no dicen: **el sesgo
+crece con la fase**, de 0,15 mag en la creciente fina a 1,12 en la llena. Eso no
+es un desplazamiento —restar una constante deja −1,09 en la nueva y +0,27 en la
+llena— sino la amplitud del término lunar. Multiplicar el flujo por 3 lo aplana
+en todas las fases: sesgo global −0,03 y error absoluto medio de 1,01 a
+**0,54 mag**, la mitad.
+
+Es una **calibración local** y se llama así: el mismo tipo de ajuste que ya
+llevaba la ley del crepúsculo, medido en esta red y válido para esta isla. Quien
+lleve esto a otro sitio tiene que volver a medirlo.
 
 **Dónde están las estrellas: cuatro efectos, y cuánto vale cada uno.** El
 catálogo da direcciones en un sistema fijo; lo que se dibuja es dónde están

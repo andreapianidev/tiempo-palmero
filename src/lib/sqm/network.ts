@@ -7,47 +7,73 @@
  * Es la medida que convierte esta función en una función de esta aplicación: el
  * número de estrellas que se dibujan sale de aquí y no de un ajuste.
  *
- * EL DENOMINADOR HONESTO. Comprobado el 19 de agosto de 2026 a las 20:35 UTC:
- * de las **59 registradas**, 15 han publicado algo en el último mes, 13 en el
- * último día y **7 en la última hora**. Cuarenta y cuatro llevan más de un mes
- * calladas y alguna no publica desde 2023. El panel dice «7 de 59», no «59».
+ * EL DENOMINADOR HONESTO. De las **59 registradas**, 15 aparecen en el archivo
+ * del último mes y 14 llegan a publicar alguna lectura nocturna utilizable;
+ * cuarenta y cuatro llevan más de un mes calladas y alguna no publica desde
+ * 2023. El panel dice «7 de 59» cuando siete están midiendo, no «59».
  *
  * ────────────────────────────────────────────────────────────────────────────
  * LOS TRES VALORES QUE NO SON MEDIDAS, y cómo se distinguen sin adivinar.
  *
- * El archivo del 17-18 de agosto de 2026 —15 111 lecturas, 15 estaciones— trae
+ * Medido sobre una LUNACIÓN ENTERA —203 918 lecturas de 15 estaciones entre el
+ * 21 de julio y el 19 de agosto de 2026, `scripts/checks/sqm-archivo.ts`—. Hay
  * tres formas distintas de «no hay dato» disfrazadas de número:
  *
- *  1. **`−1000`**, el centinela clásico. Cinco estaciones lo publican.
- *  2. **`0` exacto**, que es lo que ponen los TESS-W de día: 7308 lecturas.
- *  3. **El suelo del hardware «Smart»**, entre 9,02 y 9,99, que es la saturación
- *     del sensor con luz de día: 995 lecturas, mediana 9,564. Éste es el
- *     peligroso, porque parece una medida —tiene decimales, tiene desviación, y
- *     la estación de al lado marca lo mismo—.
+ *  1. **`−1000`**, el centinela clásico.
+ *  2. **`0` exacto**, que es lo que ponen los TESS-W de día: 101 923 lecturas.
+ *  3. **El suelo del hardware «Smart»**, entre 9,02 y 9,99, que es la
+ *     saturación del sensor: 14 889 lecturas. Éste es el peligroso, porque
+ *     parece una medida —tiene decimales, tiene desviación, y la estación de al
+ *     lado marca lo mismo—.
  *
- * NO SE FILTRAN POR EL VALOR SINO POR LA FÍSICA: **un fotómetro de cielo
- * nocturno no mide nada mientras el sol esté arriba.** Descartando toda lectura
+ * Entre las tres, 116 812 artefactos contra 87 106 medidas reales: **más de la
+ * mitad de lo que publica la red no es una medida.**
+ *
+ * EL CRITERIO PRINCIPAL NO ES EL VALOR SINO LA FÍSICA: un fotómetro de cielo
+ * nocturno no mide nada mientras el sol esté arriba. Descartando toda lectura
  * tomada con el sol por encima de −6° —el final del crepúsculo civil, calculado
- * con `sun.ts` para las coordenadas de cada estación— se van las 8761 lecturas
- * malas, las tres formas, sin excepción.
+ * con `sun.ts` para las coordenadas de cada estación— se van 116 714 de los
+ * 116 812 artefactos: el 99,92 %.
  *
- * Y LO QUE IMPORTA ES EL OTRO LADO: ese criterio **no se lleva ni una lectura
- * buena**. Medido sobre el mismo archivo, partiendo por altura del sol:
+ * PERO NO LOS 116 812, Y ESO CORRIGE LO QUE AQUÍ PONÍA. Sobre dos días de
+ * archivo el criterio solar parecía llevárselos «sin excepción». Sobre la
+ * lunación entera, **98 se le escapan**, y no son un caso raro sino una avería
+ * con nombre:
  *
- * | Sol | Lecturas | Mínimo | ¿Ceros? | ¿Suelo 9–10? |
- * |---|---:|---:|---:|---:|
- * | por encima de −6° | 8761 | 0,00 | 7308 | 995 |
- * | de −6° a −12° | 616 | **12,43** | 0 | 0 |
- * | por debajo de −12° | 5734 | **16,71** | 0 | 0 |
+ * | Estación | Cuántas | Qué publica | Con el sol hasta |
+ * |---|---:|---|---:|
+ * | `stars403` Iniciativa AstroNorte | 68 | cero exacto | −27,4° |
+ * | `LPL2_068` C. V. de La Caldera | 19 | suelo 9,5 | −46,2° |
+ * | `LPL2_023` C. V. del Roque | 10 | suelo 9,5 | −41,5° |
+ * | `LPL2_016` Casa Rural El Jaral | 1 | suelo 9,5 | −26,8° |
  *
- * En cuanto el sol pasa de −6°, la lectura más brillante de toda la red son
- * 12,43, y el artefacto más oscuro del hardware son 9,99. Entre los dos hay
- * **2,44 magnitudes de nada**. Por eso hay además un umbral de valor en 11,0,
- * como segundo cinturón independiente del cálculo solar: está a 1,4 mag por
- * debajo de la lectura buena más extrema del archivo y a 1,0 por encima del
- * artefacto más alto, o sea en mitad del hueco vacío. Un umbral en 9,5 se
- * habría comido la mitad del suelo del hardware; uno en 13 habría tirado
- * lecturas buenas de crepúsculo.
+ * O sea que el suelo del hardware NO es solo saturación de día: también es lo
+ * que el sensor emite cuando falla de noche. Por eso `MIN_PLAUSIBLE_SQM` no es
+ * un cinturón de repuesto —como decía este comentario— sino el único filtro que
+ * ve esas 98. Con los dos juntos: **116 812 de 116 812, cero fugas.**
+ *
+ * Y LAS DOS ORILLAS, que es lo que decide si el umbral sirve:
+ *
+ * | | Lecturas |
+ * |---|---:|
+ * | Medidas reales de noche (sol < −6°) | 81 365 |
+ * | ...que el umbral de valor tira | **0** |
+ * | Artefactos que sobreviven a los dos filtros | **0** |
+ *
+ * La medida real más brillante de toda la lunación con el sol puesto son
+ * **12,43**; el artefacto más oscuro, **9,99**. Entre los dos hay 2,44
+ * magnitudes de nada, y 11,0 cae a 1,01 del artefacto y a 1,43 de la medida. Un
+ * umbral en 9,5 se habría comido la mitad del suelo del hardware; uno en 13
+ * habría tirado lecturas buenas de crepúsculo.
+ *
+ * LO QUE EL CRITERIO SOLAR SÍ SE LLEVA, dicho con precisión. «No se lleva ni una
+ * lectura buena» tampoco era exacto: descarta 2380 lecturas de valor plausible
+ * tomadas con el sol por encima de −6°. Unas 1700 son medidas reales de
+ * crepúsculo civil de dos estaciones urbanas —`stars4`, el colegio de Los
+ * Llanos, con el sol hasta −2,3° y valores de 11,0 a 15,0— y el resto son
+ * imposibles: `stars394` publica 16,9 con el sol a +24,7°. Las primeras se
+ * pierden y da igual, porque con el sol a −3° no hay ni una estrella que contar.
+ * La frase correcta es «no se lleva ninguna lectura que sirva para esto».
  */
 
 import { num, parseLocation, parseTimeinstant, type CdaRow } from '../cabildo'
@@ -56,13 +82,20 @@ import { sunPosition } from '../sun'
 /** Centinela explícito del origen. */
 const SENTINEL = -1000
 /**
- * Suelo de valor. Ver la cabecera: 1,4 mag por debajo de la lectura buena más
- * extrema medida y 1,0 por encima del artefacto de hardware más alto.
+ * Suelo de valor: 1,43 mag por debajo de la medida real más brillante de la
+ * lunación (12,43) y 1,01 por encima del artefacto de hardware más alto (9,99).
+ *
+ * NO ES REDUNDANTE con el criterio solar, aunque este comentario lo dijera. Es
+ * el único filtro que ve las 98 lecturas averiadas que se publican de noche —el
+ * cero de `stars403` con el sol a −27°, el suelo 9,5 de tres «Smart» con el sol
+ * a −46°—. Ver la tabla de la cabecera.
  */
 export const MIN_PLAUSIBLE_SQM = 11
 /**
  * Altura del sol por debajo de la cual un fotómetro mide de verdad. −6° es el
- * final del crepúsculo civil, y es donde el archivo enseña el corte limpio.
+ * final del crepúsculo civil, y se lleva el 99,92 % de los artefactos del
+ * archivo. Lo que deja pasar lo para `MIN_PLAUSIBLE_SQM`; lo que se lleva de más
+ * son crepúsculos reales que no sirven para contar estrellas. Ver la cabecera.
  */
 export const SUN_CEILING_DEG = -6
 /**

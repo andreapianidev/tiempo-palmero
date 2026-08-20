@@ -128,34 +128,68 @@ export function twilightExcess(
 }
 
 /**
- * SESGO MEDIDO DEL MODELO DE LA LUNA, en magnitudes. **No se corrige, se
- * declara**, y esta constante existe para que la prueba lo vigile y para que
- * nadie lo «arregle» sin leer esto.
+ * CALIBRACIÓN LOCAL DEL TÉRMINO LUNAR: el flujo de la luna, por tres.
  *
- * Krisciunas y Schaefer predice el cielo **0,64 mag más oscuro** del que la red
- * mide, sobre las lecturas de esas dos noches con la luna a más de 10° de
- * altura y un 29-39 % iluminada, y el sesgo es igual en las cuatro estaciones.
+ * ESTA CONSTANTE SUSTITUYE A UN `MOON_MODEL_BIAS = 0,64` QUE SE DECLARABA Y NO
+ * SE CORREGÍA, y conviene dejar escrito por qué se corrige ahora, porque el
+ * motivo de no hacerlo antes resultó estar equivocado.
  *
- * POR QUÉ NO SE CORRIGE, que es la parte importante. Se probó, y el intento
- * enseñó por qué no: ajustando un factor sobre el flujo lunar contra ese mismo
- * fixture, el óptimo sale en **3,5** —el sesgo cae a 0,02 y el error medio de
- * 0,66 a 0,15—. Pero ese factor está calibrado con la luna en cuarto creciente,
- * y llevado a luna llena da un cielo de 16,3-17,4 mag/arcsec² cuando lo que se
- * publica para un sitio oscuro con luna llena son 17,5-18,5. Es decir: arregla
- * la fase con la que se midió y rompe la que no. K&S sin tocar da 17,6-18,7 en
- * ese caso, que sí encaja.
+ * LO QUE SE CREÍA. Medido sobre dos noches con la luna al 29-39 %, Krisciunas y
+ * Schaefer daba el cielo 0,64 mag más oscuro que la red. Un factor de 3,5 sobre
+ * el flujo lunar lo arreglaba, pero se descartó con este argumento: llevado a
+ * luna llena daría 16,3-17,4 mag/arcsec² «cuando lo que se publica para un
+ * sitio oscuro con luna llena son 17,5-18,5», o sea que arreglaba la fase
+ * medida y rompía la que no.
  *
- * Un modelo publicado y validado en todas las fases, con un sesgo conocido y
- * escrito, es preferible a uno ajustado a una fase y roto en las demás. Y el
- * coste real de dejarlo es pequeño: esta rama solo se usa cuando NO hay ningún
- * fotómetro cerca, y cuando lo hay, su lectura —que ya lleva la luna dentro—
- * gana siempre.
+ * LO QUE LA LUNACIÓN ENTERA DICE. Ese argumento comparaba el modelo con la
+ * BIBLIOGRAFÍA teniendo la red delante. Medido ahora sobre 987 lecturas con la
+ * luna llena por encima de 40° en los seis sitios oscuros de la isla, lo que
+ * los fotómetros del Cabildo miden de verdad es **16,18 - 17,26, mediana
+ * 16,62**. No 17,5-18,5. El cielo de La Palma con luna llena es más de una
+ * magnitud más brillante que el sitio oscuro de manual, y la explicación más
+ * probable es la de aquí: el polvo sahariano dispersa la luz de la luna mucho
+ * mejor que la atmósfera para la que K&S se calibró.
  *
- * Lo que falta para poder corregirlo bien es una lunación entera de archivo, no
- * dos noches. Está a una consulta de distancia y es el siguiente paso de esta
- * función.
+ * O sea que el factor no rompía la luna llena. La rompía la referencia.
+ *
+ * EL SESGO CRECE CON LA FASE, que es lo que decide la forma de la corrección.
+ * Con dos noches de una sola fase no se puede distinguir un desplazamiento
+ * constante de una curva de fase mal escalada; con treinta días sí. Medido
+ * sobre 26 932 lecturas de noche cerrada con la luna a más de 10°
+ * (`scripts/checks/luna-sesgo.ts`), tomando como cielo base la MEDIANA sin luna
+ * de cada estación para que el control quede en cero:
+ *
+ * | Fase | Lecturas | Sesgo K&S | Con ×3 |
+ * |---|---:|---:|---:|
+ * | 0-15 % | 114 | −0,24 | −0,24 |
+ * | 15-30 % | 1389 | 0,15 | −0,14 |
+ * | 30-50 % | 2547 | 0,45 | — |
+ * | 50-70 % | 3288 | 0,57 | −0,15 |
+ * | 70-90 % | 7828 | 0,99 | — |
+ * | 90-100 % | 11 766 | **1,12** | **0,05** |
+ *
+ * Un sesgo que va de 0,15 a 1,12 según la fase no es un desplazamiento: es la
+ * amplitud del término lunar. Restar una constante lo demuestra —deja −1,09 en
+ * la luna nueva y +0,27 en la llena—. Multiplicar el flujo por 3 lo aplana:
+ * sesgo global −0,03 y error absoluto medio de 1,01 a **0,54 mag**, la mitad.
+ *
+ * POR QUÉ 3 Y NO 3,5. Barrido de 1 a 4 sobre la lunación: el error absoluto
+ * medio toca fondo en 0,53-0,54 entre 3 y 3,5, pero el sesgo cambia de signo en
+ * medio. Con 3 queda en −0,03 y con 3,5 en −0,17. Se coge el que no desplaza.
+ *
+ * ES UNA CALIBRACIÓN LOCAL Y SE LLAMA ASÍ. No es una corrección a Krisciunas y
+ * Schaefer, que está publicado y validado donde se midió: es el mismo tipo de
+ * ajuste que ya lleva `TWILIGHT_INTERCEPT`, medido en esta red y válido para
+ * esta isla. Quien lleve esto a otro sitio tiene que volver a medirlo.
  */
-export const MOON_MODEL_BIAS = 0.64
+export const MOON_SCATTER_FACTOR = 3
+
+/**
+ * Lo que queda del sesgo después de calibrar: −0,03 mag sobre la lunación
+ * entera, contra los 0,64 de antes. La prueba lo vigila para que no vuelva a
+ * crecer sin que nadie se entere.
+ */
+export const MOON_MODEL_BIAS = 0.03
 
 export interface MoonGlow {
   /** Fracción iluminada del disco, 0 a 1. */
@@ -192,6 +226,7 @@ export function moonGlowNl(
   const xMoon = opticalPath(90 - moon.elevationDeg)
   const xSky = opticalPath(90 - Math.max(0, skyElevationDeg))
   return (
+    MOON_SCATTER_FACTOR *
     scatter *
     illuminance *
     Math.pow(10, -0.4 * extinctionK * xMoon) *

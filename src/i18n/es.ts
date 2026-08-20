@@ -856,7 +856,7 @@ export const es = {
     sourceStation: (name: string, km: number, minutes: number) =>
       `Medido por «${name}», a ${km.toFixed(1)} km, hace ${minutes} min. Esa lectura ya lleva dentro la luna, el crepúsculo y las luces del pueblo.`,
     sourceModel:
-      'No hay ningún fotómetro con lectura utilizable a menos de 12 km, así que el brillo del cielo es MODELADO: cielo oscuro de referencia de la isla, más el crepúsculo medido en esta red y más la luna por Krisciunas y Schaefer. La cuenta de estrellas de arriba es una estimación, no una medida.',
+      'No hay ningún fotómetro con lectura utilizable a menos de 12 km, así que el brillo del cielo es MODELADO: cielo oscuro de referencia de la isla, más el crepúsculo y la luna, los dos por Krisciunas y Schaefer y los dos calibrados contra esta red —la luna, sobre una lunación entera de archivo—. La cuenta de estrellas de arriba es una estimación, no una medida.',
     network: 'Red de fotómetros',
     networkValue: (usable: number, registered: number) => `${usable} de ${registered} midiendo`,
     rejected: 'Descartadas',

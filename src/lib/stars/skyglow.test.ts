@@ -116,23 +116,29 @@ describe('brillo del fondo de cielo', () => {
     expect(worst).toBeLessThan(1.2)
   })
 
-  it('con la luna alta arrastra el sesgo declarado, ni más ni menos', () => {
+  it('con la luna alta ya no arrastra el sesgo que arrastraba', () => {
     const moonlit = rows.filter(
       (r) => r.sunElevationDeg < -18 && r.moonElevationDeg > 10,
     )
     expect(moonlit.length).toBeGreaterThan(5)
-    // Ésta es la prueba de una limitación CONOCIDA, no de un acierto, y por eso
-    // acota el error por los dos lados en vez de solo por arriba. Krisciunas y
-    // Schaefer da el cielo más oscuro de lo que la red mide, y el sesgo medido
-    // es de 0,64 mag. Si algún día baja de 0,3 será porque alguien ha corregido
-    // el modelo con una lunación entera de archivo, y entonces esta prueba y
-    // `MOON_MODEL_BIAS` tienen que cambiar juntos — que es exactamente lo que
-    // se quiere que pase.
+    // AQUÍ PONÍA QUE EL SESGO ERA DE 0,64 MAG Y QUE SE DECLARABA SIN CORREGIR,
+    // a la espera de una lunación entera de archivo para poder corregirlo bien.
+    // Esa lunación se bajó —203 918 lecturas, `scripts/checks/luna-sesgo.ts`—,
+    // enseñó que el sesgo CRECE CON LA FASE y que un factor de 3 sobre el flujo
+    // lunar lo aplana en todas ellas. Ver `MOON_SCATTER_FACTOR`.
+    //
+    // Sobre este fixture de dos noches con la luna al 29-39 %, el sesgo baja de
+    // 0,64 a 0,13. Los dos lados: por arriba, 0,4 caza que alguien quite la
+    // calibración —volvería a 0,64—; por abajo, −0,4 caza que alguien la suba
+    // de más. Sin las dos cotas, esta prueba pasaría con el modelo roto en
+    // cualquiera de las dos direcciones.
     const signed = moonlit.map((r) => modelFor(r) - r.sqm).sort((a, b) => a - b)
     const median = signed[signed.length >> 1]
-    expect(median).toBeGreaterThan(0.3)
-    expect(median).toBeLessThan(1.0)
-    expect(median).toBeCloseTo(MOON_MODEL_BIAS, 1)
+    expect(median).toBeLessThan(0.4)
+    expect(median).toBeGreaterThan(-0.4)
+    // Y el residuo declarado sigue siendo el que dice la constante, medido
+    // sobre la lunación y no sobre estas dos noches.
+    expect(Math.abs(MOON_MODEL_BIAS)).toBeLessThan(0.1)
     const { worst } = errors(moonlit)
     expect(worst).toBeLessThan(1.3)
   })
@@ -165,10 +171,20 @@ describe('brillo del fondo de cielo', () => {
       extinctionK: 0.15,
     })
     expect(dark - full).toBeGreaterThan(2.5)
-    // Con el valor de un sitio oscuro con luna llena que publica la
-    // bibliografía, 17,5-18,5 mag/arcsec².
-    expect(full).toBeGreaterThan(17.5)
-    expect(full).toBeLessThan(18.6)
+    // ESTA COTA ERA LA BIBLIOGRAFÍA Y AHORA ES LA RED. Antes exigía 17,5-18,5
+    // mag/arcsec², «el valor de un sitio oscuro con luna llena que publica la
+    // bibliografía», y con ese número se descartó la calibración lunar durante
+    // dos meses. Medido sobre 987 lecturas con la luna llena por encima de 40°
+    // en los seis sitios oscuros de la isla, lo que los fotómetros del Cabildo
+    // miden es **16,18 - 17,26, mediana 16,62**: el cielo de La Palma con luna
+    // llena es más de una magnitud más claro que el sitio oscuro de manual.
+    //
+    // Se comprueba contra lo que mide la red de esta isla y no contra lo que
+    // publica un artículo sobre otra. Las dos orillas: por debajo de 15,5 el
+    // modelo estaría inventando una luna que ciega, y por encima de 17,5
+    // estaría otra vez donde estaba, prediciendo un cielo que aquí no se da.
+    expect(full).toBeGreaterThan(15.5)
+    expect(full).toBeLessThan(17.5)
   })
 
   it('el crepúsculo se suma en flujo, no en magnitudes', () => {

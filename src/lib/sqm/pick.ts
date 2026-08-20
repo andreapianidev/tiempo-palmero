@@ -15,17 +15,51 @@
  * enseña siempre cuál de los dos casos está viendo, igual que hace la escena
  * atmosférica con la cota de la capa baja.
  *
- * EL LÍMITE DE 12 km ESTÁ MEDIDO sobre las 14 estaciones con lectura reciente
- * del 19 de agosto de 2026: barriendo el recuadro del mapa en una rejilla de
- * 60 × 60, la distancia al fotómetro más cercano tiene mediana de 5,6 km y
- * percentil 90 de 11,9. O sea que 12 km cubren el 90 % del recuadro —incluyendo
- * el mar, que ocupa buena parte— y dejan fuera lo que de verdad está lejos: el
- * peor punto está a 17,4 km, y es agua al suroeste de la isla.
+ * ────────────────────────────────────────────────────────────────────────────
+ * EL LÍMITE DE 12 km, MEDIDO — y por qué la justificación anterior era la
+ * pregunta equivocada.
+ *
+ * Aquí ponía que 12 km cubren el 90 % del recuadro del mapa, con mediana de
+ * 5,6 km y percentil 90 de 11,9 barriendo una rejilla de 60 × 60. Repetida hoy
+ * con las 14 estaciones que publican de noche, esa cuenta da **7,2 de mediana,
+ * 15,2 de percentil 90 y un 78,6 % de cobertura**. Pero el problema no es que
+ * las cifras hayan envejecido: es que cubrir un recuadro no dice nada. El
+ * recuadro es medio océano, y a nadie le importa el cielo sobre el agua.
+ *
+ * LA PREGUNTA BUENA es a partir de qué distancia un fotómetro deja de predecir
+ * a otro, y eso se mide con parejas de lecturas SIMULTÁNEAS de noche cerrada y
+ * sin luna. Sobre la lunación del 21 de julio al 19 de agosto de 2026, 14 016
+ * parejas de 30 887 lecturas (`scripts/checks/sqm-archivo.ts`):
+ *
+ * | Distancia | Parejas | |Δ| mediana |
+ * |---|---:|---:|
+ * | 0–1 km | 516 | **0,60** ← dos aparatos en el mismo sitio |
+ * | 2–4 km | 762 | 0,22 |
+ * | 6–8 km | 1195 | 0,16 |
+ * | 8–10 km | 1520 | 0,71 |
+ * | 10–12 km | 185 | 0,26 |
+ * | **12–15 km** | 2105 | **1,13** |
+ * | 15–20 km | 2414 | 1,14 |
+ * | 20–40 km | 3762 | 0,90 |
+ *
+ * Hay un escalón, y cae justo en 12. Por debajo, un fotómetro predice a otro
+ * tan bien o mejor que dos aparatos plantados en el mismo sitio —que ya
+ * discrepan 0,60 mag, que es el suelo de ruido de esta red—. A partir de 12 km
+ * la discrepancia se dobla y ya no cambia con la distancia: eso es haber dejado
+ * de predecir.
+ *
+ * QUÉ CUESTA. Sobre un cielo de 21,1, un error de 0,16 mag son un 10 % de
+ * estrellas de menos; 0,71 mag, un 37 %; y 1,13 mag, un **54 %** —de 6076
+ * estrellas a 2783—. Pasar de 12 km no es afinar un decimal: es borrar la mitad
+ * del cielo y presentarlo como medido.
  */
 
 import type { SqmNetwork, SqmStation } from './network'
 
-/** Ver la cabecera: percentil 90 de la distancia al fotómetro más cercano. */
+/**
+ * Ver la cabecera: es donde la discrepancia entre dos fotómetros simultáneos se
+ * dobla, de 0,26-0,71 mag por debajo a 1,13 por encima.
+ */
 export const MAX_STATION_DISTANCE_KM = 12
 
 /** Distancia en km sobre la esfera, aproximación plana. A esta escala sobra. */
