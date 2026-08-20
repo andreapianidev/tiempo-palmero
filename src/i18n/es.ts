@@ -964,6 +964,21 @@ export const es = {
     twinkle:
       'Y no centellean, que es la única diferencia con las estrellas. No es un gusto: una estrella es un punto y la turbulencia le mueve todo el haz a la vez, mientras que un planeta es un disco de muchos puntos cuyos parpadeos se promedian. Lo que no titila, ahí arriba, es un planeta.',
   },
+  nightMilkyWay: {
+    layer: 'La Vía Láctea',
+    hint: 'El contorno de la banda, pegado al cielo y atenuado por el brillo de fondo que miden los fotómetros. Son 50 KB de mapa que solo se descargan con esta casilla.',
+    loading: 'Descargando el mapa de la Vía Láctea…',
+    failed: (why: string) => `No se pudo cargar el mapa de la Vía Láctea: ${why}`,
+    sky: 'Fondo de cielo',
+    unit: 'mag/arcsec²',
+    fromPhotometer: 'medido',
+    fromModel: 'modelo',
+    share: 'Luz que pone ella',
+    shareScope:
+      'La parte de la luz que llega del núcleo de la banda que pone la Vía Láctea, y no la opacidad que se dibuja. Con el cielo del Roque en una buena noche son cerca de un tercio; con luna llena, un 2,5 %. Ese cociente es la razón por la que se apaga sola cuando sale la luna: nadie ha escrito una regla, solo se divide su luminancia entre la que mide el fotómetro.',
+    scope:
+      'Qué es dato y qué es dibujo, y aquí conviene ser claro: ESTO NO ES UNA FOTOGRAFÍA. El contorno de la Vía Láctea son cinco curvas de nivel de d3-celestial —con los 197 agujeros de las nebulosas oscuras dentro, que es lo que la parte en dos por la Fisura del Cisne— rasterizadas y suavizadas. Su posición en el cielo sí es exacta: entra por la misma matriz, la misma refracción y la misma extinción que las 8.920 estrellas. Lo que se mide es CUÁNTO se ve, que sale de dividir su brillo entre el fondo de cielo de los fotómetros del Cabildo. El nivel de gris del mapa no trae calibración fotométrica: se ancla a la cifra publicada de que la banda sube el fondo unas 0,4 magnitudes en sus zonas más brillantes.',
+  },
   sky3d: {
     layer: 'Nubes y lluvia en 3D',
     hint:
@@ -1231,6 +1246,16 @@ export const es = {
       'así que las figuras precesan con sus estrellas y ninguna puede quedar colgando de un punto ' +
       'vacío. No son un dato astronómico: son una convención cultural.',
     figuresLicense: 'BSD-3-Clause',
+    milkyWayTitle: 'Contorno de la Vía Láctea',
+    milkyWayBody:
+      'También de d3-celestial, de Olaf Frohn, pero es otro fichero y otra cosa: cinco polígonos ' +
+      'anidados —cinco curvas de nivel de brillo— con 197 anillos interiores entre todos, que son ' +
+      'las nebulosas oscuras: la Fisura del Cisne y el Saco de Carbón. Aquí se rasterizan a un mapa ' +
+      'de 1440 × 720 —un cuarto de grado por píxel— rellenando por regla par-impar, que es lo que ' +
+      'hace que los agujeros salgan solos. NO ES UNA FOTOGRAFÍA y conviene repetirlo: es un contorno ' +
+      'suavizado que se le parece. Lo que sí sale de una medida es cuánto se ve, que se calcula ' +
+      'dividiendo su brillo entre el fondo de cielo que publican los fotómetros del Cabildo.',
+    milkyWayLicense: 'BSD-3-Clause',
     ephemerisTitle: 'Efemérides de los planetas',
     ephemerisBody:
       'astronomy-engine, de Don Cross: implementa VSOP87 para las órbitas planetarias y el NOVAS ' +

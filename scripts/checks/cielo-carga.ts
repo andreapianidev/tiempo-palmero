@@ -87,7 +87,7 @@ async function main() {
   await page.waitForTimeout(2500)
   await page.locator('text=Experimental').first().click({ force: true })
   await page.waitForTimeout(1000)
-  for (const label of ['Cielo estrellado en 3D', 'Los planetas']) {
+  for (const label of ['Cielo estrellado en 3D', 'Los planetas', 'La Vía Láctea']) {
     const box = page.locator(`label:has-text("${label}") input`)
     if ((await box.count()) && !(await box.first().isChecked())) {
       await box.first().click({ force: true })
@@ -108,6 +108,11 @@ async function main() {
     // nombre propio, así que lo que se mira es el efecto: que el panel llegue a
     // nombrar un planeta. Sin efemérides la tabla del panel sale vacía.
     ['el panel enseña algún planeta', /Júpiter|Venus|Saturno|Marte/.test(text)],
+    ['vialactea.png contesta 200', requests.some((r) => r === '200 vialactea.png')],
+    ['el mapa de la Vía Láctea deja de descargarse', !text.includes('Descargando el mapa')],
+    // La cifra que dice cuánto se ve. Sin ella el bloque está a medias: el mapa
+    // puede haber llegado y la capa no haber recibido estado.
+    ['el panel enseña la luz que pone la Vía Láctea', text.includes('Luz que pone ella')],
     ['el panel enseña las estrellas visibles', text.includes('Estrellas visibles')],
     ['el panel enseña la luna', text.includes('Fase')],
     ['sin errores de consola', errors.length === 0],

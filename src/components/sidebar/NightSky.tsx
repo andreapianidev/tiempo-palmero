@@ -19,6 +19,8 @@ import type { NightSkyState } from '../../hooks/useNightSky'
 import { compassPoint } from '../../lib/stars/tonight'
 import { NightMoon } from './NightMoon'
 import { NightPlanets } from './NightPlanets'
+import { NightMilkyWay } from './NightMilkyWay'
+import type { MilkyWayState } from '../../hooks/useMilkyWay'
 import type { PlanetsState } from '../../hooks/usePlanets'
 
 interface Props {
@@ -34,6 +36,9 @@ interface Props {
   planets: PlanetsState
   planetsOn: boolean
   onTogglePlanets: () => void
+  milkyWay: MilkyWayState
+  milkyWayOn: boolean
+  onToggleMilkyWay: () => void
   /** Hasta qué altura del cielo llega la pantalla con el fondo puesto. */
   ceilingDeg: number
   observerElevationM: number
@@ -54,6 +59,9 @@ export function NightSky({
   planets,
   planetsOn,
   onTogglePlanets,
+  milkyWay,
+  milkyWayOn,
+  onToggleMilkyWay,
   ceilingDeg,
   observerElevationM,
   view3d,
@@ -218,6 +226,14 @@ export function NightSky({
             on={planetsOn}
             onToggle={onTogglePlanets}
             floorDeg={sky.floorDeg}
+          />
+          <hr className="sep" />
+          <NightMilkyWay
+            milkyWay={milkyWay}
+            on={milkyWayOn}
+            onToggle={onToggleMilkyWay}
+            skyMag={sky.glow}
+            measured={sky.source === 'fotometro'}
           />
         </>
       )}

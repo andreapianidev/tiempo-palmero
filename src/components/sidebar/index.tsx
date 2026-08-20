@@ -29,6 +29,7 @@ import { Sky3D } from './Sky3D'
 import { NightSky } from './NightSky'
 import type { NightSkyState } from '../../hooks/useNightSky'
 import type { PlanetsState } from '../../hooks/usePlanets'
+import type { MilkyWayState } from '../../hooks/useMilkyWay'
 import { WindAnimation } from './WindAnimation'
 import { SeaMotion } from './SeaMotion'
 import { SunLight } from './sun'
@@ -89,11 +90,14 @@ interface Props {
   nightMoonOn: boolean
   nightPlanetsOn: boolean
   planets: PlanetsState
+  nightMilkyWayOn: boolean
+  milkyWay: MilkyWayState
   onNightSky: () => void
   onNightFigures: () => void
   onNightTwinkle: () => void
   onNightMoon: () => void
   onNightPlanets: () => void
+  onNightMilkyWay: () => void
   /** Cota del observador, para el panel del cielo. */
   observerElevationM: number
   /** La escena atmosférica experimental: la rejilla del cielo y sus cifras. */
@@ -353,6 +357,9 @@ export function Sidebar(props: Props) {
               planets={props.planets}
               planetsOn={props.nightPlanetsOn}
               onTogglePlanets={props.onNightPlanets}
+              milkyWay={props.milkyWay}
+              milkyWayOn={props.nightMilkyWayOn}
+              onToggleMilkyWay={props.onNightMilkyWay}
               ceilingDeg={props.sunLight.ceilingDeg}
               observerElevationM={props.observerElevationM}
               view3d={props.terrain.on}

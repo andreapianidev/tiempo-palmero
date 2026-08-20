@@ -44,6 +44,8 @@ import { useNightSky } from './hooks/useNightSky'
 import { usePlanets } from './hooks/usePlanets'
 import { islandLcl } from './lib/sky/base'
 import { moonState } from './lib/moon'
+import { useMilkyWay } from './hooks/useMilkyWay'
+import type { MilkyWaySceneState } from './components/milkyway/MilkyWayLayer'
 import { sunPosition } from './lib/sun'
 import { sunCrossing, sunEvents, sunTrack, type TrackPoint } from './lib/sky/sun-path'
 import { skyCeilingDeg } from './lib/sky/sun-screen'
@@ -506,11 +508,21 @@ export default function App() {
    */
   const [nightMoonOn, setNightMoonOn] = usePersistentState('nightMoon', true, bool)
   /**
-   * Los planetas. Apagados de fábrica, al revés que la luna: son 36 KB de tabla
-   * de efemérides, y aunque sean poco al lado de los 133 del catálogo, quien
+   * Los planetas. Apagados de fábrica, al revés que la luna: son 20 KB de
+   * efemérides, y aunque sean poco al lado de los 133 del catálogo, quien
    * enciende un cielo estrellado está pidiendo estrellas.
    */
   const [nightPlanetsOn, setNightPlanetsOn] = usePersistentState('nightPlanets', false, bool)
+  /**
+   * La Vía Láctea. Apagada de fábrica por el mismo motivo que los planetas: son
+   * 50 KB de mapa que solo tiene sentido descargar si alguien la pide.
+   *
+   * Y HAY UN SEGUNDO MOTIVO, que es de honestidad: es lo único de esta escena
+   * que NO es una medida ni una efeméride, sino un contorno dibujado. Encenderla
+   * de fábrica sería poner lo más vistoso y lo menos comprobable delante de todo
+   * lo demás.
+   */
+  const [nightMilkyWayOn, setNightMilkyWayOn] = usePersistentState('nightMilkyWay', false, bool)
   /**
    * El observador: el mismo punto de referencia de la isla que usa el resto de
    * la aplicación, con su cota sacada del DEM y —cuando el TNG contesta— con la
@@ -566,6 +578,35 @@ export default function App() {
     floorDeg: nightSky.floorDeg,
     density: nightSky.scene?.density ?? 1,
   })
+  /**
+   * La Vía Láctea cuelga de la escena nocturna por la misma razón que los
+   * planetas, pero de OTRA cifra: no le importa la magnitud límite —no es un
+   * puntito que entre o no entre— sino el brillo del fondo en mag/arcsec², que
+   * es contra lo que se divide su luminancia. Ver `lib/sky/vialactea.ts`.
+   */
+  const milkyWay = useMilkyWay(nightSkyOn && nightMilkyWayOn)
+  const milkyWayScene = useMemo<MilkyWaySceneState | null>(
+    () =>
+      nightSkyOn && nightMilkyWayOn && milkyWay.map
+        ? {
+            lon: ISLAND_BREATH_LON,
+            lat: ISLAND_BREATH_LAT,
+            skyMag: nightSky.glow,
+            extinctionK: nightSky.extinctionK,
+            floorDeg: nightSky.floorDeg,
+            density: nightSky.scene?.density ?? 1,
+          }
+        : null,
+    [
+      nightSkyOn,
+      nightMilkyWayOn,
+      milkyWay.map,
+      nightSky.glow,
+      nightSky.extinctionK,
+      nightSky.floorDeg,
+      nightSky.scene?.density,
+    ],
+  )
   /**
    * Hasta qué altura del cielo llega la pantalla con este fondo, y a qué hora
    * baja el sol de ahí.
@@ -882,6 +923,8 @@ export default function App() {
           moon: nightSky.moonScene,
           planets: nightPlanetsOn ? planets.scene : null,
           planetEphemeris: planets.ephemeris,
+          milkyWay: milkyWayScene,
+          milkyWayMap: milkyWay.map,
         }}
         sunLight={{
           on: sunLightOn,
@@ -1104,6 +1147,8 @@ export default function App() {
         nightMoonOn={nightMoonOn}
         nightPlanetsOn={nightPlanetsOn}
         planets={planets}
+        nightMilkyWayOn={nightMilkyWayOn}
+        milkyWay={milkyWay}
         /*
           Igual que la escena de nubes: encender el cielo sin inclinar la cámara
           es encender algo que no se puede ver. Y aquí además hace falta el
@@ -1118,6 +1163,7 @@ export default function App() {
         onNightTwinkle={() => setNightTwinkleOn((v) => !v)}
         onNightMoon={() => setNightMoonOn((v) => !v)}
         onNightPlanets={() => setNightPlanetsOn((v) => !v)}
+        onNightMilkyWay={() => setNightMilkyWayOn((v) => !v)}
         observerElevationM={nightObserver.elevationM}
         vapor={{
           field: vaporField,

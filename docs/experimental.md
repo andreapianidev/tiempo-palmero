@@ -376,6 +376,79 @@ los diámetros salían **exactos**, porque una rotación no cambia el módulo.
 Mirando el mapa no se habría notado nunca; lo cazó la comparación contra la
 efeméride.
 
+#### Y la Vía Láctea, que no es una fotografía
+
+Lo último que se añadió a esta escena, y lo único de ella que **no sale de una
+medida ni de una efeméride**. Conviene decirlo antes que nada, y el panel lo
+dice con esas palabras: es un contorno dibujado que se parece a una foto.
+
+**De dónde sale.** Los cinco polígonos anidados de d3-celestial —cinco curvas de
+nivel de brillo— con **197 anillos interiores** entre todos, que son las
+nebulosas oscuras: la Fisura del Cisne, el Saco de Carbón. Los agujeros son la
+mitad del dibujo, porque son ellos los que parten la banda en dos. Se rasterizan
+a un mapa equirrectangular de 1440 × 720 —un cuarto de grado por píxel—
+rellenando por **regla par-impar**, que es lo que hace que los agujeros salgan
+solos sin tener que saber cuál es agujero de cuál.
+
+Se escanea **por meridianos y no por filas**, y eso costó una raya blanca de
+lado a lado del cielo antes de entenderlo: la Vía Láctea da la vuelta entera, así
+que sus contornos exteriores no son bucles cerrados dentro de una franja de
+ascensión recta, rodean la esfera, y la paridad de los cortes de una fila no
+cierra. Recorriendo un meridiano no puede pasar: la declinación no es periódica y
+ningún anillo llega al polo.
+
+**Cuánto se ve SÍ es una medida, y es la parte que importa.** La Vía Láctea no
+cambia: es una luminancia fija. Lo que cambia es el fondo contra el que se mira,
+y ese fondo lo publican los fotómetros del Cabildo cada pocos minutos. Así que la
+opacidad no se elige, sale de dividir:
+
+> fracción = L_vialactea / (L_vialactea + L_cielo)
+
+Y de ahí sale sola la propiedad que hace que esto valga la pena:
+
+| Cielo | mag/arcsec² | luz que pone la banda |
+|---|---:|---:|
+| La Cumbrecita, lo más oscuro del archivo | 22,43 | 48,9 % |
+| Noche buena en el Roque | 21,60 | 30,8 % |
+| Con la luna en cuarto | 20,00 | 9,3 % |
+| Luna llena | 18,50 | 2,5 % |
+| Crepúsculo civil | 16,00 | 0,3 % |
+
+**De la noche buena a la luna llena hay un factor 12,3, y no hay ninguna regla
+escrita que diga «si hay luna, bajar la opacidad».** Sale de la división. Quien
+haya subido a la cumbre con luna llena sabe que la Vía Láctea no está; aquí no
+está porque el fotómetro dice que el cielo son 18,5.
+
+**El único número que no se mide** es el brillo superficial del nivel más alto
+del mapa, porque las curvas de nivel no traen calibración fotométrica. Se ancla a
+la cifra publicada de que la banda sube el fondo unas **0,4 magnitudes** en sus
+regiones más brillantes, y contra el cielo de referencia de la isla —21,6, ése sí
+medido contra el archivo de la red— eso da 22,48 mag/arcsec². Es una consecuencia
+aritmética, no un gusto, y hay una prueba que rehace la cadena desde el otro lado.
+
+**Entra por la misma puerta que las 8920 estrellas**: la misma matriz del cielo,
+la misma refracción de Bennett, la misma masa de aire de Kasten y Young con la
+misma k del sitio. Por eso la banda que se hunde por el oeste se apaga antes de
+tocar el horizonte, que es lo que se ve de verdad. Y se dibuja **antes** que las
+estrellas, con mezcla aditiva, para que ellas se le sumen encima: la banda es luz
+de estrellas que no se resuelven, y las que sí se resuelven están dentro.
+
+**Dos pruebas que merecen quedar escritas**, porque las dos cazan fallos que no
+dan ningún error:
+
+- **Que el mapa esté donde dice.** Una Vía Láctea volteada, o girada media
+  vuelta, sale como una banda preciosa cruzando el cielo de otro sitio. Se
+  comprueba contra el **ecuador galáctico**, que sale del polo norte galáctico y
+  no de nada de este repositorio: la cresta de brillo se le pega con una mediana
+  de **2,60°**, y las dos versiones rotas dan **108,22°**.
+- **Que el sombreador dibuje.** Que el PNG conteste 200 y que el panel deje de
+  decir «Descargando…» pasa perfectamente con un sombreador que no pinta un
+  píxel, y en Node no hay GPU que lo pruebe. `scripts/checks/vialactea-dibujo.ts`
+  dibuja el mismo instante dos veces —con la casilla y sin ella, con el reloj
+  congelado en una noche sin luna y el centelleo apagado— y compara: arriba, en
+  la franja de cielo, cambia el **23,5 %** de los píxeles; abajo, en el relieve y
+  el mar, el **1,5 %**, que es el oleaje animándose. Quince veces.
+
 ---
 
 ### La escena atmosférica: nubes y lluvia en volumen

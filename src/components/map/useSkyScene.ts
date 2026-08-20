@@ -1,6 +1,6 @@
 /**
- * La escena del cielo: nubes, lluvia, el disco del sol, su carrera, las
- * estrellas y la luna.
+ * La escena del cielo: nubes, lluvia, el disco del sol, su carrera, la Vía
+ * Láctea, las estrellas, la luna y los planetas.
  *
  * POR QUÉ VAN JUNTAS. Todas dibujan sobre el mismo trozo de pantalla —los 3,4°
  * de cielo que la cámara alcanza a enseñar con el relieve de casa— y todas
@@ -24,6 +24,7 @@ import { useEffect, type MutableRefObject } from 'react'
 import type { CloudLayer } from '../sky/CloudLayer'
 import type { RainLayer } from '../sky/RainLayer'
 import type { OceanLayer } from '../ocean/OceanLayer'
+import type { MilkyWayLayer } from '../milkyway/MilkyWayLayer'
 import type { StarLayer } from '../stars/StarLayer'
 import type { MoonLayer } from '../moon/MoonLayer'
 import type { PlanetLayer } from '../planets/PlanetLayer'
@@ -38,6 +39,7 @@ export interface SkySceneRefs {
   rain: MutableRefObject<RainLayer | null>
   /** El mar refleja las MISMAS nubes: por eso está aquí y no solo en el suyo. */
   ocean: MutableRefObject<OceanLayer | null>
+  milkyWay: MutableRefObject<MilkyWayLayer | null>
   star: MutableRefObject<StarLayer | null>
   moon: MutableRefObject<MoonLayer | null>
   planet: MutableRefObject<PlanetLayer | null>
@@ -53,6 +55,7 @@ export function useSkyScene(ready: boolean, props: Props, refs: SkySceneRefs): v
     cloud: cloudLayerRef,
     rain: rainLayerRef,
     ocean: oceanLayerRef,
+    milkyWay: milkyWayLayerRef,
     star: starLayerRef,
     moon: moonLayerRef,
     planet: planetLayerRef,
@@ -136,6 +139,24 @@ export function useSkyScene(ready: boolean, props: Props, refs: SkySceneRefs): v
   }, [ready, props.nightSky.on, props.nightSky.data, props.nightSky.scene])
 
   /**
+   * La Vía Láctea. El bitmap sube una sola vez —`setMap` deja el trabajo para
+   * el próximo `render` y es idempotente— y el estado cada vez que cambia la
+   * hora, el fotómetro o una casilla.
+   *
+   * VA DECLARADO ANTES QUE LA LUNA Y DESPUÉS DE LAS ESTRELLAS a propósito: los
+   * efectos corren en el orden en que se escriben, y aquí ese orden no decide
+   * nada de dibujo —eso lo decide `addLayer`— pero mantener el mismo que el de
+   * las capas evita tener que cruzar dos listas para entender la escena.
+   */
+  useEffect(() => {
+    const layer = milkyWayLayerRef.current
+    if (!layer) return
+    if (props.nightSky.milkyWayMap) layer.setMap(props.nightSky.milkyWayMap)
+    if (props.nightSky.milkyWay) layer.setState(props.nightSky.milkyWay)
+    layer.setVisible(props.nightSky.on && !!props.nightSky.milkyWay)
+  }, [ready, props.nightSky.on, props.nightSky.milkyWay, props.nightSky.milkyWayMap])
+
+  /**
    * La luna. Va por su cuenta y no dentro del efecto de arriba porque NO
    * DEPENDE DEL CATÁLOGO: se dibuja aunque los 133 KB de estrellas no hayan
    * llegado o hayan fallado, que es lo correcto —la luna se ve igual—.
@@ -188,9 +209,9 @@ export function useSkyScene(ready: boolean, props: Props, refs: SkySceneRefs): v
 
 
   /**
-   * Los planetas. Como la luna, no dependen del catálogo de estrellas: la
-   * tabla son 36 KB propios y se dibujan aunque los 133 KB de estrellas estén
-   * descargándose o hayan fallado.
+   * Los planetas. Como la luna, no dependen del catálogo de estrellas: las
+   * efemérides son 20 KB propios y se dibujan aunque los 133 KB de estrellas
+   * estén descargándose o hayan fallado.
    */
   useEffect(() => {
     const layer = planetLayerRef.current

@@ -47,6 +47,7 @@ import {
 import { VaporLayer } from '../vapor/VaporLayer'
 import { CloudLayer } from '../sky/CloudLayer'
 import { SunLayer } from '../sky/SunLayer'
+import { MilkyWayLayer } from '../milkyway/MilkyWayLayer'
 import { StarLayer } from '../stars/StarLayer'
 import { MoonLayer } from '../moon/MoonLayer'
 import { PlanetLayer } from '../planets/PlanetLayer'
@@ -76,6 +77,7 @@ export interface MapSetupRefs {
   vapor: MutableRefObject<VaporLayer | null>
   cloud: MutableRefObject<CloudLayer | null>
   sun: MutableRefObject<SunLayer | null>
+  milkyWay: MutableRefObject<MilkyWayLayer | null>
   star: MutableRefObject<StarLayer | null>
   moon: MutableRefObject<MoonLayer | null>
   planet: MutableRefObject<PlanetLayer | null>
@@ -99,6 +101,7 @@ export function useMapSetup(
     vapor: vaporLayerRef,
     cloud: cloudLayerRef,
     sun: sunLayerRef,
+    milkyWay: milkyWayLayerRef,
     star: starLayerRef,
     moon: moonLayerRef,
     planet: planetLayerRef,
@@ -403,6 +406,16 @@ export function useMapSetup(
       const sunLayer = new SunLayer()
       sunLayerRef.current = sunLayer
       map.addLayer(sunLayer)
+
+      // LA VÍA LÁCTEA ANTES QUE LAS ESTRELLAS, y este orden sí importa. Es
+      // fondo: las estrellas se dibujan con mezcla aditiva, así que puestas
+      // encima SE SUMAN a ella, que es lo que pasa de verdad —la banda es luz
+      // de estrellas que no se resuelven, y las que sí se resuelven están
+      // dentro—. Al revés, un velo del 55 % de blanco taparía las más débiles
+      // justo en la región del cielo donde más hay.
+      const milkyWayLayer = new MilkyWayLayer()
+      milkyWayLayerRef.current = milkyWayLayer
+      map.addLayer(milkyWayLayer)
 
       // Las estrellas van DESPUÉS del sol en el orden de capas y da igual: las
       // dos escriben a profundidad 1 y no coinciden nunca en pantalla —una se

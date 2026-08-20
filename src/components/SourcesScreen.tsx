@@ -144,6 +144,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'github.com/ofrohn/d3-celestial',
   },
   {
+    title: t.sources.milkyWayTitle,
+    body: t.sources.milkyWayBody,
+    license: t.sources.milkyWayLicense,
+    href: 'https://github.com/ofrohn/d3-celestial',
+    hrefLabel: 'github.com/ofrohn/d3-celestial',
+  },
+  {
     title: t.sources.ephemerisTitle,
     body: t.sources.ephemerisBody,
     license: t.sources.ephemerisLicense,

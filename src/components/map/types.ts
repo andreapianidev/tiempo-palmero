@@ -28,6 +28,7 @@ import type { StarSceneState } from '../stars/StarLayer'
 import type { MoonSceneState } from '../moon/MoonLayer'
 import type { PlanetSceneState } from '../planets/PlanetLayer'
 import type { PlanetEphemeris } from '../../lib/planets/ephemeris'
+import type { MilkyWaySceneState } from '../milkyway/MilkyWayLayer'
 import type { SkyData } from '../../lib/stars/catalog'
 import type { Cloud } from '../../lib/sky/scene'
 import type { TrackPoint } from '../../lib/sky/sun-path'
@@ -184,6 +185,10 @@ export interface Props {
     planets: PlanetSceneState | null
     /** Las efemérides. `null` mientras no han cargado o si falló. */
     planetEphemeris: PlanetEphemeris | null
+    /** La Vía Láctea. `null` con su casilla apagada. */
+    milkyWay: MilkyWaySceneState | null
+    /** Su mapa. `null` mientras no ha llegado o si falló. */
+    milkyWayMap: ImageBitmap | HTMLImageElement | null
   }
   /**
    * La luz solar sobre el relieve.
