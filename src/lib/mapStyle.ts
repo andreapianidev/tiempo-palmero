@@ -17,7 +17,7 @@ import type { StyleSpecification } from 'maplibre-gl'
 import { HILLSHADE_DEFAULT } from './terrain-light'
 import { dataUrl } from './endpoints'
 import { pixelXToLon, pixelYToLat } from './geo'
-import { SKY } from './terrain'
+import { HILLSHADE_SOURCE, SKY, TERRAIN_SOURCE } from './terrain'
 import { demVersion, type DemManifest } from './dem'
 import { roleCss } from './contrast/roles'
 
@@ -96,7 +96,7 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
     // aparece cuando la vista 3D inclina la cámara. Ver `terrain.ts`.
     sky: SKY,
     sources: {
-      terrain: {
+      [HILLSHADE_SOURCE]: {
         type: 'raster-dem',
         // La versión va colgada de la URL a propósito: ver `demVersion` en
         // `dem.ts`. Sin ella, una tesela corregida no le llega jamás a quien ya
@@ -114,6 +114,18 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
           'Datos: <a href="https://www.opendatalapalma.es" target="_blank" rel="noreferrer">Cabildo Insular de La Palma</a> (CC-BY) · ' +
           'Topónimos y viario: © OpenStreetMap contributors (ODbL)',
       },
+      // La gemela, solo para `setTerrain`. Misma declaración palabra por palabra:
+      // lo único que cambia es que tiene caché propia, y por qué eso importa
+      // está en `TERRAIN_SOURCE`.
+      [TERRAIN_SOURCE]: {
+        type: 'raster-dem',
+        tiles: [dataUrl(`/dem/{z}/{x}/{y}.png?v=${demVersion(dem)}`)],
+        encoding: 'terrarium',
+        tileSize: 256,
+        minzoom: dem.minZoom,
+        maxzoom: dem.zoom,
+        bounds: [west, south, east, north],
+      },
       island: { type: 'geojson', data: dataUrl('/layers/limite-insular.geojson') },
       municipios: { type: 'geojson', data: dataUrl('/layers/municipios.geojson') },
     },
@@ -128,7 +140,7 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
       {
         id: 'hillshade',
         type: 'hillshade',
-        source: 'terrain',
+        source: HILLSHADE_SOURCE,
         // Los valores salen de `terrain-light.ts` y no escritos aquí: el
         // interruptor de luz solar los sustituye y tiene que poder devolverlos.
         // Con una copia en cada sitio, cambiar el sombreado por defecto dejaría

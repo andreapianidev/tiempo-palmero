@@ -66,12 +66,27 @@ async function shoot(port: number, milkyWay: boolean): Promise<PNG> {
       D.parse = RealDate.parse; D.UTC = RealDate.UTC; D.prototype = RealDate.prototype
       globalThis.Date = D
       localStorage.setItem('tiempo-palmero:ajustes', JSON.stringify({ v: 2, values: {
-        terreno: true, nightSky: true, nightMilkyWay: ${milkyWay},
+        terrain: { on: true, exaggeration: 1 },
+        // EL FONDO SE FIJA AQUÍ y no se hereda del que traiga la aplicación:
+        // el relieve deja inclinar hasta 75° y los fondos de GRAFCAN hasta 65
+        // —limitación de licencia, ver \`maxPitchFor\`—, y a 65 el horizonte
+        // entra por los pelos. Con el satélite, que es el de fábrica desde
+        // agosto de 2026, esta prueba mediría una franja de cielo de nada.
+        basemap: 'relieve',
+        nightSky: true, nightMilkyWay: ${milkyWay},
         nightMoon: false, nightPlanets: false, nightFigures: false, nightTwinkle: false,
       }}))
     })()`)
     await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    await page.waitForTimeout(7000)
+    /*
+      VEINTE SEGUNDOS, y son necesarios desde que el sombreado tiene fuente
+      propia. Con siete, el relieve seguía cargando teselas cuando se disparaba
+      la captura, y las dos ejecuciones —la de la casilla marcada y la de la
+      casilla vacía— no llegaban al mismo punto: el ruido de abajo subía del
+      1,5 % al 8 % y la razón caía a 2,9×, que es un FALLO de la prueba y no de
+      la capa. Medido: a los 20 s el DEM ya está entero.
+    */
+    await page.waitForTimeout(20000)
     // Enfocar SIN hacer clic: un clic en el mapa selecciona un punto y abre el
     // panel de la derecha, que taparía justo el trozo de cielo que se mide.
     await page.locator('canvas').first().focus()
@@ -145,8 +160,8 @@ async function main() {
 
   const checks: [string, boolean][] = [
     [`el cielo cambia (${(cielo * 100).toFixed(1)} % de esa franja)`, cielo > 0.05],
-    // MEDIDO en dos ejecuciones seguidas: 23,5 % arriba contra 1,5 % abajo, o
-    // sea 15,3 y 15,5 veces. El umbral en 5 deja sitio de sobra al ruido del
+    // MEDIDO en tres ejecuciones: 23,5 % arriba contra 1,4-1,5 % abajo, o sea
+    // 15,3, 15,5 y 17,3 veces. El umbral en 5 deja sitio de sobra al ruido del
     // oleaje —que es lo único que se mueve abajo— y sigue muy por encima del 1
     // que daría una capa que no dibuja nada.
     [`y el suelo casi no (${(suelo * 100).toFixed(1)} %), razón ${razon.toFixed(1)}×`, razon > 5],

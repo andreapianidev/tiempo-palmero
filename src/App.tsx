@@ -167,12 +167,30 @@ export default function App() {
     'temperature',
     oneOf(MAP_VARIABLES),
   )
-  // El fondo de casa es el de la primera visita, y a propósito: es el único que
-  // no depende de un servicio ajeno para que la isla aparezca en pantalla. Quien
-  // elija otro se lo encuentra puesto la próxima vez, servicio ajeno incluido.
+  /**
+   * EL SATÉLITE ES EL DE LA PRIMERA VISITA. Antes lo era el relieve de casa,
+   * con este motivo escrito al lado: es el único fondo que no depende de un
+   * servicio ajeno para que la isla aparezca en pantalla. El motivo sigue
+   * siendo cierto y la decisión ha cambiado igual — lo primero que alguien
+   * quiere ver de una isla es la isla, no su modelo.
+   *
+   * LO QUE SE ACEPTA AL HACERLO, escrito para que nadie lo redescubra:
+   *
+   *  - **Depende de GRAFCAN.** Si su servicio no contesta, la primera visita ve
+   *    el mar y el contorno insular hasta que alguien cambie de fondo. Con el
+   *    relieve eso no podía pasar: sus teselas son de este despliegue.
+   *  - **La cámara se inclina hasta 65° y no hasta 75°**, que es una limitación
+   *    de licencia y no una elección — ver `maxPitchFor`. A 65° el horizonte
+   *    entra en pantalla por los pelos, así que el cielo nocturno y la Vía
+   *    Láctea casi no se ven con este fondo. No hace falta saberlo: el botón de
+   *    mirar al cielo cambia al relieve él solo (`prepararElCielo`).
+   *
+   * Quien elija otro se lo encuentra puesto la próxima vez, y esto vale igual
+   * en un teléfono: no hay ninguna rama que mire el ancho de la pantalla.
+   */
   const [basemap, setBasemap] = usePersistentState<BasemapId>(
     'basemap',
-    'relieve',
+    'satelite',
     oneOf(BASEMAP_ORDER),
   )
   /**

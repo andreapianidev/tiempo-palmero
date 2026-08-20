@@ -27,6 +27,7 @@ import type { BasemapId } from '../../lib/basemaps'
 import { BASEMAPS } from '../../lib/basemaps'
 import type { TerrainLight } from '../../lib/terrain-light'
 import { photoLight } from '../../lib/terrain-light-photo'
+import { HILLSHADE_SOURCE } from '../../lib/terrain'
 
 export const SUN_HILLSHADE_LAYER_ID = 'hillshade-sobre-fondo'
 
@@ -38,7 +39,7 @@ export function sunHillshadeLayer(): HillshadeLayerSpecification {
   return {
     id: SUN_HILLSHADE_LAYER_ID,
     type: 'hillshade',
-    source: 'terrain',
+    source: HILLSHADE_SOURCE,
     layout: { visibility: 'none' },
   }
 }

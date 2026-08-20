@@ -412,8 +412,30 @@ más arriba).
 ### La vista 3D
 
 Un modo aparte que se enciende en el panel, no una capa más: no añade nada al
-mapa, cambia la cámara. Se apoya entera en teselas que ya estaban en memoria por
-el sombreado, así que encenderla **no cuesta ni una descarga**.
+mapa, cambia la cámara.
+
+**Tiene su propia fuente de relieve, y durante meses no la tuvo.** Compartía la
+del sombreado —las mismas teselas, la misma caché— y MapLibre avisaba por
+consola: «you are using the same source for a hillshade layer and for 3D
+terrain». Parecía cosmético. Al llamar a `setTerrain`, MapLibre marca esa caché
+con `usedForTerrain` y le cambia el `tileSize` a 1024, que es lo que el relieve
+quiere: teselas grandes y pocas. Como la caché estaba compartida, **el sombreado
+heredaba esa elección**: no desaparecía, salía borroso, que es peor porque no se
+nota sin comparar.
+
+Medido con la isla entera, el fondo de relieve y la 3D encendida, dos
+ejecuciones de cada uno y treinta segundos de espera:
+
+| | teselas DEM | detalle sobre la isla |
+|---|---:|---:|
+| una fuente compartida | 87 | 19,58 y 19,77 |
+| **dos fuentes** | 103 | **29,51 y 29,21** |
+
+Un **49 % más de detalle** por dieciséis teselas más, un 18 %. Se ve en las
+paredes de la Caldera y en los barranquillos de la vertiente este, que con una
+sola fuente eran manchas suaves. Aquí decía que encenderla «no cuesta ni una
+descarga», y era verdad al pie de la letra por el peor motivo posible: no
+descargaba de más porque el sombreado descargaba de menos.
 
 MapLibre proyecta sobre el terreno las capas `background`, `fill`, `line`,
 `raster` y `hillshade`, y eso cubre todo lo que dibuja esta aplicación: la malla

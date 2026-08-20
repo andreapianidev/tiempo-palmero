@@ -449,8 +449,9 @@ export function useMapSetup(
       rainLayerRef.current = rainLayer
       map.addLayer(rainLayer)
 
-      // El relieve no añade ninguna capa: reutiliza la fuente `terrain` del
-      // estilo, que ya está cargada porque la usa el sombreado.
+      // El relieve no añade ninguna capa, pero sí tiene FUENTE PROPIA:
+      // `TERRAIN_SOURCE`, gemela de la del sombreado sobre las mismas teselas.
+      // Compartirla dejaba el sombreado borroso, y por qué está en `terrain.ts`.
       terrainRef.current = new Terrain3D(map)
 
       // El viario de OSM es lo primero de todo lo que se dibuja encima del

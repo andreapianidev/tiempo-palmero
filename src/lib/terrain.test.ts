@@ -7,6 +7,7 @@ import {
   MAX_PITCH,
   MAX_SLOPE_TAN,
   SKY,
+  HILLSHADE_SOURCE,
   TERRAIN_SOURCE,
   exaggerationLabel,
   slopeDegrees,
@@ -97,13 +98,39 @@ describe('cámara', () => {
 })
 
 describe('escena', () => {
-  it('el terreno reutiliza la fuente que el estilo ya declara', () => {
+  it('el terreno usa una fuente que el estilo declara', () => {
     // Si estos dos se separan, `setTerrain` falla en silencio y la vista 3D se
     // queda plana sin decir por qué.
     const style = buildStyle(MANIFEST)
     expect(style.sources[TERRAIN_SOURCE]).toBeDefined()
     expect(style.sources[TERRAIN_SOURCE].type).toBe('raster-dem')
     expect(terrainSpec(1).source).toBe(TERRAIN_SOURCE)
+  })
+
+  it('EL SOMBREADO Y EL RELIEVE NO COMPARTEN FUENTE', () => {
+    // La invariante que costó descubrir. `setTerrain` marca su caché de teselas
+    // con `usedForTerrain` y le pone `tileSize` 1024; si la comparte con la capa
+    // `hillshade`, el sombreado hereda esa elección y se dibuja borroso. Medido:
+    // 49 % menos de detalle sobre la isla. No da ningún error y no se nota sin
+    // comparar dos capturas, así que la única defensa es esto.
+    //
+    // MapLibre avisa por consola —«you are using the same source for a hillshade
+    // layer and for 3D terrain»— y ese aviso estuvo meses en producción.
+    expect(TERRAIN_SOURCE).not.toBe(HILLSHADE_SOURCE)
+    const style = buildStyle(MANIFEST)
+    const hillshades = style.layers.filter((l) => l.type === 'hillshade')
+    expect(hillshades.length).toBeGreaterThan(0)
+    for (const layer of hillshades) {
+      expect(
+        (layer as { source?: string }).source,
+        `la capa ${layer.id} vuelve a colgar del relieve`,
+      ).toBe(HILLSHADE_SOURCE)
+    }
+    // Y las dos fuentes tienen que apuntar a las MISMAS teselas: son dos cachés
+    // del mismo DEM, no dos modelos de elevación distintos.
+    const a = style.sources[TERRAIN_SOURCE] as { tiles?: string[] }
+    const b = style.sources[HILLSHADE_SOURCE] as { tiles?: string[] }
+    expect(a.tiles).toEqual(b.tiles)
   })
 
   it('el estilo trae el cielo declarado desde el principio', () => {

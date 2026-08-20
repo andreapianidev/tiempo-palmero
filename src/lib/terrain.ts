@@ -20,8 +20,52 @@
 import type { SkySpecification, TerrainSpecification } from 'maplibre-gl'
 import type { BasemapId } from './basemaps'
 
-/** El id de la fuente `raster-dem` del estilo. Está en un solo sitio. */
-export const TERRAIN_SOURCE = 'terrain'
+/**
+ * DOS FUENTES `raster-dem` SOBRE LAS MISMAS TESELAS, y no es un descuido.
+ *
+ * Durante meses fue una sola, y MapLibre avisaba por consola: «you are using the
+ * same source for a hillshade layer and for 3D terrain». Parecía cosmético y no
+ * lo era. Al llamar a `setTerrain`, MapLibre marca esa caché de teselas con
+ * `usedForTerrain = true` y **le cambia el `tileSize` a 1024** —512 por su
+ * `deltaZoom` de 1—. Es lo que el relieve quiere: teselas grandes y pocas. Pero
+ * la caché estaba COMPARTIDA, así que el sombreado heredaba esa elección y se
+ * dibujaba con las teselas del relieve en vez de con las suyas.
+ *
+ * NO DESAPARECÍA: SALÍA BORROSO, que es peor porque no se nota sin comparar.
+ * Medido cargando la isla entera con el fondo de relieve y la 3D encendida, dos
+ * ejecuciones de cada uno y treinta segundos de espera —el triple de lo que
+ * tarda el DEM en llegar entero, para que la diferencia no se pueda achacar a
+ * teselas que faltaban—:
+ *
+ * | | teselas DEM | detalle sobre la isla |
+ * |---|---:|---:|
+ * | una fuente compartida | 87 | 19,58 y 19,77 |
+ * | **dos fuentes** | 103 | **29,51 y 29,21** |
+ *
+ * «Detalle» es la energía de alto contraste por píxel de isla: la suma de los
+ * saltos con el píxel de al lado y con el de arriba. Sube un **49 %** con
+ * dieciséis teselas más, un 18 %. La repetición sale a ±0,2, así que la
+ * diferencia no es ruido de carga.
+ *
+ * En pantalla se ve en las paredes de la Caldera y en los barranquillos de la
+ * vertiente este: con una sola fuente eran manchas suaves.
+ *
+ * El README decía «la vista 3D, sin una descarga más» y era verdad al pie de la
+ * letra por el peor motivo posible: no descargaba de más porque el sombreado
+ * descargaba de menos.
+ */
+export const TERRAIN_SOURCE = 'terrain-3d'
+
+/**
+ * La fuente del SOMBREADO. Misma URL, misma versión, caché aparte.
+ *
+ * NO SE DESCARGA NADA DOS VECES, y es lo primero que uno teme al duplicar una
+ * fuente. Las dos cachés piden teselas DISTINTAS —una elige como si midieran
+ * 1024 y la otra como si midieran 256—, y donde coinciden es el mismo
+ * `/dem/{z}/{x}/{y}.png?v=N` del mismo origen, así que la segunda petición la
+ * sirve la caché del navegador. Medido: 87 teselas antes, 103 después.
+ */
+export const HILLSHADE_SOURCE = 'terrain'
 
 /**
  * Exageración vertical. Por defecto 1: la isla tal como es.

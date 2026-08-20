@@ -169,7 +169,7 @@ senderos, las cámaras de incendios y las webcam de la isla.
   [el índice de incendio](docs/experimental.md#el-índice-de-incendio): seis
   incendios, un clasificador validado escondiendo uno entero cada vez
 - [**Arquitectura**](docs/arquitectura.md) —
-  [la vista 3D](docs/arquitectura.md#la-vista-3d), sin una descarga más ·
+  [la vista 3D](docs/arquitectura.md#la-vista-3d), con su propia fuente de relieve ·
   [el océano](docs/arquitectura.md#el-océano), dos trenes de olas sobre
   batimetría real ·
   [lo elegido dura](docs/arquitectura.md#lo-elegido-dura) ·
