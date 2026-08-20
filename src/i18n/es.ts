@@ -928,6 +928,44 @@ export const es = {
     sea:
       'Sobre el mar en movimiento se ve su reflejo, y la luz que le echa NO es proporcional a la parte iluminada: media luna alumbra el 9 % de la llena, no el 50 %. Es la curva de fase de Krisciunas y Schaefer, la misma con la que se calcula cuántas estrellas tapa.',
   },
+  /**
+   * Los planetas. Las cifras de estos textos salen de `lib/planets/`, y las
+   * dos afirmaciones fuertes —los 0,57" de error y los 36 KB— están medidas en
+   * la prueba y en el script que genera la tabla.
+   */
+  nightPlanets: {
+    layer: 'Los planetas',
+    names: {
+      mercurio: 'Mercurio',
+      venus: 'Venus',
+      tierra: 'Tierra',
+      marte: 'Marte',
+      jupiter: 'Júpiter',
+      saturno: 'Saturno',
+      urano: 'Urano',
+    } as Record<string, string>,
+    hint: 'Los cinco que se ven a simple vista, más Urano, que pide un cielo como el de aquí. Salen de una tabla de efemérides de 36 KB que solo se descarga con esta casilla.',
+    loading: 'Descargando la tabla de los planetas…',
+    failed: (why: string) => `No se pudo cargar la tabla de los planetas: ${why}`,
+    outOfRange:
+      'La tabla de efemérides cubre del 1 de enero de 2026 al 1 de enero de 2036 y la fecha del reloj se sale de ahí. No se dibuja nada: extrapolar estos polinomios da posiciones enormes con toda confianza, y una posición inventada es peor que un hueco.',
+    value: (deg: string, rose: string, mag: string) => `${deg}° al ${rose} · mag ${mag}`,
+    down: (deg: string) => `puesto, ${deg}°`,
+    tooCloseToSun: (name: string, deg: string) =>
+      `${name} está a solo ${deg}° del sol: sale y se pone casi con él, y el crepúsculo se lo come por brillante que sea.`,
+    /*
+      «De ahora mismo» y no «de esta noche»: la casilla se puede encender a las
+      once de la mañana, y ahí el límite lo pone el sol, no el fotómetro.
+      Decir «esta noche» con el sol a 28° era una frase correcta en el único
+      momento en que nadie la lee.
+    */
+    tooFaint: (name: string, mag: string) =>
+      `${name} está en el cielo, pero con magnitud ${mag} queda por debajo del límite de ahora mismo.`,
+    scope:
+      'Qué es dato y qué es dibujo: la posición sale de polinomios de Chebyshev ajustados a VSOP87, con tiempo de luz y paralaje, y coincide con la efeméride por debajo de 0,57 segundos de arco en el peor caso de tres años — el mismo orden que las estrellas de al lado. La magnitud es la fórmula del Astronomical Almanac, con los anillos de Saturno dentro. No se dibuja el disco de ninguno: Júpiter mide 50 segundos de arco y el ojo resuelve 60.',
+    twinkle:
+      'Y no centellean, que es la única diferencia con las estrellas. No es un gusto: una estrella es un punto y la turbulencia le mueve todo el haz a la vez, mientras que un planeta es un disco de muchos puntos cuyos parpadeos se promedian. Lo que no titila, ahí arriba, es un planeta.',
+  },
   sky3d: {
     layer: 'Nubes y lluvia en 3D',
     hint:

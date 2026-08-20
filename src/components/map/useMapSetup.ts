@@ -49,6 +49,7 @@ import { CloudLayer } from '../sky/CloudLayer'
 import { SunLayer } from '../sky/SunLayer'
 import { StarLayer } from '../stars/StarLayer'
 import { MoonLayer } from '../moon/MoonLayer'
+import { PlanetLayer } from '../planets/PlanetLayer'
 import { SunPathLayer } from '../sky/SunPathLayer'
 import { RainLayer } from '../sky/RainLayer'
 import { Terrain3D } from '../terrain/Terrain3D'
@@ -77,6 +78,7 @@ export interface MapSetupRefs {
   sun: MutableRefObject<SunLayer | null>
   star: MutableRefObject<StarLayer | null>
   moon: MutableRefObject<MoonLayer | null>
+  planet: MutableRefObject<PlanetLayer | null>
   sunPath: MutableRefObject<SunPathLayer | null>
   rain: MutableRefObject<RainLayer | null>
   terrain: MutableRefObject<Terrain3D | null>
@@ -99,6 +101,7 @@ export function useMapSetup(
     sun: sunLayerRef,
     star: starLayerRef,
     moon: moonLayerRef,
+    planet: planetLayerRef,
     sunPath: sunPathLayerRef,
     rain: rainLayerRef,
     terrain: terrainRef,
@@ -416,6 +419,14 @@ export function useMapSetup(
       const moonLayer = new MoonLayer()
       moonLayerRef.current = moonLayer
       map.addLayer(moonLayer)
+
+      // Los planetas DESPUÉS de la luna y por el mismo motivo que la luna va
+      // después de las estrellas: los tres escriben a profundidad 1, gana quien
+      // se dibuja el último, y un planeta detrás del disco lunar es una
+      // ocultación, que es lo que de verdad pasa cuando coinciden.
+      const planetLayer = new PlanetLayer()
+      planetLayerRef.current = planetLayer
+      map.addLayer(planetLayer)
 
       const cloudLayer = new CloudLayer()
       cloudLayerRef.current = cloudLayer

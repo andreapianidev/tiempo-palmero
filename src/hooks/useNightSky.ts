@@ -113,8 +113,48 @@ export function useNightSky(
   const [frozenIds, setFrozenIds] = useState<string[]>([])
 
   // ------------------------------------------------------------- catálogo
+  /**
+   * ────────────────────────────────────────────────────────────────────────
+   * EL CATÁLOGO SE DESCARGABA Y NO SE DIBUJABA NUNCA, y conviene dejar escrito
+   * el mecanismo porque el código roto se leía perfectamente bien.
+   *
+   * Estaba así: `if (!enabled || data || loading) return`, con `loading` en las
+   * dependencias, y una bandera `alive` en la limpieza para no escribir estado
+   * después de desmontar. Cada pieza es correcta por separado y juntas se
+   * anulan:
+   *
+   *  1. El efecto corre, llama a `setLoading(true)` y arranca la descarga.
+   *     Devuelve su limpieza, que pondrá `alive = false`.
+   *  2. `setLoading(true)` provoca un render, y como `loading` está en las
+   *     dependencias React **ejecuta la limpieza del paso 1** antes de volver a
+   *     lanzarlo. Ahí `alive` se pone a `false`.
+   *  3. El efecto se relanza, ve `loading === true` y sale.
+   *  4. La descarga termina, con `alive` ya en `false`: no se guarda el
+   *     catálogo, y el `finally` tampoco apaga `loading`. El panel se queda en
+   *     «Descargando…» para siempre y el cielo, vacío.
+   *
+   * La red hacía su trabajo —133 KB con HTTP 200— y por eso desde fuera no
+   * parecía un fallo de descarga. Lo cazó una comprobación en un navegador de
+   * verdad, `scripts/checks/cielo-carga.ts`, no una prueba de unidad: es un
+   * error de ciclo de vida de React y en Node no existe.
+   *
+   * EL ARREGLO ES QUITAR `loading` DE LAS DEPENDENCIAS y llevar el «ya se ha
+   * intentado» a una ref, que no provoca renders. De paso arregla el otro
+   * fallo del mismo sitio: cuando la descarga FALLABA, `loading` volvía a
+   * `false` con `data` todavía nulo, el efecto se relanzaba y se reintentaba en
+   * bucle cerrado contra un servidor que acababa de fallar.
+   *
+   * Apagar y volver a encender la casilla reinicia la ref, así que sigue
+   * habiendo forma de reintentar — a mano, que es como debe ser.
+   */
+  const attempted = useRef(false)
   useEffect(() => {
-    if (!enabled || data || loading) return
+    if (!enabled) {
+      attempted.current = false
+      return
+    }
+    if (attempted.current || data) return
+    attempted.current = true
     let alive = true
     setLoading(true)
     fetchSkyData()
@@ -133,7 +173,7 @@ export function useNightSky(
     return () => {
       alive = false
     }
-  }, [enabled, data, loading])
+  }, [enabled, data])
 
   // ------------------------------------------------------- red de fotómetros
   useEffect(() => {

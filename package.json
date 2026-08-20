@@ -21,6 +21,7 @@
     "prepare-data:snapshot": "tsx scripts/prepare-data.ts --only=snapshot",
     "prepare-ocean": "tsx scripts/prepare-ocean.ts",
     "prepare-cielo": "tsx scripts/prepare-cielo.ts",
+    "prepare-planetas": "tsx scripts/prepare-planetas.ts",
     "web:icons": "tsx scripts/web-icons.ts",
     "web:island": "tsx scripts/web-island.ts",
     "web:terreno": "tsx scripts/web-terreno.ts"
@@ -37,6 +38,7 @@
     "@vitejs/plugin-react": "^4.3.3",
     "astronomy-engine": "^2.1.19",
     "esbuild": "^0.25.0",
+    "playwright": "^1.62.1",
     "pngjs": "^7.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",

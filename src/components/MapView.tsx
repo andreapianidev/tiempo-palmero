@@ -20,6 +20,7 @@ import { CloudLayer } from './sky/CloudLayer'
 import { SunLayer } from './sky/SunLayer'
 import { StarLayer } from './stars/StarLayer'
 import { MoonLayer } from './moon/MoonLayer'
+import { PlanetLayer } from './planets/PlanetLayer'
 import { SunPathLayer } from './sky/SunPathLayer'
 import { RainLayer } from './sky/RainLayer'
 import { HILLSHADE_DEFAULT, terrainLight } from '../lib/terrain-light'
@@ -90,6 +91,7 @@ export function MapView(props: Props) {
   const sunLayerRef = useRef<SunLayer | null>(null)
   const starLayerRef = useRef<StarLayer | null>(null)
   const moonLayerRef = useRef<MoonLayer | null>(null)
+  const planetLayerRef = useRef<PlanetLayer | null>(null)
   const sunPathLayerRef = useRef<SunPathLayer | null>(null)
   const rainLayerRef = useRef<RainLayer | null>(null)
   /** El relieve 3D, por lo mismo: estado de MapLibre que no es de React. */
@@ -135,6 +137,7 @@ export function MapView(props: Props) {
     sun: sunLayerRef,
     star: starLayerRef,
     moon: moonLayerRef,
+    planet: planetLayerRef,
     sunPath: sunPathLayerRef,
     rain: rainLayerRef,
     terrain: terrainRef,
@@ -494,6 +497,7 @@ export function MapView(props: Props) {
     ocean: oceanLayerRef,
     star: starLayerRef,
     moon: moonLayerRef,
+    planet: planetLayerRef,
     sun: sunLayerRef,
     sunPath: sunPathLayerRef,
     terrain: terrainRef,

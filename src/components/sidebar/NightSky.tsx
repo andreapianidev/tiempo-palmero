@@ -18,6 +18,8 @@ import { t } from '../../i18n'
 import type { NightSkyState } from '../../hooks/useNightSky'
 import { compassPoint } from '../../lib/stars/tonight'
 import { NightMoon } from './NightMoon'
+import { NightPlanets } from './NightPlanets'
+import type { PlanetsState } from '../../hooks/usePlanets'
 
 interface Props {
   sky: NightSkyState
@@ -29,6 +31,9 @@ interface Props {
   onToggleTwinkle: () => void
   moon: boolean
   onToggleMoon: () => void
+  planets: PlanetsState
+  planetsOn: boolean
+  onTogglePlanets: () => void
   /** Hasta qué altura del cielo llega la pantalla con el fondo puesto. */
   ceilingDeg: number
   observerElevationM: number
@@ -46,6 +51,9 @@ export function NightSky({
   onToggleTwinkle,
   moon,
   onToggleMoon,
+  planets,
+  planetsOn,
+  onTogglePlanets,
   ceilingDeg,
   observerElevationM,
   view3d,
@@ -203,6 +211,13 @@ export function NightSky({
             floorDeg={sky.floorDeg}
             ceilingDeg={ceilingDeg}
             view3d={view3d}
+          />
+          <hr className="sep" />
+          <NightPlanets
+            planets={planets}
+            on={planetsOn}
+            onToggle={onTogglePlanets}
+            floorDeg={sky.floorDeg}
           />
         </>
       )}

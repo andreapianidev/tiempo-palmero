@@ -121,6 +121,8 @@ senderos, las cámaras de incendios y las webcam de la isla.
   [el cielo estrellado](docs/experimental.md#el-cielo-estrellado-8920-estrellas-y-un-fotómetro-que-decide-cuántas-se-ven) ·
   [la luna](docs/experimental.md#y-la-luna-que-es-lo-primero-que-se-mira): por qué hubo
   que cambiarla entera antes de poder dibujarla ·
+  [los planetas](docs/experimental.md#y-los-planetas-con-una-tabla-que-caduca): 36 KB
+  de Chebyshev con fecha de caducidad, y el sombreador de las estrellas ·
   [el índice de incendio](docs/experimental.md#el-índice-de-incendio): seis
   incendios, un clasificador validado escondiendo uno entero cada vez
 - [**Arquitectura**](docs/arquitectura.md) —
@@ -423,7 +425,7 @@ está en cuatro documentos. Cada uno se lee solo.
 |---|---|---:|
 | **[El motor de interpolación](docs/motor.md)** | Los seis pasos, la corrección altimétrica, el rechazo de valores atípicos, la banda de incertidumbre calibrada y la validación dejando fuera cada estación por turno. | 448 |
 | **[Los datos del Cabildo](docs/datos-del-cabildo.md)** | Los 49 conjuntos del portal, uno por uno: lo integrado, lo que falta, lo que no conviene añadir. Las guaguas, los aforos, las webcam, el viario, la cobertura de TDT. | 783 |
-| **[La sección experimental](docs/experimental.md)** | Las seis funciones que dibujan más de lo que miden: el cielo estrellado y la luna, nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 942 |
+| **[La sección experimental](docs/experimental.md)** | Las seis funciones que dibujan más de lo que miden: el cielo estrellado con la luna y los planetas, nubes y lluvia en volumen, la luz del sol y sus sombras, el índice de incendio, el viento y el mar. | 1005 |
 | **[Arquitectura](docs/arquitectura.md)** | El proxy, las teselas del DEM y sus tres usos, el relieve, la vista 3D, el océano, la caché de teselas de GRAFCAN, lo que dura entre visitas — y las trampas de esta API. | 726 |
 
 ---

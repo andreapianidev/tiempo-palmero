@@ -53,6 +53,7 @@
 
 import { julianCenturies, meanObliquity, nutation, skyFrame, applyOfDate, horizontal } from './stars/frame'
 import { refractionDeg } from './stars/refraction'
+import { observerOffsetKm, toTopocentric } from './stars/parallax'
 import { skyVector, solarGeometry, sunPosition, type SkyPosition } from './sun'
 
 const RAD = Math.PI / 180
@@ -82,10 +83,6 @@ const DEG = 180 / Math.PI
  */
 const TT_MINUS_UTC_MS = 69_184
 
-/** Radio ecuatorial de la Tierra, km. WGS84. */
-const EARTH_RADIUS_KM = 6378.137
-/** Achatamiento de la Tierra, WGS84. Sin él la paralaje se va 11'. */
-const FLATTENING = 1 / 298.257223563
 /** Radio medio de la luna, km. IAU 2015. */
 const MOON_RADIUS_KM = 1737.4
 /** Distancia media Tierra-Sol, km. Solo para el ángulo de fase. */
@@ -417,32 +414,14 @@ export function moonSight(at: number, observer: MoonObserver): MoonSight {
   const frame = skyFrame(at, observer.lon, observer.lat)
   const unit = applyOfDate(frame, geo.raDeg * RAD, geo.decDeg * RAD)
 
-  // Posición del observador respecto al centro de la Tierra, en radios
-  // ecuatoriales. La latitud geocéntrica se separa hasta 11,5' de la geodésica.
-  const phi = observer.lat * RAD
-  const u = Math.atan2((1 - FLATTENING) * Math.sin(phi), Math.cos(phi))
-  const h = observer.elevationM / 1000 / EARTH_RADIUS_KM
-  const rhoSin = (1 - FLATTENING) * Math.sin(u) + h * Math.sin(phi)
-  const rhoCos = Math.cos(u) + h * Math.cos(phi)
-  const rho = Math.hypot(rhoSin, rhoCos)
-  const geocentricLat = Math.atan2(rhoSin, rhoCos)
-  // En la base local el observador apunta casi hacia arriba, escorado hacia el
-  // ecuador —al sur en el hemisferio norte— por la diferencia de latitudes.
-  const tilt = phi - geocentricLat
-  const observerKm = rho * EARTH_RADIUS_KM
-  const ox = 0
-  const oy = -observerKm * Math.sin(tilt)
-  const oz = observerKm * Math.cos(tilt)
-
-  const tx = geo.distanceKm * unit[0] - ox
-  const ty = geo.distanceKm * unit[1] - oy
-  const tz = geo.distanceKm * unit[2] - oz
-  const topocentricKm = Math.hypot(tx, ty, tz)
-  const direction: [number, number, number] = [
-    tx / topocentricKm,
-    ty / topocentricKm,
-    tz / topocentricKm,
-  ]
+  // La paralaje vive en `stars/parallax.ts` desde que los planetas la
+  // necesitaron igual: es la misma cuenta y el mismo achatamiento, y dos copias
+  // eran dos sitios donde perder los 11' que ese achatamiento vale.
+  const { direction, distanceKm: topocentricKm } = toTopocentric(
+    unit,
+    geo.distanceKm,
+    observerOffsetKm(observer.lat, observer.elevationM),
+  )
 
   const { elevationDeg, azimuthDeg } = horizontal(direction)
   const apparentElevationDeg =

@@ -26,6 +26,7 @@ import type { RainLayer } from '../sky/RainLayer'
 import type { OceanLayer } from '../ocean/OceanLayer'
 import type { StarLayer } from '../stars/StarLayer'
 import type { MoonLayer } from '../moon/MoonLayer'
+import type { PlanetLayer } from '../planets/PlanetLayer'
 import type { SunLayer } from '../sky/SunLayer'
 import type { SunPathLayer } from '../sky/SunPathLayer'
 import type { Terrain3D } from '../terrain/Terrain3D'
@@ -39,6 +40,7 @@ export interface SkySceneRefs {
   ocean: MutableRefObject<OceanLayer | null>
   star: MutableRefObject<StarLayer | null>
   moon: MutableRefObject<MoonLayer | null>
+  planet: MutableRefObject<PlanetLayer | null>
   sun: MutableRefObject<SunLayer | null>
   sunPath: MutableRefObject<SunPathLayer | null>
   /** El relieve, para el empujón de cámara del botón «mirar al cielo». */
@@ -53,6 +55,7 @@ export function useSkyScene(ready: boolean, props: Props, refs: SkySceneRefs): v
     ocean: oceanLayerRef,
     star: starLayerRef,
     moon: moonLayerRef,
+    planet: planetLayerRef,
     sun: sunLayerRef,
     sunPath: sunPathLayerRef,
     terrain: terrainRef,
@@ -183,4 +186,19 @@ export function useSkyScene(ready: boolean, props: Props, refs: SkySceneRefs): v
     // cámara giraría sola cada vez que el sol se mueve un cuarto de grado.
   }, [ready, props.sunLight.nudge])
 
+
+  /**
+   * Los planetas. Como la luna, no dependen del catálogo de estrellas: la
+   * tabla son 36 KB propios y se dibujan aunque los 133 KB de estrellas estén
+   * descargándose o hayan fallado.
+   */
+  useEffect(() => {
+    const layer = planetLayerRef.current
+    if (!layer) return
+    if (props.nightSky.planetTable) layer.setTable(props.nightSky.planetTable)
+    if (props.nightSky.planets) layer.setState(props.nightSky.planets)
+    layer.setVisible(
+      props.nightSky.on && !!props.nightSky.planets && !!props.nightSky.planetTable,
+    )
+  }, [ready, props.nightSky.on, props.nightSky.planets, props.nightSky.planetTable])
 }

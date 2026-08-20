@@ -302,6 +302,69 @@ cenicienta tiene la forma física exacta —proporcional a `1 − k`, que es la
 fracción iluminada de la Tierra vista desde la luna— y la amplitud dibujada, un
 2,2 % contra las diez milésimas de verdad.
 
+#### Y los planetas, con una tabla que caduca
+
+Los cinco de siempre más Urano, que con un cielo de 21,5 entra por poco. Hubo
+que decidir de dónde salen sus posiciones, y las dos opciones escritas tenían un
+pero: una biblioteca de efemérides en el navegador son 200 KB que se descargan
+mire alguien el cielo o no, y escribir la serie VSOP87 a mano son varios miles
+de coeficientes transcritos — con la luna fueron 120 y ya era el límite.
+
+**Hay una tercera, y es la que hacen las efemérides de verdad**: ajustar
+polinomios de Chebyshev a la posición heliocéntrica y guardarlos. Es lo que hay
+dentro de un fichero SPK del JPL. Se calcula en Node con `astronomy-engine`
+—dependencia de desarrollo, no entra en el paquete— y lo que viaja al navegador
+son **36 KB** y veinte líneas para evaluarlos.
+
+Heliocéntricas y no geocéntricas a propósito: una órbita alrededor del sol es
+casi una elipse y un polinomio de grado diez la sigue durante meses; vista desde
+la Tierra hace lazos de retrogradación. Restar la Tierra en el navegador cuesta
+tres restas.
+
+| Cuerpo | Intervalo | Grado | Peor error del ajuste |
+|---|---:|---:|---:|
+| Mercurio | 32 d | 12 | 54,1 km |
+| Venus | 128 d | 10 | 14,6 km |
+| Tierra | 64 d | 14 | 57,8 km |
+| Marte | 192 d | 10 | 4,0 km |
+| Júpiter | 512 d | 8 | 0,1 km |
+| Saturno | 730 d | 8 | 0,0 km |
+| Urano | 1024 d | 6 | 0,8 km |
+
+**Lo que una tabla tiene y una serie no es fecha de caducidad**, y no se esconde:
+vale del 1 de enero de 2026 al 1 de enero de 2036, el cargador se niega a
+extrapolar —un Chebyshev de grado 14 extrapolado se dispara a millones de
+kilómetros en días— y hay una prueba que falla cuando queden menos de dos años.
+
+Contra `astronomy-engine`, sobre tres años cada 36 horas: **mediana de 0,10″ a
+0,36″ según el planeta y peor caso 0,57″**, el mismo orden que las 8920
+estrellas de al lado. Las magnitudes son las del *Astronomical Almanac*, con los
+anillos de Saturno dentro —valen 0,9 magnitudes según su inclinación, y sin ese
+término Saturno se equivocaba 0,50 de mediana en vez de 0,12—.
+
+**Se dibujan con el sombreador de las estrellas, no con uno propio.** Un planeta
+a simple vista es lo mismo que una estrella —Júpiter mide 50 segundos de arco y
+el ojo resuelve 60— y tiene que recibir el mismo trato en aberración,
+precesión, nutación, refracción, extinción y desvanecido. Un segundo sombreador
+con esas seis cuentas otra vez habría abierto la puerta a que Júpiter y la
+estrella de al lado se refracten distinto: un error que nadie ve y que está ahí
+todas las noches.
+
+**La única diferencia es que no centellean**, y eso es física: una estrella es un
+punto y la turbulencia le mueve todo el haz a la vez; un planeta es un disco de
+muchos puntos cuyos parpadeos se promedian. Es la forma clásica de distinguirlos
+sin saber nada de astronomía, y dibujarlos temblando habría borrado la única
+pista que tiene alguien a simple vista.
+
+**Un error que este trabajo cazó y merece quedar escrito.** La primera versión
+pasaba la tabla por una rotación de la oblicuidad «para llevarla a ecuatorial»,
+sin mirar que `HelioVector` ya devuelve el ecuador medio de J2000. El resultado
+era el cielo entero girado 23° —14° de error de mediana— con los planetas en
+posiciones perfectamente plausibles, mientras las distancias, las magnitudes y
+los diámetros salían **exactos**, porque una rotación no cambia el módulo.
+Mirando el mapa no se habría notado nunca; lo cazó la comparación contra la
+efeméride.
+
 ---
 
 ### La escena atmosférica: nubes y lluvia en volumen
