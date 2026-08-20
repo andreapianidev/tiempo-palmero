@@ -1,0 +1,65 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAS MARCAS · los dibujos que acompañan a un nombre
+
+   Los trazados están en el sprite de `index.html`, con la razón de por qué hay
+   dos clases y no se mezclan. Esto es solo cómo se ponen.
+
+   TODAS SON DEL TAMAÑO DE UNA LETRA Y DEL COLOR DEL TEXTO. La tentación con un
+   bloque de logotipos es dejarlos en su color de marca, y eso convierte la
+   sección de procedencias en una pared de pegatinas: seis azules distintos
+   compitiendo con el ámbar, que es el único color que esta página usa para
+   decir algo. Aquí todos van en `currentColor` y con el tamaño atado al texto
+   de al lado, así que el color sigue significando lo mismo en toda la página.
+
+   La leyenda de las fuentes va además dentro de una chapa cuadrada, la misma
+   que lleva la plataforma en la sección en 3D: un cuadro de 1 px con esquinas
+   de 6 y el fondo apenas levantado. Sin ella, seis dibujos a línea sueltos
+   sobre el fondo parecen un error de carga.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.marca-svg{
+  display:block;flex:none;overflow:visible;
+  width:1em;height:1em;fill:currentColor;
+}
+
+/* ── la chapa de la leyenda, en cada tarjeta de fuente ───────────────────── */
+.fuente-glifo{
+  align-self:flex-start;
+  display:grid;place-items:center;
+  width:2.35rem;height:2.35rem;border-radius:6px;
+  border:1px solid var(--line-soft);background:rgba(255,255,255,.035);
+  color:var(--fg-faint);
+  transition:color .3s ease,border-color .3s ease,background .3s ease;
+}
+.fuente-glifo .marca-svg{width:1.25rem;height:1.25rem}
+/* Al pasar por encima se enciende, igual que el enlace de la tarjeta: es la
+   misma tarjeta reaccionando, no dos cosas. */
+.fuente:hover .fuente-glifo{
+  color:var(--amber);border-color:rgba(226,180,92,.35);background:rgba(226,180,92,.07);
+}
+
+/* ── la marca dentro de una licencia ─────────────────────────────────────── */
+/* Solo la llevan las que de verdad son Creative Commons. Las otras —ODbL, «libre
+   y gratuita», dominio público— se quedan en texto, que es lo que son. */
+.lic{display:inline-flex;align-items:center;gap:.36rem}
+.lic .marca-svg{width:.95em;height:.95em}
+
+/* ── GitHub, en las fichas de repositorio y en el pie ────────────────────── */
+.repo .etiq{display:inline-flex;align-items:center;gap:.45rem}
+.repo .etiq .marca-svg{width:.95em;height:.95em}
+.pie a .marca-svg{
+  width:.95em;height:.95em;display:inline-block;vertical-align:-.12em;margin-right:.3rem;
+}
+
+/* ── la chapa de plataforma de la sección en 3D ──────────────────────────── */
+/* `.plataforma b` ya era una chapa; ahora lleva la manzana delante y el cubo
+   acompaña al texto de Unity. */
+.plataforma b{display:inline-flex;align-items:center;gap:.45rem}
+.plataforma em{display:inline-flex;align-items:center;gap:.45rem}
+.plataforma .marca-svg{width:1em;height:1em}
+/* La manzana es más alta que ancha y al lado de una versalita de .63rem se ve
+   pequeña; el 1,15 la deja ópticamente del mismo tamaño que el cubo. */
+.plataforma b .marca-svg{width:1.15em;height:1.15em}
+
+/* ── el botón del cierre que lleva al repositorio en 3D ──────────────────── */
+.btn .marca-svg{position:relative;z-index:1;width:1.15em;height:1.15em}

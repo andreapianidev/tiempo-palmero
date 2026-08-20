@@ -191,10 +191,12 @@ h1 em{display:block;font-style:normal;color:var(--amber)}
 .fuente a:hover .fl{transform:translateX(4px)}
 
 /* ── repositorios ────────────────────────────────────────────────────────── */
-/* Una sola columna, porque hay un solo repositorio. Tuvo dos mientras la
-   ficha del gemelo de macOS estuvo al lado; con una ficha sola, la rejilla de
-   dos dejaba la mitad derecha vacía. */
+/* DOS COLUMNAS OTRA VEZ, porque vuelven a ser dos repositorios: la aplicación
+   web y La Palma 3D. Estuvo en una sola mientras hubo una sola ficha —con dos
+   columnas y una ficha, la mitad derecha se quedaba vacía— y el comentario que
+   había aquí seguía diciendo «hay un solo repositorio» cuando ya había dos. */
 .repos{display:grid;gap:1.2rem}
+@media (min-width:820px){.repos{grid-template-columns:repeat(2,1fr)}}
 .repo{
   position:relative;display:flex;flex-direction:column;gap:.85rem;
   padding:1.6rem 1.5rem;border:1px solid var(--line);border-radius:var(--radius);

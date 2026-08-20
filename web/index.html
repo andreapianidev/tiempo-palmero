@@ -39,6 +39,7 @@
 <link rel="stylesheet" href="/css/aforos.css">
 <link rel="stylesheet" href="/css/tresd.css">
 <link rel="stylesheet" href="/css/cielo.css">
+<link rel="stylesheet" href="/css/marcas.css">
 <link rel="stylesheet" href="/css/motion.css">
 <noscript><link rel="stylesheet" href="/css/sin-js.css"></noscript>
 </head>
@@ -46,9 +47,97 @@
 
 <a class="saltar" href="#main">Saltar al contenido</a>
 
+<!-- ═══ LOS DIBUJOS ════════════════════════════════════════════════════════
+     Definidos una vez y referenciados con <use>. Van aquí y no en ficheros
+     sueltos porque la CSP del sitio es `img-src 'self'` y porque cada uno
+     serían peticiones que esta página no hace.
+
+     HAY DOS CLASES DE MARCA Y NO SE MEZCLAN, que es lo único que hay que
+     entender de este bloque:
+
+     · LAS DE MARCA AJENA —GitHub y Apple— solo se ponen donde la cosa ES esa
+       marca y se enlaza a ella: los dos repositorios están en GitHub y el
+       programa en 3D se compila en macOS. Es uso nominativo, no un muro de
+       logotipos para aparentar respaldo.
+
+       Y POR ESO NO HAY INSIGNIA DE LA APP STORE. La aplicación no está en la
+       App Store —es una web que se instala desde el navegador— y el programa en
+       3D se compila desde el código. Poner la insignia sería decir que se puede
+       descargar de un sitio del que no se puede, además de saltarse las normas
+       de Apple, que solo la admiten enlazando a una ficha real.
+
+     · LAS DIBUJADAS AQUÍ son una LEYENDA, no logotipos: dicen qué CLASE de dato
+       trae cada fuente —una red de sensores, cartografía, tiempo, viario, mar y
+       fuego, relieve—. Inventarle un emblema al Cabildo habría sido falsificar
+       un escudo oficial; su nombre va escrito, que es lo que pide su CC-BY. -->
 <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
   <symbol id="fl" viewBox="0 0 20 12">
     <path d="M0 6h16.5M11.8 1.2 16.8 6l-5 4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- ── marcas ajenas, solo donde se enlaza a ellas ── -->
+  <symbol id="m-gh" viewBox="0 0 16 16">
+    <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+  </symbol>
+  <symbol id="m-apple" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+  </symbol>
+  <!-- Un cubo isométrico, no el logotipo de Unity: dice «esto es un motor 3D» y
+       la palabra Unity va escrita al lado, que es más honesto que dibujar una
+       marca que no es mía. -->
+  <symbol id="m-cubo" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+      <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z"/>
+      <path d="M12 12.05 20.4 7.3M12 12.05v9.35M12 12.05 3.6 7.3"/>
+    </g>
+  </symbol>
+  <!-- Creative Commons pide que sus marcas se usen; esta acompaña a las licencias
+       que de verdad lo son. -->
+  <symbol id="m-cc" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.6">
+      <circle cx="12" cy="12" r="9.3"/>
+      <path d="M10.1 10.1a2.6 2.6 0 1 0 0 3.8M16.4 10.1a2.6 2.6 0 1 0 0 3.8" stroke-linecap="round"/>
+    </g>
+  </symbol>
+
+  <!-- ── la leyenda: qué CLASE de dato trae cada fuente ── -->
+  <symbol id="g-red" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M4.6 7.2 12 4.4l7.4 4.2M4.6 7.2l2 10.4 10.6 1 2.2-10"/>
+      <circle cx="4.6" cy="7.2" r="1.7"/><circle cx="12" cy="4.4" r="1.7"/>
+      <circle cx="19.4" cy="8.6" r="1.7"/><circle cx="6.6" cy="17.6" r="1.7"/>
+      <circle cx="17.2" cy="18.6" r="1.7"/>
+    </g>
+  </symbol>
+  <symbol id="g-carta" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M2.8 8.4 12 3.8l9.2 4.6L12 13z"/><path d="M2.8 12.9 12 17.5l9.2-4.6M2.8 17 12 21.6l9.2-4.6"/>
+    </g>
+  </symbol>
+  <symbol id="g-tiempo" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M6.4 14.2a3.6 3.6 0 0 1 .8-7.1 5 5 0 0 1 9.4 1.3 3.4 3.4 0 0 1-.6 6.7z"/>
+      <path d="M8.4 17.6 7.6 20M12 17.6l-.8 2.9M15.6 17.6l-.8 2.4"/>
+    </g>
+  </symbol>
+  <symbol id="g-via" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M8.6 3.2 6.2 20.8M15.4 3.2l2.4 17.6"/>
+      <path d="M12 4.6v3M12 10.4v3.2M12 16.6v3.4"/>
+    </g>
+  </symbol>
+  <symbol id="g-mar" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M12 2.2c2.7 3.1 4.4 5.5 4.4 7.9a4.4 4.4 0 0 1-8.8 0c0-1.6.7-3 2-4.1.1 1.4.7 2.2 1.5 2.4-.6-2.3-.2-4.2 1-6.2z"/>
+      <path d="M2.6 17.8c1.9-1.5 3.8-1.5 5.7 0s3.8 1.5 5.7 0 3.8-1.5 5.7 0M2.6 21.6c1.9-1.5 3.8-1.5 5.7 0s3.8 1.5 5.7 0 3.8-1.5 5.7 0"/>
+    </g>
+  </symbol>
+  <symbol id="g-cota" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 2.9c5.4 0 9.4 3.5 9.4 7.8s-4 7.8-9.4 7.8-9.4-3.5-9.4-7.8S6.6 2.9 12 2.9z"/>
+      <path d="M12 6.5c3.2 0 5.6 2 5.6 4.2s-2.4 4.2-5.6 4.2-5.6-2-5.6-4.2S8.8 6.5 12 6.5z"/>
+      <path d="M12 9.9c1.4 0 2.4.4 2.4 1s-1 1-2.4 1-2.4-.4-2.4-1 1-1 2.4-1z"/>
+    </g>
   </symbol>
 </svg>
 
@@ -612,8 +701,8 @@
          dimensiones del proyecto: la isla entera reconstruida a escala real, con el mismo modelo del
          terreno y la misma red de estaciones. Se navega como en Google Earth.</p>
       <p class="plataforma">
-        <b>macOS · Apple Silicon</b>
-        <em>Unity 6 · HDRP 17.5 · se compila desde el código</em>
+        <b><svg class="marca-svg" aria-hidden="true"><use href="#m-apple"/></svg>macOS · Apple Silicon</b>
+        <em><svg class="marca-svg" aria-hidden="true"><use href="#m-cubo"/></svg>Unity 6 · HDRP 17.5 · se compila desde el código</em>
       </p>
     </div>
 
@@ -828,14 +917,16 @@
 
     <div class="fuentes escalona">
       <div class="fuente">
+        <span class="fuente-glifo" aria-hidden="true"><svg class="marca-svg"><use href="#g-red"/></svg></span>
         <h3>Cabildo Insular de La Palma</h3>
         <p>Meteorología, calidad del aire, calidad del cielo, cámaras de incendios, senderos,
            aforos, sitios de interés, miradores y carreteras. Los 49 conjuntos del portal de
            datos abiertos, revisados uno por uno.</p>
-        <span class="lic">CC-BY 4.0</span>
+        <span class="lic"><svg class="marca-svg" aria-hidden="true"><use href="#m-cc"/></svg>CC-BY 4.0</span>
         <a href="https://www.opendatalapalma.es" rel="noopener">opendatalapalma.es <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
       <div class="fuente">
+        <span class="fuente-glifo" aria-hidden="true"><svg class="marca-svg"><use href="#g-carta"/></svg></span>
         <h3>IDECanarias · GRAFCAN</h3>
         <p>Cartografía oficial canaria: el Mapa Topográfico 1:20.000 y la Ortofoto
            Territorial 2024-2025, pedidas tesela a tesela y solo mientras se miran.</p>
@@ -843,14 +934,16 @@
         <a href="https://www.idecanarias.es" rel="noopener">idecanarias.es <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
       <div class="fuente">
+        <span class="fuente-glifo" aria-hidden="true"><svg class="marca-svg"><use href="#g-tiempo"/></svg></span>
         <h3>Open-Meteo</h3>
         <p>Las anclas por encima del techo de la red, el fondo del mapa de viento y el estado
            del mar. Plan gratuito de uso no comercial: esta aplicación no cobra, no tendrá
            suscripción y no mostrará publicidad.</p>
-        <span class="lic">CC-BY 4.0</span>
+        <span class="lic"><svg class="marca-svg" aria-hidden="true"><use href="#m-cc"/></svg>CC-BY 4.0</span>
         <a href="https://open-meteo.com" rel="noopener">open-meteo.com <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
       <div class="fuente">
+        <span class="fuente-glifo" aria-hidden="true"><svg class="marca-svg"><use href="#g-via"/></svg></span>
         <h3>OpenStreetMap</h3>
         <p>El viario completo de la isla —19.770 trazados y 3.373 km— y los topónimos que el
            buscador entiende.</p>
@@ -858,18 +951,20 @@
         <a href="https://www.openstreetmap.org/copyright" rel="noopener">openstreetmap.org <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
       <div class="fuente">
+        <span class="fuente-glifo" aria-hidden="true"><svg class="marca-svg"><use href="#g-mar"/></svg></span>
         <h3>Copernicus EFFIS · EMODnet</h3>
         <p>El histórico de incendios con el que se valida el índice de riesgo, y la batimetría
            real sobre la que se calcula el oleaje.</p>
-        <span class="lic">CC-BY 4.0</span>
+        <span class="lic"><svg class="marca-svg" aria-hidden="true"><use href="#m-cc"/></svg>CC-BY 4.0</span>
         <a href="https://forest-fire.emergency.copernicus.eu" rel="noopener">copernicus.eu <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
       <div class="fuente">
+        <span class="fuente-glifo" aria-hidden="true"><svg class="marca-svg"><use href="#g-cota"/></svg></span>
         <h3>Mapzen Terrain Tiles · AWS</h3>
         <p>El modelo de elevación sobre el que se corrige la altitud, se dibuja el relieve y
            se levanta la vista tridimensional. Un solo modelo para las tres cosas — y el
            mismo del que salen las curvas de nivel de esta página.</p>
-        <span class="lic">Dominio público / CC-BY</span>
+        <span class="lic"><svg class="marca-svg" aria-hidden="true"><use href="#m-cc"/></svg>Dominio público / CC-BY</span>
         <a href="https://registry.opendata.aws/terrain-tiles/" rel="noopener">registry.opendata.aws <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></a>
       </div>
     </div>
@@ -888,7 +983,7 @@
 
     <div class="repos escalona">
       <a class="repo" href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener">
-        <span class="etiq">Aplicación web</span>
+        <span class="etiq"><svg class="marca-svg" aria-hidden="true"><use href="#m-gh"/></svg>Aplicación web</span>
         <h3>andreapianidev/tiempo-palmero</h3>
         <p>El motor de interpolación, el control de calidad de la red, las capas y la escena
            tridimensional. React y MapLibre GL, sin proveedor de mapas de pago y sin clave de
@@ -896,7 +991,7 @@
         <span class="ir">Apache-2.0 · ver en GitHub <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg></span>
       </a>
       <a class="repo" href="https://github.com/andreapianidev/lapalma3d" rel="noopener">
-        <span class="etiq">Aplicación de escritorio</span>
+        <span class="etiq"><svg class="marca-svg" aria-hidden="true"><use href="#m-gh"/></svg>Aplicación de escritorio</span>
         <h3>andreapianidev/lapalma3d</h3>
         <p>La isla en tres dimensiones. Dos piezas: <strong>atlas</strong>, en Swift, que baja los
            datos oficiales y los convierte en lo que Unity sabe abrir, y el proyecto de
@@ -949,6 +1044,7 @@
         <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
       </a>
       <a class="btn btn--fino" href="https://github.com/andreapianidev/lapalma3d" rel="noopener">
+        <svg class="marca-svg" aria-hidden="true"><use href="#m-gh"/></svg>
         <span>La isla en 3D</span>
         <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
       </a>
@@ -962,8 +1058,8 @@
   <div class="wrap pie">
     <p>
       <a href="https://app.tiempopalmero.com">app.tiempopalmero.com</a> ·
-      <a href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener">Código</a> ·
-      <a href="https://github.com/andreapianidev/lapalma3d" rel="noopener">La Palma 3D</a> ·
+      <a href="https://github.com/andreapianidev/tiempo-palmero" rel="noopener"><svg class="marca-svg" aria-hidden="true"><use href="#m-gh"/></svg>Código</a> ·
+      <a href="https://github.com/andreapianidev/lapalma3d" rel="noopener"><svg class="marca-svg" aria-hidden="true"><use href="#m-gh"/></svg>La Palma 3D</a> ·
       <a href="mailto:andreapiani.dev@gmail.com">andreapiani.dev@gmail.com</a>
     </p>
     <p class="der">
