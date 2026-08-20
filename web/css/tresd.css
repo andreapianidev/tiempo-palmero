@@ -53,12 +53,15 @@
 
 /* ── la banda de capturas ────────────────────────────────────────────────── */
 /* UNA GRANDE Y DOS AL LADO, no tres iguales. La primera versión ponía las tres
-   en columnas de un tercio y a la anchura real de esta página —la columna de
-   lectura son unos 700 px, porque la banda de la derecha es de la isla— cada
-   una salía a 215 px. Esta sección presume de 31 cm por píxel, y a 215 px de
-   ancho no se distingue un barranco de una mancha. La primera ocupa la fila
-   entera y es la que enseña el detalle; las otras dos, escalonadas, hacen de
-   pie de página visual. */
+   en columnas de un tercio y con la banda de la isla puesta —la columna de
+   lectura eran unos 700 px— cada una salía a 215. Esta sección presume de 31 cm
+   por píxel, y a 215 px de ancho no se distingue un barranco de una mancha.
+
+   Sin banda la columna es de 1.168 px a 1440 de ventana y tres iguales saldrían
+   a 373, que ya se verían. Se queda como está de todas formas, y ahora por otro
+   motivo: la de arriba enseña el detalle a 1.168 px de ancho —tres veces lo que
+   daría el reparto en tercios— y las dos de abajo, escalonadas, hacen de pie de
+   página visual. Es una jerarquía, no un apaño por falta de sitio. */
 .vistas{display:grid;gap:clamp(1.5rem,4vh,2.6rem);margin-top:clamp(2.2rem,6vh,3.4rem)}
 @media (min-width:760px){
   .vistas{grid-template-columns:repeat(2,1fr);gap:1.8rem;align-items:start}

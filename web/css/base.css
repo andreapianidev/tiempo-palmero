@@ -34,10 +34,17 @@
    en los `calc()` en vez de una cadena. */
 @property --asc{syntax:'<number>';initial-value:0;inherits:true}
 
-/* Registrada por lo mismo, y además porque `isla3d.js` la LEE: sin registrar,
-   `getComputedStyle` devuelve el `clamp(...)` sin resolver y `parseFloat` da
-   NaN. Con ella devuelve los píxeles ya calculados. */
-@property --banda{syntax:'<length>';initial-value:0px;inherits:true}
+/* EL ENCUADRE DE LA ISLA, y están registradas porque `isla3d.js` LAS LEE: sin
+   registrar, `getComputedStyle` devuelve la expresión sin resolver y
+   `parseFloat` da NaN. Con ellas devuelve el número ya calculado.
+
+   Son dos desplazamientos del plano de proyección, en pantalla normalizada:
+   1 es media pantalla. No mueven la cámara —el recorrido de `camara()` es el
+   mismo— sino el encuadre, que es lo que se quiere ajustar aquí: la isla queda
+   un poco a la derecha y un poco abajo, y el ángulo alto de la izquierda, donde
+   entra el titular, se queda de cielo. */
+@property --isla-sesgo{syntax:'<number>';initial-value:0;inherits:true}
+@property --isla-caida{syntax:'<number>';initial-value:0;inherits:true}
 
 :root{
   --asc:0;
@@ -90,23 +97,31 @@
      `rail.css`. */
   --rail:clamp(0px,12vw,168px);
 
-  /* La banda de la derecha, reservada para la isla. Es la simétrica del raíl:
-     el raíl manda en la izquierda y el relieve en la derecha, y el texto
-     vive entre los dos SIN pisar ninguno.
+  /* SE FUE LA BANDA DE LA DERECHA. Hubo aquí una columna reservada de hasta
+     700 px en la que la isla giraba a plena luz mientras el texto vivía
+     apretado en el hueco que sobraba: a 1440 px de ventana la columna de
+     lectura se quedaba en 679, y en una pantalla de 2000 el cromo se llevaba
+     848 px. Un fondo no se reserva sitio; se pone detrás.
 
-     Existe porque no hay manera de tener las dos cosas en el mismo sitio. Con
-     la isla iluminada por detrás del texto, el fondo bajo un pie de foto subía
-     a rgb(119,117,94) y el contraste caía a 1,7:1; para bajarlo al mínimo hacía
-     falta apagar el relieve hasta dejarlo en un manchón. Apartándolo, se puede
-     encender del todo. */
-  --banda:0px;
-  /* 1080 y no 1180: la columna de lectura tiene que dejarle sitio a la isla en
-     el flanco derecho, y de paso las líneas del panel del modelo bajan de 790 a
-     700 px, que es una medida de lectura y no un renglón de hoja de cálculo. */
-  --max:1080px;
+     Lo que hacía falta apartar sigue haciendo falta: con el relieve a plena luz
+     detrás de un párrafo el fondo subía a rgb(119,117,94) y el contraste caía a
+     1,7:1. Ahora no se aparta, se apaga — el lienzo va al 40 % bajo un velo
+     parejo del 60 %, y lo que se ve del relieve es el 16 % de su amplitud. Los
+     dos números salen de despejar el mismo mínimo de siempre y están medidos en
+     `chrome.css`, que es donde se ponen. */
+  --isla-sesgo:0;
+  --isla-caida:0;
+  /* 1560 y no 1080: sin banda, la columna de lectura es la ventana menos el
+     raíl. A 1440 px pasa de 679 a 1168, y el tope solo entra a partir de
+     1728 px de ventana para que en una pantalla muy ancha el contenido no se
+     estire sin fin. Los bloques de texto no crecen con él —siguen topados en
+     rem donde se declaran— : lo que crece son las rejillas y las capturas. */
+  --max:1560px;
 }
 
-@media (min-width:1180px){:root{--banda:clamp(300px,34vw,700px)}}
+/* El encuadre solo se descentra donde hay sitio para notarlo. Por debajo de
+   1080 px la isla va centrada y de telón, que es como estaba. */
+@media (min-width:1080px){:root{--isla-sesgo:.18;--isla-caida:.2}}
 
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
@@ -116,16 +131,41 @@ body{
   background:var(--ink);
   color:var(--fg-dim);
   font-family:var(--sans);
-  font-size:clamp(1rem,.62rem+.55vw,1.12rem);
+  font-size:clamp(1rem,.62rem + .55vw,1.12rem);
   line-height:1.62;
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
 }
 
+/* ── la escala tipográfica ───────────────────────────────────────────────── */
+/* LOS ESPACIOS ALREDEDOR DEL `+` NO SON DE ESTILO, SON SINTAXIS, y esta hoja
+   estuvo meses sin ellos. En `calc()` y en `clamp()` la gramática de CSS exige
+   espacio a los dos lados de `+` y de `−`, porque sin él «1rem+5.4vw» se lee
+   como un solo componente y no como una suma. Una declaración que no se
+   entiende se tira entera y en silencio: no hay aviso en la consola, y lo que
+   queda es lo que traiga el navegador de fábrica.
+
+   ESO ES LO QUE SE ESTABA SIRVIENDO. Siete declaraciones —el cuerpo del texto,
+   h1, h2, h3, `.lede`, la cifra de `.tira` y el h2 del cierre— iban escritas
+   sin espacios y ninguna llegaba a aplicarse. El titular, que aquí pide 95 px a
+   1440 de ventana, salía a los 32 px de fábrica de un h1; el h2, a 24. La
+   página entera se veía a la escala de un documento sin hoja de estilo, y
+   ningún número de este fichero era el que se veía.
+
+   Medido con `.tmp/medir.mjs` sobre la página servida, ya con los espacios:
+   Barlow 700 a −0,04 em da **0,402 em por carácter**, así que la línea larga
+   —«El tiempo en tu barranco,», 25 caracteres— pide 1.061 px con el tope de
+   6,6 rem, y la columna más estrecha en la que se llega a ese tope —1.728 px de
+   ventana— mide 1.456. Una sola línea de 900 px de ventana para arriba.
+
+   `*` y `/` no piden espacio, así que los `calc(var(--asc) * 100%)` de la
+   página sí funcionaban. La regla es solo para `+` y `−`. */
 h1,h2,h3{margin:0;color:var(--fg);font-weight:600;letter-spacing:-.025em;line-height:1.06;text-wrap:balance}
-h1{font-weight:700;letter-spacing:-.04em;line-height:.95;font-size:clamp(2.5rem,1.1rem+5.4vw,5.8rem)}
-h2{font-size:clamp(1.8rem,1rem+2.9vw,3.2rem);letter-spacing:-.032em}
-h3{font-size:clamp(1.02rem,.9rem+.4vw,1.2rem);letter-spacing:-.015em;line-height:1.25}
+/* Y el tope sube de 5,8 a 6,6 rem porque el titular dejó de vivir en una
+   columna de 679 px. */
+h1{font-weight:700;letter-spacing:-.04em;line-height:.95;font-size:clamp(2.5rem,1.05rem + 5.4vw,6.6rem)}
+h2{font-size:clamp(1.8rem,1rem + 2.9vw,3.2rem);letter-spacing:-.032em}
+h3{font-size:clamp(1.02rem,.9rem + .4vw,1.2rem);letter-spacing:-.015em;line-height:1.25}
 p{margin:0 0 1em}
 p:last-child{margin-bottom:0}
 strong,b{color:var(--fg);font-weight:600}

@@ -1,18 +1,31 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    LA LECTURA DEL RÉGIMEN · el pie de foto del relieve
 
-   Al pie de la banda derecha, en el mismo sitio en el que la isla gira: qué
-   régimen está pintado, de qué día es y con qué cifra medida. Es la pieza que
-   distingue un relieve que cambia de color de un relieve que dice algo.
+   Qué régimen está pintado en la isla del fondo, de qué día es y con qué cifra
+   medida. Es la pieza que distingue un relieve que cambia de color de un
+   relieve que dice algo.
 
-   ES EL HERMANO DEL RAÍL, y se compone como tal. El raíl manda en el
-   raíl de la izquierda y contesta «a qué altura vas»; esto manda en la banda de
-   la derecha y contesta «qué tiempo estás mirando». Misma familia mono, mismo
+   ES EL HERMANO DEL RAÍL, y se compone como tal: misma familia mono, mismo
    ámbar para la cifra que importa, misma alineación hacia el canto de pantalla.
+   El raíl manda en el flanco izquierdo y contesta «a qué altura vas»; esto se
+   sienta en el ángulo bajo derecho y contesta «qué tiempo estás mirando».
 
-   SOLO DONDE HAY BANDA. Por debajo de 1180 px la isla es un telón al 30 % detrás
-   del texto —no hay flanco libre— y un pie de foto ahí no sería una lectura, sería
-   un estorbo encima de un párrafo. Se apaga y no se dibuja.
+   ── DE PLACA DESVANECIDA A PANEL, Y POR QUÉ ────────────────────────────────
+   Esto vivía al pie de la banda de la isla, que era una columna de hasta 700 px
+   donde no había una sola letra: bastaba con una placa de degradado por debajo
+   para levantarle el contraste sobre el relieve, y el texto de la página nunca
+   llegaba hasta ahí. Sin banda, el contenido pasa por ese ángulo, y un
+   degradado a media tinta debajo de un párrafo no es una lectura: son dos
+   textos superpuestos.
+
+   Así que ahora es lo que de verdad era: un panel flotante, con el mismo
+   grafismo que los de la aplicación —filete, canto redondeado, cabecera de
+   rótulo— y por encima del contenido. Que la portada se parezca al producto es
+   lo que promete el enlace, y en el producto los paneles flotan sobre el mapa.
+
+   ── SOLO DONDE HAY SITIO ───────────────────────────────────────────────────
+   Por debajo de 1180 px el panel se comería un tercio del ancho de un teléfono
+   por encima del texto que se está leyendo. Se apaga y no se dibuja.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .regimen {
@@ -23,61 +36,32 @@
   /* Solo cuando el relieve está en pie: sin WebGL no hay régimen que leer. */
   .isla3d-ok .regimen {
     display: block;
+    /* Cromo, como la barra y el raíl: por encima del contenido, que pasa por
+       debajo. Por debajo de la barra, que es la que manda. */
     position: fixed;
-    z-index: 2;
+    z-index: 5;
     right: clamp(1.1rem, 2.4vw, 2.8rem);
     bottom: clamp(1.5rem, 5vh, 3.4rem);
-    /* Cabe dentro de la banda y no la desborda: la nota más larga —«+3,6 °C al
-       cruzar los 650 m · R² 0,25»— pide 30 caracteres mono. */
-    width: min(calc(var(--banda) - 3rem), 30ch);
+    /* La nota más larga —«+3,6 °C al cruzar los 650 m · R² 0,25»— pide 30
+       caracteres mono; con el relleno del panel, 30ch es el ancho útil. */
+    width: 30ch;
+    padding: 0.85rem 1rem 0.95rem;
     text-align: right;
     pointer-events: none;
+
+    /* La misma carcasa que un panel de la aplicación. Opaca de verdad: es lo
+       que permite que el texto de dentro se mida contra su propio fondo y no
+       contra la ladera iluminada que pasa por detrás. */
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
   }
 
-  /* LA PLACA. El texto va sobre el relieve iluminado, así que necesita fondo
-     propio: sin él, la nota en `--fg-faint` cae por debajo del mínimo legible
-     cuando por detrás pasa una ladera a plena luz.
-
-     EL DESVANECIDO TIENE QUE ACABAR DENTRO DE LA CAJA, o la placa se ve como un
-     rectángulo pegado encima del relieve en vez de como una sombra.
-
-     Y TIENE QUE SER DENSA A LO ANCHO DE TODA LA LÍNEA. La versión anterior
-     centraba el degradado y se apagaba demasiado pronto hacia la izquierda:
-     medido con el mar de nubes detrás, la nota daba **2,90:1** con alisio y
-     3,81:1 con temporal, contra un mínimo de 4,5. La cuenta de cuánto hace
-     falta: `--fg-faint` (#a49d92) pide un fondo que no pase de rgb(54,54,54), y
-     debajo de la nota hay nube a rgb(150,150,150) larga, así que la placa tiene
-     que poner **0,70 de alfa** ahí. Por eso ahora el degradado se ancla al canto
-     derecho —que es hacia donde se alinea el texto—, se mantiene por encima de
-     0,9 hasta pasada la línea entera y solo entonces se abre hacia la izquierda,
-     donde ya no hay letras. */
-  .isla3d-ok .regimen::before {
-    content: '';
-    position: absolute;
-    /* La caja se sale de la pantalla por la derecha y por abajo a propósito: por
-       esos dos lados no hay borde que desvanecer porque no se ve. Los que sí se
-       ven —izquierda y arriba— los apaga el degradado y la máscara. */
-    inset: -3.6rem -4rem -5rem -13rem;
-    /* UN EJE POR LADO, y no un degradado radial. Con el radial no salían las dos
-       condiciones a la vez: para que la nota tuviera 0,7 de alfa a lo largo de
-       sus 30 caracteres, la elipse tenía que ser tan grande que no llegaba a
-       cero dentro de la caja, y volvía a verse el canto recto cruzando el
-       relieve. Separados, cada uno hace lo suyo: el degradado da la densidad a
-       lo ancho de la línea y la máscara la apaga por arriba y por abajo. */
-    background: linear-gradient(
-      to left,
-      rgba(13, 12, 11, 0.96) 0 46%,
-      rgba(13, 12, 11, 0.78) 60%,
-      rgba(13, 12, 11, 0.3) 78%,
-      rgba(13, 12, 11, 0) 94%
-    );
-    mask-image: linear-gradient(to bottom, transparent 0, #000 26%, #000 72%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 26%, #000 72%, transparent 100%);
-    z-index: -1;
-  }
-
-  /* El filete: corto, ámbar y arriba a la derecha. Es el mismo gesto que la
-     marca del hito encendido del raíl, del otro lado de la pantalla. */
+  /* El filete: corto, ámbar y a lo ancho de la cabecera. Es el mismo gesto que
+     la marca del hito encendido del raíl, del otro lado de la pantalla. */
   .regimen b {
     display: block;
     padding-top: 0.62rem;

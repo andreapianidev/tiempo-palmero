@@ -27,18 +27,25 @@
   border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden;
   text-align:left;
 }
-/* DOS COLUMNAS Y SE ACABÓ, aunque haya sitio de sobra en la ventana. Esta
+/* LA TERCERA COLUMNA ENTRA A 1400 PX, Y ES LA MEDIDA LA QUE LO DICE. Esta
    sección vive dentro de la columna de lectura, que NO es el ancho de la
-   ventana: el raíl se lleva 168 px por la izquierda y la banda de la isla hasta
-   700 por la derecha. A 1440 px de ventana quedan 782 de columna, y ahí tres
-   columnas salen a 245 px cada una — con «déficit de vapor» partido en tres
-   líneas y seis párrafos convertidos en tiras estrechas. Con dos, 380 px y el
-   texto se lee.
+   ventana: el raíl se lleva 168 px por la izquierda y el `.wrap` 52 por cada
+   lado. Al irse la banda de la isla —hasta 700 px que el texto no podía pisar—
+   esa columna pasó a 1.168 px a 1440 de ventana, y ahí tres baldosas salen a
+   389 cada una.
 
-   Una consulta de medios no puede arreglarlo porque mide la VENTANA y el que
-   manda aquí es el ancho del contenedor; y seis baldosas llenan tres filas de
-   dos exactamente igual de bien que dos de tres. */
+   El listón sigue siendo el mismo de cuando eran dos: 380 px es el ancho con el
+   que «déficit de vapor» no se parte en tres líneas y el párrafo de debajo deja
+   de ser una tira. Con la banda puesta, a 1440 quedaban 782 px de columna y
+   tres salían a 245 — por eso eran dos. Ahora 1400 px de ventana dan 1.128 de
+   columna y 375 por baldosa, justo en el listón; por debajo, dos.
+
+   La consulta mide la VENTANA y el que manda es el ancho del contenedor, así
+   que el punto de corte hay que traducirlo a mano cada vez que cambie el raíl o
+   el `.wrap`. Y seis baldosas llenan dos filas de tres tan bien como tres de
+   dos. */
 @media (min-width:640px){.capacidades{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1400px){.capacidades{grid-template-columns:repeat(3,1fr)}}
 
 .capacidad{
   display:flex;flex-direction:column;gap:.7rem;

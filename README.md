@@ -48,9 +48,15 @@ las dos tipografías de la aplicación van servidas desde `web/fonts/`, y la CSP
 del sitio es `default-src 'none'` con todo lo demás en `'self'`.
 
 La página se lee como una subida de la costa al Roque, y **la isla está
-levantada en tres dimensiones a un lado**: una malla de 209×333 cotas que gira
-con el desplazamiento mientras la cámara baja hacia la cumbre y el sol cruza el
-cielo hasta ponerse. Sale del mismo modelo de elevación con el que la aplicación
+levantada en tres dimensiones por detrás de todo**: una malla de 209×333 cotas
+que gira con el desplazamiento mientras la cámara baja hacia la cumbre y el sol
+cruza el cielo hasta ponerse. Tuvo una banda reservada de hasta 700 px en el
+flanco derecho —el texto vivía apretado en lo que sobraba, 679 px a 1440 de
+ventana— y eso la convertía en un segundo contenido compitiendo con el primero.
+Ahora ocupa la ventana entera, se apaga al 40 % bajo un velo parejo, y el texto
+va a todo el ancho: 1.168 px en esa misma pantalla. Cuánto se puede encender el
+relieve no es una elección de gusto, es lo que deje el contraste medido, y está
+apuntado en `web/css/chrome.css` con las dos orillas. Sale del mismo modelo de elevación con el que la aplicación
 corrige la temperatura —`npm run web:terreno` escribe la malla,
 `web/js/isla3d.js` la dibuja con WebGL a pelo, sin biblioteca— y va coloreada
 con la escala de temperatura de la aplicación.
@@ -114,9 +120,19 @@ la cola de peticiones más larga, no.
 
 El segundo es el que de verdad manda: fotografía la página en cada parada, con
 las letras y sin ellas, y mide el contraste de **cada texto contra los píxeles
-que de verdad tiene debajo** — no contra el color declarado en el CSS. Son 475
-medidas, y encontró dos avisos por debajo del mínimo la última vez que se tocó
-esto.
+que de verdad tiene debajo** — no contra el color declarado en el CSS. Son unas
+451 medidas —el total baila unas decenas con qué revelados han acabado en cada
+parada— y es lo que fijó el 40 % del relieve al pasarlo a fondo: con el 55 el
+pie de la captura de los senderos se quedaba en 4,45:1 contra un mínimo de 4,5.
+Al 40 la peor de las 451 da 5,13:1.
+
+De paso, esa misma pasada destapó que **siete `clamp()` de la hoja de estilos no
+se estaban aplicando**: en CSS el `+` de un `calc()` o un `clamp()` pide espacio
+a los dos lados, y sin él la declaración se tira entera y en silencio. El
+titular de la portada, que pide 95 px a 1440 de ventana, llevaba meses saliendo
+a los 32 px de fábrica de un `h1`, y con él el cuerpo del texto, los tres
+niveles de título, la entradilla y las cifras de la tira. Está contado en
+`web/css/base.css`.
 
 ![La isla entera en vista 3D sobre ortofoto, con la nubosidad y la lluvia del momento dibujadas en volumen y las temperaturas de la red del Cabildo repartidas por la costa y la cumbre](docs/isla-satelite-3d.jpg)
 

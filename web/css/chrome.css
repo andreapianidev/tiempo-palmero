@@ -4,62 +4,90 @@
    Lo que rodea al contenido y no pertenece a ninguna sección. El raíl de la
    izquierda salió de aquí a `rail.css` cuando pasó de decir la cota a decir
    qué se cuenta en cada franja: este fichero llevaba cinco cosas dentro y ya
-   pasaba de 250 líneas. La isla de la derecha se queda, porque es la otra
-   mitad de la misma idea que el raíl —la página es una subida y las dos van
-   marcando por dónde vas— y no se puede explicar sin el velo de lectura que
-   tiene justo debajo.
+   pasaba de 250 líneas. La isla se queda, porque no se puede explicar sin el
+   velo de lectura que tiene justo debajo: son una sola pieza.
+
+   LA ISLA DEJÓ DE SER UNA COLUMNA. Estaba en una banda reservada a la derecha
+   —hasta 700 px de ventana que el texto no podía pisar— y eso es lo contrario
+   de un fondo: era un segundo contenido, iluminado y compitiendo. Ahora ocupa
+   la ventana entera por detrás de todo y se apaga hasta donde la deja el
+   contraste, que es lo que hace que un fondo sea un fondo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .piel{position:relative;z-index:2}
 
 /* ── la isla en tres dimensiones ─────────────────────────────────────────── */
-/* El lienzo NO ocupa la ventana entera: ocupa la mitad derecha y se desvanece
-   por su canto izquierdo. La primera versión iba a pantalla completa con la
-   cámara descentrada, y la isla se paseaba por encima del titular — bonita y
-   ilegible. Recortar el lienzo es lo único que garantiza que la columna de
-   lectura no la pise NUNCA, en ningún punto del recorrido, sin tener que
-   perseguir la cámara con la medida del contraste.
+/* El lienzo ocupa la ventana entera y va detrás de todo. El encuadre no se
+   persigue con la cámara: se descentra el plano de proyección con
+   `--isla-sesgo` y `--isla-caida` (`base.css`), y así la masa de la isla cae
+   al cuarto bajo derecho y el alto izquierdo, por donde entra el titular, se
+   queda de cielo.
 
    Sale con fundido: aparece cuando la malla está construida, no antes. */
 .isla3d{
-  position:fixed;top:0;right:0;bottom:0;z-index:1;
-  /* Más ancho que la banda: la isla se sale por debajo del velo, que es lo que
-     le da profundidad en vez de dejarla dentro de una caja. */
-  width:calc(var(--banda) + 12vw);height:100%;
+  position:fixed;inset:0;z-index:1;
+  width:100%;height:100%;
   pointer-events:none;opacity:0;transition:opacity 1.6s ease .2s;
 }
-.isla3d.viva{opacity:.95}
 
-/* En el móvil no hay mitad derecha que valga: el texto ocupa todo el ancho, así
-   que la isla se queda de telón muy bajo y con el pie desvanecido. */
+/* EL 40 % NO ES UNA ELECCIÓN, ES LO QUE CABE, y está medido con
+   `scripts/checks/portada-regimenes.ts` — 451 medidas de contraste en catorce
+   paradas, siete regímenes por dos anchos de pantalla. El total baila unas
+   decenas entre pasadas porque depende de qué revelados han acabado en cada
+   parada.
+
+   LAS DOS ORILLAS. El texto que primero se cae es el pie de la captura de los
+   senderos, en `--fg-faint` (#a49d92), a 1440 px y con el alisio pintado: es
+   donde la ladera iluminada le pasa justo por detrás.
+
+     opacidad   fondo bajo esa letra   contraste   mínimo 4,5
+       0,40        rgb(43,46,40)         5,13  ✓
+       0,55        rgb(52,56,49)         4,45  ✗
+
+   Y detrás de ese va el raíl con la noche puesta, que al 40 % da 5,07:1 sobre
+   rgb(45,46,45). Los dos son la misma cuenta: `--fg-faint` a 4,5:1 pide un
+   fondo que no pase de rgb(55,55,55) de luminancia, y el 40 % deja la ladera
+   más clara del relieve justo por debajo.
+
+   Y NO SE GANA NADA REPARTIÉNDOLO DE OTRO MODO: lo que se ve del relieve es
+   (1 − velo)·opacidad, y con el velo al 0,60 del tramo central eso da 0,16 con
+   este par y 0,18 con 0,75/0,71. Lo que manda es el tope de la ladera más
+   clara, no el reparto entre las dos capas.
+
+   SE VUELVE A MEDIR cada vez que se toque el velo, el brillo de un régimen o la
+   disposición del texto — las tres cosas mueven la misma cifra. Y una de ellas
+   se movió al arreglar los `clamp()` de `base.css`: con el titular a 95 px en
+   vez de a los 32 de fábrica, las letras tapan más fondo y el peor caso cambió
+   de sitio. */
+.isla3d.viva{opacity:.4}
+
+/* EL VELO DE LECTURA. Una sola capa entre la isla y el contenido, y desde que
+   el texto ocupa todo el ancho tiene que ser pareja: ya no hay flanco sin
+   letras al que echar el desvanecido. Lo que queda es un tramo central de 0,60
+   y dos cantos más densos —arriba, donde van la barra y el titular; abajo,
+   donde va la lectura del régimen—, que es donde el fondo tiene que aguantar
+   texto pequeño.
+
+   Va después del lienzo en el marcado: mismo z-index, y pinta encima. Tapa
+   también el cielo de `atmosfera.css`, que está por debajo — y ahí ha ganado,
+   porque el velo viejo lo dejaba al 3 % en toda la columna de lectura y la
+   calima y las estrellas no llegaban a verse en el escritorio. */
+.velo-lectura{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(13,12,11,.78) 0,
+    rgba(13,12,11,.6) 16%,
+    rgba(13,12,11,.6) 76%,
+    rgba(13,12,11,.8) 100%);
+}
 @media (max-width:1079px){
+  /* En el móvil la isla va centrada y sin descentrar el encuadre: se queda de
+     telón muy bajo, con el pie desvanecido, y el texto baja sobre tinta. */
   .isla3d{
-    width:100%;
     mask-image:linear-gradient(180deg,#000 0,#000 46%,transparent 88%);
     -webkit-mask-image:linear-gradient(180deg,#000 0,#000 46%,transparent 88%);
   }
   .isla3d.viva{opacity:.3}
-}
-
-/* EL VELO DE LECTURA. Una sola capa entre la isla y el contenido: tinta densa
-   sobre el flanco izquierdo, que se abre hacia la derecha. Es lo que permite
-   que el relieve esté iluminado de verdad sin que el texto que le pasa por
-   delante pierda contraste — los valores salen de medirlo, no de mirarlo.
-   Va después del lienzo en el marcado: mismo z-index, y pinta encima. */
-.velo-lectura{
-  position:fixed;inset:0;z-index:1;pointer-events:none;
-  /* El corte no es estético: la parte densa acaba EXACTAMENTE donde acaba la
-     columna de texto, `100% − --banda`, y todo el desvanecido cae dentro de la
-     banda, donde no hay una sola letra. Así el relieve puede ir a plena luz sin
-     que ningún párrafo pierda contraste. */
-  background:linear-gradient(90deg,
-    rgba(13,12,11,.97) 0 calc(100% - var(--banda)),
-    rgba(13,12,11,.55) calc(100% - var(--banda) * .86),
-    transparent calc(100% - var(--banda) * .68));
-}
-@media (max-width:1079px){
-  /* Sin flanco despejado, el velo se vuelve horizontal: la isla asoma por
-     arriba y el texto baja sobre tinta. */
   .velo-lectura{
     background:linear-gradient(180deg,
       rgba(13,12,11,.35) 0 22%,
@@ -73,19 +101,23 @@ html:not(.isla3d-ok) .velo-lectura{display:none}
 /* Cuando el relieve está en pie, el plano de curvas de nivel sobra. */
 .isla3d-ok .isla-fija{display:none}
 
-/* ── la isla, al fondo y a la derecha ────────────────────────────────────── */
+/* ── la isla, al fondo ───────────────────────────────────────────────────── */
 /* Las curvas de nivel salen del DEM de la aplicación (`scripts/web-island.ts`).
    Se quedan fijas mientras la página pasa por delante, y la cota que toca a la
    altura de lectura se enciende en ámbar. Es el único adorno de la página que
    no se puede dibujar sin haber medido la isla. */
 .isla-fija{
   position:fixed;z-index:1;pointer-events:none;
-  top:50%;right:-1vw;
+  /* Al mismo sitio al que el sesgo lleva el relieve: un poco a la derecha y un
+     poco abajo, para que el plano de repuesto encuadre como el que sustituye.
+     El 9 % de la ventana es lo que valen `--isla-sesgo` .18 y `--isla-caida` .2
+     llevados a píxeles —la mitad, porque van en pantalla normalizada—. */
+  top:50%;left:50%;
   /* Entera dentro de la ventana: recortada por arriba y por abajo deja de
      leerse como una isla y pasa a ser un rayado. El límite en `vw` es para que
      en una pantalla apaisada no se coma el texto. */
-  height:min(94vh,62vw);translate:0 -50%;
-  opacity:.48;
+  height:min(94vh,62vw);translate:calc(-50% + 9vw) calc(-50% + 9vh);
+  opacity:.4;
 }
 .isla-fija .isla{height:100%;width:auto;display:block;overflow:visible}
 .isla-fija path{
@@ -118,43 +150,23 @@ html:not(.isla3d-ok) .velo-lectura{display:none}
 @media (max-width:1079px){
   /* En el móvil el texto ocupa todo el ancho y la isla le pasa por detrás:
      a .18 el rótulo de un aviso se quedaba en 4,5:1 justo. A .14 sube a 4,9. */
-  .isla-fija{right:-30vw;height:min(80vh,110vw);opacity:.14}
+  .isla-fija{left:auto;right:-30vw;height:min(80vh,110vw);translate:0 -50%;opacity:.14}
 }
 
 /* ── barra superior ──────────────────────────────────────────────────────── */
+/* LA TINTA VA AL 95 %, Y ESTÁ MEDIDO. Antes eran 78 en general y 95 solo por
+   encima de 1180 px, donde la barra cruzaba la banda de la isla; ahora el
+   relieve pasa por debajo de la barra en TODO el recorrido y en cualquier
+   ancho, así que el caso peor es el de siempre: con el 90 % los enlaces del
+   menú se quedaban en 3,6:1. Sigue con desenfoque y un 5 % de transparencia,
+   así que la isla se sigue intuyendo pasar por debajo. */
 .top{
   position:sticky;top:0;z-index:6;
-  background:color-mix(in srgb,var(--ink) 78%,transparent);
+  background:color-mix(in srgb,var(--ink) 95%,transparent);
   backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
   border-bottom:1px solid var(--line-soft);
 }
 .top-in{display:flex;align-items:center;gap:1.2rem;min-height:58px}
-
-/* LA BARRA SE SALE DE LA SANGRÍA DE LA BANDA, y no es un capricho de encuadre.
-   `.piel` reserva la banda de la isla con `padding-right`, y la barra estaba
-   dentro: a 1440 px le quedaban 696 px de hueco para un contenido que mide 695,
-   así que iba justa por un píxel y por debajo de esa anchura los cuatro enlaces
-   del menú se partían en dos líneas —medido en los tres motores, no era cosa de
-   Safari—. La barra es cromo, como el raíl: puede cruzar por encima de la
-   banda, que va detrás y desenfocada.
-
-   El margen negativo cancela la sangría; el `margin-inline:0` mantiene la marca
-   alineada con la columna de texto en vez de recentrarla 105 px a la derecha; y
-   la tinta sube del 78 al 95 % porque ahí detrás ya no hay fondo oscuro sino
-   relieve iluminado: medido sobre el recorrido entero, con el 90 % los enlaces
-   del menú se quedaban en 3,6:1. Sigue teniendo desenfoque y un 5 % de
-   transparencia, así que la isla se sigue intuyendo pasar por debajo. */
-@media (min-width:1180px){
-  .top{margin-right:calc(var(--banda) * -1);background:color-mix(in srgb,var(--ink) 95%,transparent)}
-  /* `100%` aquí es el ancho de la barra ya ensanchada, así que `100% − banda`
-     vuelve a ser el ancho de la columna: el mismo cálculo de centrado que hace
-     `.wrap` dentro de `main`. Sin esto, en pantallas muy anchas la marca se
-     quedaba 19 px a la izquierda del titular. */
-  .top .wrap{
-    margin-left:max(0px,calc((100% - var(--banda) - var(--max)) / 2));
-    margin-right:0;
-  }
-}
 
 .marca{
   display:flex;align-items:center;gap:.6rem;

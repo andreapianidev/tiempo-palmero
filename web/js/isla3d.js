@@ -78,12 +78,19 @@ function arrancar(lienzo) {
    * descentramiento—, y es lo que deja la isla a la derecha y la columna de texto
    * despejada a la izquierda sin torcer el punto de vista.
    */
-  function perspectiva(fovY, aspecto, cerca, lejos, sesgo) {
+  /**
+   * Perspectiva con el plano de proyección descentrado. `sesgoX` y `sesgoY` son
+   * un corrimiento directo en pantalla normalizada —1 es media pantalla—: se
+   * suman al resultado de dividir por w, así que mueven el encuadre sin girar
+   * la cámara ni deformar la isla. Positivo, a la derecha y hacia arriba.
+   */
+  function perspectiva(fovY, aspecto, cerca, lejos, sesgoX, sesgoY) {
     var f = 1 / Math.tan(fovY / 2)
     var m = new Float32Array(16)
     m[0] = f / aspecto
     m[5] = f
-    m[8] = -sesgo
+    m[8] = -sesgoX
+    m[9] = -sesgoY
     m[10] = (lejos + cerca) / (cerca - lejos)
     m[11] = -1
     m[14] = (2 * lejos * cerca) / (cerca - lejos)
@@ -356,9 +363,13 @@ function arrancar(lienzo) {
   var nodoEtiqueta = document.querySelector('[data-regimen]')
   var etiqueta = nodoEtiqueta ? crearEtiqueta(nodoEtiqueta) : null
 
-  /** El ancho de la banda de la derecha, o 0 si esta pantalla no la tiene. */
-  function anchoBanda() {
-    var v = getComputedStyle(document.documentElement).getPropertyValue('--banda')
+  /**
+   * El encuadre, leído del CSS. Se declara ahí y no aquí porque depende del
+   * ancho de la ventana —y de dónde cae el texto en ella—, que es una decisión
+   * de disposición, no de cámara. Ver `--isla-sesgo` en `css/base.css`.
+   */
+  function encuadre(nombre) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(nombre)
     return parseFloat(v) || 0
   }
 
@@ -442,12 +453,14 @@ function arrancar(lienzo) {
 
     var cam = camara(asc, reg.lunar)
     var aspecto = ancho / alto
-    // El lienzo va anclado al canto derecho y es más ancho que la banda: el
-    // descentramiento empuja la isla hacia esa banda, que es la parte del lienzo
-    // que el velo deja ver. Por debajo de 1180 px no hay banda y la isla se
-    // centra, de fondo.
-    var sesgo = anchoBanda() > 0 ? 0.36 : 0
-    var proj = perspectiva((34 * Math.PI) / 180, aspecto, 0.35, 400, sesgo)
+    // El lienzo ocupa la ventana entera y el encuadre lo decide el CSS: la isla
+    // se corre a la derecha y cae hacia abajo, y el ángulo alto de la izquierda
+    // —por donde entra el titular— se queda de cielo. Por debajo de 1080 px los
+    // dos son 0 y la isla va centrada, de telón.
+    var proj = perspectiva(
+      (34 * Math.PI) / 180, aspecto, 0.35, 400,
+      encuadre('--isla-sesgo'), -encuadre('--isla-caida'),
+    )
     var mvp = multiplicar(proj, mirarDesde(cam.ojo, cam.objetivo))
 
     // La distancia a la que el aire se come la isla, y cuánto la tiñe antes de
@@ -527,7 +540,7 @@ function arrancar(lienzo) {
       gl.uniform1f(progNubes.u.uY, nubeY)
       // MÁS PEQUEÑA QUE EL MAR, y es lo que la hace un mar de nubes en vez de un
       // telón. Con 110 —la escala del océano— el plano llegaba de canto a canto
-      // de la banda y no se veía ni su borde ni su textura: una pared clara con
+      // del lienzo y no se veía ni su borde ni su textura: una pared clara con
       // la isla pegada delante. A 58 el borde cae dentro del encuadre, la nube
       // tiene contorno, y la isla emerge de ella en vez de flotar sobre ella.
       gl.uniform1f(progNubes.u.uEsc, 58)

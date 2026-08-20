@@ -6,7 +6,10 @@
    filete fino y el ámbar reservado para lo que es un dato.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.piel{padding-left:var(--rail);padding-right:var(--banda)}
+/* Solo por la izquierda: el raíl es una columna de verdad, con su filete, y el
+   contenido no puede meterse debajo. Por la derecha ya no hay nada que
+   esquivar — la isla pasa por detrás — así que la sangría es la del `.wrap`. */
+.piel{padding-left:var(--rail)}
 
 section{position:relative;padding-block:clamp(4.5rem,11vh,8rem)}
 section+section{border-top:1px solid var(--line-soft)}
@@ -40,7 +43,28 @@ section+section{border-top:1px solid var(--line-soft)}
 /* ── héroe ───────────────────────────────────────────────────────────────── */
 .hero{position:relative;padding-top:clamp(3rem,9vh,6rem);padding-bottom:clamp(3rem,7vh,5rem);border-top:0}
 .hero .wrap{position:relative}
-.hero-txt{max-width:min(100%,54rem)}
+
+/* LOS DOS PÁRRAFOS VAN AL LADO, NO UNO DEBAJO DE OTRO, y es lo que la anchura
+   nueva permite hacer bien. Apilados en una columna de 679 px eran 14 líneas
+   seguidas antes de llegar a un botón; en dos columnas la promesa y el porqué
+   se leen a la vez y el titular deja de tener un muro debajo.
+
+   Y NO SON DOS COLUMNAS IGUALES. La izquierda lleva la promesa y los botones y
+   pesa más; la derecha es la explicación, va en el gris apagado y entra con un
+   filete que la separa sin dibujar una caja. Las dos se quedan por debajo de
+   los 40 rem de medida de lectura: a 1.728 px de ventana, que es donde el
+   `--max` topa, salen 40,5 y 34,8 rem con el hueco de por medio. */
+.hero-cuerpo{display:grid;gap:1.4rem;margin-top:clamp(1.6rem,3.4vh,2.4rem)}
+@media (min-width:1080px){
+  .hero-cuerpo{
+    grid-template-columns:minmax(0,1fr) minmax(0,.86fr);
+    gap:clamp(2.2rem,4vw,4rem);align-items:start;
+  }
+  .hero-cuerpo .sub{
+    border-left:1px solid var(--line-soft);
+    padding-left:clamp(1.5rem,2.4vw,2.4rem);
+  }
+}
 
 .hero-rot{display:flex;align-items:center;gap:.6rem;margin-bottom:1.6rem}
 .punto{
@@ -55,10 +79,11 @@ section+section{border-top:1px solid var(--line-soft)}
 
 h1 em{display:block;font-style:normal;color:var(--amber)}
 
-.lede{margin-top:1.6rem;font-size:clamp(1.1rem,.9rem+.6vw,1.42rem);line-height:1.42;color:var(--fg);max-width:34rem;letter-spacing:-.012em}
-.sub{margin-top:1rem;max-width:36rem}
+.lede{margin:0;font-size:clamp(1.1rem,.9rem + .6vw,1.42rem);line-height:1.42;color:var(--fg);max-width:40rem;letter-spacing:-.012em}
+.sub{margin:0;max-width:38rem}
 
 .hero-actos{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2.1rem}
+.hero-cuerpo .hero-actos{margin-top:clamp(1.6rem,3vh,2.2rem)}
 
 /* Tira de cifras. Monoespaciada y tabular, como los paneles de la aplicación. */
 .tira{
@@ -71,7 +96,7 @@ h1 em{display:block;font-style:normal;color:var(--amber)}
 .tira dt{font-family:var(--mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--fg-faint)}
 .tira dd{
   margin:.5rem 0 0;font-family:var(--mono);font-weight:600;
-  font-size:clamp(1.5rem,1.1rem+1.2vw,2rem);color:var(--fg);
+  font-size:clamp(1.5rem,1.1rem + 1.2vw,2rem);color:var(--fg);
   font-variant-numeric:tabular-nums;letter-spacing:-.03em;line-height:1;
 }
 .tira dd small{display:block;margin-top:.4rem;font-size:.62rem;font-weight:400;letter-spacing:.06em;color:var(--fg-faint);text-transform:none}
@@ -237,7 +262,7 @@ h1 em{display:block;font-style:normal;color:var(--amber)}
    de la sección era vacío. Ahora lleva dentro el inventario de las seis familias
    y la línea de procedencia, así que el aire sobra en vez de faltar. */
 .cierre{text-align:center;padding-block:clamp(3.5rem,9vh,6rem)}
-.cierre h2{font-size:clamp(1.9rem,1.1rem+2.9vw,3.3rem);margin-bottom:0}
+.cierre h2{font-size:clamp(1.9rem,1.1rem + 2.9vw,3.3rem);margin-bottom:0}
 .cierre .cierre-cabeza p{max-width:40rem;margin-inline:auto}
 .cierre .rot{margin-bottom:1.2rem}
 

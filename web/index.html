@@ -196,7 +196,10 @@
 </svg>
 
 <!-- ═══ LA ISLA ═════════════════════════════════════════════════════════════
-     Dos veces la misma isla y el mismo modelo de elevación.
+     Dos veces la misma isla y el mismo modelo de elevación. VAN DETRÁS DE TODA
+     LA PÁGINA, a la ventana entera: tuvieron una banda reservada de hasta
+     700 px en el flanco derecho y eso las convertía en un segundo contenido
+     compitiendo con el primero. Un fondo no se reserva sitio.
 
      El lienzo la levanta en tres dimensiones y la gira con el desplazamiento
      (`js/isla3d.js`, malla de `img/relieve.png`), y mientras gira le cambia el
@@ -215,7 +218,11 @@
      cifra medida. La rellena `js/isla3d/etiqueta.js`; sin JavaScript o sin
      WebGL se queda vacía y no ocupa nada. Va `aria-hidden` por lo mismo que el
      raíl: acompaña a un lienzo decorativo y cambia de texto al rodar la
-     página, así que leerla en voz alta sería una letanía sobre el contenido. -->
+     página, así que leerla en voz alta sería una letanía sobre el contenido.
+
+     Es un panel flotante y va POR ENCIMA del contenido, no detrás: sin banda
+     reservada, un pie de foto a media tinta debajo de un párrafo no sería una
+     lectura sino un estropicio. Ver `css/regimen.css`. -->
 <p class="regimen" data-regimen aria-hidden="true"></p>
 <div class="isla-fija" aria-hidden="true"><!--isla:inicio-->
 <svg class="isla" viewBox="0 0 1000 1615" preserveAspectRatio="xMidYMid meet"
@@ -311,23 +318,37 @@
   <canvas class="viento" data-viento aria-hidden="true"></canvas>
   <div class="wrap">
 
-    <div class="hero-txt">
-      <p class="hero-rot entra e1">
-        <span class="punto" aria-hidden="true"></span>
-        <span class="rot">Isla de La Palma · Canarias · 0 m sobre el mar</span>
-      </p>
+    <p class="hero-rot entra e1">
+      <span class="punto" aria-hidden="true"></span>
+      <span class="rot">Isla de La Palma · Canarias · 0 m sobre el mar</span>
+    </p>
 
-      <h1>
-        <span class="titular"><span>El tiempo en tu barranco,</span></span>
-        <span class="titular"><span><em>no en el pueblo de al lado.</em></span></span>
-      </h1>
+    <h1>
+      <span class="titular"><span>El tiempo en tu barranco,</span></span>
+      <span class="titular"><span><em>no en el pueblo de al lado.</em></span></span>
+    </h1>
 
-      <p class="lede entra e3">
-        Tocas cualquier punto del mapa y obtienes una estimación <b>en ese punto</b>,
-        no la lectura de la estación más cercana. Sirve igual para salir a andar,
-        para bajar en bicicleta, para saber si el cielo estará limpio esta noche
-        o para dejarlo puesto en la pantalla de un centro de visitantes.
-      </p>
+    <!-- Dos columnas: la promesa y los botones a la izquierda, el porqué a la
+         derecha detrás de un filete. Apilados eran catorce líneas seguidas
+         debajo del titular. Ver `.hero-cuerpo` en `css/secciones.css`. -->
+    <div class="hero-cuerpo">
+      <div class="hero-guia">
+        <p class="lede entra e3">
+          Tocas cualquier punto del mapa y obtienes una estimación <b>en ese punto</b>,
+          no la lectura de la estación más cercana. Sirve igual para salir a andar,
+          para bajar en bicicleta, para saber si el cielo estará limpio esta noche
+          o para dejarlo puesto en la pantalla de un centro de visitantes.
+        </p>
+
+        <div class="hero-actos entra e5">
+          <a class="btn" href="https://app.tiempopalmero.com">
+            <span>Abrir el mapa</span>
+            <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
+          </a>
+          <a class="btn btn--fino" href="#modelo"><span>Cómo se calcula</span></a>
+        </div>
+      </div>
+
       <p class="sub entra e4">
         En La Palma eso no es un matiz: la isla sube de 0 a 2426 m en 42 km, y a esa
         escala la altitud manda sobre la distancia en cualquier variable atmosférica.
@@ -336,14 +357,6 @@
         sendero, cómo está el mar, cuánto se ve del cielo— y al lado, la misma isla
         en tres dimensiones para recorrerla antes de recorrerla.
       </p>
-
-      <div class="hero-actos entra e5">
-        <a class="btn" href="https://app.tiempopalmero.com">
-          <span>Abrir el mapa</span>
-          <svg class="fl" width="20" height="12" aria-hidden="true"><use href="#fl"/></svg>
-        </a>
-        <a class="btn btn--fino" href="#modelo"><span>Cómo se calcula</span></a>
-      </div>
     </div>
 
     <dl class="tira entra e6">
@@ -361,7 +374,7 @@
         </div>
         <img src="/img/isla-completa-1800.jpg"
              srcset="/img/isla-completa-900.jpg 900w, /img/isla-completa-1800.jpg 1800w"
-             sizes="(min-width:1240px) 1040px, 100vw"
+             sizes="(min-width:1728px) 1456px, (min-width:1080px) calc(100vw - 17rem), 100vw"
              width="1800" height="1180" fetchpriority="high" decoding="async"
              alt="La isla de La Palma en vista tridimensional, con las nubes y la lluvia del momento dibujadas en volumen sobre el relieve y pastillas con la temperatura de cada estación repartidas por la costa y la cumbre. En el panel lateral, el estado del modelo: 35 de 52 estaciones activas, gradiente medido 7,24 °C/km, RMSE de validación 1,24 °C.">
       </div>
@@ -472,7 +485,7 @@
             <div class="marco-hd"><span>Punto consultado · El Paso</span><span class="en-vivo"><i aria-hidden="true"></i>estimado</span></div>
             <img src="/img/punto-consultado-1800.jpg"
                  srcset="/img/punto-consultado-900.jpg 900w, /img/punto-consultado-1800.jpg 1800w"
-                 sizes="(min-width:980px) 600px, 100vw"
+                 sizes="(min-width:1080px) calc((100vw - 17rem) * .62), (min-width:980px) 60vw, 100vw"
                  width="1800" height="1311" loading="lazy" decoding="async"
                  alt="La isla sobre la malla interpolada en tonos cálidos, con las pastillas de temperatura de cada estación. A la derecha, la ficha del punto tocado en El Paso a 509 m: 23,2 °C estimados con un margen de ±2,1 °C, humedad 78 %, punto de rocío 19,1 °C, y la lista de las tres estaciones que más han contribuido con su distancia y su desnivel.">
           </div>
@@ -495,7 +508,7 @@
             <div class="marco-hd"><span>Estación · Los Llanos</span><span class="en-vivo"><i aria-hidden="true"></i>24 h</span></div>
             <img src="/img/estacion-detalle-1800.jpg"
                  srcset="/img/estacion-detalle-900.jpg 900w, /img/estacion-detalle-1800.jpg 1800w"
-                 sizes="(min-width:980px) 600px, 100vw"
+                 sizes="(min-width:1080px) calc((100vw - 17rem) * .62), (min-width:980px) 60vw, 100vw"
                  width="1800" height="1180" loading="lazy" decoding="async"
                  alt="Vista cercana de la Caldera de Taburiente sobre ortofoto, con la ficha de la estación de Los Llanos abierta: temperatura 23,4 °C, humedad 73 %, punto de rocío calculado 18,3 °C, y una curva de las últimas 24 horas.">
           </div>
@@ -519,7 +532,7 @@
             <div class="marco-hd"><span>Fondo satélite · vista 3D</span><span class="en-vivo"><i aria-hidden="true"></i>GRAFCAN</span></div>
             <img src="/img/capas-satelite-1800.jpg"
                  srcset="/img/capas-satelite-900.jpg 900w, /img/capas-satelite-1800.jpg 1800w"
-                 sizes="(min-width:980px) 600px, 100vw"
+                 sizes="(min-width:1080px) calc((100vw - 17rem) * .62), (min-width:980px) 60vw, 100vw"
                  width="1800" height="1139" loading="lazy" decoding="async"
                  alt="La isla en vista tridimensional sobre la ortofoto territorial, con nubes en volumen alrededor y las pastillas de temperatura repartidas. El panel lateral muestra las capas encendidas: carreteras insulares, viario completo de OpenStreetMap, cobertura TDT, aforos de tráfico y senderos, cámaras de incendios y webcam de la isla.">
           </div>
@@ -540,7 +553,7 @@
             <div class="marco-hd"><span>Puerto de Tazacorte</span><span class="en-vivo"><i aria-hidden="true"></i>oleaje</span></div>
             <img src="/img/tazacorte-mar-1800.jpg"
                  srcset="/img/tazacorte-mar-900.jpg 900w, /img/tazacorte-mar-1800.jpg 1800w"
-                 sizes="(min-width:980px) 600px, 100vw"
+                 sizes="(min-width:1080px) calc((100vw - 17rem) * .62), (min-width:980px) 60vw, 100vw"
                  width="1800" height="1191" loading="lazy" decoding="async"
                  alt="Puerto de Tazacorte visto desde arriba sobre ortofoto de alta resolución, con el mar simulado en movimiento frente a la playa y el panel de capas abierto a la izquierda mostrando estaciones, sensores de CO2, senderos, carreteras y webcam.">
           </div>
@@ -685,7 +698,7 @@
         </div>
         <img src="/img/nubes-lluvia-1800.jpg"
              srcset="/img/nubes-lluvia-900.jpg 900w, /img/nubes-lluvia-1800.jpg 1800w"
-             sizes="(min-width:1240px) 1040px, 100vw"
+             sizes="(min-width:1728px) 1456px, (min-width:1080px) calc(100vw - 17rem), 100vw"
              width="1800" height="1137" loading="lazy" decoding="async"
              alt="La isla vista casi a ras de horizonte, con nubes en volumen a la cota que les corresponde y cortinas de lluvia cayendo sobre la vertiente. El panel lateral explica la capa experimental de nubes y lluvia en 3D y advierte de que no es un radar ni una observación, sino un porcentaje de nubosidad por piso del modelo global.">
       </div>
@@ -773,7 +786,7 @@
         <div class="marco">
           <img src="/img/isla-3d-1800.jpg"
                srcset="/img/isla-3d-900.jpg 900w, /img/isla-3d-1800.jpg 1800w"
-               sizes="(min-width:1180px) 680px, (min-width:760px) 50vw, 100vw"
+               sizes="(min-width:1728px) 1456px, (min-width:1080px) calc(100vw - 17rem), 100vw"
                width="1800" height="1180" loading="lazy" decoding="async"
                alt="La Caldera de Taburiente vista desde el aire, con la red de senderos marcada en blanco bajando por las laderas y cúmulos sueltos sobre el Atlántico.">
         </div>
@@ -784,7 +797,7 @@
         <div class="marco">
           <img src="/img/cumbre-senderos-1800.jpg"
                srcset="/img/cumbre-senderos-900.jpg 900w, /img/cumbre-senderos-1800.jpg 1800w"
-               sizes="(min-width:760px) 340px, 100vw"
+               sizes="(min-width:1080px) calc((100vw - 19rem) / 2), (min-width:760px) 50vw, 100vw"
                width="1800" height="1180" loading="lazy" decoding="async"
                alt="La cresta de la cumbre desde el aire, con las cúpulas del observatorio del Roque de los Muchachos recortadas contra el cielo y los puntos de interés de la red de senderos marcados a lo largo del filo.">
         </div>
@@ -795,7 +808,7 @@
         <div class="marco">
           <img src="/img/panel-3d-1800.jpg"
                srcset="/img/panel-3d-900.jpg 900w, /img/panel-3d-1800.jpg 1800w"
-               sizes="(min-width:760px) 340px, 100vw"
+               sizes="(min-width:1080px) calc((100vw - 19rem) / 2), (min-width:760px) 50vw, 100vw"
                width="1800" height="1180" loading="lazy" decoding="async"
                alt="El programa en marcha: a la izquierda el panel con la procedencia de los datos y los mandos de la escena, a la derecha la ladera de la Degollada de Las Palomas y un recuadro que dice a qué coordenada y a qué altura mira la cámara.">
         </div>
