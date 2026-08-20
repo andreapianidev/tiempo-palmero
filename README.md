@@ -254,10 +254,13 @@ Todo lo demás que publica el Cabildo, en interruptores:
 
 Tres fondos: **relieve** sombreado, **topográfico** y **satélite** —la ortofoto
 territorial 2024-2025 de GRAFCAN, pedida a la resolución de la pantalla, en la
-que la colada de Tajogaite se ve como lo que es—. Y un interruptor de **relieve
-en tres dimensiones** que usa el mismo modelo de elevación que ya sombrea el
-mapa: no descarga nada nuevo. Con `Ctrl` y arrastrando se gira 360° y se inclina
-hasta 65°.
+que la colada de Tajogaite se ve como lo que es, y que es **el fondo de la
+primera visita**—. Y un interruptor de **relieve en tres dimensiones** que usa
+el mismo modelo de elevación que ya sombrea el mapa, pero con **fuente propia**:
+compartirla dejaba el sombreado borroso, y separarlas cuesta un 18 % más de
+teselas del DEM local —87 a 103, medido— a cambio de un 49 % más de detalle. Con
+`Ctrl` y arrastrando se gira 360° y se inclina hasta 65°, o hasta 75° con el
+fondo de relieve.
 
 ### Lo experimental: seis funciones que dibujan más de lo que miden
 
@@ -523,7 +526,7 @@ afirmación en pie. La lista completa de lo que se pide fuera, y cuándo:
 | API del Cabildo (`bi.lapalma.es`) | siempre | CC-BY |
 | Open-Meteo *forecast* | siempre: anclas de cumbre y fondo del viento | CC-BY, API gratuita no comercial |
 | Open-Meteo *marine* | con el océano encendido, una petición por refresco | ídem |
-| GRAFCAN (IDECanarias) | con el fondo topográfico o la ortofoto | libre y gratuita, sin descarga masiva |
+| GRAFCAN (IDECanarias) | con el fondo topográfico o la ortofoto — y la ortofoto es la de fábrica, así que también en la primera visita | libre y gratuita, sin descarga masiva |
 | EMODnet Bathymetry (WMS) | con la carta náutica encendida | CC-BY 4.0 |
 | OpenSeaMap | con la carta náutica encendida | ODbL 1.0 |
 
@@ -578,9 +581,10 @@ pedir todas las que hoy se repiten—. Los números y el reparto están en
   viario con `scripts/prepare-osm-roads.ts` en
   `public/layers/viario-osm.geojson`; los dos, con su atribución ODbL dentro del
   propio fichero.
-- **Sin claves de API en el cliente.** El mapa base no usa Mapbox, Google ni
-  ningún proveedor de teselas: se dibuja con el relieve sombreado del DEM local
-  y los contornos que publica el propio Cabildo.
+- **Sin claves de API en el cliente.** El mapa base no usa Mapbox ni Google ni
+  ningún proveedor de teselas de pago: el relieve se dibuja con el DEM local y
+  los contornos que publica el propio Cabildo, y la ortofoto y el topográfico
+  son cartografía pública de GRAFCAN, que tampoco pide clave.
 
 ---
 

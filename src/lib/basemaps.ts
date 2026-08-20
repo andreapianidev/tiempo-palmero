@@ -2,9 +2,11 @@
  * Fondos de mapa.
  *
  * El fondo de casa —relieve sombreado sobre las teselas DEM de `public/dem/`,
- * que arma `mapStyle.ts`— sigue siendo el de siempre y el que trae la app al
- * abrirse: es el único que no depende de nadie en tiempo de ejecución y el
- * único sobre el que la malla interpolada se lee sin pelearse con el fondo.
+ * que arma `mapStyle.ts`— es el único que no depende de nadie en tiempo de
+ * ejecución y el único sobre el que la malla interpolada se lee sin pelearse con
+ * el fondo. **Ya no es el que trae la app al abrirse**: desde agosto de 2026 esa
+ * plaza es del satélite, y lo que se acepta al hacerlo está escrito junto al
+ * valor por defecto, en `App.tsx`.
  *
  * Los otros dos son cartografía oficial canaria, servida por GRAFCAN
  * (IDECanarias) y pedida en vivo. Comprobado contra el servicio el 13 de
@@ -36,8 +38,10 @@
  * IndexedDB que sepan qué hacer con ese protocolo.
  *
  * NO se piden teselas de un fondo apagado: MapLibre solo carga las fuentes que
- * tengan alguna capa visible, así que quien no toque este selector no gasta ni
- * una petición fuera de casa.
+ * tengan alguna capa visible, así que en cada momento se le pide a GRAFCAN el
+ * fondo que se está mirando y nada más. Lo que ya NO se puede decir es que quien
+ * no toque este selector no gaste una petición fuera de casa: con el satélite de
+ * fábrica, la primera visita ya es una visita a GRAFCAN.
  *
  * Por qué el 1:20.000 canario y no el MTN del IGN nacional (que también sirve
  * la isla, en WMTS y con CORS abierto): el de GRAFCAN es cartografía hecha

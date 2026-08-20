@@ -114,9 +114,11 @@ export function buildStyle(dem: DemManifest): StyleSpecification {
           'Datos: <a href="https://www.opendatalapalma.es" target="_blank" rel="noreferrer">Cabildo Insular de La Palma</a> (CC-BY) · ' +
           'Topónimos y viario: © OpenStreetMap contributors (ODbL)',
       },
-      // La gemela, solo para `setTerrain`. Misma declaración palabra por palabra:
-      // lo único que cambia es que tiene caché propia, y por qué eso importa
-      // está en `TERRAIN_SOURCE`.
+      // La gemela, solo para `setTerrain`: mismas teselas, misma versión, caché
+      // aparte —por qué eso importa está en `TERRAIN_SOURCE`—. Lo único que no
+      // repite es la `attribution`: la de arriba está siempre en el estilo y
+      // MapLibre la enseñaría igual, así que copiarla aquí solo sería una cadena
+      // más que mantener en dos sitios.
       [TERRAIN_SOURCE]: {
         type: 'raster-dem',
         tiles: [dataUrl(`/dem/{z}/{x}/{y}.png?v=${demVersion(dem)}`)],
