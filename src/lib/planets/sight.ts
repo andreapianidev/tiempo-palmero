@@ -19,7 +19,7 @@
  *
  * EL TIEMPO DE LUZ NO ES UN DETALLE. Júpiter está a 40 minutos luz: se ve donde
  * estaba hace 40 minutos, y en ese rato se ha movido 25 segundos de arco. Se
- * corrige evaluando la tabla en `t − τ` con la Tierra en `t`, que es la
+ * corrige evaluando la efeméride en `t − τ` con la Tierra en `t`, que es la
  * definición de posición astrométrica. Una iteración basta: la segunda cambia
  * la distancia en una parte entre diez mil.
  *
@@ -47,7 +47,7 @@ import {
 import { observerOffsetKm, toTopocentric } from '../stars/parallax'
 import { refractionDeg } from '../stars/refraction'
 import { starColor } from '../stars/color'
-import { heliocentric, type PlanetId, type PlanetTable } from './table'
+import type { PlanetEphemeris, PlanetId } from './ephemeris'
 
 const RAD = Math.PI / 180
 const DEG = 180 / Math.PI
@@ -204,46 +204,39 @@ function saturnRingLatitude(
 }
 
 /**
- * Dónde se ve un planeta desde un punto de la isla, ahora.
- *
- * Devuelve `null` fuera de la ventana de la tabla, que es lo que hay que hacer:
- * ver `table.ts`.
- */
-/**
  * La parte que no depende del observador: dirección astrométrica J2000,
  * magnitud, fase, tamaño y color.
  *
- * Devuelve `null` fuera de la ventana de la tabla, que es lo que hay que hacer:
- * ver `table.ts`.
+ * YA NO DEVUELVE `null`. Cuando esto salía de una tabla de Chebyshev había una
+ * ventana —del 1 de enero de 2026 al 1 de enero de 2036— y fuera de ella la
+ * respuesta correcta era «no hay datos», porque un Chebyshev extrapolado no da
+ * una posición peor sino una absurda. La serie de VSOP87 que hay ahora detrás
+ * no tiene ventana, así que la rama del hueco desaparece con ella: ver
+ * `ephemeris.ts`.
  */
 export function planetAstrometric(
-  table: PlanetTable,
+  eph: PlanetEphemeris,
   id: PlanetId,
   at: number,
-): PlanetAstrometric | null {
-  const earth = heliocentric(table, 'tierra', at)
-  if (!earth) return null
+): PlanetAstrometric {
+  const earth = eph('tierra', at)
 
   // Tiempo de luz: el planeta se ve donde estaba cuando salió la luz. Se
   // resuelve iterando una vez sobre la distancia, que es lo que hace cualquier
   // efeméride; la segunda iteración cambia el resultado en una diezmilésima.
-  let body = heliocentric(table, id, at)
-  if (!body) return null
+  let body = eph(id, at)
   let dx = body[0] - earth[0]
   let dy = body[1] - earth[1]
   let dz = body[2] - earth[2]
   let distance = Math.hypot(dx, dy, dz)
   const retarded = at - (distance / AU_PER_DAY) * 86_400_000
-  const delayed = heliocentric(table, id, retarded)
-  if (delayed) {
-    body = delayed
-    dx = body[0] - earth[0]
-    dy = body[1] - earth[1]
-    dz = body[2] - earth[2]
-    distance = Math.hypot(dx, dy, dz)
-  }
+  body = eph(id, retarded)
+  dx = body[0] - earth[0]
+  dy = body[1] - earth[1]
+  dz = body[2] - earth[2]
+  distance = Math.hypot(dx, dy, dz)
 
-  // LA TABLA YA ESTÁ EN ECUATORIAL J2000, y aquí hubo un error que conviene
+  // LA EFEMÉRIDE YA VIENE EN ECUATORIAL J2000, y aquí hubo un error que conviene
   // dejar escrito porque no se parecía a un error: `HelioVector` de
   // `astronomy-engine` devuelve el ecuador medio de J2000, no la eclíptica, y
   // este fichero le aplicaba la rotación de la oblicuidad «para pasarlo a
@@ -320,13 +313,12 @@ export function planetAstrometric(
  * uniforme más por un desplazamiento que no se puede dibujar.
  */
 export function planetSight(
-  table: PlanetTable,
+  eph: PlanetEphemeris,
   id: PlanetId,
   at: number,
   observer: PlanetObserver,
-): PlanetSight | null {
-  const astrometric = planetAstrometric(table, id, at)
-  if (!astrometric) return null
+): PlanetSight {
+  const astrometric = planetAstrometric(eph, id, at)
 
   const frame = skyFrame(at, observer.lon, observer.lat)
   const geocentric = applyFrame(frame, astrometric.raRad, astrometric.decRad)

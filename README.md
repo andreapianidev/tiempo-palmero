@@ -121,8 +121,8 @@ senderos, las cámaras de incendios y las webcam de la isla.
   [el cielo estrellado](docs/experimental.md#el-cielo-estrellado-8920-estrellas-y-un-fotómetro-que-decide-cuántas-se-ven) ·
   [la luna](docs/experimental.md#y-la-luna-que-es-lo-primero-que-se-mira): por qué hubo
   que cambiarla entera antes de poder dibujarla ·
-  [los planetas](docs/experimental.md#y-los-planetas-con-una-tabla-que-caduca): 36 KB
-  de Chebyshev con fecha de caducidad, y el sombreador de las estrellas ·
+  [los planetas](docs/experimental.md#y-los-planetas-y-una-tabla-que-sobraba): una
+  tabla de 36 KB que pesaba más que la biblioteca que evitaba ·
   [el índice de incendio](docs/experimental.md#el-índice-de-incendio): seis
   incendios, un clasificador validado escondiendo uno entero cada vez
 - [**Arquitectura**](docs/arquitectura.md) —

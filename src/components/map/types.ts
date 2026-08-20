@@ -27,7 +27,7 @@ import type { VaporField } from '../../lib/vapor/field'
 import type { StarSceneState } from '../stars/StarLayer'
 import type { MoonSceneState } from '../moon/MoonLayer'
 import type { PlanetSceneState } from '../planets/PlanetLayer'
-import type { PlanetTable } from '../../lib/planets/table'
+import type { PlanetEphemeris } from '../../lib/planets/ephemeris'
 import type { SkyData } from '../../lib/stars/catalog'
 import type { Cloud } from '../../lib/sky/scene'
 import type { TrackPoint } from '../../lib/sky/sun-path'
@@ -182,8 +182,8 @@ export interface Props {
     moon: MoonSceneState | null
     /** Los planetas. `null` con su casilla apagada. */
     planets: PlanetSceneState | null
-    /** La tabla de efemérides. `null` mientras no ha llegado o si falló. */
-    planetTable: PlanetTable | null
+    /** Las efemérides. `null` mientras no han cargado o si falló. */
+    planetEphemeris: PlanetEphemeris | null
   }
   /**
    * La luz solar sobre el relieve.

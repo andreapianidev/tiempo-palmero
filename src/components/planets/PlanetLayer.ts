@@ -33,8 +33,12 @@
  * SEIS VÉRTICES POR FOTOGRAMA. La posición se recalcula con el reloj del
  * navegador en cada `render`, igual que la matriz del cielo y que la luna, y por
  * el mismo motivo: el estado de React late una vez por minuto y en un minuto la
- * Tierra gira 0,25°. Evaluar seis polinomios de Chebyshev cuesta menos que la
- * matriz de 3 × 3 que ya se calcula al lado.
+ * Tierra gira 0,25°.
+ *
+ * ESTO ERA EL ARGUMENTO A FAVOR DE LA TABLA DE CHEBYSHEV QUE HUBO AQUÍ, y se
+ * midió antes de quitarla: seis planetas por VSOP87 entero cuestan 0,0735 ms
+ * por fotograma contra los 0,0103 del polinomio. Siete veces más, y el 0,44 %
+ * de un fotograma de 16,7 ms. Ver `lib/planets/ephemeris.ts`.
  */
 
 import {
@@ -43,7 +47,7 @@ import {
   type Map as MlMap,
 } from 'maplibre-gl'
 import { planetAstrometric } from '../../lib/planets/sight'
-import { VISIBLE_PLANETS, type PlanetTable } from '../../lib/planets/table'
+import { VISIBLE_PLANETS, type PlanetEphemeris } from '../../lib/planets/ephemeris'
 import { skyFrame } from '../../lib/stars/frame'
 import { STAR_FRAGMENT_SHADER, STAR_VERTEX_SHADER } from '../stars/star-shaders'
 
@@ -93,7 +97,7 @@ export class PlanetLayer implements CustomLayerInterface {
   private aColor = -1
   private u: Record<string, WebGLUniformLocation | null> = {}
 
-  private table: PlanetTable | null = null
+  private eph: PlanetEphemeris | null = null
   private state: PlanetSceneState | null = null
   private visible = false
   private vertices = new Float32Array(VISIBLE_PLANETS.length * STRIDE_FLOATS)
@@ -102,8 +106,8 @@ export class PlanetLayer implements CustomLayerInterface {
   /** Cuántos planetas hay por encima de la magnitud límite ahora mismo. */
   private drawn = 0
 
-  setTable(table: PlanetTable): void {
-    this.table = table
+  setEphemeris(eph: PlanetEphemeris): void {
+    this.eph = eph
     this.map?.triggerRepaint()
   }
 
@@ -184,17 +188,14 @@ export class PlanetLayer implements CustomLayerInterface {
   render(gl: Gl, matrix: ViewMatrix): void {
     const map = this.map
     const state = this.state
-    const table = this.table
-    if (!map || !state || !table || !this.visible || !this.program) return
+    const eph = this.eph
+    if (!map || !state || !eph || !this.visible || !this.program) return
     if (map.getPitch() <= 0) return
 
     const at = Date.now()
     let n = 0
     for (const id of VISIBLE_PLANETS) {
-      const p = planetAstrometric(table, id, at)
-      // Fuera de la ventana de la tabla no hay planeta. No se inventa: se deja
-      // de dibujar, y el panel dice por qué.
-      if (!p) continue
+      const p = planetAstrometric(eph, id, at)
       // El corte por magnitud lo hace el sombreador con su desvanecido, igual
       // que con las estrellas. Aquí solo se descartan los que están tan por
       // debajo del límite que no llegarían ni a un píxel, para no subirlos.

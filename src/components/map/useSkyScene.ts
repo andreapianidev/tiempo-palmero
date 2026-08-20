@@ -195,10 +195,10 @@ export function useSkyScene(ready: boolean, props: Props, refs: SkySceneRefs): v
   useEffect(() => {
     const layer = planetLayerRef.current
     if (!layer) return
-    if (props.nightSky.planetTable) layer.setTable(props.nightSky.planetTable)
+    if (props.nightSky.planetEphemeris) layer.setEphemeris(props.nightSky.planetEphemeris)
     if (props.nightSky.planets) layer.setState(props.nightSky.planets)
     layer.setVisible(
-      props.nightSky.on && !!props.nightSky.planets && !!props.nightSky.planetTable,
+      props.nightSky.on && !!props.nightSky.planets && !!props.nightSky.planetEphemeris,
     )
-  }, [ready, props.nightSky.on, props.nightSky.planets, props.nightSky.planetTable])
+  }, [ready, props.nightSky.on, props.nightSky.planets, props.nightSky.planetEphemeris])
 }

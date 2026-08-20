@@ -302,45 +302,56 @@ cenicienta tiene la forma física exacta —proporcional a `1 − k`, que es la
 fracción iluminada de la Tierra vista desde la luna— y la amplitud dibujada, un
 2,2 % contra las diez milésimas de verdad.
 
-#### Y los planetas, con una tabla que caduca
+#### Y los planetas, y una tabla que sobraba
 
 Los cinco de siempre más Urano, que con un cielo de 21,5 entra por poco. Hubo
-que decidir de dónde salen sus posiciones, y las dos opciones escritas tenían un
-pero: una biblioteca de efemérides en el navegador son 200 KB que se descargan
-mire alguien el cielo o no, y escribir la serie VSOP87 a mano son varios miles
-de coeficientes transcritos — con la luna fueron 120 y ya era el límite.
+que decidir de dónde salen sus posiciones, y aquí la primera respuesta fue la
+equivocada — está contada entera porque el modo de equivocarse es reutilizable.
 
-**Hay una tercera, y es la que hacen las efemérides de verdad**: ajustar
-polinomios de Chebyshev a la posición heliocéntrica y guardarlos. Es lo que hay
-dentro de un fichero SPK del JPL. Se calcula en Node con `astronomy-engine`
-—dependencia de desarrollo, no entra en el paquete— y lo que viaja al navegador
-son **36 KB** y veinte líneas para evaluarlos.
+**Lo que había.** Escribir la serie VSOP87 a mano son varios miles de
+coeficientes transcritos, y con la luna fueron 120 y ya era el límite. La
+alternativa, `astronomy-engine` en el navegador, se descartó porque «son 200 KB
+de JavaScript que se descargan mire alguien el cielo o no». Así que se hizo lo
+que hacen las efemérides de verdad: ajustar polinomios de Chebyshev a la
+posición heliocéntrica y servirlos como `planetas.bin`, igual que un fichero SPK
+del JPL en pequeño.
 
-Heliocéntricas y no geocéntricas a propósito: una órbita alrededor del sol es
-casi una elipse y un polinomio de grado diez la sigue durante meses; vista desde
-la Tierra hace lazos de retrogradación. Restar la Tierra en el navegador cuesta
-tres restas.
+**Los 200 KB eran el fichero sin minificar leído del disco.** No es lo que viaja
+por el cable, y la decisión entera colgaba de esa cifra. Medido contra el build
+de este repositorio, con un `import()` dinámico que Rollup separa en su propio
+fragmento:
 
-| Cuerpo | Intervalo | Grado | Peor error del ajuste |
-|---|---:|---:|---:|
-| Mercurio | 32 d | 12 | 54,1 km |
-| Venus | 128 d | 10 | 14,6 km |
-| Tierra | 64 d | 14 | 57,8 km |
-| Marte | 192 d | 10 | 4,0 km |
-| Júpiter | 512 d | 8 | 0,1 km |
-| Saturno | 730 d | 8 | 0,0 km |
-| Urano | 1024 d | 6 | 0,8 km |
+| | en el cable | caduca |
+|---|---:|---|
+| `planetas.bin` (la tabla) | 35,85 KB gz | 1 ene 2036 |
+| `astronomy-engine` (el fragmento) | **19,61 KB gz** | nunca |
 
-**Lo que una tabla tiene y una serie no es fecha de caducidad**, y no se esconde:
-vale del 1 de enero de 2026 al 1 de enero de 2036, el cargador se niega a
-extrapolar —un Chebyshev de grado 14 extrapolado se dispara a millones de
-kilómetros en días— y hay una prueba que falla cuando queden menos de dos años.
+La tabla de coeficientes pesaba **casi el doble** que la biblioteca que se
+escribió para no descargar: son flotantes binarios y no comprimen, mientras que
+el JavaScript sí. Y el bundle principal no crece, que es la condición de la que
+depende todo lo demás — hay una prueba que falla si alguien mete un `import`
+estático y funde el fragmento con el principal.
 
-Contra `astronomy-engine`, sobre tres años cada 36 horas: **mediana de 0,10″ a
-0,36″ según el planeta y peor caso 0,57″**, el mismo orden que las 8920
-estrellas de al lado. Las magnitudes son las del *Astronomical Almanac*, con los
-anillos de Saturno dentro —valen 0,9 magnitudes según su inclinación, y sin ese
-término Saturno se equivocaba 0,50 de mediana en vez de 0,12—.
+**El coste por fotograma era el argumento de verdad**, porque la capa recalcula
+los seis planetas en cada `render`, y se midió antes de tocar nada: VSOP87
+entero cuesta **0,0735 ms** por fotograma contra los **0,0103 ms** del
+polinomio. Siete veces más, y el 0,44 % de un fotograma de 16,7 ms.
+
+**Y la precisión no se movió**, que es el dato que cierra el caso. Contra
+`astronomy-engine`, sobre tres años cada 36 horas: **mediana de 0,10″ a 0,36″
+según el planeta y peor caso 0,57″** — las mismas cifras con la tabla y sin
+ella, hasta la milésima de segundo de arco. El ajuste se había apretado a 100 km
+de error, y ese término nunca llegó a asomar por encima del resto de la cadena:
+la precesión, la nutación, la aberración y el tiempo de luz que pone `sight.ts`
+dominan el residuo enteros. La tabla compraba una precisión que no se podía
+usar, y la cobraba a 35,85 KB.
+
+Lo que se fue con ella: `table.ts`, `scripts/prepare-planetas.ts`, el binario, el
+aviso de «fuera de rango» del panel y una prueba de calendario que iba a fallar
+en 2034 para recordar que había que regenerarlo. Las magnitudes se quedan como
+estaban, las del *Astronomical Almanac*, con los anillos de Saturno dentro
+—valen 0,9 magnitudes según su inclinación, y sin ese término Saturno se
+equivocaba 0,50 de mediana en vez de 0,12—.
 
 **Se dibujan con el sombreador de las estrellas, no con uno propio.** Un planeta
 a simple vista es lo mismo que una estrella —Júpiter mide 50 segundos de arco y

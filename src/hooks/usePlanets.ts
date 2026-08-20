@@ -1,26 +1,29 @@
 /**
- * Los planetas de esta noche: la tabla, dónde están y cuáles se ven.
+ * Los planetas de esta noche: las efemérides, dónde están y cuáles se ven.
  *
  * VA APARTE DE `useNightSky` porque es otra descarga y otra decisión. El
- * catálogo de estrellas son 133 KB y la tabla de planetas 36, y quien encienda
- * el cielo estrellado no tiene por qué pagar los dos: son dos casillas.
+ * catálogo de estrellas son 133 KB y las efemérides 19,61, y quien encienda el
+ * cielo estrellado no tiene por qué pagar las dos: son dos casillas.
  *
- * SE PIDE UNA VEZ Y SE QUEDA. La tabla cubre diez años, así que no hay nada que
- * refrescar: apagar y encender no vuelve a descargarla.
+ * LA DESCARGA ES CÓDIGO, NO DATOS, y por eso este efecto es un `import()` y no
+ * un `fetch`. Aquí se descargaba `planetas.bin`, una tabla de Chebyshev de
+ * 35,85 KB comprimidos con fecha de caducidad; ahora se carga el fragmento de
+ * `astronomy-engine`, que pesa 19,61 y no caduca. El porqué entero, con las dos
+ * cifras medidas contra este build, está en `lib/planets/ephemeris.ts`.
  *
- * FALLA EN ABIERTO. Sin tabla no hay planetas y el panel dice por qué; el resto
- * de la escena nocturna sigue funcionando entera. Y si el reloj se sale de la
- * ventana de la tabla —del 1 de enero de 2026 al 1 de enero de 2036— tampoco se
- * dibuja nada, que es lo correcto: extrapolar un Chebyshev da posiciones
- * enormes con toda confianza. Ver `lib/planets/table.ts`.
+ * SE PIDE UNA VEZ Y SE QUEDA: apagar y encender no vuelve a cargarlo.
+ *
+ * FALLA EN ABIERTO. Sin efemérides no hay planetas y el panel dice por qué; el
+ * resto de la escena nocturna sigue funcionando entera. Lo que ya no puede
+ * pasar es quedarse sin fecha: la ventana de diez años se fue con la tabla.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  fetchPlanetTable,
+  loadPlanetEphemeris,
   VISIBLE_PLANETS,
-  type PlanetTable,
-} from '../lib/planets/table'
+  type PlanetEphemeris,
+} from '../lib/planets/ephemeris'
 import { planetSight, type PlanetSight } from '../lib/planets/sight'
 import type { PlanetSceneState } from '../components/planets/PlanetLayer'
 import { airMass } from '../lib/shadow/depth'
@@ -43,11 +46,9 @@ export interface PlanetsSky {
 
 export interface PlanetsState {
   loading: boolean
-  /** Motivo por el que no hay tabla, si no la hay. */
+  /** Motivo por el que no hay efemérides, si no las hay. */
   failed: string | null
-  table: PlanetTable | null
-  /** Fuera de la ventana de la tabla: no hay efemérides para esta fecha. */
-  outOfRange: boolean
+  ephemeris: PlanetEphemeris | null
   /**
    * Todos los de la tabla, con su posición y su brillo. Ordenados por altura,
    * el más alto primero: es el orden en que alguien los buscaría en el cielo.
@@ -58,7 +59,7 @@ export interface PlanetsState {
    * por encima de la magnitud límite de esta noche.
    */
   visible: PlanetSight[]
-  /** Lo que la capa necesita. `null` sin tabla. */
+  /** Lo que la capa necesita. `null` sin efemérides. */
   scene: PlanetSceneState | null
 }
 
@@ -68,7 +69,7 @@ export function usePlanets(
   observer: PlanetsObserver,
   sky: PlanetsSky,
 ): PlanetsState {
-  const [table, setTable] = useState<PlanetTable | null>(null)
+  const [eph, setEph] = useState<PlanetEphemeris | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -87,14 +88,14 @@ export function usePlanets(
       attempted.current = false
       return
     }
-    if (attempted.current || table) return
+    if (attempted.current || eph) return
     attempted.current = true
     let alive = true
     setLoading(true)
-    fetchPlanetTable()
-      .then((t) => {
+    loadPlanetEphemeris()
+      .then((e) => {
         if (!alive) return
-        setTable(t)
+        setEph(() => e)
         setFailed(null)
       })
       .catch((e: unknown) => {
@@ -107,21 +108,21 @@ export function usePlanets(
     return () => {
       alive = false
     }
-  }, [enabled, table])
+  }, [enabled, eph])
 
   return useMemo<PlanetsState>(() => {
-    const outOfRange = !!table && (now < table.startMs || now > table.endMs)
     const all: PlanetSight[] = []
-    if (table && !outOfRange) {
+    if (eph) {
       for (const id of VISIBLE_PLANETS) {
-        const sight = planetSight(table, id, now, {
-          lon: observer.lon,
-          lat: observer.lat,
-          elevationM: observer.elevationM,
-          pressureHpa: observer.pressureHpa ?? undefined,
-          temperatureC: observer.temperatureC ?? undefined,
-        })
-        if (sight) all.push(sight)
+        all.push(
+          planetSight(eph, id, now, {
+            lon: observer.lon,
+            lat: observer.lat,
+            elevationM: observer.elevationM,
+            pressureHpa: observer.pressureHpa ?? undefined,
+            temperatureC: observer.temperatureC ?? undefined,
+          }),
+        )
       }
       all.sort((a, b) => b.apparentElevationDeg - a.apparentElevationDeg)
     }
@@ -143,11 +144,10 @@ export function usePlanets(
     return {
       loading,
       failed,
-      table,
-      outOfRange,
+      ephemeris: eph,
       all,
       visible,
-      scene: table
+      scene: eph
         ? {
             lon: observer.lon,
             lat: observer.lat,
@@ -171,6 +171,6 @@ export function usePlanets(
     sky.extinctionK,
     sky.floorDeg,
     sky.limitMag,
-    table,
+    eph,
   ])
 }

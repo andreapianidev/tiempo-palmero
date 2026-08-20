@@ -1,34 +1,40 @@
 /**
- * Los planetas, contra la efeméride que los generó y contra el calendario.
+ * Los planetas, contra la efeméride y contra el empaquetado.
  *
- * ABRE EL FICHERO QUE SE SIRVE, `public/cielo/planetas.bin`, no uno de juguete:
- * lo que se comprueba es la tabla que va a descargar la gente.
+ * QUÉ COMPARA ESTO, AHORA QUE LA POSICIÓN SALE DE `astronomy-engine`. Cuando
+ * detrás había una tabla de Chebyshev, esta prueba medía además el error del
+ * ajuste. Ese término ya no existe —la serie es la misma a los dos lados de la
+ * comparación— y conviene decirlo en vez de dejar en pie una cifra que ya no
+ * mide lo que decía.
  *
- * COMPARAR CONTRA `astronomy-engine` AQUÍ NO ES CIRCULAR, aunque la tabla se
- * ajustara con ella. El ajuste es una compresión con pérdida y la pérdida es lo
- * que se mide; y entre la tabla y el cielo hay una cadena entera que
- * `astronomy-engine` no tocó: tiempo de luz, paralaje topocéntrica, precesión,
- * nutación, aberración y refracción. El error de 14° que esta prueba cazó
- * —una rotación de la oblicuidad aplicada de más— estaba justo ahí, y las
- * distancias y las magnitudes salían perfectas mientras tanto.
+ * LO QUE SIGUE SIENDO INDEPENDIENTE, que es casi todo: `HelioVector` da una
+ * posición heliocéntrica y nada más. Entre eso y un planeta en el cielo está el
+ * tiempo de luz, la conversión a ecuatorial, la precesión, la nutación, la
+ * aberración, la paralaje topocéntrica y la refracción, y esta cadena la
+ * escribe `sight.ts` con `frame.ts`. `A.Equator(…, ofdate, aberration)` la
+ * recorre entera por su cuenta con otro código. Comparar las dos salidas sigue
+ * cazando lo que cazó: el error de 14° de una rotación de la oblicuidad
+ * aplicada de más, con las distancias y las magnitudes saliendo perfectas
+ * mientras tanto.
  *
- * Y HAY UNA PRUEBA QUE NO ES DE PRECISIÓN SINO DE CALENDARIO: la tabla caduca.
- * Falla cuando queden menos de dos años de ventana, que es tiempo de sobra para
- * regenerarla con `npm run prepare-planetas`.
+ * Y HAY UNA PRUEBA QUE NO ES DE PRECISIÓN SINO DE EMPAQUETADO. Toda la razón
+ * por la que la tabla se fue —19,61 KB comprimidos en un fragmento aparte
+ * contra los 35,85 del binario— depende de que `astronomy-engine` entre por un
+ * único `import()` dinámico. Un `import` estático en cualquier fichero que
+ * alcance `App.tsx` funde el fragmento con el principal y se lo cobra a todo el
+ * mundo, mire o no el cielo. No daría ningún error: daría un bundle más gordo.
+ * De ahí el guardián, que es el mismo truco de `mapStyle.portable.test.ts`.
  */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import path from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import * as A from 'astronomy-engine'
-import { decodePlanetTable, heliocentric, VISIBLE_PLANETS, type PlanetId } from './table'
+import { loadPlanetEphemeris, VISIBLE_PLANETS, type PlanetId } from './ephemeris'
 import { planetSight } from './sight'
 
-const BIN = path.resolve(__dirname, '../../../public/cielo/planetas.bin')
-const raw = readFileSync(BIN)
-const table = decodePlanetTable(
-  raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength),
-)
+const eph = await loadPlanetEphemeris()
 
 /** El Roque, el mismo sitio que usan las pruebas de las estrellas y la luna. */
 const LON = -17.8892
@@ -64,52 +70,93 @@ const SAMPLES = 600
 const STEP = 36 * 3600_000
 const START = Date.UTC(2026, 0, 2)
 
-describe('la tabla', () => {
-  it('trae los siete cuerpos y su ventana', () => {
-    expect(table.bodies.size).toBe(7)
-    expect(table.bodies.has('tierra')).toBe(true)
-    for (const id of VISIBLE_PLANETS) expect(table.bodies.has(id)).toBe(true)
-    expect(table.endMs).toBeGreaterThan(table.startMs)
-  })
-
-  it('SE NIEGA A EXTRAPOLAR, que es la mitad de por qué es una tabla y no una serie', () => {
-    // Un día antes y un día después de la ventana no hay posición, y eso es lo
-    // correcto: un Chebyshev de grado 14 extrapolado no se degrada con
-    // elegancia, se dispara. Devolver una cifra enorme con confianza es peor
-    // que devolver nada.
-    expect(heliocentric(table, 'marte', table.startMs - 86_400_000)).toBeNull()
-    expect(heliocentric(table, 'marte', table.endMs + 86_400_000)).toBeNull()
-    // Y en los dos extremos exactos sí hay.
-    expect(heliocentric(table, 'marte', table.startMs)).not.toBeNull()
-    expect(heliocentric(table, 'marte', table.endMs)).not.toBeNull()
-  })
-
-  it('QUEDAN MÁS DE DOS AÑOS DE TABLA', () => {
-    // La prueba del calendario. No mide precisión: avisa. Cuando falle, hay que
-    // ejecutar `npm run prepare-planetas` y volver a desplegar, y quedan dos
-    // años para hacerlo sin prisa.
-    const yearsLeft = (table.endMs - Date.now()) / (365.25 * 86_400_000)
-    expect(yearsLeft, `quedan ${yearsLeft.toFixed(1)} años de tabla`).toBeGreaterThan(2)
-  })
-
-  it('los bloques empalman sin salto en la costura', () => {
-    // Donde dos polinomios se tocan es donde un ajuste malo se nota: se mira el
-    // último instante de un bloque contra el primero del siguiente.
-    const spec = table.bodies.get('mercurio')!
-    for (let i = 1; i < Math.min(20, spec.blocks); i++) {
-      const seam = table.startMs + i * spec.intervalMs
-      const before = heliocentric(table, 'mercurio', seam - 1)!
-      const after = heliocentric(table, 'mercurio', seam + 1)!
-      const jump = Math.hypot(
-        before[0] - after[0],
-        before[1] - after[1],
-        before[2] - after[2],
-      )
-      // Dos milisegundos de movimiento de Mercurio son 1e-9 UA. El umbral en
-      // 1e-6 UA —150 km— caza un salto de costura sin exigirle al ajuste una
-      // continuidad que no promete.
-      expect(jump).toBeLessThan(1e-6)
+/** Todos los ficheros del proyecto que alcanza uno, siguiendo rutas relativas. */
+function reachableFrom(entry: string): string[] {
+  const seen = new Set<string>()
+  const pending = [entry]
+  while (pending.length) {
+    const file = pending.pop() as string
+    if (seen.has(file)) continue
+    seen.add(file)
+    const src = readFileSync(file, 'utf8')
+    for (const m of src.matchAll(/^import\s+(?:type\s+)?[^'"]*from\s+'(\.[^']+)'/gm)) {
+      const target = resolve(dirname(file), m[1])
+      for (const candidate of [`${target}.ts`, `${target}.tsx`, `${target}/index.ts`]) {
+        try {
+          readFileSync(candidate)
+          pending.push(candidate)
+          break
+        } catch {
+          // La siguiente extensión.
+        }
+      }
     }
+  }
+  return [...seen]
+}
+
+describe('las efemérides', () => {
+  it('dan los siete cuerpos, con la Tierra que hace de origen', () => {
+    for (const id of [...VISIBLE_PLANETS, 'tierra' as PlanetId]) {
+      const v = eph(id, Date.UTC(2026, 6, 1))
+      expect(v).toHaveLength(3)
+      expect(Number.isFinite(v[0] + v[1] + v[2])).toBe(true)
+    }
+    // La Tierra a una unidad astronómica del sol, que es la definición.
+    const earth = eph('tierra', Date.UTC(2026, 6, 1))
+    expect(Math.hypot(...earth)).toBeGreaterThan(0.98)
+    expect(Math.hypot(...earth)).toBeLessThan(1.02)
+  })
+
+  it('YA NO CADUCAN, que es la otra mitad de por qué se fue la tabla', () => {
+    // Aquí vivían dos pruebas: una comprobaba que un Chebyshev fuera de ventana
+    // devolvía `null` en vez de dispararse, y otra iba a fallar en 2034 para
+    // avisar de que tocaba regenerar el binario. Las dos existían por la tabla.
+    // Contra la serie entera, una fecha a la que el binario no llegaba sale
+    // igual de bien: se compara con la efeméride en 2045, once años después del
+    // final de la ventana que hubo.
+    const at = Date.UTC(2045, 3, 20, 22, 0, 0)
+    const mine = planetSight(eph, 'jupiter', at, OBS)
+    const eq = A.Equator(A.Body.Jupiter, new Date(at), observer, true, true)
+    const hor = A.Horizon(new Date(at), observer, eq.ra, eq.dec, undefined)
+    expect(
+      sepArcsec(
+        fromHorizon(mine.elevationDeg, mine.azimuthDeg),
+        fromHorizon(hor.altitude, hor.azimuth),
+      ),
+    ).toBeLessThan(3)
+  })
+
+  it('ENTRAN POR UN `import()` Y NO POR UNA IMPORTACIÓN ESTÁTICA', () => {
+    // El guardián del empaquetado. `astronomy-engine` tiene que llegar al
+    // navegador en su propio fragmento, y eso solo pasa si ningún fichero que
+    // alcance `App.tsx` la importa de forma estática. Con una sola importación
+    // estática, Rollup funde los 19,61 KB comprimidos con el bundle principal y
+    // los paga también quien nunca abre el cielo. No hay error que lo delate:
+    // la aplicación funciona igual, solo que más gorda.
+    //
+    // Las `import type` no cuentan: TypeScript las borra al compilar.
+    const app = resolve(dirname(fileURLToPath(import.meta.url)), '../../App.tsx')
+    const culprits: string[] = []
+    for (const file of reachableFrom(app)) {
+      const src = readFileSync(file, 'utf8')
+      for (const m of src.matchAll(/^import\s+([^;]*?)\s*from\s+'astronomy-engine'/gm)) {
+        if (!/^type\s/.test(m[1].trim())) culprits.push(`${file}: ${m[0]}`)
+      }
+    }
+    expect(culprits, culprits.join('\n')).toEqual([])
+  })
+
+  it('y el `import()` desestructura por nombre, que es lo que permite podar', () => {
+    // Con el espacio de nombres entero en la mano —`import('astronomy-engine')`
+    // a secas— Rollup no puede podar nada y el fragmento pasa de 19,61 KB a
+    // 44,30 comprimidos. Medido con este build cambiando solo esa línea. El
+    // dato está en `ephemeris.ts`; esto comprueba que la forma sigue ahí.
+    const src = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), 'ephemeris.ts'),
+      'utf8',
+    )
+    expect(src).toMatch(/const\s*\{[^}]+\}\s*=\s*await import\('astronomy-engine'\)/)
   })
 })
 
@@ -120,7 +167,7 @@ describe('dónde se ven, contra astronomy-engine', () => {
       for (let i = 0; i < SAMPLES; i++) {
         const at = START + i * STEP
         const date = new Date(at)
-        const mine = planetSight(table, id, at, OBS)!
+        const mine = planetSight(eph, id, at, OBS)
         // Topocéntrica, de la fecha y con aberración: la posición aparente.
         // Sin refracción, que la pone `refraction.ts` aparte.
         const eq = A.Equator(BODY[id], date, observer, true, true)
@@ -139,6 +186,13 @@ describe('dónde se ven, contra astronomy-engine', () => {
       // planeta, peor caso 0,57". Es el mismo orden que las 8920 estrellas
       // (0,31" y 0,54"), así que un planeta no es lo peor colocado del cielo.
       //
+      // SON LAS MISMAS CIFRAS QUE CON LA TABLA DE CHEBYSHEV, hasta la milésima
+      // de segundo de arco, y ése es el dato que justifica haberla quitado: el
+      // ajuste estaba apretado a 100 km y ese término nunca asomó por encima
+      // del resto de la cadena. Lo que se mide aquí es la precesión, la
+      // nutación, la aberración y el tiempo de luz de `sight.ts` contra los de
+      // NOVAS, y eso no ha cambiado.
+      //
       // El umbral en 3" está cinco veces por encima del peor caso real y muy
       // por debajo de los tres fallos que tiene que cazar: los 22' de olvidar
       // la precesión, los 20" de olvidar la aberración y los 25" de olvidar el
@@ -154,7 +208,7 @@ describe('dónde se ven, contra astronomy-engine', () => {
     // magnitudes y los diámetros siguen saliendo exactos, porque una rotación
     // no cambia el módulo. Solo la posición lo delata.
     const at = Date.UTC(2027, 5, 15, 22, 0, 0)
-    const mine = planetSight(table, 'jupiter', at, OBS)!
+    const mine = planetSight(eph, 'jupiter', at, OBS)
     const eq = A.Equator(A.Body.Jupiter, new Date(at), observer, true, true)
     const hor = A.Horizon(new Date(at), observer, eq.ra, eq.dec, undefined)
     const wrong = 23.4392794444 * RAD
@@ -178,7 +232,7 @@ describe('cuánto brillan', () => {
       const errors: number[] = []
       for (let i = 0; i < SAMPLES; i++) {
         const at = START + i * STEP
-        const mine = planetSight(table, id, at, OBS)!
+        const mine = planetSight(eph, id, at, OBS)
         // Solo con elongación suficiente. Las fórmulas del *Astronomical
         // Almanac* se degradan a ángulos de fase grandes, y ahí el planeta está
         // pegado al sol: no se ve, y su magnitud no le importa a nadie.
@@ -203,8 +257,8 @@ describe('cuánto brillan', () => {
     const magnitudes: number[] = []
     for (let year = 2026; year < 2035; year++) {
       const at = Date.UTC(year, 6, 1)
-      const s = planetSight(table, 'saturno', at, OBS)
-      if (s) magnitudes.push(s.magnitude - 5 * Math.log10(s.sunDistanceAu * s.distanceAu))
+      const s = planetSight(eph, 'saturno', at, OBS)
+      magnitudes.push(s.magnitude - 5 * Math.log10(s.sunDistanceAu * s.distanceAu))
     }
     const spread = Math.max(...magnitudes) - Math.min(...magnitudes)
     expect(spread).toBeGreaterThan(0.5)
@@ -215,7 +269,7 @@ describe('cuánto brillan', () => {
     // cualquiera ve saliendo a la calle, y no depende de ninguna efeméride.
     const at = Date.UTC(2027, 2, 10, 21, 0, 0)
     const mags = new Map(
-      VISIBLE_PLANETS.map((id) => [id, planetSight(table, id, at, OBS)!.magnitude]),
+      VISIBLE_PLANETS.map((id) => [id, planetSight(eph, id, at, OBS).magnitude]),
     )
     expect(mags.get('venus')!).toBeLessThan(mags.get('jupiter')!)
     expect(mags.get('jupiter')!).toBeLessThan(mags.get('saturno')!)
@@ -235,8 +289,8 @@ describe('las fases y los tamaños', () => {
     let jupiterMin = 1
     for (let i = 0; i < SAMPLES; i++) {
       const at = START + i * STEP
-      venusMin = Math.min(venusMin, planetSight(table, 'venus', at, OBS)!.illumination)
-      jupiterMin = Math.min(jupiterMin, planetSight(table, 'jupiter', at, OBS)!.illumination)
+      venusMin = Math.min(venusMin, planetSight(eph, 'venus', at, OBS).illumination)
+      jupiterMin = Math.min(jupiterMin, planetSight(eph, 'jupiter', at, OBS).illumination)
     }
     expect(venusMin).toBeLessThan(0.1)
     expect(jupiterMin).toBeGreaterThan(0.97)
@@ -250,8 +304,8 @@ describe('las fases y los tamaños', () => {
     let jupiter = { min: 999, max: 0 }
     for (let i = 0; i < SAMPLES; i++) {
       const at = START + i * STEP
-      const v = planetSight(table, 'venus', at, OBS)!.angularDiameterArcsec
-      const j = planetSight(table, 'jupiter', at, OBS)!.angularDiameterArcsec
+      const v = planetSight(eph, 'venus', at, OBS).angularDiameterArcsec
+      const j = planetSight(eph, 'jupiter', at, OBS).angularDiameterArcsec
       venus = { min: Math.min(venus.min, v), max: Math.max(venus.max, v) }
       jupiter = { min: Math.min(jupiter.min, j), max: Math.max(jupiter.max, j) }
     }

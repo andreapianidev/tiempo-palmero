@@ -944,11 +944,9 @@ export const es = {
       saturno: 'Saturno',
       urano: 'Urano',
     } as Record<string, string>,
-    hint: 'Los cinco que se ven a simple vista, más Urano, que pide un cielo como el de aquí. Salen de una tabla de efemérides de 36 KB que solo se descarga con esta casilla.',
-    loading: 'Descargando la tabla de los planetas…',
-    failed: (why: string) => `No se pudo cargar la tabla de los planetas: ${why}`,
-    outOfRange:
-      'La tabla de efemérides cubre del 1 de enero de 2026 al 1 de enero de 2036 y la fecha del reloj se sale de ahí. No se dibuja nada: extrapolar estos polinomios da posiciones enormes con toda confianza, y una posición inventada es peor que un hueco.',
+    hint: 'Los cinco que se ven a simple vista, más Urano, que pide un cielo como el de aquí. Las efemérides son 20 KB que solo se descargan con esta casilla.',
+    loading: 'Cargando las efemérides de los planetas…',
+    failed: (why: string) => `No se pudieron cargar las efemérides de los planetas: ${why}`,
     value: (deg: string, rose: string, mag: string) => `${deg}° al ${rose} · mag ${mag}`,
     down: (deg: string) => `puesto, ${deg}°`,
     tooCloseToSun: (name: string, deg: string) =>
@@ -962,7 +960,7 @@ export const es = {
     tooFaint: (name: string, mag: string) =>
       `${name} está en el cielo, pero con magnitud ${mag} queda por debajo del límite de ahora mismo.`,
     scope:
-      'Qué es dato y qué es dibujo: la posición sale de polinomios de Chebyshev ajustados a VSOP87, con tiempo de luz y paralaje, y coincide con la efeméride por debajo de 0,57 segundos de arco en el peor caso de tres años — el mismo orden que las estrellas de al lado. La magnitud es la fórmula del Astronomical Almanac, con los anillos de Saturno dentro. No se dibuja el disco de ninguno: Júpiter mide 50 segundos de arco y el ojo resuelve 60.',
+      'Qué es dato y qué es dibujo: la posición sale de VSOP87, la misma serie que usan las efemérides publicadas, con tiempo de luz y paralaje puestos encima. Antes salía de polinomios ajustados a VSOP87 y con fecha de caducidad; ahora se evalúa la serie entera y no caduca. La magnitud es la fórmula del Astronomical Almanac, con los anillos de Saturno dentro. No se dibuja el disco de ninguno: Júpiter mide 50 segundos de arco y el ojo resuelve 60.',
     twinkle:
       'Y no centellean, que es la única diferencia con las estrellas. No es un gusto: una estrella es un punto y la turbulencia le mueve todo el haz a la vez, mientras que un planeta es un disco de muchos puntos cuyos parpadeos se promedian. Lo que no titila, ahí arriba, es un planeta.',
   },
@@ -1233,6 +1231,16 @@ export const es = {
       'así que las figuras precesan con sus estrellas y ninguna puede quedar colgando de un punto ' +
       'vacío. No son un dato astronómico: son una convención cultural.',
     figuresLicense: 'BSD-3-Clause',
+    ephemerisTitle: 'Efemérides de los planetas',
+    ephemerisBody:
+      'astronomy-engine, de Don Cross: implementa VSOP87 para las órbitas planetarias y el NOVAS ' +
+      'C 3.1 del Observatorio Naval de los Estados Unidos para pasar de ahí al cielo que se ve. Es ' +
+      'la única biblioteca que esta aplicación descarga para calcular algo, y solo la descarga ' +
+      'quien enciende los planetas: son 20 KB en un fragmento aparte. Aquí hubo una tabla de ' +
+      'polinomios propia de 36 KB, con fecha de caducidad, que resultó pesar más que la biblioteca ' +
+      'que evitaba. La luna y el sol NO salen de aquí: son series de Meeus escritas en el ' +
+      'repositorio, comprobadas contra esta misma biblioteca.',
+    ephemerisLicense: 'MIT',
     demTitle: 'Modelo de elevación y relieve',
     demBody:
       'Mapzen Terrain Tiles (formato terrarium), servidas por AWS Open Data. Derivadas de NASA SRTM, NASADEM, USGS 3DEP y EU-DEM. Las mismas teselas generan el sombreado del relieve y las altitudes del cálculo.',

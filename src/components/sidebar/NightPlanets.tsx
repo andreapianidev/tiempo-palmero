@@ -46,7 +46,6 @@ export function NightPlanets({ planets, on, onToggle, floorDeg }: Props) {
       {planets.failed && (
         <p className="warn small">{t.nightPlanets.failed(planets.failed)}</p>
       )}
-      {planets.outOfRange && <p className="warn small">{t.nightPlanets.outOfRange}</p>}
 
       {on && planets.all.length > 0 && (
         <>

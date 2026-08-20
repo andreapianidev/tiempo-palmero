@@ -144,6 +144,13 @@ const ENTRIES: Entry[] = [
     hrefLabel: 'github.com/ofrohn/d3-celestial',
   },
   {
+    title: t.sources.ephemerisTitle,
+    body: t.sources.ephemerisBody,
+    license: t.sources.ephemerisLicense,
+    href: 'https://github.com/cosinekitty/astronomy',
+    hrefLabel: 'github.com/cosinekitty/astronomy',
+  },
+  {
     title: t.sources.demTitle,
     body: t.sources.demBody,
     license: t.sources.demLicense,

@@ -881,7 +881,7 @@ export default function App() {
           data: nightSky.data,
           moon: nightSky.moonScene,
           planets: nightPlanetsOn ? planets.scene : null,
-          planetTable: planets.table,
+          planetEphemeris: planets.ephemeris,
         }}
         sunLight={{
           on: sunLightOn,

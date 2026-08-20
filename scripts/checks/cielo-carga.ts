@@ -11,10 +11,15 @@
  *
  * QUÉ COMPRUEBA, y las dos mitades importan:
  *
- *  1. Que las cuatro piezas se piden y contestan 200.
+ *  1. Que las tres piezas del catálogo se piden y contestan 200.
  *  2. **Que el panel deja de decir «Descargando…» y enseña las cifras.** Ésta
  *     es la que habría cazado el fallo: la primera pasaba perfectamente con la
  *     aplicación rota.
+ *
+ * LOS PLANETAS YA NO SON UNA DESCARGA CON NOMBRE. Eran `planetas.bin` y ahora
+ * son un fragmento de JavaScript que carga un `import()`, así que la primera
+ * mitad no puede mirarlos: lo que se comprueba es la segunda, que el panel
+ * llegue a nombrar un planeta.
  *
  * VA EN `checks/` Y NO EN LAS PRUEBAS porque necesita Playwright, un build y un
  * servidor. Se ejecuta a mano, y sobre todo antes de tocar cualquiera de los
@@ -28,10 +33,34 @@ import { chromium } from 'playwright'
 
 const PORT = 4399
 
+/** Puesta por `main` en cuanto hay servidor, para que el `catch` la alcance. */
+let stopServerRef: (() => void) | null = null
+
 async function main() {
+  /**
+   * `detached` NO ES UN DETALLE: es lo único que permite matar el servidor.
+   *
+   * `npx` lanza a `vite` como HIJO suyo, y `vite` lanza a `esbuild`. Un
+   * `server.kill()` a secas mata solo a `npx` y deja los otros dos vivos con el
+   * puerto cogido — y como este script termina con `process.exit`, nadie más va
+   * a recogerlos. Han sobrevivido a sesiones enteras así, ocupando el 4399 y
+   * haciendo fallar la siguiente ejecución por `--strictPort`.
+   *
+   * Con `detached` el grupo de procesos es propio y `process.kill(-pid)` se los
+   * lleva a los tres.
+   */
   const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
     stdio: 'ignore',
+    detached: true,
   })
+  const stopServer = () => {
+    try {
+      if (server.pid) process.kill(-server.pid, 'SIGTERM')
+    } catch {
+      // Ya estaba muerto.
+    }
+  }
+  stopServerRef = stopServer
   await new Promise((r) => setTimeout(r, 3000))
 
   const browser = await chromium.launch({
@@ -72,9 +101,13 @@ async function main() {
     ['estrellas.bin contesta 200', requests.some((r) => r === '200 estrellas.bin')],
     ['figuras.bin contesta 200', requests.some((r) => r === '200 figuras.bin')],
     ['nombres.json contesta 200', requests.some((r) => r === '200 nombres.json')],
-    ['planetas.bin contesta 200', requests.some((r) => r === '200 planetas.bin')],
     ['el catálogo deja de descargarse', !text.includes('Descargando el catálogo')],
-    ['la tabla de planetas deja de descargarse', !text.includes('Descargando la tabla')],
+    ['las efemérides dejan de cargarse', !text.includes('Cargando las efemérides')],
+    // Sustituye a la comprobación de que `planetas.bin` contestaba 200. Ahora
+    // las efemérides son un fragmento de JavaScript y no una descarga con
+    // nombre propio, así que lo que se mira es el efecto: que el panel llegue a
+    // nombrar un planeta. Sin efemérides la tabla del panel sale vacía.
+    ['el panel enseña algún planeta', /Júpiter|Venus|Saturno|Marte/.test(text)],
     ['el panel enseña las estrellas visibles', text.includes('Estrellas visibles')],
     ['el panel enseña la luna', text.includes('Fase')],
     ['sin errores de consola', errors.length === 0],
@@ -88,11 +121,17 @@ async function main() {
   if (errors.length) console.log('\nerrores:\n' + errors.slice(0, 10).join('\n'))
 
   await browser.close()
-  server.kill()
+  stopServer()
   process.exit(ok ? 0 : 1)
 }
 
+/**
+ * Y también se mata si el script se va por el desagüe. Antes, un fallo entre el
+ * `spawn` y el final —Playwright sin navegador instalado, un `goto` que agota
+ * el tiempo— dejaba el servidor corriendo para siempre.
+ */
 main().catch((e) => {
   console.error(e)
+  stopServerRef?.()
   process.exit(1)
 })
