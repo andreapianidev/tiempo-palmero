@@ -36,9 +36,18 @@ reconstruye la isla entera a escala real —el MDT de 5 m del IGN, la ortofoto d
 metro de Unity por metro de isla— y se navega como en Google Earth. Comparte con
 esta el modelo del terreno y la red de estaciones: aquella contesta *cómo es
 este punto*, esta *qué tiempo hace en él*. Hoy se compila en **macOS con Apple
-Silicon** sobre Unity 6 y HDRP; el resto de plataformas vendrá después. El
-puente meteorológico entre las dos está escrito y cableado, **todavía no
-ejecutado con datos reales**, y así se cuenta en los dos sitios.
+Silicon** sobre Unity 6 y HDRP. El puente meteorológico entre las dos está
+escrito y cableado, **todavía no ejecutado con datos reales**, y así se cuenta
+en los dos sitios.
+
+El teléfono tiene repositorio aparte —
+**[andreapianidev/lapalma3d-movil](https://github.com/andreapianidev/lapalma3d-movil)**—
+y lo tiene por un motivo y no por gusto: HDRP no compila para móvil, así que iOS
+y Android no son un port sino otra aplicación. De las **7982 líneas** del tiempo
+de ejecución de escritorio, 1585 tocan HDRP y **6397 sobreviven al viaje**. Hoy
+ahí son **cimientos y ninguna pantalla**: el contrato que las dos comparten con
+el original —la proyección UTM 28N, el esquema del manifiesto de `atlas` y las
+diez atribuciones— con las pruebas que impiden que se separen.
 
 Y **[tiempopalmero.com](https://www.tiempopalmero.com)** es el sitio que la
 cuenta: para quién es, qué hace, quién cruza cada sendero, qué se ve del cielo,
