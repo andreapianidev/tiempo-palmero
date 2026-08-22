@@ -4,23 +4,67 @@
    Los trazados están en el sprite de `index.html`, con la razón de por qué hay
    dos clases y no se mezclan. Esto es solo cómo se ponen.
 
-   TODAS SON DEL TAMAÑO DE UNA LETRA Y DEL COLOR DEL TEXTO. La tentación con un
-   bloque de logotipos es dejarlos en su color de marca, y eso convierte la
-   sección de procedencias en una pared de pegatinas: seis azules distintos
-   compitiendo con el ámbar, que es el único color que esta página usa para
-   decir algo. Aquí todos van en `currentColor` y con el tamaño atado al texto
-   de al lado, así que el color sigue significando lo mismo en toda la página.
+   EL TAMAÑO DE UNA LETRA ERA DEMASIADO POCO, y se midió: la manzana salía a
+   11,6 px y GitHub y Creative Commons a 8,8, en una página de 17.500 px de
+   largo y con la manzana a 9.759 de arriba. Estaban puestas, pero no se veían.
+   Ahora las marcas ajenas van en rem y no en em —así no encogen con la
+   versalita a la que acompañan— y andan por los 16-21 px.
 
-   La leyenda de las fuentes va además dentro de una chapa cuadrada, la misma
-   que lleva la plataforma en la sección en 3D: un cuadro de 1 px con esquinas
-   de 6 y el fondo apenas levantado. Sin ella, seis dibujos a línea sueltos
-   sobre el fondo parecen un error de carga.
+   LAS OFICIALES SON LAS OFICIALES, no un parecido dibujado a mano. Los trazados
+   de Apple, GitHub, Creative Commons, OpenStreetMap y AWS salen del conjunto
+   Simple Icons, que los extrae de los originales de cada marca; el del Cabildo
+   Insular es su propio SVG institucional, con sus dos tintas —#0C75BA y
+   #5AAC40— pasadas de clases CSS a atributos de presentación, porque la CSP del
+   sitio es `style-src 'self'` y no admite un `<style>` en línea.
+
+   DOS FORMAS, DOS TRATAMIENTOS. Un logotipo de palabra no cabe en una chapa
+   cuadrada: el del Cabildo mide 299,9 × 56,4 y el de GRAFCAN 208 × 39, los dos
+   del orden de 5,3:1. Esos van desnudos y atados por la ALTURA, que es como se
+   normaliza un conjunto de logotipos; a 1,4 rem los dos salen a 119 px de
+   ancho, que es lo que hace que la columna se lea como una fila y no como un
+   revoltijo. Las marcas de icono —OpenStreetMap, AWS— y los dibujos de leyenda
+   se quedan en la chapa cuadrada de siempre, y todo ocupa la misma altura de
+   caja: 2,35 rem.
+
+   EL COLOR SIGUE ATADO SALVO DONDE LA MARCA ES EL COLOR. Icono y leyenda van en
+   `currentColor`, así que el ámbar sigue significando lo mismo en toda la
+   página. Las dos excepciones son logotipos que no existen en otro color: el
+   del Cabildo es azul y verde de fábrica, y el de GRAFCAN es su negativo
+   oficial en blanco —medido, 100 % de píxeles claros, así que se ve sobre la
+   tinta sin necesidad de ponerle una chapa debajo.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .marca-svg{
   display:block;flex:none;overflow:visible;
   width:1em;height:1em;fill:currentColor;
 }
+
+/* ── los logotipos de palabra ────────────────────────────────────────────── */
+/* Misma altura de caja que la chapa, para que las seis tarjetas arranquen a la
+   misma altura, y el logotipo centrado dentro. */
+/* A PLENA TINTA, SIN ATENUAR. La chapa de la leyenda se enciende al pasar por
+   encima porque es un dibujo de la casa y el ámbar es de la casa; un logotipo
+   ajeno no se puede teñir ni bajar de brillo sin dejar de ser el logotipo. Se
+   queda quieto, que además es lo que piden las normas de marca de casi todos.
+
+   Y 1,65 rem de alto y no 1,4: a 1,4 el logotipo del Cabildo salía a 119 px de
+   ancho y su letra interior por debajo de 7 px, que es una mancha con forma de
+   palabra. A 1,65 son 140 px y 8,3, y los dos logotipos de palabra siguen
+   saliendo del mismo ancho —140 y 140— porque los dos son del orden de 5,3:1. */
+.fuente-marca{
+  align-self:flex-start;
+  display:flex;align-items:center;
+  height:2.35rem;max-width:100%;
+}
+.logo-svg,.logo-img{display:block;height:1.65rem;width:auto;max-width:100%;flex:none}
+.logo-svg{overflow:visible}
+/* LA PROPORCIÓN VA AQUÍ, y no sale sola del viewBox. Un `<svg>` sin atributo
+   `width` no tiene anchura intrínseca: `width:auto` no significa «lo que pida
+   el viewBox» sino «todo lo que haya», y el logotipo del Cabildo salía a 300 px
+   —el ancho entero de su tarjeta— en vez de a los 119 que le tocan. Medido con
+   `.tmp/marcas.mjs`. Con la proporción declarada y la altura fija, la anchura
+   se resuelve. */
+.logo-svg--cabildo{aspect-ratio:299.9 / 56.4}
 
 /* ── la chapa de la leyenda, en cada tarjeta de fuente ───────────────────── */
 .fuente-glifo{
@@ -31,7 +75,7 @@
   color:var(--fg-faint);
   transition:color .3s ease,border-color .3s ease,background .3s ease;
 }
-.fuente-glifo .marca-svg{width:1.25rem;height:1.25rem}
+.fuente-glifo .marca-svg{width:1.35rem;height:1.35rem}
 /* Al pasar por encima se enciende, igual que el enlace de la tarjeta: es la
    misma tarjeta reaccionando, no dos cosas. */
 .fuente:hover .fuente-glifo{
@@ -41,14 +85,14 @@
 /* ── la marca dentro de una licencia ─────────────────────────────────────── */
 /* Solo la llevan las que de verdad son Creative Commons. Las otras —ODbL, «libre
    y gratuita», dominio público— se quedan en texto, que es lo que son. */
-.lic{display:inline-flex;align-items:center;gap:.36rem}
-.lic .marca-svg{width:.95em;height:.95em}
+.lic{display:inline-flex;align-items:center;gap:.4rem}
+.lic .marca-svg{width:1rem;height:1rem}
 
 /* ── GitHub, en las fichas de repositorio y en el pie ────────────────────── */
-.repo .etiq{display:inline-flex;align-items:center;gap:.45rem}
-.repo .etiq .marca-svg{width:.95em;height:.95em}
+.repo .etiq{display:inline-flex;align-items:center;gap:.5rem}
+.repo .etiq .marca-svg{width:1rem;height:1rem}
 .pie a .marca-svg{
-  width:.95em;height:.95em;display:inline-block;vertical-align:-.12em;margin-right:.3rem;
+  width:1rem;height:1rem;display:inline-block;vertical-align:-.2em;margin-right:.34rem;
 }
 
 /* ── la chapa de plataforma de la sección en 3D ──────────────────────────── */
@@ -56,10 +100,11 @@
    acompaña al texto de Unity. */
 .plataforma b{display:inline-flex;align-items:center;gap:.45rem}
 .plataforma em{display:inline-flex;align-items:center;gap:.45rem}
-.plataforma .marca-svg{width:1em;height:1em}
-/* La manzana es más alta que ancha y al lado de una versalita de .63rem se ve
-   pequeña; el 1,15 la deja ópticamente del mismo tamaño que el cubo. */
-.plataforma b .marca-svg{width:1.15em;height:1.15em}
+.plataforma .marca-svg{width:1.15rem;height:1.15rem}
+/* La manzana es más alta que ancha y al lado de una versalita se ve pequeña;
+   el 1,3 la deja ópticamente del mismo tamaño que el cubo. En rem y no en em,
+   que es lo que la sacaba a 11,6 px: la versalita de la chapa es de .63rem. */
+.plataforma b .marca-svg{width:1.3rem;height:1.3rem}
 
 /* ── el botón del cierre que lleva al repositorio en 3D ──────────────────── */
-.btn .marca-svg{position:relative;z-index:1;width:1.15em;height:1.15em}
+.btn .marca-svg{position:relative;z-index:1;width:1.25em;height:1.25em}
