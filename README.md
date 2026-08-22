@@ -732,7 +732,7 @@ Software libre bajo **Apache 2.0 con atribución**: se puede usar, copiar y
 modificar citando al autor y manteniendo las atribuciones de los datos. Ver
 [LICENSE](LICENSE) y [NOTICE](NOTICE).
 
-Escrito en El Paso, en la isla de La Palma, sobre los datos abiertos de su
+Escrito en Tijarafe, en la isla de La Palma, sobre los datos abiertos de su
 Cabildo.
 
 Aplicación en marcha: **[app.tiempopalmero.com](https://app.tiempopalmero.com)**
