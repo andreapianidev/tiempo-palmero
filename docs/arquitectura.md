@@ -211,20 +211,32 @@ que se está intentando recortar. Por eso hay **dos almacenes**, `meta` y
 `body`: el inventario se recorre entero y son unos bytes por tesela; las
 imágenes se leen de una en una y solo cuando se piden.
 
-El techo es **1 GB**, y sale de contar las teselas que tocan tierra contra la
+El techo es **2 GB**, y sale de contar las teselas que tocan tierra contra la
 línea de costa del Cabildo: la isla entera cabe en 54 teselas a z13 (12,4 MB),
-188 a z14 (43,2 MB), 690 a z15 (158,7 MB) y 2.612 a z16 (601 MB). Con 1 GB
-entran los dos fondos completos hasta z15 —429 MB— y quedan casi 600 MB para el
-z16 y el z17 de los sitios que uno mire de verdad, que es donde está el detalle
-que se quiere conservar y lo primero que se perdía con un techo corto.
+188 a z14 (43,2 MB), 690 a z15 (158,7 MB) y 2.612 a z16 (601 MB). Con 2 GB
+entran los dos fondos completos hasta z16 —1,2 GB— y quedan unos 800 MB para el
+z17 de los sitios que uno mire de verdad, que es donde está el detalle que se
+quiere conservar y lo primero que se perdía con un techo corto. Fue **1 GB**
+hasta el 22 de agosto de 2026, y con ese techo la isla completa a z16 en los dos
+fondos era justo lo que no cabía: quien miraba de cerca las dos vertientes se
+expulsaba a sí mismo del nivel que más había pagado.
 
 Conviene tener clara la distinción, porque es la que decide si esto es
 razonable: **el techo limita lo que se CONSERVA, no lo que se descarga.**
 Subirlo no le pide ni una tesela más a GRAFCAN —solo hace que lo ya visto siga
 ahí mañana—; quien le pide cosas es la precarga, y esa son 17 teselas por fondo
-y 8 por parada, y no se ha tocado. Aun así nunca se pasa de **la cuarta parte de
-la cuota** que declare `navigator.storage.estimate()`, porque esto no es espacio
-nuestro: es el disco de quien abre la página.
+y 8 por parada, y no se ha tocado. Aun así nunca se pasa de **la mitad de la
+cuota** que declare `navigator.storage.estimate()`, porque esto no es espacio
+nuestro: es el disco de quien abre la página. Era una cuarta parte, y donde eso
+se notaba era en el teléfono: es ahí donde la cuota declarada está en el orden
+del gigabyte y no en el de las decenas, o sea donde el techo que manda es la
+fracción y no el número de arriba. Un cuarto de 1 GB dejaba la caché de un móvil
+en 256 MB mientras el mismo código guardaba cuatro veces más en un portátil, y
+esa diferencia no la había elegido nadie. La mitad se puede pedir porque antes se
+pide otra cosa: **almacenamiento persistente** (`lib/tiles/persist.ts`), que allí
+donde se concede impide que el navegador vacíe este origen por presión de disco.
+Se pide en el primer reposo del mapa, no al arrancar, porque Firefox puede
+preguntar y el momento de preguntar es con el mapa ya delante.
 
 Los 30 días no son redondeo. Al otro lado hay la Ortofoto Territorial
 **2024-2025**, un producto anual, y un topográfico que se revisa por hojas y por
@@ -619,11 +631,21 @@ Separarlos no es cosmética: el DEM son 118 teselas que no han cambiado porque s
 haya desplegado un arreglo de CSS, y volver a bajarlas en cada despliegue sería
 castigar justo al que actualiza.
 
-**Las capas del Cabildo se quedan fuera del service worker**, y es la decisión
-menos evidente: son 16 MB de `public/layers/` que solo se piden al encender su
-interruptor. Guardarlas duplicaría la cuota que ya usa [la caché de
-teselas](#las-teselas-que-se-quedan) para algo que casi nadie enciende. Siguen
-con la caché del navegador y su `stale-while-revalidate` de 30 días.
+**Las capas del Cabildo entran en el service worker** desde el 22 de agosto de
+2026, y hasta ese día se quedaban fuera. El argumento de entonces —16 MB de
+`public/layers/` «que solo se piden al encender su interruptor» y «que casi nadie
+enciende»— era falso por las dos mitades. Cuatro de esos ficheros nunca
+dependieron de ningún interruptor: los municipios (2.431 kB), el límite insular
+(1.638 kB), los senderos (1.595 kB) y sus puntos (271 kB) los pide
+`useIslandData` en **cada arranque**, o sea unos 900 kB comprimidos que se
+volvían a bajar siempre. Y desde esa fecha la primera visita trae las doce capas
+encendidas, así que las carreteras, las guaguas y el viario de OSM tampoco son lo
+que casi nadie enciende: son lo que descarga todo el mundo. Se guarda **lo que se
+pide**, no el directorio: los 16 MB solo se materializan si alguien enciende de
+verdad todas las capas de sitios, y para entonces las ha usado. La cabecera
+`stale-while-revalidate` de 30 días de `vercel.json` sigue gobernando la
+revalidación; lo que añade el service worker es que la isla se abra sin
+cobertura.
 
 ### El icono es la isla, medida
 
@@ -678,11 +700,14 @@ algo que se acaba de preguntar, no preferencias.
 Dos consecuencias que conviene tener escritas, porque son facturas reales y no
 efectos secundarios inesperados:
 
-- **Las capas pesadas se vuelven a pedir en cada arranque.** La red de guaguas
-  son 1,5 MB y el viario de OSM 5,2 MB, y no se descargan hasta que su
-  interruptor se enciende; dejarlo encendido significa pedirlos otra vez mañana.
-  Lo mismo con la ETo de la sección de agricultura. Es lo que se pidió al dejar
-  el interruptor puesto, pero en red móvil se nota.
+- **Las capas pesadas se vuelven a pedir en cada arranque.** Viven en memoria,
+  no en los ajustes: la red de guaguas son 1,5 MB y el viario de OSM 5,2 MB en
+  crudo —495 kB por el cable con la compresión de Vercel—, y desde el 22 de
+  agosto de 2026 vienen encendidas de fábrica, así que ese arranque es el de
+  todo el mundo. Lo que las hace soportables es que ahora las guarda el service
+  worker: se pagan una vez y en las visitas siguientes salen de la caché. Lo
+  mismo con la ETo de la sección de agricultura. Y mientras bajan por primera
+  vez hay una barra que lo dice, arriba a la derecha (`lib/boot/first-load.ts`).
 - **La calidad del océano deja de medirse sola.** `autoQuality()` mira los
   píxeles de la pantalla y el equipo, y solo corre la primera vez; después manda
   la guardada, porque el ajuste no distingue una calidad medida de una elegida a

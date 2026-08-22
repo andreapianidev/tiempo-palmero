@@ -42,7 +42,7 @@
 export const TILE_TTL_MS = 30 * 24 * 3600 * 1000
 
 /**
- * EL TECHO DE LA CACHÉ: 1 GB.
+ * EL TECHO DE LA CACHÉ: 2 GB.
  *
  * Medido contra la línea de costa del Cabildo, contando las teselas que tocan
  * tierra (`scripts/checks/grafcan-cache.ts`, bloque 4) y multiplicando por la
@@ -54,11 +54,18 @@ export const TILE_TTL_MS = 30 * 24 * 3600 * 1000
  *   z16   2 612 teselas   601 MB
  *   z17  10 175 teselas   2,3 GB
  *
- * Con 1 GB cabe **la isla entera hasta z15 en los dos fondos** —214 MB cada uno,
- * 429 MB los dos— y quedan casi 600 MB para el z16 y el z17 de los sitios que
- * uno mire de verdad, que son unas 2.600 teselas más. Es deliberado que NO quepa
- * la isla completa a z16 en los dos fondos (1,2 GB): eso ya no sería la caché de
- * lo que alguien ha mirado.
+ * Con 2 GB cabe **la isla entera hasta z16 en los dos fondos** —601 MB cada uno,
+ * 1,2 GB los dos, sumando el z15 y lo de debajo— y quedan unos 800 MB para el
+ * z17 de los sitios que uno mire de verdad, que son unas 3.500 teselas más.
+ *
+ * ERAN 1 GB HASTA EL 22 DE AGOSTO DE 2026, y con ellos la isla completa a z16 en
+ * los dos fondos era justo lo que NO cabía: quien miraba de cerca las dos
+ * vertientes se iba expulsando a sí mismo del nivel que más había pagado. Lo que
+ * hizo cambiarlo fue el teléfono, que es donde el techo real no es éste sino la
+ * fracción de cuota de aquí abajo. Sigue siendo deliberado que no quepa el z17
+ * completo (2,3 GB por fondo): eso ya no sería la caché de lo que alguien ha
+ * mirado, sería una descarga de la isla, y está prohibida por la licencia del
+ * servicio.
  *
  * Y POR ESO NO SE BAJA LA ISLA AL ZOOM MÁXIMO, aunque sea lo primero que se
  * ocurre al ver un techo de 1 GB. La fila del z17 está ahí para que la cifra no
@@ -77,20 +84,32 @@ export const TILE_TTL_MS = 30 * 24 * 3600 * 1000
  * por parada, que es otro número y está más abajo.
  *
  * Aun así es el disco de quien abre la página, así que manda siempre el menor de
- * los dos: este techo o la cuarta parte de la cuota que declare el navegador.
+ * los dos: este techo o la mitad de la cuota que declare el navegador.
  */
-export const MAX_CACHE_BYTES = 1024 * 1024 * 1024
+export const MAX_CACHE_BYTES = 2 * 1024 * 1024 * 1024
 
 /**
- * Y NUNCA MÁS DE LA CUARTA PARTE DE LO QUE EL NAVEGADOR OFREZCA.
+ * Y NUNCA MÁS DE LA MITAD DE LO QUE EL NAVEGADOR OFREZCA.
  *
  * `navigator.storage.estimate()` devuelve una cuota que en Chrome sale del disco
  * libre, así que en una máquina holgada el techo que manda es el de arriba. En
  * una con el disco lleno la cuota puede quedarse en pocos cientos de MB, y
  * llenarla nosotros haría que el navegador empezara a tirar cosas —las suyas y
  * las nuestras— justo cuando peor viene.
+ *
+ * ERA UNA CUARTA PARTE, y donde eso se notaba era en el teléfono: es ahí donde
+ * la cuota declarada se queda en el orden del gigabyte en vez de las decenas, o
+ * sea donde el que manda de los dos techos es éste y no el de arriba. Con un
+ * cuarto de una cuota de 1 GB la caché de un móvil se quedaba en 256 MB —la isla
+ * hasta z15 en un solo fondo, y nada más—, mientras el mismo código en un
+ * portátil guardaba cuatro veces más. Esa diferencia no la había elegido nadie.
+ *
+ * La mitad se puede pedir porque antes se pide otra cosa: `persist.ts` solicita
+ * almacenamiento persistente, y donde se concede el navegador deja de expulsar
+ * este origen por presión de disco. Donde no se concede, la mitad de la cuota
+ * sigue dejando la otra mitad libre, que es el margen que este número protege.
  */
-export const QUOTA_FRACTION = 0.25
+export const QUOTA_FRACTION = 0.5
 
 /** El techo real de esta sesión, con la cuota que haya dicho el navegador. */
 export function cacheCapBytes(quota: number | undefined): number {

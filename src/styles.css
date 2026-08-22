@@ -6,6 +6,7 @@
 @import './styles/counters.css';
 @import './styles/fire.css';
 @import './styles/webcams.css';
+@import './styles/first-load.css';
 @import './styles/mobile.css';
 
 :root {

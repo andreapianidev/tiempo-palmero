@@ -102,12 +102,29 @@ export function routeFor(url: string, origin: string, mode: string, method = 'GE
   if (DATA_FILES.has(path)) return 'data'
   if (DATA_PREFIXES.some((p) => path.startsWith(p))) return 'data'
 
-  // `/layers/` NO entra, y es la decisión menos obvia de este fichero: son 16 MB
-  // de capas del Cabildo —carreteras, senderos, paradas de guagua, cobertura— y
-  // ninguna hace falta para que la aplicación funcione, porque se piden solo al
-  // encender su interruptor. Guardarlas aquí sería multiplicar por dos la cuota
-  // que ya usa la caché de teselas para algo que casi nadie enciende. Se quedan
-  // con la caché del navegador, que ya las sirve con `stale-while-revalidate`
-  // de 30 días desde `vercel.json`.
+  // `/layers/` SÍ entra, desde el 22 de agosto de 2026, y hasta ese día no
+  // entraba. El argumento de entonces era que esas capas «se piden solo al
+  // encender su interruptor» y que «casi nadie las enciende», así que guardarlas
+  // sería gastar cuota por si acaso. Las dos mitades eran falsas, cada una a su
+  // manera:
+  //
+  //  - Cuatro de esos ficheros NUNCA dependieron de ningún interruptor: los
+  //    municipios (2.431 kB), el límite insular (1.638 kB), los senderos (1.595
+  //    kB) y sus puntos (271 kB) los pide `useIslandData` en cada arranque. Eran
+  //    900 kB comprimidos por visita que se volvían a bajar siempre.
+  //  - Y desde hoy la primera visita trae las doce capas encendidas (ver
+  //    `INITIAL_LAYERS` en `App.tsx`), así que las carreteras, las guaguas y el
+  //    viario de OSM tampoco son «lo que casi nadie enciende»: son lo que
+  //    descarga todo el mundo.
+  //
+  // Se guarda lo que se pide, no el directorio entero: los 16 MB del catálogo
+  // solo se materializan en disco si alguien enciende de verdad todas las capas
+  // de sitios, y para entonces las ha usado.
+  //
+  // La cabecera de `vercel.json` —`stale-while-revalidate` de 30 días— sigue
+  // valiendo y no sobra: es la que gobierna la revalidación. Esto es lo que
+  // hace que la isla se abra sin cobertura, que es de lo que va este fichero.
+  if (path.startsWith('/layers/')) return 'data'
+
   return 'passthrough'
 }

@@ -7,6 +7,8 @@ import { SourcesScreen } from './components/SourcesScreen'
 import { MobileShell } from './components/mobile/MobileShell'
 import { buildStatus } from './components/mobile/status'
 import { useIsMobile } from './hooks/useIsMobile'
+import { useFirstLoad } from './hooks/useFirstLoad'
+import { FirstLoad } from './components/boot/FirstLoad'
 import { useGeolocation, type GeoFix } from './hooks/useGeolocation'
 import { useIslandData, municipalityOf } from './hooks/useIslandData'
 import { useWindField } from './hooks/useWindField'
@@ -72,37 +74,56 @@ import { t } from './i18n'
 const EMPTY_TRACK: readonly TrackPoint[] = []
 
 /**
- * Las capas de la PRIMERA visita.
+ * Las capas de la PRIMERA visita: TODAS.
  *
  * «Primera» en sentido literal desde que los ajustes se guardan: esto es lo que
  * ve quien llega sin nada elegido todavía, y también el relleno de cualquier
  * capa que lo guardado no reconozca. A partir de la segunda visita manda lo que
  * el usuario dejó encendido, no esta tabla.
  *
- * El primer vistazo enseña la isla con su atmósfera —el viento y el vapor
- * arrancan encendidos, como la vista 3D y el mar—; lo que se apaga al llegar
- * son las capas que añaden cifras o iconos a una isla que ya enseña su relieve
- * y su mar. Y sigue mandando la regla de siempre: a partir de la segunda
- * visita, lo que el usuario dejó encendido, no esta tabla.
+ * HASTA EL 22 DE AGOSTO DE 2026 AQUÍ HABÍA SEIS ENCENDIDAS Y SEIS APAGADAS, con
+ * el argumento de que las apagadas «añaden cifras o iconos a una isla que ya
+ * enseña su relieve y su mar». El argumento se cayó por dónde no se estaba
+ * mirando: los ajustes viven en el `localStorage` de CADA navegador, así que
+ * quien tenía su isla completa en el escritorio abría el teléfono y se
+ * encontraba la de fábrica. Parecía que el móvil enseñaba menos. No enseñaba
+ * menos —no hay ni una rama en toda la aplicación que mire el ancho de la
+ * pantalla para decidir qué se dibuja—: era la primera visita de otro
+ * navegador. La respuesta no es detectar el teléfono, es que la primera visita
+ * enseñe la isla entera en cualquier pantalla.
+ *
+ * LO QUE CUESTA, MEDIDO el 22 de agosto de 2026 sobre `public/layers/` con
+ * `brotli -q 11`, que es lo que sirve Vercel. Solo cinco de las doce descargan
+ * algo al encenderse; las demás dibujan datos que la aplicación ya pide en el
+ * arranque, encendidas o no:
+ *
+ *   viario de OSM      5.106 kB en crudo →  495 kB
+ *   carreteras         1.369 kB          →  191 kB
+ *   guaguas (3 ficheros) 1.797 kB        →  189 kB
+ *   cobertura TDT                            27 kB (PNG, ya comprimido)
+ *   aforos                                   tres peticiones a la API
+ *
+ * Son unos 900 kB por el cable, no los 8,5 MB que suman esos ficheros en crudo:
+ * la cifra que asusta es la del disco, no la de la red. Se pagan una vez —el
+ * service worker los guarda, ver `sw/policy.ts`— y mientras bajan hay una barra
+ * que lo dice, en vez de trazados que aparecen solos (ver `lib/boot/`).
+ *
+ * QUIEN QUIERA MENOS, APAGA. Y se le conserva, que es la regla de siempre.
  */
 const INITIAL_LAYERS: LayerVisibility = {
   grid: true,
   stations: true,
-  air: false,
+  air: true,
   co2: true,
-  sky: false,
-  trails: false,
-  guagua: false,
-  roads: false,
-  osmRoads: false,
-  tdt: false,
-  counters: false,
+  sky: true,
+  trails: true,
+  guagua: true,
+  roads: true,
+  osmRoads: true,
+  tdt: true,
+  counters: true,
   fire: true,
-  // Apagada la primera vez. No cuesta red —el catálogo es estático y las
-  // imágenes solo se piden al abrir una ficha— pero son dieciocho iconos más
-  // sobre una isla que ya llega con estaciones, CO₂ y cámaras de incendios
-  // encendidas.
-  webcams: false,
+  webcams: true,
   // El viento y el vapor arrancan encendidos: son la atmósfera de la isla, no
   // capas de datos, y su animación forma parte de cómo se enseña. Quien los
   // apague conserva su elección en las visitas siguientes.
@@ -274,6 +295,25 @@ export default function App() {
    * interruptor: quien pincha un sitio pregunta por el sitio entero.
    */
   const tdt = useTdt(visible.tdt || probe !== null)
+  /**
+   * La barra de la primera visita.
+   *
+   * Cinco pasos, que son las cinco capas de `INITIAL_LAYERS` que descargan algo
+   * al encenderse. Las demás dibujan lo que el arranque ya pide —las estaciones,
+   * el CO₂, los senderos, las cámaras— y no tienen nada que esperar.
+   *
+   * Cada paso dice dos cosas: si está pidiendo ahora y si ya tiene con qué
+   * dibujar. Un fallo cuenta como terminado, y por qué está escrito en
+   * `lib/boot/first-load.ts`; las carreteras no publican bandera de carga, así
+   * que de ellas solo se sabe cuando llegan.
+   */
+  const firstLoad = useFirstLoad([
+    { loading: guagua.loading, ready: guagua.network !== null },
+    { loading: places.loading, ready: places.roads !== null },
+    { loading: viario.loading, ready: viario.roads !== null || viario.failed },
+    { loading: tdt.loading, ready: tdt.mask !== null || tdt.failed },
+    { loading: counters.loading, ready: counters.sites.length > 0 || counters.error },
+  ])
   const [selection, setSelection] = useState<Selection | null>(null)
   const [showSources, setShowSources] = useState(false)
   /**
@@ -1237,6 +1277,10 @@ export default function App() {
           {data.fire.filter((f) => f.hasAlert).map((f) => f.name).join(', ')}
         </div>
       )}
+
+      {/* La barra de la primera visita, encima de todo y sin tocarse. Se quita
+          sola en cuanto llegan las cinco capas que se descargan al estrenar. */}
+      {firstLoad.show && <FirstLoad done={firstLoad.done} total={firstLoad.total} />}
 
       {isMobile ? (
         <MobileShell

@@ -92,7 +92,7 @@ describe('techo de la caché', () => {
     expect(cacheCapBytes(30 * 1024 ** 3)).toBe(MAX_CACHE_BYTES)
   })
 
-  it('con la cuota apurada manda la cuarta parte de la cuota', () => {
+  it('con la cuota apurada manda la fracción de la cuota', () => {
     const cuota = 400 * 1024 ** 2
     expect(cacheCapBytes(cuota)).toBe(cuota * QUOTA_FRACTION)
     expect(cacheCapBytes(cuota)).toBeLessThan(MAX_CACHE_BYTES)

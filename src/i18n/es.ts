@@ -19,6 +19,15 @@ export const es = {
     tiles: (done: number, total: number) => `Relieve: ${done}/${total} teselas`,
   },
 
+  /**
+   * La barra de la primera visita. Dice CAPAS y no «datos» porque lo que se
+   * está esperando son las capas que la aplicación trae encendidas de fábrica,
+   * y quien quiera menos espera sabe dónde apagarlas.
+   */
+  firstLoad: {
+    label: (done: number, total: number) => `Preparando capas · ${done}/${total}`,
+  },
+
   layers: {
     title: 'Capas',
     wind: 'Viento animado',

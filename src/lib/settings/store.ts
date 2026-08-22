@@ -39,8 +39,14 @@ import { backend } from './backend'
  * entera —3D, mar, viento, vapor y cielo encendidos—, y sin este cambio quienes
  * ya habían arrancado alguna vez habrían seguido viendo la isla de siempre
  * para siempre.
+ *
+ * Y LA 3 EXISTE POR LO MISMO, el 22 de agosto de 2026: la primera visita pasó a
+ * traer las DOCE capas encendidas (ver `INITIAL_LAYERS` en `App.tsx`). Sin subir
+ * el número, el único que seguiría viendo la isla a medias sería justo el que ya
+ * la había abierto alguna vez. El precio está escrito y se paga a sabiendas: a
+ * cada uno se le olvida una vez lo que había elegido a mano.
  */
-export const SETTINGS_VERSION = 2
+export const SETTINGS_VERSION = 3
 
 /** De dónde se leen y a dónde se escriben. Un archivo por plataforma. */
 export interface SettingsBackend {
@@ -89,10 +95,31 @@ export function serializeSettings(values: Record<string, unknown>): string {
  * mismo contenido no tiene sentido.
  */
 let cache: Record<string, unknown> | null = null
+/**
+ * Si al abrir el cajón no había nada dentro. Se fija en la MISMA lectura que
+ * llena `cache` y no se vuelve a calcular, y eso es lo único que lo hace fiable:
+ * cada `usePersistentState` escribe su valor al montarse, así que un segundo
+ * después de arrancar el cajón ya no está vacío aunque la visita sí fuera la
+ * primera. Quien lo pregunta es la barra de la primera carga.
+ */
+let virgin = false
 
 function load(): Record<string, unknown> {
-  if (cache === null) cache = parseSettings(backend.read())
+  if (cache === null) {
+    cache = parseSettings(backend.read())
+    virgin = Object.keys(cache).length === 0
+  }
   return cache
+}
+
+/**
+ * La primera visita de este navegador —o la primera después de subir
+ * `SETTINGS_VERSION`, que para lo que importa aquí es lo mismo: en las dos, la
+ * isla arranca de fábrica y hay que descargar las capas que trae encendidas.
+ */
+export function isFirstVisit(): boolean {
+  load()
+  return virgin
 }
 
 export function readSetting(key: string): unknown {

@@ -13,7 +13,8 @@
  *  3. **Se apunta el encuadre** donde ha quedado el mapa, que es lo que el
  *     selector de fondos necesita para precargar por intención sin tener el
  *     mapa delante. Ver `tiles/intent.ts`.
- *  4. **De vez en cuando**, se purga lo caducado y lo que pase del techo.
+ *  4. **De vez en cuando**, se purga lo caducado y lo que pase del techo. Y en
+ *     el primer reposo, una vez, se pide almacenamiento persistente.
  *
  * El registro del protocolo NO está aquí: lo hace `MapView` justo antes de
  * declarar las fuentes, porque tiene que estar puesto antes de la primera
@@ -26,6 +27,7 @@ import { BASEMAPS, type BasemapId } from '../lib/basemaps'
 import { ISLAND_BBOX } from '../lib/geo'
 import { rasterTileZoom } from '../lib/tiles/grid'
 import { rememberView } from '../lib/tiles/intent'
+import { requestPersistence } from '../lib/tiles/persist'
 import { leadingEdgeTiles, overviewTiles, zoomInTiles } from '../lib/tiles/prefetch'
 import { sweep } from '../lib/tiles/store'
 import { warmTiles } from '../lib/tiles/warm'
@@ -77,6 +79,13 @@ export function useTileCache(map: MapLibreMap | null, basemap: BasemapId): void 
 
     const onIdle = () => {
       const now = Date.now()
+      // Al primer reposo, y una sola vez en toda la página: que el navegador no
+      // vacíe esto cuando le falte disco. Va aquí y no en el arranque porque
+      // Firefox puede preguntar, y el momento de preguntar es con el mapa ya
+      // delante. Ver `tiles/persist.ts`: la respuesta no se usa para nada,
+      // porque un «no» no cambia nada de lo que hace la caché.
+      void requestPersistence()
+
       if (now - lastSweep.current > SWEEP_EVERY_MS) {
         lastSweep.current = now
         void sweep(now)

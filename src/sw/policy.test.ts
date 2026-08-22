@@ -56,9 +56,26 @@ describe('routeFor', () => {
     expect(route('/icon-512.png')).toBe('data')
   })
 
-  it('las capas del Cabildo se quedan fuera: 16 MB que casi nadie enciende', () => {
-    expect(route('/layers/senderos.geojson')).toBe('passthrough')
-    expect(route('/layers/carreteras.geojson')).toBe('passthrough')
+  /**
+   * Las capas del Cabildo entran desde el 22 de agosto de 2026. Los senderos y
+   * el límite insular se piden en CADA arranque —no dependen de ningún
+   * interruptor—, y las carreteras y el viario los trae encendidos la primera
+   * visita. Lo que no se pide no se guarda: la caché es de lo que pasa por
+   * delante, no del directorio.
+   */
+  it('las capas del Cabildo se guardan y se refrescan detrás', () => {
+    expect(route('/layers/senderos.geojson')).toBe('data')
+    expect(route('/layers/carreteras.geojson')).toBe('data')
+    expect(route('/layers/viario-osm.geojson')).toBe('data')
+    expect(route('/layers/tdt-cobertura.png')).toBe('data')
+  })
+
+  /**
+   * Menos su índice, que es el puntero que dice qué capas hay: servido de la
+   * caché, el resto del conjunto no se entera nunca de que ha cambiado.
+   */
+  it('pero el índice de capas se pide siempre a la red', () => {
+    expect(route('/layers/index.json')).toBe('fresh')
   })
 
   it('lo que no es GET no se toca', () => {
