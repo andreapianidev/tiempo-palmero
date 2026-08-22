@@ -10,7 +10,23 @@ no merecen la pena y por qué. Hoja de ruta y bitácora a la vez.
 
 El portal tiene **49 conjuntos de datos reales y 22 endpoints IoT**, y el visor
 ArcGIS del Cabildo —que no es el mismo inventario— tiene **2.387 elementos**
-más. Esta aplicación usa hoy **veinte capas estáticas** —de las veintiuna que
+más.
+
+> **De dónde salen los 49, y por qué contarlos cuesta.** La API CKAN no está
+> donde la documentación del portal la pone. `package_list` bajo la raíz
+> —`lapalmasmart-open.lapalma.es/api/3/action/…`— devuelve **la portada en HTML**
+> con 200, no un error, así que un contador escrito a ojo se queda callado en vez
+> de fallar. El catálogo cuelga de su propia sección:
+>
+> ```bash
+> curl -s https://lapalmasmart-open.lapalma.es/datosabiertos/catalogo/api/3/action/package_list
+> ```
+>
+> Eso devuelve **51 nombres**, y los 49 salen de restar los dos que no son un
+> conjunto de datos: **`admin_test`**, que es una prueba de la administración del
+> portal, y **`catalogo_opendata_lapalma`**, que es el catálogo del catálogo.
+> Recontado así el 22 de agosto de 2026 y sigue dando 49. Si algún día da otra
+> cosa, esa cifra aparece en el README, en la portada de `web/` y aquí mismo. Esta aplicación usa hoy **veinte capas estáticas** —de las veintiuna que
 descarga; la única que no se lee en runtime es el inventario de sensores de CO₂,
 que llega en directo de DEMASE— más el resumen de cultivos y el agregado del
 GTFS de guaguas. Lo que queda, ordenado por lo que aportaría de verdad:
