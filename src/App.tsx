@@ -92,19 +92,20 @@ const EMPTY_TRACK: readonly TrackPoint[] = []
  * navegador. La respuesta no es detectar el teléfono, es que la primera visita
  * enseñe la isla entera en cualquier pantalla.
  *
- * LO QUE CUESTA, MEDIDO el 22 de agosto de 2026 sobre `public/layers/` con
- * `brotli -q 11`, que es lo que sirve Vercel. Solo cinco de las doce descargan
- * algo al encenderse; las demás dibujan datos que la aplicación ya pide en el
- * arranque, encendidas o no:
+ * LO QUE CUESTA, MEDIDO el 22 de agosto de 2026 contra la producción, pidiendo
+ * cada fichero con `Accept-Encoding: br` y contando lo que llega —no con un
+ * `brotli` local, que comprime más que Vercel y da la mitad de la cifra real—.
+ * Solo cinco de las doce descargan algo al encenderse; las demás dibujan datos
+ * que la aplicación ya pide en el arranque, encendidas o no:
  *
- *   viario de OSM      5.106 kB en crudo →  495 kB
- *   carreteras         1.369 kB          →  191 kB
- *   guaguas (3 ficheros) 1.797 kB        →  189 kB
+ *   viario de OSM      5.106 kB en crudo →  896 kB
+ *   carreteras         1.369 kB          →  370 kB
+ *   guaguas (3 ficheros) 1.797 kB        →  283 kB
  *   cobertura TDT                            27 kB (PNG, ya comprimido)
  *   aforos                                   tres peticiones a la API
  *
- * Son unos 900 kB por el cable, no los 8,5 MB que suman esos ficheros en crudo:
- * la cifra que asusta es la del disco, no la de la red. Se pagan una vez —el
+ * Son 1,58 MB por el cable, no los 8,5 MB que suman esos ficheros en crudo: la
+ * cifra que asusta es la del disco, no la de la red. Se pagan una vez —el
  * service worker los guarda, ver `sw/policy.ts`— y mientras bajan hay una barra
  * que lo dice, en vez de trazados que aparecen solos (ver `lib/boot/`).
  *

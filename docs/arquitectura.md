@@ -637,8 +637,9 @@ castigar justo al que actualiza.
 enciende»— era falso por las dos mitades. Cuatro de esos ficheros nunca
 dependieron de ningún interruptor: los municipios (2.431 kB), el límite insular
 (1.638 kB), los senderos (1.595 kB) y sus puntos (271 kB) los pide
-`useIslandData` en **cada arranque**, o sea unos 900 kB comprimidos que se
-volvían a bajar siempre. Y desde esa fecha la primera visita trae las doce capas
+`useIslandData` en **cada arranque**, o sea 1,45 MB comprimidos —616 + 404 + 427
++ 35 kB, medidos contra producción con `Accept-Encoding: br`— que se volvían a
+bajar en cada visita. Y desde esa fecha la primera visita trae las doce capas
 encendidas, así que las carreteras, las guaguas y el viario de OSM tampoco son lo
 que casi nadie enciende: son lo que descarga todo el mundo. Se guarda **lo que se
 pide**, no el directorio: los 16 MB solo se materializan si alguien enciende de
@@ -702,7 +703,8 @@ efectos secundarios inesperados:
 
 - **Las capas pesadas se vuelven a pedir en cada arranque.** Viven en memoria,
   no en los ajustes: la red de guaguas son 1,5 MB y el viario de OSM 5,2 MB en
-  crudo —495 kB por el cable con la compresión de Vercel—, y desde el 22 de
+  crudo —896 kB por el cable con la compresión de Vercel, medido contra
+  producción; un `brotli -q 11` local daba 495 y no es lo que se sirve—, y desde el 22 de
   agosto de 2026 vienen encendidas de fábrica, así que ese arranque es el de
   todo el mundo. Lo que las hace soportables es que ahora las guarda el service
   worker: se pagan una vez y en las visitas siguientes salen de la caché. Lo

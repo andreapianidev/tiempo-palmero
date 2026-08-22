@@ -61,26 +61,31 @@ export function progress(steps: readonly Step[]): { done: number; total: number 
 }
 
 /**
- * CUÁNTO SE ESPERA COMO MUCHO: 60 segundos.
+ * CUÁNTO SE ESPERA COMO MUCHO: 120 segundos.
  *
- * Medido el 22 de agosto de 2026 sobre los ficheros de `public/layers/`, con
- * `brotli -q 11` —que es lo que sirve Vercel— y con `gzip` donde el brotli no
- * llegó a tiempo:
+ * Medido el 22 de agosto de 2026 CONTRA LA PRODUCCIÓN, pidiendo cada fichero a
+ * `app.tiempopalmero.com` con `Accept-Encoding: br` y contando los bytes que
+ * llegan. Y se mide así por algo: la primera versión de esta cuenta usó un
+ * `brotli -q 11` local y daba 495 kB para el viario de OSM. Falso. Vercel no
+ * comprime al máximo —son 896 kB—, o sea casi el doble, y con la cifra de
+ * laboratorio este tope se habría quedado corto justo en la red donde hace
+ * falta. Un número que decide algo se mide donde va a pasar:
  *
- *   viario de OSM      5.106 kB en crudo →  495 kB
- *   carreteras         1.369 kB          →  191 kB
- *   líneas de guagua   1.256 kB          →  122 kB
- *   red de guagua        323 kB          →   50 kB (gzip)
- *   paradas de guagua    218 kB          →   17 kB
+ *   viario de OSM      5.106 kB en crudo →  896 kB
+ *   carreteras         1.369 kB          →  370 kB
+ *   líneas de guagua   1.256 kB          →  222 kB
+ *   red de guagua        323 kB          →   38 kB
+ *   paradas de guagua    218 kB          →   23 kB
  *   cobertura TDT                            27 kB (PNG, ya comprimido)
  *
- * Son 902 kB por el cable, más los aforos, que son tres peticiones a la API del
- * Cabildo. Un teléfono a 200 kbit/s —la cobertura de un barranco de Garafía—
- * baja ese bulto en unos 36 s. A los 60 la barra se quita: si a esas alturas
- * falta algo, lo que hay es una red que no está, y una barra parada no lo
- * arregla ni lo explica.
+ * Son 1.576 kB por el cable, más los aforos, que son tres peticiones a la API
+ * del Cabildo. Un teléfono a 200 kbit/s —la cobertura de un barranco de
+ * Garafía— baja ese bulto en unos 63 s; a 1 Mbit/s, en 13. A los 120 la barra
+ * se quita: es el doble del peor caso que se ha medido, y si a esas alturas
+ * falta algo, lo que hay es una red que no está —una barra parada no lo arregla
+ * ni lo explica.
  */
-export const FIRST_LOAD_MAX_MS = 60_000
+export const FIRST_LOAD_MAX_MS = 120_000
 
 /**
  * Y CUÁNTO SE ESPERA ANTES DE ENSEÑARLA: 600 ms.

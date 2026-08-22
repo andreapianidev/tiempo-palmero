@@ -110,8 +110,9 @@ export function routeFor(url: string, origin: string, mode: string, method = 'GE
   //
   //  - Cuatro de esos ficheros NUNCA dependieron de ningún interruptor: los
   //    municipios (2.431 kB), el límite insular (1.638 kB), los senderos (1.595
-  //    kB) y sus puntos (271 kB) los pide `useIslandData` en cada arranque. Eran
-  //    900 kB comprimidos por visita que se volvían a bajar siempre.
+  //    kB) y sus puntos (271 kB) los pide `useIslandData` en cada arranque. Son
+  //    1,45 MB comprimidos —616 + 404 + 427 + 35 kB, medidos contra producción
+  //    con `Accept-Encoding: br`— que se volvían a bajar en cada visita.
   //  - Y desde hoy la primera visita trae las doce capas encendidas (ver
   //    `INITIAL_LAYERS` en `App.tsx`), así que las carreteras, las guaguas y el
   //    viario de OSM tampoco son «lo que casi nadie enciende»: son lo que
