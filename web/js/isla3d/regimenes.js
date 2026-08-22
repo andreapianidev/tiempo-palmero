@@ -294,27 +294,33 @@ export var REGIMENES = [
  * fondo de CSS y la isla se ven a la vez y no pueden contar cosas distintas:
  *
  * LOS TRES CRUCES VAN CENTRADOS EN UNA COSTURA ENTRE SECCIONES, no en medio de
- * una. Se miden con `.tmp/mirar.mjs`, que dice en qué `--asc` queda centrada
- * cada sección; los de aquí salen de la medida del 20 de agosto de 2026, con la
- * página en diez secciones. SI SE AÑADE O SE QUITA UNA SECCIÓN HAY QUE VOLVER A
- * MEDIRLOS: `--asc` es una fracción de la página entera, así que alargarla mueve
- * todo lo de abajo hacia arriba. La vez que se añadieron cuatro secciones de
- * golpe —para quién es, los aforos, la isla en 3D y el cielo— la noche empezaba
- * a 0,79 y la sección del cielo quedaba entera en el crepúsculo.
+ * una. Se miden con `scripts/checks/portada-secciones.ts`, que dice en qué
+ * `--asc` queda centrada cada sección y propone estos tres números. SI SE AÑADE
+ * O SE QUITA UNA SECCIÓN —O SI UNA CRECE— HAY QUE VOLVER A MEDIRLOS: `--asc` es
+ * una fracción de la página entera, así que alargarla mueve todo lo de abajo
+ * hacia arriba. La vez que se añadieron cuatro secciones de golpe —para quién
+ * es, los aforos, la isla en 3D y el cielo— la noche empezaba a 0,79 y la
+ * sección del cielo quedaba entera en el crepúsculo.
  *
- *   calima    0,00–0,10  hero y «para quién es». La calima ámbar de `.c-costa`
+ * ÚLTIMA MEDIDA: 22 de agosto de 2026, al pasar «para quién es» de seis fichas
+ * a ocho —entraron el vuelo libre y la agricultura—. Esa sección creció una fila
+ * y empujó 0,03–0,05 hacia arriba todo lo que va detrás: los aforos se quedaron
+ * en el temporal y la isla en 3D en la noche. Una sección no hace falta añadirla
+ * para descalibrar esto; basta con que engorde.
+ *
+ *   calima    0,00–0,13  hero y «para quién es». La calima ámbar de `.c-costa`
  *                        está a tope en 0; el hito dice «0 m · el puerto»
- *   alisio    0,19–0,31  «lo que se ve en pantalla» y los aforos
- *   temporal  0,40–0,59  el panel del modelo y la isla en 3D. El régimen en el
+ *   alisio    0,22–0,34  «lo que se ve en pantalla» y los aforos
+ *   temporal  0,43–0,60  el panel del modelo y la isla en 3D. El régimen en el
  *                        que una recta acierta es justo el sitio donde la página
  *                        habla de acertar — y el mar de nubes de `.c-nubes`
- *                        cruza en 0,38, o sea justo al entrar: se atraviesa la
+ *                        cruza en 0,40, o sea justo al entrar: se atraviesa la
  *                        manta por el hueco que hay sobre el panel
- *   noche     0,68–1,00  la sección del cielo y lo que va detrás. `.c-estrellas`
- *                        llega a 1 en 0,70, o sea antes de que se lea la escala
+ *   noche     0,69–1,00  la sección del cielo y lo que va detrás. `.c-estrellas`
+ *                        llega a 1 en 0,71, o sea antes de que se lea la escala
  *                        de fotómetros y no después
  */
-export var LIMITES = [0.1, 0.31, 0.59]
+export var LIMITES = [0.13, 0.34, 0.6]
 export var CRUCE = 0.09
 
 function mezcla(a, b, t) {

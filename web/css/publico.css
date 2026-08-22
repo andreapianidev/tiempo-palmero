@@ -1,12 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   LOS PÚBLICOS · seis maneras de usar lo mismo
+   LOS PÚBLICOS · ocho maneras de usar lo mismo
 
    La rejilla de la sección «para quién es». Es hermana de `.fuentes` —misma
    idea de baldosas separadas por un filete de 1 px— pero no es ella: las
    fuentes son una lista de procedencias, todas del mismo peso, y estas son
-   seis usos que no se parecen entre sí, así que cada una lleva su marca y la
-   primera ocupa dos columnas porque es la que trae a la mayoría de la gente
-   que llega a esta isla.
+   ocho usos que no se parecen entre sí, así que cada una lleva su marca.
+
+   Eran seis y son ocho: entraron el vuelo libre y la agricultura, que son dos
+   públicos que la aplicación ya servía —la inversión con su margen, la ETo por
+   cota— y de los que esta página no decía nada.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .publicos{
@@ -61,3 +63,10 @@
 .publico .dato span{
   font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--fg-faint);
 }
+
+/* OCHO BALDOSAS NO LLENAN TRES COLUMNAS. Con dos columnas salen cuatro filas
+   exactas y no hay nada que hacer; con tres, la última fila se queda con dos
+   baldosas y un boquete. La última —«gestión y ciencia», que es el cierre de la
+   sección— ocupa ese hueco. Es la misma decisión que se tomó al revés cuando
+   eran seis: el ancho lo manda la rejilla, no el énfasis. */
+@media (min-width:1040px){.publicos>.publico:last-child{grid-column:span 2}}

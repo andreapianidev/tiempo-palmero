@@ -65,20 +65,20 @@ const SALIDA = join(import.meta.dirname, '../../.tmp/portada')
 /**
  * Las siete paradas: cada régimen en mitad de su tramo, más los tres cruces.
  * NO SE ELIGEN: las calcula `portada-secciones.ts` a partir de `LIMITES` en
- * `web/js/isla3d/regimenes.js` —hoy [0,10 · 0,31 · 0,59] con 0,09 de cruce— y
+ * `web/js/isla3d/regimenes.js` —hoy [0,13 · 0,34 · 0,60] con 0,09 de cruce— y
  * hay que moverlas con él. Al añadir las cuatro secciones nuevas en agosto de
  * 2026, las paradas viejas medían la calima en pleno alisio y la noche en el
  * crepúsculo: seguían midiendo bien seis fondos, pero ya no eran los seis
  * peores, que es lo único que este script existe para encontrar.
  */
 const PARADAS = [
-  { asc: 0.05, nombre: 'calima' },
-  { asc: 0.145, nombre: 'cruce-calima-alisio' },
-  { asc: 0.25, nombre: 'alisio' },
-  { asc: 0.355, nombre: 'cruce-alisio-temporal' },
-  { asc: 0.495, nombre: 'temporal' },
-  { asc: 0.635, nombre: 'cruce-temporal-noche' },
-  { asc: 0.84, nombre: 'noche' },
+  { asc: 0.065, nombre: 'calima' },
+  { asc: 0.175, nombre: 'cruce-calima-alisio' },
+  { asc: 0.28, nombre: 'alisio' },
+  { asc: 0.385, nombre: 'cruce-alisio-temporal' },
+  { asc: 0.515, nombre: 'temporal' },
+  { asc: 0.645, nombre: 'cruce-temporal-noche' },
+  { asc: 0.845, nombre: 'noche' },
 ]
 
 const PANTALLAS = [

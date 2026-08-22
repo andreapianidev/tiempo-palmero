@@ -62,19 +62,24 @@
   background:
     radial-gradient(140% 90% at 50% -20%,rgba(31,45,72,.55),transparent 62%),
     linear-gradient(180deg,#080a12 0%,#0a0b10 46%,rgba(13,12,11,0) 78%);
-  opacity:clamp(0,calc((var(--asc) - .34) * 2.1),1);
+  /* Empieza cuatro centésimas antes de que se cruce la nube y sube con ella:
+     el azul de «por encima de la inversión» no puede llegar antes que la
+     inversión. Va pegado al 0,40 de `.c-nubes`, así que se mueve con él. */
+  opacity:clamp(0,calc((var(--asc) - .36) * 2.1),1);
 }
 
 /* ── las estrellas del Roque ─────────────────────────────────────────────── */
 /* La Palma es Reserva Starlight y el cielo es el argumento del observatorio, así
    que las estrellas no son adorno: son la cima de la página. */
-/* LLEGA A 1 EN 0,70, y ese número se remide cada vez que la página cambia de
-   largo. La sección del cielo va hoy de 0,617 a 0,744: la rampa original —que
-   llegaba a 1 en 0,89— la dejaba entera con las estrellas a medio encender,
-   contando cuántas se ven sobre un cielo vacío. Ahora sube con la noche del
-   relieve, que cruza en 0,59–0,68, y está puesta antes de que se lea la escala
-   de fotómetros. */
-.c-estrellas{opacity:clamp(0,calc((var(--asc) - .56) * 7),1)}
+/* LLEGA A 1 EN 0,71, y ese número se remide cada vez que la página cambia de
+   largo. El criterio es la escala de fotómetros: no se puede contar cuántas
+   estrellas se ven sobre un cielo a medio encender. Medido a 1440 px el 22 de
+   agosto de 2026, `.escala-cielo` entra en pantalla en 0,725, así que la rampa
+   se acaba justo antes, en 0,713. La rampa original llegaba a 1 en 0,89 y
+   dejaba la sección entera a medias; antes de este cambio acababa en 0,703
+   contra una escala que entraba en 0,713, o sea el mismo margen de una
+   centésima. Sube con la noche del relieve, que cruza en 0,60–0,69. */
+.c-estrellas{opacity:clamp(0,calc((var(--asc) - .57) * 7),1)}
 .c-estrellas svg{width:100%;height:100%;display:block}
 .c-estrellas circle{fill:#fff}
 .c-estrellas g:nth-child(1){opacity:.85;animation:titila 5.5s ease-in-out infinite}
@@ -94,12 +99,14 @@
      pasar nada. Antes eran 0,47; con las cuatro secciones nuevas, el panel del
      modelo entra en pantalla en 0,391 y a 0,47 lo llenaba entero.
 
-     El valor es donde el canto superior de ese panel queda a media pantalla: la
-     mitad de arriba es la cabecera de la sección, que es texto sobre nada, y la
-     nube cruza por ahí. Eran 0,47, luego 0,42, y ahora 0,38 — cada vez que la
-     página se alarga, el panel sube y esto baja con él. Se mide preguntándole
-     al navegador en qué `--asc` entra `.modelo` en pantalla. */
-  transform:translate3d(0,calc((.38 - var(--asc)) * 250vh),0);
+     El valor es el `--asc` en el que el canto superior de ese panel ENTRA por
+     abajo de la ventana a 1440 px: hasta ahí lo que hay en pantalla es la
+     cabecera de la sección, que es texto sobre nada, y la nube cruza por ahí.
+     Eran 0,47, luego 0,42, luego 0,38, y hoy 0,40. Cada vez que la página
+     cambia de largo esto se remide; se remide preguntándole al navegador, no a
+     ojo. La última vez fue el 22 de agosto de 2026, al pasar «para quién es»
+     de seis fichas a ocho: 0,379 medidos antes, 0,405 después. */
+  transform:translate3d(0,calc((.40 - var(--asc)) * 250vh),0);
   opacity:min(clamp(0,calc((var(--asc) - .08) * 3.6),1),clamp(0,calc((1.02 - var(--asc)) * 4),1));
   will-change:transform;
 }
@@ -163,7 +170,9 @@
    sube con ella y le da espesor sin costar otra capa desenfocada. */
 .c-velo{
   background:linear-gradient(180deg,transparent 30%,rgba(226,222,214,.03) 52%,transparent 74%);
-  transform:translate3d(0,calc((.47 - var(--asc)) * 250vh),0);
+  /* Nueve centésimas por debajo de la nube, que es el espesor que se le da.
+     Se mueve con ella: era 0,47 cuando la nube cruzaba en 0,38. */
+  transform:translate3d(0,calc((.49 - var(--asc)) * 250vh),0);
   opacity:clamp(0,calc(1 - var(--asc)),1);
 }
 
